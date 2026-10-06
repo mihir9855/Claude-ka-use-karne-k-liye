@@ -11,7 +11,7 @@ const S={canvas:null,src:BUILTIN,w:0,h:0,mask:null,area:null,views:[],elev:0,pla
 const CFG={density:170,rate:0,allow:1,gdepth:12};
 
 /* ---------- palette + settings ---------- */
-const PALS=[['','સિસ્ટમ','linear-gradient(90deg,#fff 50%,#111 50%)'],['safed','સફેદ','#ffffff'],['kalo','કાળો','#000000'],['pathar','પથ્થર','#8a877f'],['lilo','લીલો','#1f6b43']];
+const PALS=[['','આકાશી','#1565d8'],['safed','સફેદ','#ffffff'],['lilo','લીલો','#12805c'],['jambli','જાંબલી','#6a3de8'],['gulabi','ગુલાબી','#d6204f']];
 function setPal(p){const r=document.documentElement;if(p)r.setAttribute('data-pal',p);else r.removeAttribute('data-pal');try{localStorage.setItem('pathar-pal',p)}catch(e){}
   document.querySelectorAll('#pal button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===p))}
 $('#pal').innerHTML=PALS.map(p=>`<button type="button" data-p="${p[0]}" title="${p[1]}" aria-label="${p[1]}" style="background:${p[2]}"></button>`).join('');
