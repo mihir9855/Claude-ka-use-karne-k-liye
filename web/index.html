@@ -1,13 +1,13 @@
-<title>Mandir Naap</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;600&family=Yatra+One&display=swap">
+<title>મંદિર માપ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;600;700&display=swap">
 <style>
 /* Layout: single column, phone-first. Result summary on top, detail tables below. */
-:root{--bg:#f2f3f7;--panel:#ffffff;--ink:#1b2333;--mute:#5d677c;--line:#d9dde7;--accent:#b8560a;--accent-ink:#ffffff;--warn-bg:#fff1d6;--warn-ink:#6b4200;--font-d:'Yatra One',Georgia,serif;--font-b:'Hind',system-ui,sans-serif}
+:root{--bg:#f2f3f7;--panel:#ffffff;--ink:#1b2333;--mute:#5d677c;--line:#d9dde7;--accent:#b8560a;--accent-ink:#ffffff;--warn-bg:#fff1d6;--warn-ink:#6b4200;--font-d:'Noto Sans Gujarati',system-ui,sans-serif;--font-b:'Noto Sans Gujarati',system-ui,sans-serif}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a28;--panel:#1d2536;--ink:#e8ebf3;--mute:#9aa4ba;--line:#323c54;--accent:#f09a4a;--accent-ink:#1b1206;--warn-bg:#3a2d12;--warn-ink:#f6d594;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#141a28;--panel:#1d2536;--ink:#e8ebf3;--mute:#9aa4ba;--line:#323c54;--accent:#f09a4a;--accent-ink:#1b1206;--warn-bg:#3a2d12;--warn-ink:#f6d594;color-scheme:dark}
 body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--font-b);padding-inline:16px;padding-block:20px}
 main{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-h1{font:400 1.9rem/1.15 var(--font-d);margin:0;text-wrap:balance}
+h1{font:700 1.9rem/1.3 var(--font-d);margin:0;text-wrap:balance}
 h2{font:600 .8rem/1 var(--font-b);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:0 0 10px}
 p{margin:0}.sub{color:var(--mute)}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
@@ -20,7 +20,7 @@ button{font:600 1rem var(--font-b);background:var(--accent);color:var(--accent-i
 button.alt{background:transparent;color:var(--accent);border:1px solid var(--accent)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .hero{display:flex;flex-direction:column;gap:2px}
-.big{font:400 2rem/1.1 var(--font-d);color:var(--accent);font-variant-numeric:tabular-nums}
+.big{font:700 1.8rem/1.2 var(--font-d);color:var(--accent);font-variant-numeric:tabular-nums}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .k{font-size:.8rem;color:var(--mute)}.v{font-size:1.2rem;font-weight:600;font-variant-numeric:tabular-nums}
 .note{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:10px 12px;font-size:.9rem}
@@ -31,14 +31,14 @@ th{color:var(--mute);font-weight:600}
 .tag{display:inline-block;font-size:.75rem;background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:1px 8px;color:var(--mute)}
 </style>
 <main>
-<header><h1>Mandir Naap</h1><p class="sub">DXF ya PDF plan upload karo. Size (ft), area (sq ft) aur cubic ft yahin phone me nikal jayega. File kahin upload nahi hoti.</p></header>
+<header><h1>મંદિર માપ</h1><p class="sub">DXF અથવા PDF પ્લાન અપલોડ કરો. સાઇઝ (ફૂટ), ક્ષેત્રફળ (ચોરસ ફૂટ) અને ઘન ફૂટ ફોનમાં જ મળી જશે. ફાઇલ ક્યાંય મોકલાતી નથી.</p></header>
 <form id="f" class="panel">
-<label class="full">Plan file (.dxf ya .pdf)<input id="file" type="file" accept=".dxf,.pdf"></label>
-<label>Height (ft)<input id="h" type="number" inputmode="decimal" step="any" value="20"></label>
-<label>Drawing unit<select id="unit"><option value="auto">Auto</option><option value="mm">mm</option><option value="cm">cm</option><option value="m">meter</option><option value="in">inch</option><option value="ft">feet</option></select></label>
-<label class="full">PDF scale 1 : N (sirf PDF)<input id="scale" type="number" inputmode="numeric" placeholder="jaise 100"></label>
-<button class="full" type="submit">Naap karo</button>
-<button class="full alt" type="button" id="demo">Example plan dikhao</button>
+<label class="full">પ્લાન ફાઇલ (.dxf અથવા .pdf)<input id="file" type="file"></label>
+<label>ઊંચાઈ (ફૂટ)<input id="h" type="number" inputmode="decimal" step="any" value="20"></label>
+<label>ડ્રોઇંગનું એકમ<select id="unit"><option value="auto">ઓટો</option><option value="mm">મિમી</option><option value="cm">સેમી</option><option value="m">મીટર</option><option value="in">ઇંચ</option><option value="ft">ફૂટ</option></select></label>
+<label class="full">PDF સ્કેલ 1 : N (ફક્ત PDF માટે)<input id="scale" type="number" inputmode="numeric" placeholder="જેમ કે 100"></label>
+<button class="full" type="submit">માપ કાઢો</button>
+<button class="full alt" type="button" id="demo">ઉદાહરણ પ્લાન બતાવો</button>
 </form>
 <div id="out" style="display:contents"></div>
 </main>
@@ -91,9 +91,9 @@ function polyPer(p){let s=0;for(let i=0;i<p.length;i++){const q=p[(i+1)%p.length
 function analyzeDxf(text,unitSel,height){
   const {hdr,ents}=parseDxf(text);
   let unit,usrc;
-  if(unitSel!=='auto'){unit=unitSel;usrc='tumne choose kiya'}
-  else if(CODE[hdr.$INSUNITS]){unit=CODE[hdr.$INSUNITS];usrc='file se mila'}
-  else{unit='mm';usrc='file me nahi mila, mm maana'}
+  if(unitSel!=='auto'){unit=unitSel;usrc='તમે પસંદ કર્યું'}
+  else if(CODE[hdr.$INSUNITS]){unit=CODE[hdr.$INSUNITS];usrc='ફાઇલમાંથી મળ્યું'}
+  else{unit='mm';usrc='ફાઇલમાં નથી, મિમી ધાર્યું'}
   const k=FT[unit],shapes=[],circles=[],texts=[],dims=[],layers={},blocks={};
   let minx=1e30,miny=1e30,maxx=-1e30,maxy=-1e30,lineLen=0,count=0;
   const ext=(x,y)=>{minx=Math.min(minx,x);maxx=Math.max(maxx,x);miny=Math.min(miny,y);maxy=Math.max(maxy,y)};
@@ -120,31 +120,31 @@ function analyzeDxf(text,unitSel,height){
   const largest=Math.max(0,...shapes.map(s=>s.area));
   const foot=shapes.reduce((a,s)=>a+s.area,0);
   const notes=[];
-  if(usrc.startsWith('file me nahi'))notes.push('Drawing me unit nahi mila, isliye mm maana. Galat lage to Drawing unit badlo.');
-  if(!height)notes.push('2D plan hai. Cubic ft ke liye Height (ft) daalo.');
-  if(shapes.length>1)notes.push('Andar-bahar wale shapes ka volume dobara mat jodna. Total ke liye bounding box ya sabse bada shape dekho.');
-  if(!ents.length)notes.push('Koi entity nahi mili. File binary DXF ho sakti hai. AutoCAD me "ASCII DXF" save karo.');
+  if(usrc.startsWith('ફાઇલમાં નથી'))notes.push('ડ્રોઇંગમાં એકમ મળ્યું નથી, એટલે મિમી ધાર્યું છે. ખોટું લાગે તો ડ્રોઇંગનું એકમ બદલો.');
+  if(!height)notes.push('આ 2D પ્લાન છે. ઘન ફૂટ માટે ઊંચાઈ (ફૂટ) લખો.');
+  if(shapes.length>1)notes.push('અંદર-બહારના આકારોનું ઘનફળ ફરી ન ઉમેરો. કુલ માટે બાઉન્ડિંગ બોક્સ કે સૌથી મોટો આકાર જુઓ.');
+  if(!ents.length)notes.push('કંઈ મળ્યું નથી. ફાઇલ binary DXF હોઈ શકે. AutoCAD માં "ASCII DXF" તરીકે સેવ કરો.');
   return {kind:'dxf',unit,usrc,overall,lineLen,shapes,circles,texts,dims,layers,blocks,foot,largest,height,notes};
 }
 function renderDxf(d,label){
   const h=d.height;
-  const rows=(a,cols)=>a.length?`<div class="tw"><table><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}</tr>${a.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join('')}</tr>`).join('')}</table></div>`:'<p class="sub">Kuch nahi mila.</p>';
+  const rows=(a,cols)=>a.length?`<div class="tw"><table><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}</tr>${a.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join('')}</tr>`).join('')}</table></div>`:'<p class="sub">કંઈ મળ્યું નથી.</p>';
   const bb=d.overall&&h?d.overall.l*d.overall.w*h:null;
   return `${label?`<div class="note">${label}</div>`:''}
   ${d.notes.map(n=>`<div class="note">${esc(n)}</div>`).join('')}
-  <section class="panel hero"><h2>Total size</h2>
-   <p class="big">${d.overall?n2(d.overall.l)+' × '+n2(d.overall.w)+(h?' × '+n2(h):''):'-'} ft</p>
-   <p class="sub">lambai × chaudai${h?' × height':''}. Unit: ${d.unit} (${d.usrc})</p></section>
-  <section class="panel"><h2>Cubic ft</h2><div class="grid">
-   <div><div class="k">Bounding box volume</div><div class="v">${n2(bb)} cu ft</div></div>
-   <div><div class="k">Sabse bada shape</div><div class="v">${h?n2(d.largest*h):'-'} cu ft</div></div>
-   <div><div class="k">Footprint (sab shapes)</div><div class="v">${n2(d.foot)} sq ft</div></div>
-   <div><div class="k">Line ki total lambai</div><div class="v">${n2(d.lineLen)} ft</div></div></div></section>
-  <section class="panel"><h2>Band shapes (kamre, chabutra)</h2>${rows(d.shapes,[['Layer',r=>esc(r.layer)],['Chaudai ft',r=>n2(r.w)],['Lambai ft',r=>n2(r.l)],['Area sq ft',r=>n2(r.area)],['Perimeter ft',r=>n2(r.per)],['Cu ft',r=>{const t=r.thick||h;return t?n2(r.area*t):'-'}]])}</section>
-  <section class="panel"><h2>Circles (stambh, kalash)</h2>${rows(d.circles,[['Layer',r=>esc(r.layer)],['Diameter ft',r=>n2(r.d)],['Area sq ft',r=>n2(r.area)],['Cu ft',r=>h?n2(r.area*h):'-']])}</section>
-  <section class="panel"><h2>Dimensions</h2>${rows(d.dims,[['Layer',r=>esc(r.layer)],['Text',r=>esc(r.text)],['Naap ft',r=>n2(r.m)]])}</section>
-  <section class="panel"><h2>Text labels</h2>${rows(d.texts,[['Layer',r=>esc(r.layer)],['Text',r=>esc(r.text)]])}</section>
-  <section class="panel"><h2>Layers aur blocks</h2>${rows(Object.entries(d.layers).map(([k,v])=>({k,v:Object.entries(v).map(([a,b])=>a+' '+b).join(', ')})),[['Layer',r=>esc(r.k)],['Entities',r=>esc(r.v)]])}
+  <section class="panel hero"><h2>કુલ સાઇઝ</h2>
+   <p class="big">${d.overall?n2(d.overall.l)+' × '+n2(d.overall.w)+(h?' × '+n2(h):''):'-'} ફૂટ</p>
+   <p class="sub">લંબાઈ × પહોળાઈ${h?' × ઊંચાઈ':''}. એકમ: ${d.unit} (${d.usrc})</p></section>
+  <section class="panel"><h2>ઘન ફૂટ</h2><div class="grid">
+   <div><div class="k">બાઉન્ડિંગ બોક્સ ઘનફળ</div><div class="v">${n2(bb)} ઘન ફૂટ</div></div>
+   <div><div class="k">સૌથી મોટો આકાર</div><div class="v">${h?n2(d.largest*h):'-'} ઘન ફૂટ</div></div>
+   <div><div class="k">ફૂટપ્રિન્ટ (બધા આકાર)</div><div class="v">${n2(d.foot)} ચો. ફૂટ</div></div>
+   <div><div class="k">રેખાઓની કુલ લંબાઈ</div><div class="v">${n2(d.lineLen)} ft</div></div></div></section>
+  <section class="panel"><h2>બંધ આકાર (ઓરડા, ચબૂતરો)</h2>${rows(d.shapes,[['લેયર',r=>esc(r.layer)],['પહોળાઈ ફૂટ',r=>n2(r.w)],['લંબાઈ ફૂટ',r=>n2(r.l)],['ક્ષેત્રફળ ચો.ફૂટ',r=>n2(r.area)],['પરિમિતિ ફૂટ',r=>n2(r.per)],['ઘન ફૂટ',r=>{const t=r.thick||h;return t?n2(r.area*t):'-'}]])}</section>
+  <section class="panel"><h2>વર્તુળ (સ્તંભ, કળશ)</h2>${rows(d.circles,[['લેયર',r=>esc(r.layer)],['વ્યાસ ફૂટ',r=>n2(r.d)],['ક્ષેત્રફળ ચો.ફૂટ',r=>n2(r.area)],['ઘન ફૂટ',r=>h?n2(r.area*h):'-']])}</section>
+  <section class="panel"><h2>ડાયમેન્શન</h2>${rows(d.dims,[['લેયર',r=>esc(r.layer)],['લખાણ',r=>esc(r.text)],['માપ ફૂટ',r=>n2(r.m)]])}</section>
+  <section class="panel"><h2>લખાણ લેબલ</h2>${rows(d.texts,[['લેયર',r=>esc(r.layer)],['લખાણ',r=>esc(r.text)]])}</section>
+  <section class="panel"><h2>લેયર અને બ્લોક</h2>${rows(Object.entries(d.layers).map(([k,v])=>({k,v:Object.entries(v).map(([a,b])=>a+' '+b).join(', ')})),[['લેયર',r=>esc(r.k)],['વસ્તુઓ',r=>esc(r.v)]])}
    ${Object.keys(d.blocks).length?'<p style="margin-top:8px">'+Object.entries(d.blocks).map(([k,v])=>`<span class="tag">${esc(k)} ×${v}</span>`).join(' ')+'</p>':''}</section>`;
 }
 
@@ -180,20 +180,20 @@ async function analyzePdf(buf,scaleIn,unit,height){
 }
 function renderPdf(d,label){
   const notes=[];
-  if(!d.scale)notes.push('PDF me scale (jaise 1:100) nahi mila. Scale daalo, tabhi real size aayegi.');
-  if(!d.pages.some(p=>p.segs))notes.push('Vector lines nahi mili. Ye scanned image lagti hai, size bharosemand nahi hoga. DXF upload karo.');
+  if(!d.scale)notes.push('PDF માં સ્કેલ (જેમ કે 1:100) મળ્યો નથી. સ્કેલ લખો, તો જ સાચી સાઇઝ મળશે.');
+  if(!d.pages.some(p=>p.segs))notes.push('વેક્ટર રેખાઓ મળી નથી. આ સ્કેન કરેલી ઇમેજ લાગે છે, સાઇઝ ભરોસાપાત્ર નહીં હોય. DXF અપલોડ કરો.');
   const u=d.unit==='auto'?'mm':d.unit, k=d.scale?(25.4/72)*d.scale*(FT.mm)*(u==='mm'?1:1):null; // paper is mm; scale is paper:real
   const conv=v=>k?v*k:null;
   const big=d.pages.find(p=>p.rects.length&&p.rects[0]);
   const top=big?big.rects[0]:null;
   const vol=top&&k&&d.height?conv(top.w)*conv(top.h)*d.height:null;
   return `${label?`<div class="note">${label}</div>`:''}${notes.map(n=>`<div class="note">${n}</div>`).join('')}
-  <section class="panel hero"><h2>Scale</h2><p class="big">${d.scale?'1 : '+d.scale:'-'}</p><p class="sub">${d.det?'PDF me mila: 1:'+d.det:'PDF me scale nahi mila'}</p></section>
-  <section class="panel"><h2>Cubic ft (sabse bade rectangle se)</h2><p class="v">${n2(vol)} cu ft</p><p class="sub">Height ${n2(d.height)} ft maanke. Ye andaza hai, rectangle ko asli kamra maan kar.</p></section>
-  ${d.pages.map(p=>`<section class="panel"><h2>Page ${p.n}</h2><p>Drawing extent: <b>${p.ext&&k?n2(conv(p.ext.w))+' × '+n2(conv(p.ext.h))+' ft':'-'}</b> <span class="sub">(${p.segs} lines/shapes)</span></p>
-   ${p.rects.length?`<div class="tw"><table><tr><th>Chaudai ft</th><th>Lambai ft</th><th>Area sq ft</th></tr>${p.rects.map(r=>`<tr><td>${n2(conv(r.w))}</td><td>${n2(conv(r.h))}</td><td>${k?n2(conv(r.w)*conv(r.h)):'-'}</td></tr>`).join('')}</table></div>`:''}</section>`).join('')}
-  <section class="panel"><h2>PDF me likhe naap</h2><p>${d.dims.length?d.dims.map(x=>`<span class="tag">${esc(x)}</span>`).join(' '):'<span class="sub">Kuch nahi mila.</span>'}</p></section>
-  <section class="panel"><h2>Text</h2><p class="sub" style="white-space:pre-wrap">${esc(d.text)||'-'}</p></section>`;
+  <section class="panel hero"><h2>સ્કેલ</h2><p class="big">${d.scale?'1 : '+d.scale:'-'}</p><p class="sub">${d.det?'PDF માં મળ્યું: 1:'+d.det:'PDF માં સ્કેલ મળ્યો નથી'}</p></section>
+  <section class="panel"><h2>ઘન ફૂટ (સૌથી મોટા લંબચોરસથી)</h2><p class="v">${n2(vol)} ઘન ફૂટ</p><p class="sub">ઊંચાઈ ${n2(d.height)} ફૂટ ધારીને. આ અંદાજ છે, લંબચોરસને અસલ ઓરડો ગણીને.</p></section>
+  ${d.pages.map(p=>`<section class="panel"><h2>પાનું ${p.n}</h2><p>ડ્રોઇંગનો વિસ્તાર: <b>${p.ext&&k?n2(conv(p.ext.w))+' × '+n2(conv(p.ext.h))+' ft':'-'}</b> <span class="sub">(${p.segs} રેખા/આકાર)</span></p>
+   ${p.rects.length?`<div class="tw"><table><tr><th>પહોળાઈ ફૂટ</th><th>લંબાઈ ફૂટ</th><th>ક્ષેત્રફળ ચો.ફૂટ</th></tr>${p.rects.map(r=>`<tr><td>${n2(conv(r.w))}</td><td>${n2(conv(r.h))}</td><td>${k?n2(conv(r.w)*conv(r.h)):'-'}</td></tr>`).join('')}</table></div>`:''}</section>`).join('')}
+  <section class="panel"><h2>PDF માં લખેલા માપ</h2><p>${d.dims.length?d.dims.map(x=>`<span class="tag">${esc(x)}</span>`).join(' '):'<span class="sub">કંઈ મળ્યું નથી.</span>'}</p></section>
+  <section class="panel"><h2>લખાણ</h2><p class="sub" style="white-space:pre-wrap">${esc(d.text)||'-'}</p></section>`;
 }
 
 /* ---------- wiring ---------- */
@@ -210,19 +210,19 @@ const SAMPLE=(()=>{ // mm drawing: 12 m x 8 m plinth, 3 x 3 m garbhagriha, 4 pil
   return a.join('\n');
 })();
 function show(html){out.innerHTML=html}
-function runDemo(){const d=analyzeDxf(SAMPLE,'auto',+$('#h').value||20);show(renderDxf(d,'Ye example plan hai (12 m × 8 m chabutra). Apni file upload karke apna naap nikalo.'))}
+function runDemo(){const d=analyzeDxf(SAMPLE,'auto',+$('#h').value||20);show(renderDxf(d,'આ ઉદાહરણ પ્લાન છે (12 મી × 8 મી ચબૂતરો). તમારી ફાઇલ અપલોડ કરીને તમારું માપ કાઢો.'))}
 $('#demo').onclick=runDemo;
 $('#f').addEventListener('submit',async e=>{
   e.preventDefault();const f=$('#file').files[0];
-  if(!f){show('<div class="note">Pehle .dxf ya .pdf file chuno.</div>');return}
-  show('<div class="note">Padh raha hoon...</div>');
+  if(!f){show('<div class="note">પહેલા .dxf અથવા .pdf ફાઇલ પસંદ કરો.</div>');return}
+  show('<div class="note">વાંચી રહ્યું છે...</div>');
   const height=+$('#h').value||0,unit=$('#unit').value,ext=f.name.split('.').pop().toLowerCase();
   try{
     if(ext==='dxf')show(renderDxf(analyzeDxf(await f.text(),unit,height)));
-    else if(ext==='pdf'){if(typeof pdfjsLib==='undefined')throw new Error('PDF reader load nahi hua. Internet check karo.');
+    else if(ext==='pdf'){if(typeof pdfjsLib==='undefined')throw new Error('PDF રીડર લોડ થયું નથી. ઇન્ટરનેટ તપાસો.');
       show(renderPdf(await analyzePdf(new Uint8Array(await f.arrayBuffer()),+$('#scale').value||null,unit,height)))}
-    else show('<div class="note">Sirf .dxf ya .pdf chalega. DWG ko AutoCAD me DXF save karo.</div>');
-  }catch(err){show('<div class="note">File padh nahi payi: '+esc(err.message)+'</div>')}
+    else show('<div class="note">ફક્ત .dxf અથવા .pdf ચાલશે. DWG ને AutoCAD માં DXF તરીકે સેવ કરો.</div>');
+  }catch(err){show('<div class="note">ફાઇલ વાંચી શકાઈ નથી: '+esc(err.message)+'</div>')}
 });
 runDemo();
 </script>
