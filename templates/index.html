@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mandir Plan Analyzer</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:16px;background:#fffaf2;color:#2b1d0e}
+h1{color:#b34700}
+form,.card{background:#fff;border:1px solid #e8d5b5;border-radius:10px;padding:14px;margin:12px 0}
+label{display:block;margin:8px 0 2px;font-weight:600}
+input,select,button{font:inherit;padding:8px;border-radius:6px;border:1px solid #ccb78f;width:100%;box-sizing:border-box}
+button{background:#d35400;color:#fff;border:0;cursor:pointer;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:14px;display:block;overflow-x:auto}
+td,th{border:1px solid #eadcc0;padding:4px 8px;text-align:left}
+.big{font-size:1.4em;font-weight:700;color:#b34700}
+.note{background:#fff3cd;padding:8px;border-radius:6px;margin:6px 0}
+</style>
+</head>
+<body>
+<h1>🛕 Mandir Plan Analyzer</h1>
+<form id="f">
+<label>DXF ya PDF file</label><input type="file" name="file" accept=".dxf,.pdf" required>
+<label>Drawing units (DXF me na mile to)</label>
+<select name="unit"><option value="">Auto</option><option>mm</option><option>cm</option><option>m</option><option>inch</option><option>feet</option></select>
+<label>Height (ft) - 2D plan ke liye zaroori</label><input name="height_ft" type="number" step="any" placeholder="e.g. 20">
+<label>PDF scale (1:N) - sirf PDF ke liye</label><input name="scale" type="number" placeholder="e.g. 100">
+<button>Analyze karo</button>
+</form>
+<div id="out"></div>
+<script>
+const $=s=>document.querySelector(s);
+function tbl(rows,cols){if(!rows||!rows.length)return'<p>Kuch nahi mila</p>';
+return'<table><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+cols.map(c=>'<td>'+(r[c]??'-')+'</td>').join('')+'</tr>').join('')+'</table>'}
+function card(t,b){return'<div class="card"><h3>'+t+'</h3>'+b+'</div>'}
+$('#f').onsubmit=async e=>{e.preventDefault();$('#out').innerHTML='Analyze ho raha hai...';
+const r=await fetch('/analyze',{method:'POST',body:new FormData(e.target)});const d=await r.json();
+if(d.error){$('#out').innerHTML='<div class="note">'+d.error+'</div>';return}
+let h=(d.notes||[]).map(n=>'<div class="note">'+n+'</div>').join('');
+if(d.kind==='dxf'){const v=d.volume,o=d.overall;
+h+=card('Total size',o?`<p class="big">${o.length_ft} ft × ${o.width_ft} ft × ${o.height_ft} ft</p>`:'-')
++card('Cubic ft (volume)',`<p>Height used: ${v.height_used_ft??'-'} ft (${v.height_source})</p>
+<p class="big">Bounding box: ${v.bounding_box_cuft??'-'} cu ft</p>
+<p>Largest shape: ${v.largest_shape_cuft??'-'} cu ft | 3D mesh: ${v.mesh_volume_cuft??'-'} cu ft</p>
+<p>Total footprint: ${d.footprint_total_sqft} sq ft</p>`)
++card('Closed shapes (rooms/platforms)',tbl(d.shapes,['layer','type','width_ft','length_ft','area_sqft','perimeter_ft','volume_cuft']))
++card('Circles (pillars/domes)',tbl(d.circles,['layer','diameter_ft','area_sqft','volume_cuft']))
++card('Dimensions',tbl(d.dimensions,['layer','text','measurement_ft']))
++card('Text labels',tbl(d.texts,['layer','text']))
++card('Layers',tbl(Object.entries(d.layers).map(([k,v])=>({layer:k,entities:JSON.stringify(v)})),['layer','entities']))
++card('Blocks',tbl(Object.entries(d.blocks).map(([k,v])=>({block:k,count:v})),['block','count']));
+}else{
+h+=card('Scale',`<p>Used: ${d.scale_used??'-'} | Detected: ${d.scale_detected??'-'}</p>`);
+if(d.volume)h+=card('Volume',`<p class="big">${d.volume.largest_rect_cuft} cu ft</p>`);
+d.pages.forEach(p=>{h+=card('Page '+p.page,`<p>lines ${p.lines}, rects ${p.rects}, curves ${p.curves}, images ${p.images}</p>
+<p>Extents: ${p.drawing_extents?p.drawing_extents.length_ft+' × '+p.drawing_extents.width_ft+' ft':'-'}</p>`+tbl(p.largest_rects,['width_ft','length_ft','area_sqft']))});
+h+=card('Dimension text',(d.dimension_texts||[]).join(', ')||'-')+card('Text',`<pre style="white-space:pre-wrap">${d.text_preview}</pre>`);}
+$('#out').innerHTML=h}
+</script>
+</body></html>
