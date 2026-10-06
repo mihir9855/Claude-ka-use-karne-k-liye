@@ -209,8 +209,7 @@ function replacePart(p,boxes){
 /* ---------- AI part finding (photos and shaded renders) ---------- */
 let SAMPLE=null,AIOK=false,AICTL=null;
 (async()=>{try{SAMPLE=window.claude?await claude.use('sample'):null}catch(e){SAMPLE=null}
-  if(SAMPLE){try{AIOK=!!(await SAMPLE.limits()).images}catch(e){AIOK=false}}
-  $('#ai').hidden=!AIOK})();
+  AIOK=!!SAMPLE})();
 const AI_PROMPT=`You are helping a Gujarati marble-temple (mandir) maker decide which stone blocks to buy. The attached image shows a mandir, either a photo or a drawing.
 List every separately carved stone piece of the mandir itself, the way each would be bought and carved as its own block. Split built-up things into their real stone pieces: a pillar into base, shaft sections, bulging kumbh/capital and bracket pieces; the roof into slabs (chhajja), each shikhar, dome and kalash; arch/toran, carved panels, jali, steps, plinth layers, elephants, drawer or storage fronts, railings.
 Ignore: wall, floor, background, furniture, people, deity statues (murti), hanging lamps, gold decoration, text, logos and borders.
@@ -218,7 +217,7 @@ For each piece give a tight axis-aligned box [x0,y0,x1,y1] on a 0-1000 scale rel
 Also give depth_ratio: your estimate of the piece's front-to-back thickness divided by its visible width (a round pillar piece is 1, a thin carved panel about 0.1, a roof slab about 0.8). And fill: the percent (30 to 100) of its bounding block that stays as stone after carving.
 Name each piece in short Gujarati, for example "ડાબી થાંભલી - નીચેનો ટુકડો".
 Reply with only a JSON array: [{"name":"...","box":[x0,y0,x1,y1],"depth_ratio":0.5,"fill":80}]`;
-const AI_ERR={not_granted:'AI વાપરવાની મંજૂરી આપી નથી.',rate_limited:'થોડી વાર પછી ફરી પ્રયત્ન કરો.',invalid_json:'AI નો જવાબ સમજાયો નહીં. ફરી દબાવો.',images_unavailable:'આ એપ્લિકેશનમાં AI ઇમેજ જોઈ શકતું નથી.',session_expired:'ફરી સાઇન ઇન કરો.',image_rejected:'ઇમેજ AI ને ચાલી નહીં. બીજી ઇમેજ અજમાવો.'};
+const AI_ERR={not_granted:'AI વાપરવાની મંજૂરી આપી નથી.',rate_limited:'થોડી વાર પછી ફરી પ્રયત્ન કરો.',invalid_json:'AI નો જવાબ સમજાયો નહીં. ફરી દબાવો.',images_unavailable:'આ વ્યૂમાં AI ઇમેજ જોઈ શકતું નથી. લિંક claude.ai ની એપ કે વેબસાઇટમાં ખોલો.',session_expired:'ફરી સાઇન ઇન કરો.',image_rejected:'ઇમેજ AI ને ચાલી નહીં. બીજી ઇમેજ અજમાવો.'};
 function applyAi(arr){
   if(!Array.isArray(arr))throw {code:'invalid_json'};
   const parts=[];
@@ -232,9 +231,12 @@ function applyAi(arr){
   if(!parts.length)throw {code:'invalid_json'};
   S.parts=parts;S.sel=parts[0].id;
 }
-$('#ai').onclick=async()=>{
+async function runAi(){
   if(AICTL){AICTL.abort();return}
-  if(!SAMPLE||!S.canvas)return;
+  if(!S.canvas)return;
+  if(!SAMPLE){
+    $('#aistat').textContent='AI આ વ્યૂમાં ઉપલબ્ધ નથી (લિંક claude.ai માં સાઇન ઇન કરીને ખોલો). ઓફલાઇન શોધ વાપરી છે, ફોટો માટે તે નબળી છે.';
+    if(!S.parts.length){detect();full()}return}
   AICTL=new AbortController();$('#ai').textContent='રોકો';
   $('#aistat').textContent='AI ડ્રોઇંગ જોઈ રહ્યું છે. 1 થી 2 મિનિટ લાગી શકે...';
   try{
@@ -243,9 +245,12 @@ $('#ai').onclick=async()=>{
     applyAi(res);S.note='AI એ '+S.parts.length+' ભાગ શોધ્યા. ચોકઠા થોડા આઘાપાછા હોઈ શકે, દરેક તપાસીને સુધારો અને પછી “માપ સેટ કરો” માં સાચું માપ લખો.';
     $('#aistat').textContent='';full();
   }catch(e){
-    $('#aistat').textContent=e&&e.code==='cancelled'?'':(AI_ERR[e&&e.code]||'AI ચાલ્યું નહીં. ફરી પ્રયત્ન કરો.');
+    const c=e&&e.code;
+    $('#aistat').textContent=c==='cancelled'?'':(AI_ERR[c]||'AI ચાલ્યું નહીં.')+(c==='cancelled'?'':' ઓફલાઇન શોધ વાપરી છે.');
+    if(c!=='cancelled'&&!S.parts.length){detect();full()}
   }finally{AICTL=null;$('#ai').textContent='AI થી ભાગ શોધો'}
-};
+}
+$('#ai').onclick=runAi;
 
 full();
 }
@@ -276,8 +281,7 @@ function useCanvas(c,inPerPx,note,example,noDetect){S.noDetect=!!noDetect;
 /* ---------- AI part finding (photos and shaded renders) ---------- */
 let SAMPLE=null,AIOK=false,AICTL=null;
 (async()=>{try{SAMPLE=window.claude?await claude.use('sample'):null}catch(e){SAMPLE=null}
-  if(SAMPLE){try{AIOK=!!(await SAMPLE.limits()).images}catch(e){AIOK=false}}
-  $('#ai').hidden=!AIOK})();
+  AIOK=!!SAMPLE})();
 const AI_PROMPT=`You are helping a Gujarati marble-temple (mandir) maker decide which stone blocks to buy. The attached image shows a mandir, either a photo or a drawing.
 List every separately carved stone piece of the mandir itself, the way each would be bought and carved as its own block. Split built-up things into their real stone pieces: a pillar into base, shaft sections, bulging kumbh/capital and bracket pieces; the roof into slabs (chhajja), each shikhar, dome and kalash; arch/toran, carved panels, jali, steps, plinth layers, elephants, drawer or storage fronts, railings.
 Ignore: wall, floor, background, furniture, people, deity statues (murti), hanging lamps, gold decoration, text, logos and borders.
@@ -285,7 +289,7 @@ For each piece give a tight axis-aligned box [x0,y0,x1,y1] on a 0-1000 scale rel
 Also give depth_ratio: your estimate of the piece's front-to-back thickness divided by its visible width (a round pillar piece is 1, a thin carved panel about 0.1, a roof slab about 0.8). And fill: the percent (30 to 100) of its bounding block that stays as stone after carving.
 Name each piece in short Gujarati, for example "ડાબી થાંભલી - નીચેનો ટુકડો".
 Reply with only a JSON array: [{"name":"...","box":[x0,y0,x1,y1],"depth_ratio":0.5,"fill":80}]`;
-const AI_ERR={not_granted:'AI વાપરવાની મંજૂરી આપી નથી.',rate_limited:'થોડી વાર પછી ફરી પ્રયત્ન કરો.',invalid_json:'AI નો જવાબ સમજાયો નહીં. ફરી દબાવો.',images_unavailable:'આ એપ્લિકેશનમાં AI ઇમેજ જોઈ શકતું નથી.',session_expired:'ફરી સાઇન ઇન કરો.',image_rejected:'ઇમેજ AI ને ચાલી નહીં. બીજી ઇમેજ અજમાવો.'};
+const AI_ERR={not_granted:'AI વાપરવાની મંજૂરી આપી નથી.',rate_limited:'થોડી વાર પછી ફરી પ્રયત્ન કરો.',invalid_json:'AI નો જવાબ સમજાયો નહીં. ફરી દબાવો.',images_unavailable:'આ વ્યૂમાં AI ઇમેજ જોઈ શકતું નથી. લિંક claude.ai ની એપ કે વેબસાઇટમાં ખોલો.',session_expired:'ફરી સાઇન ઇન કરો.',image_rejected:'ઇમેજ AI ને ચાલી નહીં. બીજી ઇમેજ અજમાવો.'};
 function applyAi(arr){
   if(!Array.isArray(arr))throw {code:'invalid_json'};
   const parts=[];
@@ -299,9 +303,12 @@ function applyAi(arr){
   if(!parts.length)throw {code:'invalid_json'};
   S.parts=parts;S.sel=parts[0].id;
 }
-$('#ai').onclick=async()=>{
+async function runAi(){
   if(AICTL){AICTL.abort();return}
-  if(!SAMPLE||!S.canvas)return;
+  if(!S.canvas)return;
+  if(!SAMPLE){
+    $('#aistat').textContent='AI આ વ્યૂમાં ઉપલબ્ધ નથી (લિંક claude.ai માં સાઇન ઇન કરીને ખોલો). ઓફલાઇન શોધ વાપરી છે, ફોટો માટે તે નબળી છે.';
+    if(!S.parts.length){detect();full()}return}
   AICTL=new AbortController();$('#ai').textContent='રોકો';
   $('#aistat').textContent='AI ડ્રોઇંગ જોઈ રહ્યું છે. 1 થી 2 મિનિટ લાગી શકે...';
   try{
@@ -310,9 +317,12 @@ $('#ai').onclick=async()=>{
     applyAi(res);S.note='AI એ '+S.parts.length+' ભાગ શોધ્યા. ચોકઠા થોડા આઘાપાછા હોઈ શકે, દરેક તપાસીને સુધારો અને પછી “માપ સેટ કરો” માં સાચું માપ લખો.';
     $('#aistat').textContent='';full();
   }catch(e){
-    $('#aistat').textContent=e&&e.code==='cancelled'?'':(AI_ERR[e&&e.code]||'AI ચાલ્યું નહીં. ફરી પ્રયત્ન કરો.');
+    const c=e&&e.code;
+    $('#aistat').textContent=c==='cancelled'?'':(AI_ERR[c]||'AI ચાલ્યું નહીં.')+(c==='cancelled'?'':' ઓફલાઇન શોધ વાપરી છે.');
+    if(c!=='cancelled'&&!S.parts.length){detect();full()}
   }finally{AICTL=null;$('#ai').textContent='AI થી ભાગ શોધો'}
-};
+}
+$('#ai').onclick=runAi;
 
 full();
 }
@@ -383,7 +393,7 @@ $('#file').onchange=async e=>{
       useCanvas(r.c,r.inPerPx,r.inPerPx?`DXF નું એકમ (${r.u}) મળ્યું, એટલે સાચા માપ આપોઆપ આવ્યા છે.${r.skipped?' '+r.skipped+' વસ્તુઓ (hatch/ellipse) દોરી શકાઈ નથી.':''}`:'DXF માં એકમ નથી. “માપ સેટ કરો” માં એક માપ લખો, બાકીના બધા એ પ્રમાણે નીકળશે.')}
     else if(ext==='pdf'){if(typeof pdfjsLib==='undefined')throw new Error('PDF રીડર લોડ થયું નથી. ઇન્ટરનેટ તપાસો, અથવા PDF નો ફોટો/DXF વાપરો.');
       useCanvas(await pdfToCanvas(new Uint8Array(await f.arrayBuffer())),null,'PDF માં માપ નથી, એટલે ઊંચાઈ 4 ફૂટ માની છે. “માપ સેટ કરો” માં સાચું માપ લખો.')}
-    else if(/^(png|jpe?g|webp|bmp)$/.test(ext)){const im=new Image();im.onload=()=>{const k=Math.min(1,1600/im.width),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);useCanvas(c,null,'ફોટો/ઇમેજમાં માપ નથી, એટલે ઊંચાઈ 4 ફૂટ માની છે. પહેલાં “AI થી ભાગ શોધો” દબાવો, પછી “માપ સેટ કરો” માં સાચું માપ લખો.',false,true)};im.src=URL.createObjectURL(f)}
+    else if(/^(png|jpe?g|webp|bmp)$/.test(ext)){const im=new Image();im.onload=()=>{const k=Math.min(1,1600/im.width),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);useCanvas(c,null,'ફોટો/ઇમેજમાં માપ નથી, એટલે ઊંચાઈ 4 ફૂટ માની છે. ભાગ શોધાઈ જાય પછી “માપ સેટ કરો” માં સાચું માપ લખો.',false,true);runAi()};im.src=URL.createObjectURL(f)}
     else S.note='ફક્ત DXF, PDF કે ફોટો ચાલશે. DWG ને AutoCAD માં DXF તરીકે સેવ કરો.';
   }catch(err){S.note='ફાઇલ વાંચી શકાઈ નથી: '+err.message}
   renderTotals();e.target.value='';
@@ -392,8 +402,7 @@ $('#file').onchange=async e=>{
 /* ---------- AI part finding (photos and shaded renders) ---------- */
 let SAMPLE=null,AIOK=false,AICTL=null;
 (async()=>{try{SAMPLE=window.claude?await claude.use('sample'):null}catch(e){SAMPLE=null}
-  if(SAMPLE){try{AIOK=!!(await SAMPLE.limits()).images}catch(e){AIOK=false}}
-  $('#ai').hidden=!AIOK})();
+  AIOK=!!SAMPLE})();
 const AI_PROMPT=`You are helping a Gujarati marble-temple (mandir) maker decide which stone blocks to buy. The attached image shows a mandir, either a photo or a drawing.
 List every separately carved stone piece of the mandir itself, the way each would be bought and carved as its own block. Split built-up things into their real stone pieces: a pillar into base, shaft sections, bulging kumbh/capital and bracket pieces; the roof into slabs (chhajja), each shikhar, dome and kalash; arch/toran, carved panels, jali, steps, plinth layers, elephants, drawer or storage fronts, railings.
 Ignore: wall, floor, background, furniture, people, deity statues (murti), hanging lamps, gold decoration, text, logos and borders.
@@ -401,7 +410,7 @@ For each piece give a tight axis-aligned box [x0,y0,x1,y1] on a 0-1000 scale rel
 Also give depth_ratio: your estimate of the piece's front-to-back thickness divided by its visible width (a round pillar piece is 1, a thin carved panel about 0.1, a roof slab about 0.8). And fill: the percent (30 to 100) of its bounding block that stays as stone after carving.
 Name each piece in short Gujarati, for example "ડાબી થાંભલી - નીચેનો ટુકડો".
 Reply with only a JSON array: [{"name":"...","box":[x0,y0,x1,y1],"depth_ratio":0.5,"fill":80}]`;
-const AI_ERR={not_granted:'AI વાપરવાની મંજૂરી આપી નથી.',rate_limited:'થોડી વાર પછી ફરી પ્રયત્ન કરો.',invalid_json:'AI નો જવાબ સમજાયો નહીં. ફરી દબાવો.',images_unavailable:'આ એપ્લિકેશનમાં AI ઇમેજ જોઈ શકતું નથી.',session_expired:'ફરી સાઇન ઇન કરો.',image_rejected:'ઇમેજ AI ને ચાલી નહીં. બીજી ઇમેજ અજમાવો.'};
+const AI_ERR={not_granted:'AI વાપરવાની મંજૂરી આપી નથી.',rate_limited:'થોડી વાર પછી ફરી પ્રયત્ન કરો.',invalid_json:'AI નો જવાબ સમજાયો નહીં. ફરી દબાવો.',images_unavailable:'આ વ્યૂમાં AI ઇમેજ જોઈ શકતું નથી. લિંક claude.ai ની એપ કે વેબસાઇટમાં ખોલો.',session_expired:'ફરી સાઇન ઇન કરો.',image_rejected:'ઇમેજ AI ને ચાલી નહીં. બીજી ઇમેજ અજમાવો.'};
 function applyAi(arr){
   if(!Array.isArray(arr))throw {code:'invalid_json'};
   const parts=[];
@@ -415,9 +424,12 @@ function applyAi(arr){
   if(!parts.length)throw {code:'invalid_json'};
   S.parts=parts;S.sel=parts[0].id;
 }
-$('#ai').onclick=async()=>{
+async function runAi(){
   if(AICTL){AICTL.abort();return}
-  if(!SAMPLE||!S.canvas)return;
+  if(!S.canvas)return;
+  if(!SAMPLE){
+    $('#aistat').textContent='AI આ વ્યૂમાં ઉપલબ્ધ નથી (લિંક claude.ai માં સાઇન ઇન કરીને ખોલો). ઓફલાઇન શોધ વાપરી છે, ફોટો માટે તે નબળી છે.';
+    if(!S.parts.length){detect();full()}return}
   AICTL=new AbortController();$('#ai').textContent='રોકો';
   $('#aistat').textContent='AI ડ્રોઇંગ જોઈ રહ્યું છે. 1 થી 2 મિનિટ લાગી શકે...';
   try{
@@ -426,8 +438,11 @@ $('#ai').onclick=async()=>{
     applyAi(res);S.note='AI એ '+S.parts.length+' ભાગ શોધ્યા. ચોકઠા થોડા આઘાપાછા હોઈ શકે, દરેક તપાસીને સુધારો અને પછી “માપ સેટ કરો” માં સાચું માપ લખો.';
     $('#aistat').textContent='';full();
   }catch(e){
-    $('#aistat').textContent=e&&e.code==='cancelled'?'':(AI_ERR[e&&e.code]||'AI ચાલ્યું નહીં. ફરી પ્રયત્ન કરો.');
+    const c=e&&e.code;
+    $('#aistat').textContent=c==='cancelled'?'':(AI_ERR[c]||'AI ચાલ્યું નહીં.')+(c==='cancelled'?'':' ઓફલાઇન શોધ વાપરી છે.');
+    if(c!=='cancelled'&&!S.parts.length){detect();full()}
   }finally{AICTL=null;$('#ai').textContent='AI થી ભાગ શોધો'}
-};
+}
+$('#ai').onclick=runAi;
 
 full();
