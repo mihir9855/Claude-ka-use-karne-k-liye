@@ -49,13 +49,15 @@ th{color:var(--mute);font-weight:600}
 tbody tr{cursor:pointer}tbody tr.sel{background:color-mix(in srgb,var(--box) 14%,transparent)}
 td.n{white-space:normal;min-width:8rem}
 td.r,th.r{text-align:right}
+body:not(.empty) #emptymsg{display:none}
+body.empty .needs{display:none}
 details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 </style>
 <main>
 <header class="top"><div><h1>પથ્થર માપ</h1><p class="sub">ડ્રોઇંગ આપો, મંદિરના બધા ભાગ અને ખરીદવાના પથ્થરનું માપ મળશે</p></div>
 <div class="pal" id="pal" aria-label="રંગ પસંદ કરો"></div></header>
 
-<section class="panel"><p class="k">ખરીદવાનો કુલ પથ્થર</p><p class="total" id="tot">-</p>
+<section class="panel needs"><p class="k">ખરીદવાનો કુલ પથ્થર</p><p class="total" id="tot">-</p>
 <div class="grid" id="tgrid"></div></section>
 <div id="notes" style="display:contents"></div>
 
@@ -63,17 +65,17 @@ details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 <h2>ડ્રોઇંગ</h2>
 <div class="row" style="margin-bottom:10px">
 <button class="b" id="open" type="button">DXF / PDF / ફોટો ખોલો</button>
-<button class="b alt" id="draw" type="button">ભાગ હાથે દોરો</button>
-<button class="b alt" id="demo" type="button">ઉદાહરણ ડ્રોઇંગ</button>
+<button class="b alt needs" id="draw" type="button">ભાગ હાથે દોરો</button>
 </div>
 <input id="file" type="file" hidden>
 <div id="views" style="margin-bottom:10px"></div>
-<label style="margin-bottom:10px">ઝૂમ <input id="zoom" type="range" min="100" max="300" value="100"></label>
-<div class="zoomwrap"><div id="stage"><img id="img" alt="ડ્રોઇંગ"><div id="ov"></div></div></div>
-<p class="sub" style="margin-top:8px">લાલ ચોકઠા એપે આપોઆપ શોધેલા ભાગ છે. ચોકઠા પર ટેપ કરો, પછી ખૂણાના ગોળ બટનથી સુધારો.</p>
+<label class="needs" style="margin-bottom:10px">ઝૂમ <input id="zoom" type="range" min="100" max="300" value="100"></label>
+<div id="emptymsg" class="sub" style="padding:18px;border:1px dashed var(--line);border-radius:8px;text-align:center">હજી કોઈ ફાઇલ ખોલી નથી. ઉપર “DXF / PDF / ફોટો ખોલો” દબાવો.</div>
+<div class="zoomwrap" id="zoomwrap" hidden><div id="stage"><img id="img" alt="ડ્રોઇંગ"><div id="ov"></div></div></div>
+<p class="sub needs" style="margin-top:8px">લાલ ચોકઠા એપે આપોઆપ શોધેલા ભાગ છે. ચોકઠા પર ટેપ કરો, પછી ખૂણાના ગોળ બટનથી સુધારો.</p>
 </section>
 
-<section class="panel">
+<section class="panel needs">
 <h2>માપ સેટ કરો</h2>
 <p class="sub" id="scaleinfo" style="margin-bottom:10px"></p>
 <div class="row">
@@ -85,14 +87,14 @@ details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 <p class="sub" style="margin-top:8px">દા.ત. “આખા મંદિરની ઊંચાઈ 7 ફૂટ” લખશો તો બાકીના બધા ભાગના માપ એ પ્રમાણે આપોઆપ નીકળશે.</p>
 </section>
 
-<section class="panel" id="editor"></section>
+<section class="panel needs" id="editor"></section>
 
-<section class="panel"><h2>બધા ભાગ</h2><p class="sub" id="cnt" style="margin-bottom:8px"></p><div class="tw" id="list"></div></section>
+<section class="panel needs"><h2>બધા ભાગ</h2><p class="sub" id="cnt" style="margin-bottom:8px"></p><div class="tw" id="list"></div></section>
 
-<section class="panel"><h2>ખરીદીની યાદી (સરખા ટુકડા ભેગા)</h2><div class="tw" id="buy"></div>
+<section class="panel needs"><h2>ખરીદીની યાદી (સરખા ટુકડા ભેગા)</h2><div class="tw" id="buy"></div>
 <div class="row" style="margin-top:12px"><button class="b" id="copy" type="button">યાદી કોપી કરો</button></div></section>
 
-<section class="panel"><details><summary>પથ્થર, ભાવ અને શોધ સેટિંગ</summary>
+<section class="panel needs"><details><summary>પથ્થર, ભાવ અને શોધ સેટિંગ</summary>
 <div class="row" style="margin-top:12px">
 <label>પથ્થરનો પ્રકાર<select id="stone"><option value="170">માર્બલ</option><option value="150">બંસી પહાડપુર / સેન્ડસ્ટોન</option><option value="170">ગ્રેનાઇટ</option><option value="165">કોટા / લાઇમસ્ટોન</option></select></label>
 <label>ભાવ (₹ પ્રતિ ઘન ફૂટ)<input id="rate" type="number" inputmode="decimal" step="any" value="0"></label>

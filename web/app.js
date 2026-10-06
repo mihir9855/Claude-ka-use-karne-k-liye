@@ -1,4 +1,3 @@
-const BUILTIN="__IMG__";
 const FT={mm:0.00328084,cm:0.0328084,m:3.28084,in:1/12,ft:1};
 const UCODE={1:'in',2:'ft',4:'mm',5:'cm',6:'m'};
 const $=s=>document.querySelector(s);
@@ -7,7 +6,7 @@ const f2=x=>(Math.round(x*100)/100).toLocaleString('en-IN');
 const f1=x=>(Math.round(x*10)/10).toLocaleString('en-IN');
 const uid=()=>Math.random().toString(36).slice(2);
 
-const S={canvas:null,src:BUILTIN,w:0,h:0,mask:null,area:null,views:[],elev:0,plan:-1,parts:[],sel:null,s:0.03,fileScale:false,example:true,note:''};
+const S={canvas:null,src:'',w:0,h:0,mask:null,area:null,views:[],elev:0,plan:-1,parts:[],sel:null,s:0.03,fileScale:false,example:true,note:''};
 const CFG={density:170,rate:0,allow:1,gdepth:12};
 
 /* ---------- palette + settings ---------- */
@@ -109,6 +108,7 @@ $('#redo').onclick=()=>{if(!S.mask)return;detect();full()};
 
 /* ---------- scale ---------- */
 function extent(){
+  if(!S.parts.length&&!S.area)return {w:0,h:0};
   if(!S.parts.length){const v=S.views[S.elev]||{x0:S.area.x,y0:S.area.y,x1:S.area.x+S.area.w,y1:S.area.y+S.area.h};return {w:v.x1-v.x0,h:v.y1-v.y0}}
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;S.parts.forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x+p.w);y1=Math.max(y1,p.y+p.h)});
   return {w:x1-x0,h:y1-y0};
@@ -144,7 +144,7 @@ function renderTotals(){
   <div><div class="k">મંદિરની ઊંચાઈ</div><div class="v">${f1(ex.h*S.s)}″ (${f2(ex.h*S.s/12)} ફૂટ)</div></div>
   <div><div class="k">મંદિરની પહોળાઈ</div><div class="v">${f1(ex.w*S.s)}″ (${f2(ex.w*S.s/12)} ફૂટ)</div></div>
   ${CFG.rate?`<div><div class="k">અંદાજિત ખર્ચ</div><div class="v">₹ ${Math.round(blk*CFG.rate).toLocaleString('en-IN')}</div></div>`:''}`;
-  $('#notes').innerHTML=(S.example?'<div class="note">આ ઉદાહરણ ડ્રોઇંગ છે. તેમાં માપ લખેલા નથી, એટલે મંદિરની ઊંચાઈ 4 ફૂટ માની છે. સાચી ઊંચાઈ નીચે “માપ સેટ કરો” માં લખો.</div>':'')+(S.note?`<div class="note">${esc(S.note)}</div>`:'')+
+  $('#notes').innerHTML=(S.note?`<div class="note">${esc(S.note)}</div>`:'')+
    (S.parts.length>40?'<div class="note">ઘણા બધા ભાગ મળ્યા છે. “શોધ સેટિંગ” માં “ભાગ જોડવાની તાકાત” વધારો અને ફરી શોધો.</div>':'');
   $('#scaleinfo').textContent=`અત્યારે 1 પિક્સેલ = ${S.s.toFixed(4)} ઇંચ`+(S.fileScale?' (ફાઇલના એકમમાંથી, સાચું માપ)':'');
   $('#cnt').textContent=`આપોઆપ ${S.parts.length} ભાગ મળ્યા. ખોટા ભાગ કાઢો, ખૂટતા ઉમેરો, અને થાંભલી જેવા ભાગને ટુકડામાં વહેંચો.`;
@@ -211,7 +211,7 @@ function refresh(){
   if(p&&$('#o-w')){const c=calc(p);$('#o-w').textContent=`${f1(c.W)}″ (${f2(c.W/12)} ફૂટ)`;$('#o-h').textContent=`${f1(c.H)}″ (${f2(c.H/12)} ફૂટ)`;$('#o-d').textContent=`${f1(c.D)}″`;$('#o-b').textContent=`${f2(c.block)} ઘન ફૂટ`;$('#o-src').textContent=`ઊંડાઈ: ${c.dsrc}. બ્લોક સાઇઝ ${f1(c.bw)} × ${f1(c.bh)} × ${f1(c.bd)} ઇંચ. તૈયાર ભાગનો પથ્થર ${f2(c.net)} ઘન ફૂટ.`}
   renderTotals();renderList();
 }
-function full(){drawBoxes();renderViews();renderScaleUI();renderEditor();refresh()}
+function full(){document.body.classList.toggle('empty',!S.canvas);$('#zoomwrap').hidden=!S.canvas;drawBoxes();renderViews();renderScaleUI();renderEditor();refresh()}
 
 /* ---------- copy ---------- */
 $('#copy').onclick=async()=>{
@@ -303,6 +303,4 @@ $('#file').onchange=async e=>{
   }catch(err){S.note='ફાઇલ વાંચી શકાઈ નથી: '+err.message}
   renderTotals();e.target.value='';
 };
-async function loadDemo(){const im=new Image();im.src=BUILTIN;await im.decode();const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0);useCanvas(c,null,'',true);$('#refval').value=4}
-$('#demo').onclick=loadDemo;
-loadDemo();
+full();
