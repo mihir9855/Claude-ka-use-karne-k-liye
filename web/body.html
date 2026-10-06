@@ -65,9 +65,11 @@ details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 <h2>ડ્રોઇંગ</h2>
 <div class="row" style="margin-bottom:10px">
 <button class="b" id="open" type="button">DXF / PDF / ફોટો ખોલો</button>
+<button class="b needs" id="ai" type="button" hidden>AI થી ભાગ શોધો</button>
 <button class="b alt needs" id="draw" type="button">ભાગ હાથે દોરો</button>
 </div>
 <input id="file" type="file" hidden>
+<p class="sub needs" id="aistat" style="margin-bottom:10px"></p>
 <div id="views" style="margin-bottom:10px"></div>
 <label class="needs" style="margin-bottom:10px">ઝૂમ <input id="zoom" type="range" min="100" max="300" value="100"></label>
 <div id="emptymsg" class="sub" style="padding:18px;border:1px dashed var(--line);border-radius:8px;text-align:center">હજી કોઈ ફાઇલ ખોલી નથી. ઉપર “DXF / PDF / ફોટો ખોલો” દબાવો.</div>
