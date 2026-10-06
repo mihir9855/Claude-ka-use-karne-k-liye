@@ -426,12 +426,14 @@ async function renderReportPages(){
   const cw=(PW-2*M)/2;
   items.forEach((it,i)=>{const x=M+(i%2)*cw,yy=y+Math.floor(i/2)*84;txt(it[0],x,yy+24,22,400,'#555');txt(it[1],x,yy+62,i===0?42:32,700)});
   y+=Math.ceil(items.length/2)*84+16;
-  // drawing with numbered boxes
+  // only the mandir, cropped from the uploaded file (no border, title block or text outside it)
   const im=new Image();im.src=S.src;try{await im.decode()}catch(e){}
-  const aw=PW-2*M,ah=PH-M-60-y,sc=Math.min(aw/S.w,ah/S.h),dw=S.w*sc,dh=S.h*sc,dx=M+(aw-dw)/2;
-  g.drawImage(im,dx,y,dw,dh);g.strokeStyle='#d6204f';g.lineWidth=2.5;
-  S.parts.forEach((p,i)=>{g.strokeRect(dx+p.x*sc,y+p.y*sc,p.w*sc,p.h*sc);
-    const lx=dx+p.x*sc,ly=y+p.y*sc;g.fillStyle='#d6204f';g.fillRect(lx,ly,34,26);txt(String(i+1),lx+17,ly+20,18,700,'#fff','center')});
+  let bx0=1e9,by0=1e9,bx1=-1e9,by1=-1e9;S.parts.forEach(p=>{bx0=Math.min(bx0,p.x);by0=Math.min(by0,p.y);bx1=Math.max(bx1,p.x+p.w);by1=Math.max(by1,p.y+p.h)});
+  const mx=(bx1-bx0)*0.03,my=(by1-by0)*0.03;bx0=Math.max(0,bx0-mx);by0=Math.max(0,by0-my);bx1=Math.min(S.w,bx1+mx);by1=Math.min(S.h,by1+my);
+  const sw=bx1-bx0,sh=by1-by0,aw=PW-2*M,ah=PH-M-60-y,sc=Math.min(aw/sw,ah/sh),dw=sw*sc,dh=sh*sc,dx=M+(aw-dw)/2;
+  g.drawImage(im,bx0,by0,sw,sh,dx,y,dw,dh);
+  if($('#pdfmarks').checked){g.strokeStyle='#d6204f';g.lineWidth=2.5;
+    S.parts.forEach((p,i)=>{const lx=dx+(p.x-bx0)*sc,ly=y+(p.y-by0)*sc;g.strokeRect(lx,ly,p.w*sc,p.h*sc);g.fillStyle='#d6204f';g.fillRect(lx,ly,34,26);txt(String(i+1),lx+17,ly+20,18,700,'#fff','center')})}
   y+=dh+10;
   // parts table
   newPage();txt('ભાગની યાદી',M,y+36,38,700);y+=60;
@@ -459,7 +461,7 @@ function pdfFromJpegs(pgs){
   push('%PDF-1.4\n');
   obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
   obj(2,`<< /Type /Pages /Count ${pgs.length} /Kids [${pgs.map((_,k)=>`${3+3*k} 0 R`).join(' ')}] >>`);
-  pgs.forEach((p,k)=>{const W=Math.round(p.w*0.48),H=Math.round(p.h*0.48),c=`q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+  pgs.forEach((p,k)=>{const W=595.28,H=841.89,c=`q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
     obj(3+3*k,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${5+3*k} 0 R >> /ProcSet [/PDF /ImageC] >> /Contents ${4+3*k} 0 R >>`);
     obj(4+3*k,`<< /Length ${c.length} >>\nstream\n${c}\nendstream`);
     offs[5+3*k]=len;push(`${5+3*k} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.bytes.length} >>\nstream\n`);push(p.bytes);push('\nendstream\nendobj\n')});
