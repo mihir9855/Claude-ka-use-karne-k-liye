@@ -225,52 +225,6 @@ function renderEditor(){
 function replacePart(p,boxes){
   const i=S.parts.indexOf(p),np=boxes.map((b,j)=>({id:uid(),name:`${p.name} – ટુકડો ${j+1}`,x:b.x,y:b.y,w:b.w,h:b.h,depth:p.depth,fill:p.fill}));
   S.parts.splice(i,1,...np);S.sel=np[0].id;
-/* ---------- AI part finding (photos and shaded renders) ---------- */
-let SAMPLE=null,AIOK=false,AICTL=null;
-(async()=>{try{SAMPLE=window.claude?await claude.use('sample'):null}catch(e){SAMPLE=null}
-  AIOK=!!SAMPLE})();
-const AI_PROMPT=`You are helping a Gujarati marble-temple (mandir) maker decide which stone blocks to buy. The attached image shows a mandir, either a photo or a drawing.
-Mandirs come in several styles, for example: (1) a large marble mandir with stepped plinth and an elephant frieze band, clusters of square carved pillars with bracket capitals, jali side panels, a carved back panel, a flat roof slab (chhajja), a jali railing band and many small domed pavilions (shikhar) stacked in tiers above; (2) a drawing with a peacock crown on top, an angled chhajja, pillars with square carved tops, an arch (toran) with carved spandrels, elephants at the base and a plinth of drawers with carved panels; (3) a drawing with a multi-foil curved arch, two kalash finials, round-capital pillars standing on elephants and a wide plinth of drawer panels; (4) a classic stone mandir with a carved plinth band, front pillars built from a base block, shaft sections and a kumbh, a jali arch, a roof slab and a shikhar made of many small domes around one tall central dome with a gold kalash. Expect any of these or a mix.
-List every separately carved stone piece of the mandir itself, the way each would be bought and carved as its own block. Split built-up things into their real stone pieces: a pillar into base, shaft sections, bulging kumbh/capital and bracket pieces; the roof into slabs (chhajja), each shikhar, dome and kalash; arch/toran, carved panels, jali, steps, plinth layers, elephants, drawer or storage fronts, railings.
-Ignore: wall, floor, background, furniture, people, deity statues (murti), hanging lamps, gold decoration, text, logos and borders.
-For each piece give a tight axis-aligned box [x0,y0,x1,y1] on a 0-1000 scale relative to the image (x to the right, y downward). List repeated small pieces (for example each small dome) separately when you can see them clearly. At most 60 pieces, ordered from top to bottom.
-Also give depth_ratio: your estimate of the piece's front-to-back thickness divided by its visible width (a round pillar piece is 1, a thin carved panel about 0.1, a roof slab about 0.8). And fill: the percent (30 to 100) of its bounding block that stays as stone after carving.
-Name each piece in short Gujarati, for example "ડાબી થાંભલી - નીચેનો ટુકડો".
-Reply with only a JSON array: [{"name":"...","box":[x0,y0,x1,y1],"depth_ratio":0.5,"fill":80}]`;
-const AI_ERR={not_granted:'AI વાપરવાની મંજૂરી આપી નથી.',rate_limited:'થોડી વાર પછી ફરી પ્રયત્ન કરો.',invalid_json:'AI નો જવાબ સમજાયો નહીં. ફરી દબાવો.',images_unavailable:'આ વ્યૂમાં AI ઇમેજ જોઈ શકતું નથી. લિંક claude.ai ની એપ કે વેબસાઇટમાં ખોલો.',session_expired:'ફરી સાઇન ઇન કરો.',image_rejected:'ઇમેજ AI ને ચાલી નહીં. બીજી ઇમેજ અજમાવો.'};
-function applyAi(arr){
-  if(!Array.isArray(arr))throw {code:'invalid_json'};
-  const parts=[];
-  for(const it of arr){
-    const bx=it&&it.box;if(!Array.isArray(bx)||bx.length!==4||bx.some(v=>typeof v!=='number'))continue;
-    let [x0,y0,x1,y1]=bx;x0=Math.max(0,Math.min(x0,x1));x1=Math.min(1000,Math.max(bx[0],bx[2]));y0=Math.max(0,Math.min(y0,y1));y1=Math.min(1000,Math.max(bx[1],bx[3]));
-    if(x1-x0<5||y1-y0<5)continue;
-    const dr=+it.depth_ratio,fl=+it.fill;
-    parts.push({id:uid(),name:String(it.name||'ભાગ '+(parts.length+1)).slice(0,60),x:x0/1000*S.w,y:y0/1000*S.h,w:(x1-x0)/1000*S.w,h:(y1-y0)/1000*S.h,depth:null,depthRatio:dr>0&&dr<=4?dr:0,fill:fl>=20&&fl<=100?fl:100});
-  }
-  if(!parts.length)throw {code:'invalid_json'};
-  S.parts=parts;S.sel=parts[0].id;
-}
-async function runAi(){
-  if(AICTL){AICTL.abort();return}
-  if(!S.canvas)return;
-  if(!SAMPLE){
-    $('#aistat').textContent='AI આ વ્યૂમાં ઉપલબ્ધ નથી (લિંક claude.ai માં સાઇન ઇન કરીને ખોલો). ઓફલાઇન શોધ વાપરી છે, ફોટો માટે તે નબળી છે.';
-    if(!S.parts.length){detect();full()}return}
-  AICTL=new AbortController();$('#ai').textContent='રોકો';
-  $('#aistat').textContent='AI ડ્રોઇંગ જોઈ રહ્યું છે. 1 થી 2 મિનિટ લાગી શકે...';
-  try{
-    const blob=await new Promise(r=>S.canvas.toBlob(r,'image/jpeg',0.9));
-    const res=await SAMPLE.json(AI_PROMPT,{images:blob,signal:AICTL.signal});
-    applyAi(res);S.note='AI એ '+S.parts.length+' ભાગ શોધ્યા. ચોકઠા થોડા આઘાપાછા હોઈ શકે, દરેક તપાસીને સુધારો અને પછી “માપ સેટ કરો” માં સાચું માપ લખો.';
-    $('#aistat').textContent='';full();
-  }catch(e){
-    const c=e&&e.code;
-    $('#aistat').textContent=c==='cancelled'?'':(AI_ERR[c]||'AI ચાલ્યું નહીં.')+(c==='cancelled'?'':' ઓફલાઇન શોધ વાપરી છે.');
-    if(c!=='cancelled'&&!S.parts.length){detect();full()}
-  }finally{AICTL=null;$('#ai').textContent='AI થી ભાગ શોધો'}
-}
-$('#ai').onclick=runAi;
 
 full();
 }
@@ -298,52 +252,6 @@ function useCanvas(c,inPerPx,note,example,noDetect){S.noDetect=!!noDetect;
   analyze();
   if(!inPerPx){const ex=extent();S.s=48/ex.h;$('#refval').value=4;$('#refunit').value='ft';$('#refwhat').value='H'}
   img.src=S.src;
-/* ---------- AI part finding (photos and shaded renders) ---------- */
-let SAMPLE=null,AIOK=false,AICTL=null;
-(async()=>{try{SAMPLE=window.claude?await claude.use('sample'):null}catch(e){SAMPLE=null}
-  AIOK=!!SAMPLE})();
-const AI_PROMPT=`You are helping a Gujarati marble-temple (mandir) maker decide which stone blocks to buy. The attached image shows a mandir, either a photo or a drawing.
-List every separately carved stone piece of the mandir itself, the way each would be bought and carved as its own block. Split built-up things into their real stone pieces: a pillar into base, shaft sections, bulging kumbh/capital and bracket pieces; the roof into slabs (chhajja), each shikhar, dome and kalash; arch/toran, carved panels, jali, steps, plinth layers, elephants, drawer or storage fronts, railings.
-Ignore: wall, floor, background, furniture, people, deity statues (murti), hanging lamps, gold decoration, text, logos and borders.
-For each piece give a tight axis-aligned box [x0,y0,x1,y1] on a 0-1000 scale relative to the image (x to the right, y downward). List repeated small pieces (for example each small dome) separately when you can see them clearly. At most 60 pieces, ordered from top to bottom.
-Also give depth_ratio: your estimate of the piece's front-to-back thickness divided by its visible width (a round pillar piece is 1, a thin carved panel about 0.1, a roof slab about 0.8). And fill: the percent (30 to 100) of its bounding block that stays as stone after carving.
-Name each piece in short Gujarati, for example "ડાબી થાંભલી - નીચેનો ટુકડો".
-Reply with only a JSON array: [{"name":"...","box":[x0,y0,x1,y1],"depth_ratio":0.5,"fill":80}]`;
-const AI_ERR={not_granted:'AI વાપરવાની મંજૂરી આપી નથી.',rate_limited:'થોડી વાર પછી ફરી પ્રયત્ન કરો.',invalid_json:'AI નો જવાબ સમજાયો નહીં. ફરી દબાવો.',images_unavailable:'આ વ્યૂમાં AI ઇમેજ જોઈ શકતું નથી. લિંક claude.ai ની એપ કે વેબસાઇટમાં ખોલો.',session_expired:'ફરી સાઇન ઇન કરો.',image_rejected:'ઇમેજ AI ને ચાલી નહીં. બીજી ઇમેજ અજમાવો.'};
-function applyAi(arr){
-  if(!Array.isArray(arr))throw {code:'invalid_json'};
-  const parts=[];
-  for(const it of arr){
-    const bx=it&&it.box;if(!Array.isArray(bx)||bx.length!==4||bx.some(v=>typeof v!=='number'))continue;
-    let [x0,y0,x1,y1]=bx;x0=Math.max(0,Math.min(x0,x1));x1=Math.min(1000,Math.max(bx[0],bx[2]));y0=Math.max(0,Math.min(y0,y1));y1=Math.min(1000,Math.max(bx[1],bx[3]));
-    if(x1-x0<5||y1-y0<5)continue;
-    const dr=+it.depth_ratio,fl=+it.fill;
-    parts.push({id:uid(),name:String(it.name||'ભાગ '+(parts.length+1)).slice(0,60),x:x0/1000*S.w,y:y0/1000*S.h,w:(x1-x0)/1000*S.w,h:(y1-y0)/1000*S.h,depth:null,depthRatio:dr>0&&dr<=4?dr:0,fill:fl>=20&&fl<=100?fl:100});
-  }
-  if(!parts.length)throw {code:'invalid_json'};
-  S.parts=parts;S.sel=parts[0].id;
-}
-async function runAi(){
-  if(AICTL){AICTL.abort();return}
-  if(!S.canvas)return;
-  if(!SAMPLE){
-    $('#aistat').textContent='AI આ વ્યૂમાં ઉપલબ્ધ નથી (લિંક claude.ai માં સાઇન ઇન કરીને ખોલો). ઓફલાઇન શોધ વાપરી છે, ફોટો માટે તે નબળી છે.';
-    if(!S.parts.length){detect();full()}return}
-  AICTL=new AbortController();$('#ai').textContent='રોકો';
-  $('#aistat').textContent='AI ડ્રોઇંગ જોઈ રહ્યું છે. 1 થી 2 મિનિટ લાગી શકે...';
-  try{
-    const blob=await new Promise(r=>S.canvas.toBlob(r,'image/jpeg',0.9));
-    const res=await SAMPLE.json(AI_PROMPT,{images:blob,signal:AICTL.signal});
-    applyAi(res);S.note='AI એ '+S.parts.length+' ભાગ શોધ્યા. ચોકઠા થોડા આઘાપાછા હોઈ શકે, દરેક તપાસીને સુધારો અને પછી “માપ સેટ કરો” માં સાચું માપ લખો.';
-    $('#aistat').textContent='';full();
-  }catch(e){
-    const c=e&&e.code;
-    $('#aistat').textContent=c==='cancelled'?'':(AI_ERR[c]||'AI ચાલ્યું નહીં.')+(c==='cancelled'?'':' ઓફલાઇન શોધ વાપરી છે.');
-    if(c!=='cancelled'&&!S.parts.length){detect();full()}
-  }finally{AICTL=null;$('#ai').textContent='AI થી ભાગ શોધો'}
-}
-$('#ai').onclick=runAi;
-
 full();
 }
 function parseDxf(text){
@@ -419,13 +327,29 @@ $('#file').onchange=async e=>{
   renderTotals();e.target.value='';
 };
 
+/* grid overlay so the AI can read coordinates */
+function gridCanvas(src){
+  const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const g=c.getContext('2d');g.drawImage(src,0,0);
+  const W=c.width,H=c.height,fs=Math.round(Math.max(14,W/48));
+  g.lineWidth=Math.max(1,W/800);g.font=`bold ${fs}px sans-serif`;g.lineJoin='round';
+  const lab=(t,x,y)=>{g.lineWidth=fs/4;g.strokeStyle='#fff';g.strokeText(t,x,y);g.fillStyle='#0057ff';g.fillText(t,x,y);g.lineWidth=Math.max(1,W/800)};
+  for(let i=1;i<10;i++){
+    const x=W*i/10,y=H*i/10;g.strokeStyle='rgba(0,110,255,0.5)';
+    g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke();g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke();
+    lab(String(i*100),x+3,fs);lab(String(i*100),x+3,H-6);lab(String(i*100),3,y-4);lab(String(i*100),W-fs*2.2,y-4);
+  }
+  return c;
+}
+
 /* ---------- AI part finding (photos and shaded renders) ---------- */
 let SAMPLE=null,AIOK=false,AICTL=null;
 (async()=>{try{SAMPLE=window.claude?await claude.use('sample'):null}catch(e){SAMPLE=null}
   AIOK=!!SAMPLE})();
 const AI_PROMPT=`You are helping a Gujarati marble-temple (mandir) maker decide which stone blocks to buy. The attached image shows a mandir, either a photo or a drawing.
+Mandirs come in several styles, for example: (1) a large marble mandir with stepped plinth and an elephant frieze band, clusters of square carved pillars with bracket capitals, jali side panels, a carved back panel, a flat roof slab (chhajja), a jali railing band and many small domed pavilions (shikhar) stacked in tiers above; (2) a drawing with a peacock crown on top, an angled chhajja, pillars with square carved tops, an arch (toran) with carved spandrels, elephants at the base and a plinth of drawers with carved panels; (3) a drawing with a multi-foil curved arch, two kalash finials, round-capital pillars standing on elephants and a wide plinth of drawer panels; (4) a classic stone mandir with a carved plinth band, front pillars built from a base block, shaft sections and a kumbh, a jali arch, a roof slab and a shikhar made of many small domes around one tall central dome with a gold kalash. Expect any of these or a mix.
 List every separately carved stone piece of the mandir itself, the way each would be bought and carved as its own block. Split built-up things into their real stone pieces: a pillar into base, shaft sections, bulging kumbh/capital and bracket pieces; the roof into slabs (chhajja), each shikhar, dome and kalash; arch/toran, carved panels, jali, steps, plinth layers, elephants, drawer or storage fronts, railings.
 Ignore: wall, floor, background, furniture, people, deity statues (murti), hanging lamps, gold decoration, text, logos and borders.
+The image has a blue grid overlay that is NOT part of the mandir: vertical lines are x=100..900 and horizontal lines are y=100..900, with the numbers printed on the lines. Read coordinates from the grid and interpolate between lines, and make every box edge touch the carved stone itself, not the wall or empty space around it.
 For each piece give a tight axis-aligned box [x0,y0,x1,y1] on a 0-1000 scale relative to the image (x to the right, y downward). List repeated small pieces (for example each small dome) separately when you can see them clearly. At most 60 pieces, ordered from top to bottom.
 Also give depth_ratio: your estimate of the piece's front-to-back thickness divided by its visible width (a round pillar piece is 1, a thin carved panel about 0.1, a roof slab about 0.8). And fill: the percent (30 to 100) of its bounding block that stays as stone after carving.
 Name each piece in short Gujarati, for example "ડાબી થાંભલી - નીચેનો ટુકડો".
@@ -451,10 +375,10 @@ async function runAi(){
     $('#aistat').textContent='AI આ વ્યૂમાં ઉપલબ્ધ નથી (લિંક claude.ai માં સાઇન ઇન કરીને ખોલો). ઓફલાઇન શોધ વાપરી છે, ફોટો માટે તે નબળી છે.';
     if(!S.parts.length){detect();full()}return}
   AICTL=new AbortController();$('#ai').textContent='રોકો';
-  $('#aistat').textContent='AI ડ્રોઇંગ જોઈ રહ્યું છે. 1 થી 2 મિનિટ લાગી શકે...';
+  $('#aistat').textContent='AI ડ્રોઇંગ જોઈ રહ્યું છે. 2 થી 3 મિનિટ લાગી શકે...';
   try{
-    const blob=await new Promise(r=>S.canvas.toBlob(r,'image/jpeg',0.9));
-    const res=await SAMPLE.json(AI_PROMPT,{images:blob,signal:AICTL.signal});
+    const blob=await new Promise(r=>gridCanvas(S.canvas).toBlob(r,'image/jpeg',0.92));
+    const res=await SAMPLE.json(AI_PROMPT,{images:blob,signal:AICTL.signal,modelTier:'complex'});
     applyAi(res);S.note='AI એ '+S.parts.length+' ભાગ શોધ્યા. ચોકઠા થોડા આઘાપાછા હોઈ શકે, દરેક તપાસીને સુધારો અને પછી “માપ સેટ કરો” માં સાચું માપ લખો.';
     $('#aistat').textContent='';full();
   }catch(e){
