@@ -51,18 +51,23 @@ td.n{white-space:normal;min-width:8rem}
 td.r,th.r{text-align:right}
 body:not(.empty) #emptymsg{display:none}
 body.empty .needs{display:none}
+#bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:10px 14px;font-variant-numeric:tabular-nums;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+#bar b{font-size:1.25rem}
+#bar.flash{animation:fl 1.2s}
+@keyframes fl{from{background:var(--box)}to{background:var(--accent)}}
+@media (prefers-reduced-motion:reduce){#bar.flash{animation:none}}
 details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 </style>
 <main>
 <header class="top"><div><h1>પથ્થર માપ</h1><p class="sub">ડ્રોઇંગ આપો, મંદિરના બધા ભાગ અને ખરીદવાના પથ્થરનું માપ મળશે</p></div>
 <div class="pal" id="pal" aria-label="રંગ પસંદ કરો"></div></header>
 
-<section class="panel needs"><p class="k">ખરીદવાનો કુલ પથ્થર</p><p class="total" id="tot">-</p>
-<div class="grid" id="tgrid"></div></section>
+
+<div id="bar" class="needs" role="status" aria-live="polite"></div>
 <div id="notes" style="display:contents"></div>
 
 <section class="panel">
-<h2>ડ્રોઇંગ</h2>
+<h2>1. ડ્રોઇંગ ખોલો</h2>
 <div class="row" style="margin-bottom:10px">
 <button class="b" id="open" type="button">DXF / PDF / ફોટો ખોલો</button>
 <button class="b needs" id="ai" type="button">AI થી ભાગ શોધો</button>
@@ -78,16 +83,17 @@ details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 </section>
 
 <section class="panel needs">
-<h2>આખા મંદિરનું માપ લખો</h2>
-<p class="sub" style="margin-bottom:10px">જે ખબર હોય તે લખો. બાકીના બધા ભાગના માપ પ્રમાણસર આપોઆપ નીકળશે.</p>
+<h2>2. આખા મંદિરનું માપ લખો</h2>
+<p class="sub" style="margin-bottom:10px">જે ખબર હોય તે લખો. લખતાં જ ગણતરી આપોઆપ થઈ જાય છે અને ઉપરની પટ્ટીમાં નવો કુલ પથ્થર દેખાય છે.</p>
 <div class="row">
 <label>પહોળાઈ (સામેથી)<input id="m-w" type="number" inputmode="decimal" step="any"></label>
 <label>ઊંચાઈ<input id="m-h" type="number" inputmode="decimal" step="any"></label>
 <label>લંબાઈ / ઊંડાઈ (આગળથી પાછળ)<input id="m-d" type="number" inputmode="decimal" step="any"></label>
 <label>એકમ<select id="m-unit"><option value="ft">ફૂટ</option><option value="in">ઇંચ</option></select></label>
 </div>
-<button class="b" id="m-apply" type="button" style="margin-top:10px;width:100%">માપ લાગુ કરો</button>
-<p class="sub" id="scaleinfo" style="margin-top:8px"></p>
+<button class="b" id="m-apply" type="button" style="margin-top:10px;width:100%">ગણતરી કરો</button>
+<p id="m-msg" class="sub" style="margin-top:8px"></p>
+<p class="sub" id="scaleinfo" style="margin-top:4px"></p>
 <details style="margin-top:10px"><summary>કોઈ એક ભાગનું માપ ખબર હોય તો</summary>
 <div class="row" style="margin-top:10px">
 <label>શેનું માપ ખબર છે<select id="refwhat"></select></label>
@@ -96,12 +102,14 @@ details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 </div>
 <button class="b alt" id="setscale" type="button" style="margin-top:10px;width:100%">એ માપ લાગુ કરો</button></details>
 </section>
+<section class="panel needs" id="res"><h2>પરિણામ</h2><p class="k">ખરીદવાનો કુલ પથ્થર</p><p class="total" id="tot">-</p>
+<div class="grid" id="tgrid"></div></section>
 
 <section class="panel needs" id="editor"></section>
 
-<section class="panel needs"><h2>બધા ભાગ</h2><p class="sub" id="cnt" style="margin-bottom:8px"></p><div class="tw" id="list"></div></section>
+<section class="panel needs"><h2>3. ભાગ તપાસો</h2><p class="sub" id="cnt" style="margin-bottom:8px"></p><div class="tw" id="list"></div></section>
 
-<section class="panel needs"><h2>ખરીદીની યાદી (સરખા ટુકડા ભેગા)</h2><div class="tw" id="buy"></div>
+<section class="panel needs"><h2>4. ખરીદીની યાદી (સરખા ટુકડા ભેગા)</h2><div class="tw" id="buy"></div>
 <div class="row" style="margin-top:12px"><button class="b" id="copy" type="button">યાદી કોપી કરો</button></div></section>
 
 <section class="panel needs"><details><summary>પથ્થર, ભાવ અને શોધ સેટિંગ</summary>
@@ -373,9 +381,9 @@ $('#setscale').onclick=()=>{
   S.s=inch/px;S.fileScale=false;S.example=false;S.note='';refresh();
 };
 
-$('#m-apply').onclick=()=>{
+function applyDims(user){
   const u=$('#m-unit').value==='ft'?12:1,w=(+$('#m-w').value||0)*u,h=(+$('#m-h').value||0)*u,d=(+$('#m-d').value||0)*u,ex=extent();
-  if(!(w>0||h>0||d>0)){S.note='ઓછામાં ઓછું એક માપ લખો.';refresh();return}
+  if(!(w>0||h>0||d>0)){if(user){$('#m-msg').textContent='ઓછામાં ઓછું એક માપ લખો.'}return}
   S.note='';
   if((h>0||w>0)&&ex.h>0){
     S.s=h>0?h/ex.h:w/ex.w;S.fileScale=false;
@@ -383,7 +391,13 @@ $('#m-apply').onclick=()=>{
   }
   if(d>0){CFG.gdepth=d;S.userDepth=true;$('#gdepth').value=d}
   refresh();
-};
+  let blk=0;S.parts.forEach(p=>blk+=calc(p).block);
+  $('#m-msg').textContent=`✓ ગણતરી થઈ ગઈ. કુલ ${f2(blk)} ઘન ફૂટ પથ્થર. ઉપરની પટ્ટી જુઓ, અને નીચે “પરિણામ” અને “ખરીદીની યાદી” નવા માપ પ્રમાણે બદલાઈ ગયા છે.`;
+  const bar=$('#bar');bar.classList.remove('flash');void bar.offsetWidth;bar.classList.add('flash');
+}
+let dimT=null;
+['#m-w','#m-h','#m-d','#m-unit'].forEach(i=>$(i).addEventListener('input',()=>{clearTimeout(dimT);dimT=setTimeout(()=>applyDims(false),400)}));
+$('#m-apply').onclick=()=>applyDims(true);
 /* ---------- panels ---------- */
 function groups(){
   const m=new Map();
@@ -395,6 +409,8 @@ function renderTotals(){
   let blk=0,net=0,kg=0;S.parts.forEach(p=>{const c=calc(p);blk+=c.block;net+=c.net;kg+=c.kg});
   const ex=extent(),g=groups();
   $('#tot').textContent=f2(blk)+' ઘન ફૂટ';
+  let md=0;S.parts.forEach(p=>{md=Math.max(md,calc(p).D)});
+  $('#bar').innerHTML=`<b>${f2(blk)} ઘન ફૂટ</b> પથ્થર ખરીદવાનો<br><span style="font-size:.9rem">ઊંચાઈ ${f2(ex.h*S.s/12)}′ · પહોળાઈ ${f2(ex.w*S.s/12)}′ · ઊંડાઈ ${f2(md/12)}′ · ${S.parts.length} ભાગ</span>`;
   $('#tgrid').innerHTML=`<div><div class="k">કુલ ભાગ / ટુકડા</div><div class="v">${S.parts.length}</div></div>
   <div><div class="k">અલગ-અલગ સાઇઝ</div><div class="v">${g.length}</div></div>
   <div><div class="k">તૈયાર મંદિરનો પથ્થર</div><div class="v">${f2(net)} ઘન ફૂટ</div></div>

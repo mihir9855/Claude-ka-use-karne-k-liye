@@ -127,9 +127,9 @@ $('#setscale').onclick=()=>{
   S.s=inch/px;S.fileScale=false;S.example=false;S.note='';refresh();
 };
 
-$('#m-apply').onclick=()=>{
+function applyDims(user){
   const u=$('#m-unit').value==='ft'?12:1,w=(+$('#m-w').value||0)*u,h=(+$('#m-h').value||0)*u,d=(+$('#m-d').value||0)*u,ex=extent();
-  if(!(w>0||h>0||d>0)){S.note='ઓછામાં ઓછું એક માપ લખો.';refresh();return}
+  if(!(w>0||h>0||d>0)){if(user){$('#m-msg').textContent='ઓછામાં ઓછું એક માપ લખો.'}return}
   S.note='';
   if((h>0||w>0)&&ex.h>0){
     S.s=h>0?h/ex.h:w/ex.w;S.fileScale=false;
@@ -137,7 +137,13 @@ $('#m-apply').onclick=()=>{
   }
   if(d>0){CFG.gdepth=d;S.userDepth=true;$('#gdepth').value=d}
   refresh();
-};
+  let blk=0;S.parts.forEach(p=>blk+=calc(p).block);
+  $('#m-msg').textContent=`✓ ગણતરી થઈ ગઈ. કુલ ${f2(blk)} ઘન ફૂટ પથ્થર. ઉપરની પટ્ટી જુઓ, અને નીચે “પરિણામ” અને “ખરીદીની યાદી” નવા માપ પ્રમાણે બદલાઈ ગયા છે.`;
+  const bar=$('#bar');bar.classList.remove('flash');void bar.offsetWidth;bar.classList.add('flash');
+}
+let dimT=null;
+['#m-w','#m-h','#m-d','#m-unit'].forEach(i=>$(i).addEventListener('input',()=>{clearTimeout(dimT);dimT=setTimeout(()=>applyDims(false),400)}));
+$('#m-apply').onclick=()=>applyDims(true);
 /* ---------- panels ---------- */
 function groups(){
   const m=new Map();
@@ -149,6 +155,8 @@ function renderTotals(){
   let blk=0,net=0,kg=0;S.parts.forEach(p=>{const c=calc(p);blk+=c.block;net+=c.net;kg+=c.kg});
   const ex=extent(),g=groups();
   $('#tot').textContent=f2(blk)+' ઘન ફૂટ';
+  let md=0;S.parts.forEach(p=>{md=Math.max(md,calc(p).D)});
+  $('#bar').innerHTML=`<b>${f2(blk)} ઘન ફૂટ</b> પથ્થર ખરીદવાનો<br><span style="font-size:.9rem">ઊંચાઈ ${f2(ex.h*S.s/12)}′ · પહોળાઈ ${f2(ex.w*S.s/12)}′ · ઊંડાઈ ${f2(md/12)}′ · ${S.parts.length} ભાગ</span>`;
   $('#tgrid').innerHTML=`<div><div class="k">કુલ ભાગ / ટુકડા</div><div class="v">${S.parts.length}</div></div>
   <div><div class="k">અલગ-અલગ સાઇઝ</div><div class="v">${g.length}</div></div>
   <div><div class="k">તૈયાર મંદિરનો પથ્થર</div><div class="v">${f2(net)} ઘન ફૂટ</div></div>
