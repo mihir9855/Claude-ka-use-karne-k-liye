@@ -1,0 +1,228 @@
+<title>Mandir Naap</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;600&family=Yatra+One&display=swap">
+<style>
+/* Layout: single column, phone-first. Result summary on top, detail tables below. */
+:root{--bg:#f2f3f7;--panel:#ffffff;--ink:#1b2333;--mute:#5d677c;--line:#d9dde7;--accent:#b8560a;--accent-ink:#ffffff;--warn-bg:#fff1d6;--warn-ink:#6b4200;--font-d:'Yatra One',Georgia,serif;--font-b:'Hind',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a28;--panel:#1d2536;--ink:#e8ebf3;--mute:#9aa4ba;--line:#323c54;--accent:#f09a4a;--accent-ink:#1b1206;--warn-bg:#3a2d12;--warn-ink:#f6d594;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141a28;--panel:#1d2536;--ink:#e8ebf3;--mute:#9aa4ba;--line:#323c54;--accent:#f09a4a;--accent-ink:#1b1206;--warn-bg:#3a2d12;--warn-ink:#f6d594;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--font-b);padding-inline:16px;padding-block:20px}
+main{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font:400 1.9rem/1.15 var(--font-d);margin:0;text-wrap:balance}
+h2{font:600 .8rem/1 var(--font-b);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:0 0 10px}
+p{margin:0}.sub{color:var(--mute)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+form .full{grid-column:1/-1}
+label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--mute)}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;min-width:0;width:100%;box-sizing:border-box}
+input[type=file]{padding:8px}
+button{font:600 1rem var(--font-b);background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:12px;cursor:pointer}
+button.alt{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hero{display:flex;flex-direction:column;gap:2px}
+.big{font:400 2rem/1.1 var(--font-d);color:var(--accent);font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.k{font-size:.8rem;color:var(--mute)}.v{font-size:1.2rem;font-weight:600;font-variant-numeric:tabular-nums}
+.note{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:10px 12px;font-size:.9rem}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:600}
+.tag{display:inline-block;font-size:.75rem;background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:1px 8px;color:var(--mute)}
+</style>
+<main>
+<header><h1>Mandir Naap</h1><p class="sub">DXF ya PDF plan upload karo. Size (ft), area (sq ft) aur cubic ft yahin phone me nikal jayega. File kahin upload nahi hoti.</p></header>
+<form id="f" class="panel">
+<label class="full">Plan file (.dxf ya .pdf)<input id="file" type="file" accept=".dxf,.pdf"></label>
+<label>Height (ft)<input id="h" type="number" inputmode="decimal" step="any" value="20"></label>
+<label>Drawing unit<select id="unit"><option value="auto">Auto</option><option value="mm">mm</option><option value="cm">cm</option><option value="m">meter</option><option value="in">inch</option><option value="ft">feet</option></select></label>
+<label class="full">PDF scale 1 : N (sirf PDF)<input id="scale" type="number" inputmode="numeric" placeholder="jaise 100"></label>
+<button class="full" type="submit">Naap karo</button>
+<button class="full alt" type="button" id="demo">Example plan dikhao</button>
+</form>
+<div id="out" style="display:contents"></div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+const FT={mm:0.00328084,cm:0.0328084,m:3.28084,in:1/12,ft:1};
+const CODE={1:'in',2:'ft',4:'mm',5:'cm',6:'m'};
+const $=s=>document.querySelector(s), n2=x=>x==null?'-':(Math.round(x*100)/100).toLocaleString('en-IN');
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* ---------- DXF (ASCII) ---------- */
+function parseDxf(text){
+  const L=text.split(/\r?\n/), pairs=[];
+  for(let i=0;i+1<L.length;i+=2)pairs.push([parseInt(L[i].trim(),10),L[i+1].trim()]);
+  const hdr={},ents=[];let sec='',cur=null,pendingVar=null,poly=null;
+  for(let i=0;i<pairs.length;i++){
+    const [c,v]=pairs[i];
+    if(c===0&&v==='SECTION'){sec=(pairs[i+1]||[])[1];continue}
+    if(c===0&&v==='ENDSEC'){cur=null;sec='';continue}
+    if(sec==='HEADER'){ if(c===9)pendingVar=v; else if(pendingVar&&c===70){hdr[pendingVar]=+v;pendingVar=null} continue}
+    if(sec!=='ENTITIES')continue;
+    if(c===0){
+      if(v==='VERTEX'&&poly){cur={t:'VERTEX',pts:[],layer:'0',_v:true};poly.verts.push(cur);continue}
+      if(v==='SEQEND'){poly=null;cur=null;continue}
+      cur={t:v,layer:'0',pts:[],flags:0,x:[],y:[]};
+      if(v==='POLYLINE'){poly=cur;cur.verts=[]}
+      ents.push(cur);continue;
+    }
+    if(!cur)continue;
+    const f=parseFloat(v);
+    switch(c){
+      case 8:cur.layer=v;break;
+      case 1:cur.text=(cur.text||'')+v;break;
+      case 3:cur.text=(cur.text||'')+v;break;
+      case 2:cur.name=v;break;
+      case 70:cur.flags=+v;break;
+      case 40:cur.r=f;break;
+      case 42:cur.meas=f;break;
+      case 10:cur.x.push(f);break;
+      case 20:cur.y.push(f);break;
+      case 11:cur.x2=f;break;case 21:cur.y2=f;break;
+      case 38:cur.elev=f;break;case 39:cur.thick=f;break;
+      case 30:cur.z=f;break;
+    }
+  }
+  return {hdr,ents};
+}
+function polyArea(p){let a=0;for(let i=0;i<p.length;i++){const q=p[(i+1)%p.length];a+=p[i][0]*q[1]-q[0]*p[i][1]}return Math.abs(a)/2}
+function polyPer(p){let s=0;for(let i=0;i<p.length;i++){const q=p[(i+1)%p.length];s+=Math.hypot(q[0]-p[i][0],q[1]-p[i][1])}return s}
+function analyzeDxf(text,unitSel,height){
+  const {hdr,ents}=parseDxf(text);
+  let unit,usrc;
+  if(unitSel!=='auto'){unit=unitSel;usrc='tumne choose kiya'}
+  else if(CODE[hdr.$INSUNITS]){unit=CODE[hdr.$INSUNITS];usrc='file se mila'}
+  else{unit='mm';usrc='file me nahi mila, mm maana'}
+  const k=FT[unit],shapes=[],circles=[],texts=[],dims=[],layers={},blocks={};
+  let minx=1e30,miny=1e30,maxx=-1e30,maxy=-1e30,lineLen=0,count=0;
+  const ext=(x,y)=>{minx=Math.min(minx,x);maxx=Math.max(maxx,x);miny=Math.min(miny,y);maxy=Math.max(maxy,y)};
+  for(const e of ents){
+    layers[e.layer]=layers[e.layer]||{};layers[e.layer][e.t]=(layers[e.layer][e.t]||0)+1;
+    const pts=e.x.map((x,i)=>[x,e.y[i]||0]);
+    if(e.t==='LINE'){pts.forEach(p=>ext(...p));if(e.x2!=null){ext(e.x2,e.y2);lineLen+=Math.hypot(e.x2-e.x[0],e.y2-e.y[0])*k}count++}
+    else if(e.t==='LWPOLYLINE'||e.t==='POLYLINE'){
+      const P=e.t==='POLYLINE'?e.verts.map(v=>[v.x[0],v.y[0]]):pts;
+      P.forEach(p=>ext(...p));count++;
+      if((e.flags&1)&&P.length>=3){
+        const xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);
+        shapes.push({layer:e.layer,w:(Math.max(...xs)-Math.min(...xs))*k,l:(Math.max(...ys)-Math.min(...ys))*k,area:polyArea(P)*k*k,per:polyPer(P)*k,thick:Math.abs(e.thick||0)*k});
+      }else for(let i=1;i<P.length;i++)lineLen+=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1])*k;
+    }
+    else if(e.t==='CIRCLE'||e.t==='ARC'){const [cx,cy]=pts[0]||[0,0];ext(cx-e.r,cy-e.r);ext(cx+e.r,cy+e.r);count++;
+      if(e.t==='CIRCLE'){const r=e.r*k;circles.push({layer:e.layer,d:2*r,area:Math.PI*r*r,circ:2*Math.PI*r})}}
+    else if(e.t==='TEXT'||e.t==='MTEXT'){texts.push({layer:e.layer,text:(e.text||'').replace(/\\P/g,' ').replace(/\{?\\[A-Za-z][^;]*;|[{}]/g,'')})}
+    else if(e.t==='DIMENSION'){dims.push({layer:e.layer,text:e.text||'',m:e.meas!=null?e.meas*k:null})}
+    else if(e.t==='INSERT'){blocks[e.name]=(blocks[e.name]||0)+1}
+  }
+  const has=maxx>-1e29;
+  const overall=has?{l:(maxx-minx)*k,w:(maxy-miny)*k}:null;
+  const largest=Math.max(0,...shapes.map(s=>s.area));
+  const foot=shapes.reduce((a,s)=>a+s.area,0);
+  const notes=[];
+  if(usrc.startsWith('file me nahi'))notes.push('Drawing me unit nahi mila, isliye mm maana. Galat lage to Drawing unit badlo.');
+  if(!height)notes.push('2D plan hai. Cubic ft ke liye Height (ft) daalo.');
+  if(shapes.length>1)notes.push('Andar-bahar wale shapes ka volume dobara mat jodna. Total ke liye bounding box ya sabse bada shape dekho.');
+  if(!ents.length)notes.push('Koi entity nahi mili. File binary DXF ho sakti hai. AutoCAD me "ASCII DXF" save karo.');
+  return {kind:'dxf',unit,usrc,overall,lineLen,shapes,circles,texts,dims,layers,blocks,foot,largest,height,notes};
+}
+function renderDxf(d,label){
+  const h=d.height;
+  const rows=(a,cols)=>a.length?`<div class="tw"><table><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}</tr>${a.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join('')}</tr>`).join('')}</table></div>`:'<p class="sub">Kuch nahi mila.</p>';
+  const bb=d.overall&&h?d.overall.l*d.overall.w*h:null;
+  return `${label?`<div class="note">${label}</div>`:''}
+  ${d.notes.map(n=>`<div class="note">${esc(n)}</div>`).join('')}
+  <section class="panel hero"><h2>Total size</h2>
+   <p class="big">${d.overall?n2(d.overall.l)+' × '+n2(d.overall.w)+(h?' × '+n2(h):''):'-'} ft</p>
+   <p class="sub">lambai × chaudai${h?' × height':''}. Unit: ${d.unit} (${d.usrc})</p></section>
+  <section class="panel"><h2>Cubic ft</h2><div class="grid">
+   <div><div class="k">Bounding box volume</div><div class="v">${n2(bb)} cu ft</div></div>
+   <div><div class="k">Sabse bada shape</div><div class="v">${h?n2(d.largest*h):'-'} cu ft</div></div>
+   <div><div class="k">Footprint (sab shapes)</div><div class="v">${n2(d.foot)} sq ft</div></div>
+   <div><div class="k">Line ki total lambai</div><div class="v">${n2(d.lineLen)} ft</div></div></div></section>
+  <section class="panel"><h2>Band shapes (kamre, chabutra)</h2>${rows(d.shapes,[['Layer',r=>esc(r.layer)],['Chaudai ft',r=>n2(r.w)],['Lambai ft',r=>n2(r.l)],['Area sq ft',r=>n2(r.area)],['Perimeter ft',r=>n2(r.per)],['Cu ft',r=>{const t=r.thick||h;return t?n2(r.area*t):'-'}]])}</section>
+  <section class="panel"><h2>Circles (stambh, kalash)</h2>${rows(d.circles,[['Layer',r=>esc(r.layer)],['Diameter ft',r=>n2(r.d)],['Area sq ft',r=>n2(r.area)],['Cu ft',r=>h?n2(r.area*h):'-']])}</section>
+  <section class="panel"><h2>Dimensions</h2>${rows(d.dims,[['Layer',r=>esc(r.layer)],['Text',r=>esc(r.text)],['Naap ft',r=>n2(r.m)]])}</section>
+  <section class="panel"><h2>Text labels</h2>${rows(d.texts,[['Layer',r=>esc(r.layer)],['Text',r=>esc(r.text)]])}</section>
+  <section class="panel"><h2>Layers aur blocks</h2>${rows(Object.entries(d.layers).map(([k,v])=>({k,v:Object.entries(v).map(([a,b])=>a+' '+b).join(', ')})),[['Layer',r=>esc(r.k)],['Entities',r=>esc(r.v)]])}
+   ${Object.keys(d.blocks).length?'<p style="margin-top:8px">'+Object.entries(d.blocks).map(([k,v])=>`<span class="tag">${esc(k)} ×${v}</span>`).join(' ')+'</p>':''}</section>`;
+}
+
+/* ---------- PDF ---------- */
+async function analyzePdf(buf,scaleIn,unit,height){
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise, O=pdfjsLib.OPS, pages=[];let all='',det=null;
+  const mul=(a,b)=>[a[0]*b[0]+a[2]*b[1],a[1]*b[0]+a[3]*b[1],a[0]*b[2]+a[2]*b[3],a[1]*b[2]+a[3]*b[3],a[0]*b[4]+a[2]*b[5]+a[4],a[1]*b[4]+a[3]*b[5]+a[5]];
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    const tc=await page.getTextContent(), t=tc.items.map(i=>i.str).join(' ');all+=t+'\n';
+    const m=t.match(/1\s*[:\/]\s*(\d+)/);if(m&&!det)det=+m[1];
+    const ops=await page.getOperatorList();let ctm=[1,0,0,1,0,0];const st=[];const rects=[];let minx=1e30,miny=1e30,maxx=-1e30,maxy=-1e30,segs=0;
+    const pt=(x,y)=>{const X=ctm[0]*x+ctm[2]*y+ctm[4],Y=ctm[1]*x+ctm[3]*y+ctm[5];minx=Math.min(minx,X);maxx=Math.max(maxx,X);miny=Math.min(miny,Y);maxy=Math.max(maxy,Y)};
+    ops.fnArray.forEach((fn,i)=>{const a=ops.argsArray[i];
+      if(fn===O.save)st.push(ctm.slice());else if(fn===O.restore)ctm=st.pop()||ctm;else if(fn===O.transform)ctm=mul(ctm,a);
+      else if(fn===O.constructPath){const co=a[0],c=a[1];let j=0;
+        for(const op of co){
+          if(op===O.rectangle){const [x,y,w,h]=c.slice(j,j+4);j+=4;const xs=[x,x+w],ys=[y,y+h];
+            const X=xs.flatMap(u=>ys.map(v=>[ctm[0]*u+ctm[2]*v+ctm[4],ctm[1]*u+ctm[3]*v+ctm[5]]));
+            const w2=Math.hypot(ctm[0],ctm[1])*Math.abs(w),h2=Math.hypot(ctm[2],ctm[3])*Math.abs(h);
+            if(w2>2&&h2>2)rects.push({w:w2,h:h2});X.forEach(q=>pt(...[x,y]));pt(x,y);pt(x+w,y+h);segs++}
+          else if(op===O.moveTo||op===O.lineTo){pt(c[j],c[j+1]);j+=2;segs++}
+          else if(op===O.curveTo){pt(c[j+4],c[j+5]);j+=6;segs++}
+          else if(op===O.curveTo2||op===O.curveTo3){pt(c[j+2],c[j+3]);j+=4;segs++}
+        }}
+    });
+    pages.push({n:p,segs,rects:rects.sort((a,b)=>b.w*b.h-a.w*a.h).slice(0,15),ext:segs?{w:maxx-minx,h:maxy-miny}:null});
+  }
+  const scale=scaleIn||det;
+  const dims=[...new Set((all.match(/\d+(?:\.\d+)?\s*(?:'|ft|mm|cm|m\b)(?:\s*-?\s*\d+(?:\.\d+)?\s*(?:"|in))?/g)||[]))].slice(0,80);
+  return {kind:'pdf',pages,scale,det,unit,dims,text:all.slice(0,2500),height};
+}
+function renderPdf(d,label){
+  const notes=[];
+  if(!d.scale)notes.push('PDF me scale (jaise 1:100) nahi mila. Scale daalo, tabhi real size aayegi.');
+  if(!d.pages.some(p=>p.segs))notes.push('Vector lines nahi mili. Ye scanned image lagti hai, size bharosemand nahi hoga. DXF upload karo.');
+  const u=d.unit==='auto'?'mm':d.unit, k=d.scale?(25.4/72)*d.scale*(FT.mm)*(u==='mm'?1:1):null; // paper is mm; scale is paper:real
+  const conv=v=>k?v*k:null;
+  const big=d.pages.find(p=>p.rects.length&&p.rects[0]);
+  const top=big?big.rects[0]:null;
+  const vol=top&&k&&d.height?conv(top.w)*conv(top.h)*d.height:null;
+  return `${label?`<div class="note">${label}</div>`:''}${notes.map(n=>`<div class="note">${n}</div>`).join('')}
+  <section class="panel hero"><h2>Scale</h2><p class="big">${d.scale?'1 : '+d.scale:'-'}</p><p class="sub">${d.det?'PDF me mila: 1:'+d.det:'PDF me scale nahi mila'}</p></section>
+  <section class="panel"><h2>Cubic ft (sabse bade rectangle se)</h2><p class="v">${n2(vol)} cu ft</p><p class="sub">Height ${n2(d.height)} ft maanke. Ye andaza hai, rectangle ko asli kamra maan kar.</p></section>
+  ${d.pages.map(p=>`<section class="panel"><h2>Page ${p.n}</h2><p>Drawing extent: <b>${p.ext&&k?n2(conv(p.ext.w))+' × '+n2(conv(p.ext.h))+' ft':'-'}</b> <span class="sub">(${p.segs} lines/shapes)</span></p>
+   ${p.rects.length?`<div class="tw"><table><tr><th>Chaudai ft</th><th>Lambai ft</th><th>Area sq ft</th></tr>${p.rects.map(r=>`<tr><td>${n2(conv(r.w))}</td><td>${n2(conv(r.h))}</td><td>${k?n2(conv(r.w)*conv(r.h)):'-'}</td></tr>`).join('')}</table></div>`:''}</section>`).join('')}
+  <section class="panel"><h2>PDF me likhe naap</h2><p>${d.dims.length?d.dims.map(x=>`<span class="tag">${esc(x)}</span>`).join(' '):'<span class="sub">Kuch nahi mila.</span>'}</p></section>
+  <section class="panel"><h2>Text</h2><p class="sub" style="white-space:pre-wrap">${esc(d.text)||'-'}</p></section>`;
+}
+
+/* ---------- wiring ---------- */
+const out=$('#out');
+const SAMPLE=(()=>{ // mm drawing: 12 m x 8 m plinth, 3 x 3 m garbhagriha, 4 pillars. Unit tag INSUNITS=4
+  const P=(l,pts)=>['0','LWPOLYLINE','8',l,'90',pts.length,'70','1',...pts.flatMap(p=>['10',p[0],'20',p[1]])];
+  const C=(x,y,r)=>['0','CIRCLE','8','STAMBH','10',x,'20',y,'40',r];
+  const T=(t,x,y)=>['0','TEXT','8','LABEL','10',x,'20',y,'40',250,'1',t];
+  const a=['0','SECTION','2','HEADER','9','$INSUNITS','70',4,'0','ENDSEC','0','SECTION','2','ENTITIES',
+   ...P('CHABUTRA',[[0,0],[12000,0],[12000,8000],[0,8000]]),
+   ...P('GARBHAGRIHA',[[4500,3500],[7500,3500],[7500,6500],[4500,6500]]),
+   ...C(1500,1500,200),...C(10500,1500,200),...C(1500,6500,200),...C(10500,6500,200),
+   ...T('GARBHAGRIHA',4700,4800),'0','ENDSEC','0','EOF'];
+  return a.join('\n');
+})();
+function show(html){out.innerHTML=html}
+function runDemo(){const d=analyzeDxf(SAMPLE,'auto',+$('#h').value||20);show(renderDxf(d,'Ye example plan hai (12 m × 8 m chabutra). Apni file upload karke apna naap nikalo.'))}
+$('#demo').onclick=runDemo;
+$('#f').addEventListener('submit',async e=>{
+  e.preventDefault();const f=$('#file').files[0];
+  if(!f){show('<div class="note">Pehle .dxf ya .pdf file chuno.</div>');return}
+  show('<div class="note">Padh raha hoon...</div>');
+  const height=+$('#h').value||0,unit=$('#unit').value,ext=f.name.split('.').pop().toLowerCase();
+  try{
+    if(ext==='dxf')show(renderDxf(analyzeDxf(await f.text(),unit,height)));
+    else if(ext==='pdf'){if(typeof pdfjsLib==='undefined')throw new Error('PDF reader load nahi hua. Internet check karo.');
+      show(renderPdf(await analyzePdf(new Uint8Array(await f.arrayBuffer()),+$('#scale').value||null,unit,height)))}
+    else show('<div class="note">Sirf .dxf ya .pdf chalega. DWG ko AutoCAD me DXF save karo.</div>');
+  }catch(err){show('<div class="note">File padh nahi payi: '+esc(err.message)+'</div>')}
+});
+runDemo();
+</script>
