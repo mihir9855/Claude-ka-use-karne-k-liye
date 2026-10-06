@@ -77,6 +77,7 @@ details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 </div>
 <input id="file" type="file" hidden>
 <p class="sub needs" id="aistat" style="margin-bottom:10px"></p>
+<details class="needs" style="margin-bottom:10px"><summary>ભાગની તૈયાર યાદી પેસ્ટ કરો</summary><p class="sub" style="margin:8px 0">Claude ચેટમાંથી મળેલી યાદી અહીં પેસ્ટ કરો.</p><textarea id="pastebox" rows="5" style="width:100%;box-sizing:border-box;font:inherit;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px"></textarea><button class="b alt" id="pastego" type="button" style="margin-top:8px;width:100%">યાદી લાગુ કરો</button></details>
 <div id="views" style="margin-bottom:10px"></div>
 <label class="needs" style="margin-bottom:10px;flex-direction:row;align-items:center;gap:8px"><input id="shownames" type="checkbox" checked style="width:auto"> ભાગના નામ ડ્રોઇંગ પર બતાવો</label>
 <label class="needs" style="margin-bottom:10px">ઝૂમ <input id="zoom" type="range" min="100" max="300" value="100"></label>
@@ -746,6 +747,11 @@ $('#pdfbtn').onclick=async()=>{
     else $('#repmsg').textContent='અહીં PDF સીધી સેવ થઈ શકતી નથી. નીચેના પાના દબાવી રાખીને ઇમેજ તરીકે સેવ કરો, અથવા લિંક claude.ai માં ખોલો.';
   }catch(e){$('#repmsg').textContent='રિપોર્ટ બનાવવામાં ભૂલ: '+(e&&e.message||e)}
   finally{$('#pdfbtn').disabled=false}
+};
+$('#pastego').onclick=()=>{
+  try{const t=$('#pastebox').value.trim();const i=t.indexOf('['),j=t.lastIndexOf(']');applyAi(JSON.parse(t.slice(i,j+1)));
+    S.note='યાદીમાંથી '+S.parts.length+' ભાગ મળ્યા. ચોકઠા તપાસો અને “આખા મંદિરનું માપ” લખો.';$('#aistat').textContent='';full()}
+  catch(e){$('#aistat').textContent='યાદી સમજાઈ નથી. આખી યાદી [ થી ] સુધી પેસ્ટ કરો.'}
 };
 full();
 

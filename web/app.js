@@ -488,4 +488,9 @@ $('#pdfbtn').onclick=async()=>{
   }catch(e){$('#repmsg').textContent='રિપોર્ટ બનાવવામાં ભૂલ: '+(e&&e.message||e)}
   finally{$('#pdfbtn').disabled=false}
 };
+$('#pastego').onclick=()=>{
+  try{const t=$('#pastebox').value.trim();const i=t.indexOf('['),j=t.lastIndexOf(']');applyAi(JSON.parse(t.slice(i,j+1)));
+    S.note='યાદીમાંથી '+S.parts.length+' ભાગ મળ્યા. ચોકઠા તપાસો અને “આખા મંદિરનું માપ” લખો.';$('#aistat').textContent='';full()}
+  catch(e){$('#aistat').textContent='યાદી સમજાઈ નથી. આખી યાદી [ થી ] સુધી પેસ્ટ કરો.'}
+};
 full();
