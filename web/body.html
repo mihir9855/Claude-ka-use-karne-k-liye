@@ -38,8 +38,10 @@ button.b.on{outline:3px solid var(--box)}
 .box.view{border:2px dashed #1769e0;background:transparent;pointer-events:none}
 .box.view i{background:#1769e0}
 #ov.draw .box{pointer-events:none}
+.nonames .nm{display:none}
+.box.sel i{z-index:4}
 .box.sel{border-width:3px;background:color-mix(in srgb,var(--box) 18%,transparent);touch-action:none}
-.box i{position:absolute;left:0;top:0;background:var(--box);color:#fff;font:600 11px/1 var(--font);font-style:normal;padding:2px 5px}
+.box i{position:absolute;left:0;top:0;white-space:nowrap;z-index:2;background:var(--box);color:#fff;font:600 11px/1 var(--font);font-style:normal;padding:2px 5px}
 .h{position:absolute;width:26px;height:26px;background:var(--box);border-radius:50%;touch-action:none;border:2px solid #fff;box-sizing:border-box}
 .h.tl{left:-13px;top:-13px}.h.br{right:-13px;bottom:-13px}
 .tw{overflow-x:auto}
@@ -76,6 +78,7 @@ details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 <input id="file" type="file" hidden>
 <p class="sub needs" id="aistat" style="margin-bottom:10px"></p>
 <div id="views" style="margin-bottom:10px"></div>
+<label class="needs" style="margin-bottom:10px;flex-direction:row;align-items:center;gap:8px"><input id="shownames" type="checkbox" checked style="width:auto"> ભાગના નામ ડ્રોઇંગ પર બતાવો</label>
 <label class="needs" style="margin-bottom:10px">ઝૂમ <input id="zoom" type="range" min="100" max="300" value="100"></label>
 <div id="emptymsg" class="sub" style="padding:18px;border:1px dashed var(--line);border-radius:8px;text-align:center">હજી કોઈ ફાઇલ ખોલી નથી. ઉપર “DXF / PDF / ફોટો ખોલો” દબાવો.</div>
 <div class="zoomwrap" id="zoomwrap" hidden><div id="stage"><img id="img" alt="ડ્રોઇંગ"><div id="ov"></div></div></div>
@@ -110,13 +113,14 @@ details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 <section class="panel needs"><h2>3. ભાગ તપાસો</h2><p class="sub" id="cnt" style="margin-bottom:8px"></p><div class="tw" id="list"></div></section>
 
 <section class="panel needs"><h2>4. ખરીદીની યાદી (સરખા ટુકડા ભેગા)</h2><div class="tw" id="buy"></div>
-<div class="row" style="margin-top:12px"><button class="b" id="copy" type="button">યાદી કોપી કરો</button></div></section>
+<div class="row" style="margin-top:12px"><button class="b" id="pdfbtn" type="button">PDF રિપોર્ટ બનાવો</button><button class="b alt" id="copy" type="button">યાદી કોપી કરો</button></div>
+<p id="repmsg" class="sub" style="margin-top:8px"></p><div id="reppages" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div></section>
 
 <section class="panel needs"><details><summary>પથ્થર, ભાવ અને શોધ સેટિંગ</summary>
 <div class="row" style="margin-top:12px">
 <label>પથ્થરનો પ્રકાર<select id="stone"><option value="170">માર્બલ</option><option value="150">બંસી પહાડપુર / સેન્ડસ્ટોન</option><option value="170">ગ્રેનાઇટ</option><option value="165">કોટા / લાઇમસ્ટોન</option></select></label>
 <label>ભાવ (₹ પ્રતિ ઘન ફૂટ)<input id="rate" type="number" inputmode="decimal" step="any" value="0"></label>
-<label>બ્લોકમાં વધારો (ઇંચ, લંબાઈ-પહોળાઈ-ઊંડાઈ દરેકમાં)<input id="allow" type="number" inputmode="decimal" step="any" value="1"></label>
+<label>વધારાનો બગાડ / બ્લોકમાં વધારો (ઇંચ). 0 એટલે કોઈ બગાડ નહીં<input id="allow" type="number" inputmode="decimal" step="any" value="0"></label>
 <label>આખા મંદિરની ઊંડાઈ (ઇંચ), જો પ્લાન ન હોય<input id="gdepth" type="number" inputmode="decimal" step="any" value="12"></label>
 </div>
 <div class="row" style="margin-top:12px">

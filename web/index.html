@@ -38,8 +38,10 @@ button.b.on{outline:3px solid var(--box)}
 .box.view{border:2px dashed #1769e0;background:transparent;pointer-events:none}
 .box.view i{background:#1769e0}
 #ov.draw .box{pointer-events:none}
+.nonames .nm{display:none}
+.box.sel i{z-index:4}
 .box.sel{border-width:3px;background:color-mix(in srgb,var(--box) 18%,transparent);touch-action:none}
-.box i{position:absolute;left:0;top:0;background:var(--box);color:#fff;font:600 11px/1 var(--font);font-style:normal;padding:2px 5px}
+.box i{position:absolute;left:0;top:0;white-space:nowrap;z-index:2;background:var(--box);color:#fff;font:600 11px/1 var(--font);font-style:normal;padding:2px 5px}
 .h{position:absolute;width:26px;height:26px;background:var(--box);border-radius:50%;touch-action:none;border:2px solid #fff;box-sizing:border-box}
 .h.tl{left:-13px;top:-13px}.h.br{right:-13px;bottom:-13px}
 .tw{overflow-x:auto}
@@ -76,6 +78,7 @@ details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 <input id="file" type="file" hidden>
 <p class="sub needs" id="aistat" style="margin-bottom:10px"></p>
 <div id="views" style="margin-bottom:10px"></div>
+<label class="needs" style="margin-bottom:10px;flex-direction:row;align-items:center;gap:8px"><input id="shownames" type="checkbox" checked style="width:auto"> ભાગના નામ ડ્રોઇંગ પર બતાવો</label>
 <label class="needs" style="margin-bottom:10px">ઝૂમ <input id="zoom" type="range" min="100" max="300" value="100"></label>
 <div id="emptymsg" class="sub" style="padding:18px;border:1px dashed var(--line);border-radius:8px;text-align:center">હજી કોઈ ફાઇલ ખોલી નથી. ઉપર “DXF / PDF / ફોટો ખોલો” દબાવો.</div>
 <div class="zoomwrap" id="zoomwrap" hidden><div id="stage"><img id="img" alt="ડ્રોઇંગ"><div id="ov"></div></div></div>
@@ -110,13 +113,14 @@ details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 <section class="panel needs"><h2>3. ભાગ તપાસો</h2><p class="sub" id="cnt" style="margin-bottom:8px"></p><div class="tw" id="list"></div></section>
 
 <section class="panel needs"><h2>4. ખરીદીની યાદી (સરખા ટુકડા ભેગા)</h2><div class="tw" id="buy"></div>
-<div class="row" style="margin-top:12px"><button class="b" id="copy" type="button">યાદી કોપી કરો</button></div></section>
+<div class="row" style="margin-top:12px"><button class="b" id="pdfbtn" type="button">PDF રિપોર્ટ બનાવો</button><button class="b alt" id="copy" type="button">યાદી કોપી કરો</button></div>
+<p id="repmsg" class="sub" style="margin-top:8px"></p><div id="reppages" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div></section>
 
 <section class="panel needs"><details><summary>પથ્થર, ભાવ અને શોધ સેટિંગ</summary>
 <div class="row" style="margin-top:12px">
 <label>પથ્થરનો પ્રકાર<select id="stone"><option value="170">માર્બલ</option><option value="150">બંસી પહાડપુર / સેન્ડસ્ટોન</option><option value="170">ગ્રેનાઇટ</option><option value="165">કોટા / લાઇમસ્ટોન</option></select></label>
 <label>ભાવ (₹ પ્રતિ ઘન ફૂટ)<input id="rate" type="number" inputmode="decimal" step="any" value="0"></label>
-<label>બ્લોકમાં વધારો (ઇંચ, લંબાઈ-પહોળાઈ-ઊંડાઈ દરેકમાં)<input id="allow" type="number" inputmode="decimal" step="any" value="1"></label>
+<label>વધારાનો બગાડ / બ્લોકમાં વધારો (ઇંચ). 0 એટલે કોઈ બગાડ નહીં<input id="allow" type="number" inputmode="decimal" step="any" value="0"></label>
 <label>આખા મંદિરની ઊંડાઈ (ઇંચ), જો પ્લાન ન હોય<input id="gdepth" type="number" inputmode="decimal" step="any" value="12"></label>
 </div>
 <div class="row" style="margin-top:12px">
@@ -271,8 +275,8 @@ $('#pal').innerHTML=PALS.map(p=>`<button type="button" data-p="${p[0]}" title="$
 $('#pal').onclick=e=>{const b=e.target.closest('button');if(b)setPal(b.dataset.p)};
 try{setPal(localStorage.getItem('pathar-pal')||'')}catch(e){setPal('')}
 function readCfg(){CFG.density=+$('#stone').value;CFG.rate=+$('#rate').value||0;CFG.allow=Math.max(0,+$('#allow').value||0);CFG.gdepth=Math.max(0,+$('#gdepth').value||0)}
-['#stone','#rate','#allow','#gdepth'].forEach(i=>$(i).addEventListener('input',()=>{readCfg();refresh();try{localStorage.setItem('pathar-cfg',JSON.stringify({d:$('#stone').selectedIndex,r:CFG.rate,a:CFG.allow,g:CFG.gdepth}))}catch(e){}}));
-try{const j=JSON.parse(localStorage.getItem('pathar-cfg')||'null');if(j){$('#stone').selectedIndex=j.d;$('#rate').value=j.r;$('#allow').value=j.a;$('#gdepth').value=j.g}}catch(e){}
+['#stone','#rate','#allow','#gdepth'].forEach(i=>$(i).addEventListener('input',()=>{readCfg();refresh();try{localStorage.setItem('pathar-cfg2',JSON.stringify({d:$('#stone').selectedIndex,r:CFG.rate,a:CFG.allow,g:CFG.gdepth}))}catch(e){}}));
+try{const j=JSON.parse(localStorage.getItem('pathar-cfg2')||'null');if(j){$('#stone').selectedIndex=j.d;$('#rate').value=j.r;$('#allow').value=j.a;$('#gdepth').value=j.g}}catch(e){}
 readCfg();
 
 /* ---------- calculations ---------- */
@@ -310,7 +314,7 @@ function drawBoxes(){
     d.innerHTML=`<i>${i===S.elev?'એલિવેશન':i===S.plan?'પ્લાન':'વ્યૂ '+(i+1)}</i>`;ov.appendChild(d)});
   S.parts.forEach((p,i)=>{
     const d=document.createElement('div');d.className='box'+(p.id===S.sel?' sel':'');d.dataset.id=p.id;place(d,p);
-    d.innerHTML=`<i>${i+1}</i>`+(p.id===S.sel?'<span class="h tl" data-m="tl"></span><span class="h br" data-m="br"></span>':'');
+    d.innerHTML=`<i>${i+1}<span class="nm">. ${esc(p.name)}</span></i>`+(p.id===S.sel?'<span class="h tl" data-m="tl"></span><span class="h br" data-m="br"></span>':'');
     ov.appendChild(d)});
 }
 let drag=null,drawMode=false;
@@ -339,6 +343,7 @@ function endDrag(){
 ov.addEventListener('pointerup',endDrag);ov.addEventListener('pointercancel',endDrag);
 function setDraw(v){drawMode=v;ov.classList.toggle('draw',v);$('#draw').classList.toggle('on',v);$('#draw').textContent=v?'ડ્રોઇંગ પર ખેંચીને ચોકઠું બનાવો':'ભાગ હાથે દોરો'}
 $('#draw').onclick=()=>setDraw(!drawMode);
+$('#shownames').onchange=e=>ov.classList.toggle('nonames',!e.target.checked);
 $('#zoom').oninput=e=>{$('#stage').style.width=e.target.value+'%'};
 function select(id){S.sel=id;full()}
 
@@ -349,7 +354,23 @@ function detect(){
   const roi=roiV?{x0:Math.round(roiV.x0*k),y0:Math.round(roiV.y0*k),x1:Math.round(roiV.x1*k),y1:Math.round(roiV.y1*k)}:{x0:Math.round(S.area.x*k),y0:Math.round(S.area.y*k),x1:Math.round((S.area.x+S.area.w)*k),y1:Math.round((S.area.y+S.area.h)*k)};
   const bs=detectParts(S.mask,roi,opts());
   S.parts=bs.map((b,i)=>({id:uid(),name:'ભાગ '+(i+1),x:b.x0/k,y:b.y0/k,w:(b.x1-b.x0)/k,h:(b.y1-b.y0)/k,depth:null,fill:100}));
-  S.sel=S.parts[0]?S.parts[0].id:null;
+  nameParts();S.sel=S.parts[0]?S.parts[0].id:null;
+}
+function nameParts(){
+  if(!S.parts.length)return;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;S.parts.forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x+p.w);y1=Math.max(y1,p.y+p.h)});
+  const UW=x1-x0,UH=y1-y0;
+  S.parts.forEach((p,i)=>{
+    const cx=(p.x+p.w/2-x0)/UW,cy=(p.y+p.h/2-y0)/UH,rw=p.w/UW,rh=p.h/UH,as=p.h/p.w;let n;
+    if(as>1.8&&rw<0.2)n=(cx<0.5?'ડાબી':'જમણી')+(rh>0.4?' થાંભલી':' થાંભલીનો ટુકડો');
+    else if(rw>0.6&&rh<0.12)n=cy<0.35?'છજું / ઉપરની પટ્ટી':cy>0.75?'પાયાની પટ્ટી / પગથિયું':'આડી પટ્ટી';
+    else if(cy<0.3)n=rw>0.3?'શિખર / ઉપરનો ભાગ':'શિખરનો ટુકડો';
+    else if(cy>0.75)n=rw>0.5?'સ્ટોરેજ / ડ્રોઅર / પ્લિન્થ':'નીચેનો ટુકડો';
+    else if(rw>0.45)n='તોરણ / કમાન';
+    else if(cx>0.3&&cx<0.7)n='વચ્ચેની કોતરણી / જાળી';
+    else n='ભાગ '+(i+1);
+    p.name=n;
+  });
 }
 function analyze(){
   S.mask=toMask(S.canvas,800);const k=S.mask.k,a=drawingArea(S.mask);
@@ -643,6 +664,86 @@ async function runAi(){
 }
 $('#ai').onclick=runAi;
 
+
+/* ---------- PDF report (pages drawn on canvas, wrapped into a PDF; Gujarati text stays correct) ---------- */
+async function renderReportPages(){
+  try{await document.fonts.load('700 30px "Noto Sans Gujarati"');await document.fonts.load('400 24px "Noto Sans Gujarati"')}catch(e){}
+  const PW=1240,PH=1754,M=70,FF='"Noto Sans Gujarati",sans-serif',pages=[];let cv,g,y;
+  const newPage=()=>{cv=document.createElement('canvas');cv.width=PW;cv.height=PH;g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,PW,PH);pages.push(cv);y=M};
+  const txt=(t,x,yy,size,weight,color,align,maxW)=>{g.font=`${weight||400} ${size}px ${FF}`;g.fillStyle=color||'#111';g.textAlign=align||'left';g.textBaseline='alphabetic';let s=String(t);
+    if(maxW&&g.measureText(s).width>maxW){while(s.length>1&&g.measureText(s+'…').width>maxW)s=s.slice(0,-1);s+='…'}g.fillText(s,x,yy)};
+  const need=h=>{if(y+h>PH-M-30)newPage()};
+  let blk=0,net=0,kg=0,md=0;S.parts.forEach(p=>{const c=calc(p);blk+=c.block;net+=c.net;kg+=c.kg;md=Math.max(md,c.D)});
+  const ex=extent(),g1=groups();
+  newPage();
+  txt('મંદિર પથ્થર રિપોર્ટ',M,y+44,50,700);y+=62;
+  txt(new Date().toLocaleDateString('en-GB'),M,y+22,24,400,'#555');y+=44;
+  const items=[['કુલ પથ્થર (ઘન ફૂટ)',f2(blk)],['કુલ ભાગ / ટુકડા',String(S.parts.length)+' ('+g1.length+' અલગ સાઇઝ)'],
+    ['ઊંચાઈ',f2(ex.h*S.s/12)+' ફૂટ'],['પહોળાઈ',f2(ex.w*S.s/12)+' ફૂટ'],['ઊંડાઈ (સૌથી વધુ)',f2(md/12)+' ફૂટ'],['આશરે વજન',Math.round(kg).toLocaleString('en-IN')+' કિગ્રા']];
+  if(CFG.rate)items.push(['અંદાજિત ખર્ચ','₹ '+Math.round(blk*CFG.rate).toLocaleString('en-IN')]);
+  const cw=(PW-2*M)/2;
+  items.forEach((it,i)=>{const x=M+(i%2)*cw,yy=y+Math.floor(i/2)*84;txt(it[0],x,yy+24,22,400,'#555');txt(it[1],x,yy+62,i===0?42:32,700)});
+  y+=Math.ceil(items.length/2)*84+16;
+  // drawing with numbered boxes
+  const im=new Image();im.src=S.src;try{await im.decode()}catch(e){}
+  const aw=PW-2*M,ah=PH-M-60-y,sc=Math.min(aw/S.w,ah/S.h),dw=S.w*sc,dh=S.h*sc,dx=M+(aw-dw)/2;
+  g.drawImage(im,dx,y,dw,dh);g.strokeStyle='#d6204f';g.lineWidth=2.5;
+  S.parts.forEach((p,i)=>{g.strokeRect(dx+p.x*sc,y+p.y*sc,p.w*sc,p.h*sc);
+    const lx=dx+p.x*sc,ly=y+p.y*sc;g.fillStyle='#d6204f';g.fillRect(lx,ly,34,26);txt(String(i+1),lx+17,ly+20,18,700,'#fff','center')});
+  y+=dh+10;
+  // parts table
+  newPage();txt('ભાગની યાદી',M,y+36,38,700);y+=60;
+  const head=()=>{g.fillStyle='#e8eef9';g.fillRect(M,y,PW-2*M,46);txt('#',M+12,y+32,22,700);txt('ભાગનું નામ',M+70,y+32,22,700);
+    txt('પહોળાઈ″',830,y+32,22,700,'#111','right');txt('ઊંચાઈ″',950,y+32,22,700,'#111','right');txt('ઊંડાઈ″',1060,y+32,22,700,'#111','right');txt('ઘન ફૂટ',PW-M-12,y+32,22,700,'#111','right');y+=46};
+  head();
+  S.parts.forEach((p,i)=>{if(y+46>PH-M-30){newPage();head()}const c=calc(p);
+    if(i%2){g.fillStyle='#f4f6fa';g.fillRect(M,y,PW-2*M,46)}
+    txt(String(i+1),M+12,y+32,22);txt(p.name,M+70,y+32,22,400,'#111','left',640-70+M-30);
+    txt(f1(c.W),830,y+32,22,400,'#111','right');txt(f1(c.H),950,y+32,22,400,'#111','right');txt(f1(c.D),1060,y+32,22,400,'#111','right');txt(f2(c.block),PW-M-12,y+32,22,700,'#111','right');y+=46});
+  y+=30;need(120);
+  txt('ખરીદીની યાદી (સરખા ટુકડા ભેગા)',M,y+36,38,700);y+=60;
+  const head2=()=>{g.fillStyle='#e8eef9';g.fillRect(M,y,PW-2*M,46);txt('સાઇઝ ઇંચ (લંબાઈ × ઊંચાઈ × ઊંડાઈ)',M+12,y+32,22,700);txt('નંગ',800,y+32,22,700,'#111','right');txt('એકનો ઘન ફૂટ',980,y+32,22,700,'#111','right');txt('કુલ ઘન ફૂટ',PW-M-12,y+32,22,700,'#111','right');y+=46};
+  head2();
+  g1.forEach((q,i)=>{if(y+46>PH-M-30){newPage();head2()}if(i%2){g.fillStyle='#f4f6fa';g.fillRect(M,y,PW-2*M,46)}
+    txt(`${f1(q.bw)} × ${f1(q.bh)} × ${f1(q.bd)}`,M+12,y+32,22);txt(String(q.qty),800,y+32,22,400,'#111','right');txt(f2(q.vol/q.qty),980,y+32,22,400,'#111','right');txt(f2(q.vol),PW-M-12,y+32,22,700,'#111','right');y+=46});
+  need(70);g.fillStyle='#111';g.fillRect(M,y+8,PW-2*M,3);txt('કુલ પથ્થર',M+12,y+54,28,700);txt(f2(blk)+' ઘન ફૂટ',PW-M-12,y+54,30,700,'#111','right');
+  pages.forEach((c,i)=>{const gg=c.getContext('2d');gg.font=`400 20px ${FF}`;gg.fillStyle='#777';gg.textAlign='center';gg.fillText(`પાનું ${i+1} / ${pages.length}`,PW/2,PH-34)});
+  return pages;
+}
+function pdfFromJpegs(pgs){
+  const enc=new TextEncoder(),chunks=[],offs=[];let len=0;
+  const push=d=>{const u=typeof d==='string'?enc.encode(d):d;chunks.push(u);len+=u.length};
+  const obj=(n,body)=>{offs[n]=len;push(`${n} 0 obj\n`);push(body);push('\nendobj\n')};
+  push('%PDF-1.4\n');
+  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2,`<< /Type /Pages /Count ${pgs.length} /Kids [${pgs.map((_,k)=>`${3+3*k} 0 R`).join(' ')}] >>`);
+  pgs.forEach((p,k)=>{const W=Math.round(p.w*0.48),H=Math.round(p.h*0.48),c=`q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+    obj(3+3*k,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${5+3*k} 0 R >> /ProcSet [/PDF /ImageC] >> /Contents ${4+3*k} 0 R >>`);
+    obj(4+3*k,`<< /Length ${c.length} >>\nstream\n${c}\nendstream`);
+    offs[5+3*k]=len;push(`${5+3*k} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${p.w} /Height ${p.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${p.bytes.length} >>\nstream\n`);push(p.bytes);push('\nendstream\nendobj\n')});
+  const n=3+3*pgs.length,x=len;
+  push(`xref\n0 ${n}\n0000000000 65535 f \n`);for(let i=1;i<n;i++)push(String(offs[i]).padStart(10,'0')+' 00000 n \n');
+  push(`trailer\n<< /Size ${n} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`);
+  return new Blob(chunks,{type:'application/pdf'});
+}
+async function makeReport(){
+  const cvs=await renderReportPages(),pgs=[];
+  for(const c of cvs){const bl=await new Promise(r=>c.toBlob(r,'image/jpeg',0.9));pgs.push({w:c.width,h:c.height,bytes:new Uint8Array(await bl.arrayBuffer()),url:c.toDataURL('image/jpeg',0.7)})}
+  return {pdf:pdfFromJpegs(pgs),pages:pgs.map(p=>p.url)};
+}
+let DL=null;(async()=>{try{DL=window.claude?await claude.use('downloads'):null}catch(e){DL=null}})();
+$('#pdfbtn').onclick=async()=>{
+  if(!S.parts.length){$('#repmsg').textContent='પહેલાં ભાગ શોધાવા જોઈએ.';return}
+  $('#pdfbtn').disabled=true;$('#repmsg').textContent='રિપોર્ટ બની રહ્યો છે...';
+  try{
+    const r=await makeReport();
+    $('#reppages').innerHTML=r.pages.map((u,i)=>`<img src="${u}" alt="પાનું ${i+1}" style="width:100%;border:1px solid var(--line);border-radius:6px">`).join('');
+    if(DL){try{await DL.save({filename:'mandir-pathar-report.pdf',data:r.pdf});$('#repmsg').textContent='✓ PDF સેવ થઈ. નીચે રિપોર્ટનું પ્રીવ્યૂ છે.'}
+      catch(e){$('#repmsg').textContent=e&&e.code==='declined'?'સેવ કરવાનું રદ કર્યું. ફરી “PDF રિપોર્ટ બનાવો” દબાવો.':'PDF સીધી સેવ થઈ નહીં. નીચેના પાના દબાવી રાખીને ઇમેજ તરીકે સેવ કરો.'}}
+    else $('#repmsg').textContent='અહીં PDF સીધી સેવ થઈ શકતી નથી. નીચેના પાના દબાવી રાખીને ઇમેજ તરીકે સેવ કરો, અથવા લિંક claude.ai માં ખોલો.';
+  }catch(e){$('#repmsg').textContent='રિપોર્ટ બનાવવામાં ભૂલ: '+(e&&e.message||e)}
+  finally{$('#pdfbtn').disabled=false}
+};
 full();
 
 </script>
