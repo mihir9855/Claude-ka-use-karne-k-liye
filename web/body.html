@@ -78,15 +78,23 @@ details>summary{cursor:pointer;font-weight:700;padding-block:2px}
 </section>
 
 <section class="panel needs">
-<h2>માપ સેટ કરો</h2>
-<p class="sub" id="scaleinfo" style="margin-bottom:10px"></p>
+<h2>આખા મંદિરનું માપ લખો</h2>
+<p class="sub" style="margin-bottom:10px">જે ખબર હોય તે લખો. બાકીના બધા ભાગના માપ પ્રમાણસર આપોઆપ નીકળશે.</p>
 <div class="row">
+<label>પહોળાઈ (સામેથી)<input id="m-w" type="number" inputmode="decimal" step="any"></label>
+<label>ઊંચાઈ<input id="m-h" type="number" inputmode="decimal" step="any"></label>
+<label>લંબાઈ / ઊંડાઈ (આગળથી પાછળ)<input id="m-d" type="number" inputmode="decimal" step="any"></label>
+<label>એકમ<select id="m-unit"><option value="ft">ફૂટ</option><option value="in">ઇંચ</option></select></label>
+</div>
+<button class="b" id="m-apply" type="button" style="margin-top:10px;width:100%">માપ લાગુ કરો</button>
+<p class="sub" id="scaleinfo" style="margin-top:8px"></p>
+<details style="margin-top:10px"><summary>કોઈ એક ભાગનું માપ ખબર હોય તો</summary>
+<div class="row" style="margin-top:10px">
 <label>શેનું માપ ખબર છે<select id="refwhat"></select></label>
 <label>માપ<input id="refval" type="number" inputmode="decimal" step="any"></label>
 <label>એકમ<select id="refunit"><option value="ft">ફૂટ</option><option value="in">ઇંચ</option></select></label>
 </div>
-<button class="b" id="setscale" type="button" style="margin-top:10px;width:100%">માપ લાગુ કરો</button>
-<p class="sub" style="margin-top:8px">દા.ત. “આખા મંદિરની ઊંચાઈ 7 ફૂટ” લખશો તો બાકીના બધા ભાગના માપ એ પ્રમાણે આપોઆપ નીકળશે.</p>
+<button class="b alt" id="setscale" type="button" style="margin-top:10px;width:100%">એ માપ લાગુ કરો</button></details>
 </section>
 
 <section class="panel needs" id="editor"></section>

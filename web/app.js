@@ -35,7 +35,7 @@ function depthOf(p){
   if(p.depth!=null)return {v:p.depth,src:'તમે લખ્યું'};
   const pd=planDepthIn(p);if(pd!=null)return {v:pd,src:'પ્લાનમાંથી'};
   const W=p.w*S.s,H=p.h*S.s;
-  if(p.depthRatio>0)return {v:W*p.depthRatio,src:'AI નો અંદાજ (પહોળાઈના પ્રમાણમાં)'};
+  if(p.depthRatio>0){const v=W*p.depthRatio;return S.userDepth&&CFG.gdepth>0&&v>CFG.gdepth?{v:CFG.gdepth,src:'તમારી કુલ ઊંડાઈ સુધી મર્યાદિત'}:{v,src:'AI નો અંદાજ (પહોળાઈના પ્રમાણમાં)'}}
   if(H/W>2.2)return {v:W,src:'થાંભલા જેવું: ઊંડાઈ = પહોળાઈ'};
   return {v:Math.min(CFG.gdepth,Math.max(W,H)),src:'અંદાજ'};
 }
@@ -127,6 +127,17 @@ $('#setscale').onclick=()=>{
   S.s=inch/px;S.fileScale=false;S.example=false;S.note='';refresh();
 };
 
+$('#m-apply').onclick=()=>{
+  const u=$('#m-unit').value==='ft'?12:1,w=(+$('#m-w').value||0)*u,h=(+$('#m-h').value||0)*u,d=(+$('#m-d').value||0)*u,ex=extent();
+  if(!(w>0||h>0||d>0)){S.note='ઓછામાં ઓછું એક માપ લખો.';refresh();return}
+  S.note='';
+  if((h>0||w>0)&&ex.h>0){
+    S.s=h>0?h/ex.h:w/ex.w;S.fileScale=false;
+    if(h>0&&w>0){const pw=ex.w*S.s;if(Math.abs(pw-w)/w>0.1)S.note=`ડ્રોઇંગના પ્રમાણ મુજબ પહોળાઈ ${f1(pw)}″ આવે છે, તમે ${f1(w)}″ લખી. ઊંચાઈ પ્રમાણે ગણતરી કરી છે, ઇમેજ થોડી ખેંચાયેલી હોઈ શકે.`}
+  }
+  if(d>0){CFG.gdepth=d;S.userDepth=true;$('#gdepth').value=d}
+  refresh();
+};
 /* ---------- panels ---------- */
 function groups(){
   const m=new Map();
