@@ -206,8 +206,8 @@ const ICONS={
 };
 const ICON_PICK=['cart','food','coffee','fuel','car','train','home','bulb','phone','bag','gift','film','book','heart','medical','card','wallet','trend','swap','receipt','user','star'];
 const ic=(k,sz=20)=>ICONS[k]?`<svg class="ic" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`:`<span style="font-size:${sz-2}px;line-height:1">${esc(k||'')}</span>`;
-const CATS={Card:'card',Food:'food',Groceries:'cart',Fuel:'fuel',Rent:'home',Shopping:'bag',Bills:'bulb',Medical:'medical',Travel:'train',Investment:'trend',Transfer:'swap',Other:'receipt'};
-const CATCOL={Card:'#e11d48',Food:'#d97706',Groceries:'#16a34a',Fuel:'#0369a1',Rent:'#7c3aed',Shopping:'#be185d',Bills:'#0891b2',Medical:'#dc2626',Travel:'#4f46e5',Investment:'#0f766e',Transfer:'#64748b',Other:'#94a3b8'};
+const CATS={Card:'card',EMI:'card',Food:'food',Groceries:'cart',Fuel:'fuel',Rent:'home',Shopping:'bag',Bills:'bulb',Medical:'medical',Travel:'train',Investment:'trend',Transfer:'swap',Other:'receipt'};
+const CATCOL={Card:'#e11d48',EMI:'#0ea5e9',Food:'#d97706',Groceries:'#16a34a',Fuel:'#0369a1',Rent:'#7c3aed',Shopping:'#be185d',Bills:'#0891b2',Medical:'#dc2626',Travel:'#4f46e5',Investment:'#0f766e',Transfer:'#64748b',Other:'#94a3b8'};
 const ICATS={Salary:'wallet',Freelance:'star',Business:'trend',Refund:'swap',Gift:'gift',Other:'receipt'};
 const ICATCOL={Salary:'#16a34a',Freelance:'#8b5cf6',Business:'#0891b2',Refund:'#f59e0b',Gift:'#ec4899',Other:'#94a3b8'};
 const KINDS={expense:'Expense',transfer:'Transfer / card bill / ATM',income:'Income (salary)',other:'Other income',pass:'Party / pass-through'};
@@ -233,7 +233,7 @@ if(mqDark)mqDark.addEventListener('change',()=>{if(S.appearance==='auto')applyTh
 function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
   if(!S.accounts.length||!S.accounts.some(a=>a.type==='cash'))S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
-  S.salary=S.salary||0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
+  S.emis=S.emis||[];S.salary=S.salary||0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
   S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[];S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
@@ -699,6 +699,97 @@ function fixSheet(k){
   <button class="btn red" data-a="close">Keep as is</button>`);
 }
 
+/* ---------- EMI on a credit card ---------- */
+function addMonthsISO(iso,n){
+  const [y,m,d]=iso.split('-').map(Number),t=new Date(y,m-1+n,1),last=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();
+  return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(Math.min(d,last)).padStart(2,'0');
+}
+const todayISO=()=>isoDay(Date.now());
+/* paid = instalments already paid before using the app + those whose date has passed. The purchase amount blocks
+   the card limit and is released month by month (straight-line approximation). */
+function emiState(p){
+  const today=todayISO();let paid=p.before||0;
+  if(p.closed)paid=p.closedPaid;
+  else for(let i=p.before||0;i<p.months;i++){if(addMonthsISO(p.first,i)<=today)paid++;else break}
+  const left=p.closed?0:p.months-paid;
+  return {paid,left,next:left>0?addMonthsISO(p.first,paid):null,remainingAmt:left*p.monthly,blocked:left*(p.amount/p.months),done:left===0};
+}
+/* each instalment that has fallen due becomes an expense on the card (category EMI), once */
+function applyEmis(){
+  const today=todayISO();let changed=false;
+  S.emis.forEach(p=>{
+    if(p.closed)return;
+    for(let i=p.before||0;i<p.months;i++){
+      const date=addMonthsISO(p.first,i);
+      if(date>today)break;
+      if(!S.tx.some(t=>t.emiId===p.id&&t.emiNo===i+1)){
+        S.tx.push({id:uid(),date,type:'debit',amt:p.monthly,acc:p.card,to:'',kind:'expense',cat:'EMI',note:`${p.name} EMI ${i+1}/${p.months}`,party:'',pool:false,src:'emi',emiId:p.id,emiNo:i+1});
+        changed=true;
+      }
+    }
+  });
+  if(changed)save();
+}
+const emiBlocked=accId=>S.emis.filter(p=>p.card===accId).reduce((a,p)=>a+emiState(p).blocked,0);
+function emiBody(){
+  const cards=S.accounts.filter(a=>accType(a)==='card');
+  const all=S.emis.map(p=>({p,s:emiState(p)})),live=all.filter(x=>!x.s.done);
+  const perMonth=live.reduce((a,x)=>a+x.p.monthly,0),rem=live.reduce((a,x)=>a+x.s.remainingAmt,0),blk=live.reduce((a,x)=>a+x.s.blocked,0);
+  const today=todayISO(),t0=new Date(),vals=[],labs=[],tips=[];
+  for(let i=0;i<12;i++){
+    const d=new Date(t0.getFullYear(),t0.getMonth()+i,1),mk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    let v=0;live.forEach(({p})=>{for(let k=p.before||0;k<p.months;k++){const dt=addMonthsISO(p.first,k);if(dt>today&&dt.slice(0,7)===mk)v+=p.monthly}});
+    vals.push(v);labs.push(mlabel(mk).slice(0,3));tips.push(mlabel(mk)+' · '+inr(v));
+  }
+  const summary=live.length?`<div class="grid2"><div class="stat"><span class="small mute">EMI per month</span><b class="num">${inr(perMonth)}</b></div><div class="stat"><span class="small mute">Still to pay</span><b class="num">${inr(rem)}</b></div></div>
+    <div class="card" style="margin-top:10px"><div class="row sp"><span class="small mute">Credit limit blocked by EMIs</span><b class="num">${inr(Math.round(blk))}</b></div></div>
+    <h2>Next 12 months</h2><div class="card">${barChart(vals,labs,{tips})}<div class="small mute">Instalments still to come, month by month.</div></div>`:'';
+  const cardsHtml=all.map(({p,s})=>{
+    const pct=Math.round(s.paid/p.months*100),a=acc(p.card);
+    return `<div class="card" style="margin-bottom:10px;cursor:pointer" data-a="emi" data-id="${p.id}">
+      <div class="row sp"><b>${esc(p.name)}</b><span class="pill">${s.done?(p.closed?'Closed':'Done'):s.paid+' of '+p.months+' paid'}</span></div>
+      <div class="small mute" style="margin:2px 0 8px">${esc(a?a.name:'card')} · ${inr(p.monthly)}/month</div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="row sp small mute" style="margin-top:6px"><span>${s.done?'No instalments left':s.left+' left · next '+new Date(s.next+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span><b class="num" style="color:var(--ink)">${s.done?'':inr(s.remainingAmt)+' to pay'}</b></div></div>`}).join('');
+  return `${summary}
+  ${all.length?`<h2>Your EMIs</h2>${cardsHtml}`:`<div class="card empty">No EMIs yet.<br>Add something you bought on EMI to track instalments and your card limit.</div>`}
+  <button class="btn ghost" data-a="addemi">+ Add EMI</button>
+  <p class="small mute">Each instalment is added to the card as an expense (category EMI) on its due date. The purchase amount stays blocked in your card limit until the EMI is paid off.</p>${cards.length?'':'<p class="small debit">Add a credit card in Accounts first.</p>'}`;
+}
+let emiMonTouched=false;
+function emiSheet(){
+  const cards=S.accounts.filter(a=>accType(a)==='card');
+  if(!cards.length){
+    openSheet(`<div class="row sp"><h1>Add EMI</h1><button class="icon-btn" data-a="close">✕</button></div><div class="card" style="margin-top:14px">An EMI sits on a credit card. Add your credit card first (Accounts → + Card).</div><button class="btn" data-a="gocards">Go to Accounts</button>`);return;
+  }
+  emiMonTouched=false;
+  openSheet(`<div class="row sp"><h1>Add EMI</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <label>What did you buy?</label><input id="e-name" placeholder="e.g. Phone, Fridge">
+  <label>Credit card</label><select id="e-card">${opts(cards.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),cards[0].id)}</select>
+  <div class="grid2"><div><label>Purchase amount (₹)</label><input id="e-amt" inputmode="decimal" placeholder="blocks your limit"></div><div><label>Number of months</label><input id="e-mo" inputmode="numeric" placeholder="e.g. 12"></div></div>
+  <label>Monthly EMI (₹)</label><input id="e-mon" inputmode="decimal" placeholder="amount + interest per month">
+  <label>First EMI date</label><input id="e-first" type="date" value="${todayISO()}">
+  <label>EMIs already paid before today</label><input id="e-before" inputmode="numeric" value="0">
+  <div class="small mute" style="margin-top:6px">If you bought it earlier, enter its first EMI date and how many are already paid. Those are counted but not added again as expenses.</div>
+  <button class="btn" data-a="saveemi">Save EMI</button>`);
+}
+function emiDetail(id){
+  const p=S.emis.find(x=>x.id===id);if(!p)return;
+  const s=emiState(p),a=acc(p.card),today=todayISO();
+  const rows=[];for(let k=0;k<p.months;k++){
+    const dt=addMonthsISO(p.first,k),paid=p.closed?k<s.paid:(k<(p.before||0)||dt<=today);
+    rows.push(`<div class="attn"><div class="grow"><b>EMI ${k+1}</b><div class="small mute">${new Date(dt+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div></div><span class="num">${inr(p.monthly)}</span><span class="pill" style="${paid?'':'background:var(--line);color:var(--mute)'}">${paid?'Paid':'Upcoming'}</span></div>`);
+  }
+  openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <div class="card" style="margin-top:14px"><div class="small mute">${esc(a?a.name:'card')} · ${p.months} months · ${inr(p.monthly)}/month</div>
+  <div class="big num">${s.paid} <span class="mute" style="font-size:16px">of ${p.months} paid</span></div>
+  <div class="bar" style="margin:8px 0"><i style="width:${Math.round(s.paid/p.months*100)}%"></i></div>
+  <div class="row sp small mute"><span>${s.left} left</span><span>${inr(s.remainingAmt)} to pay</span></div>
+  <div class="row sp small mute" style="margin-top:6px"><span>Blocked in card limit</span><span>${inr(Math.round(s.blocked))}</span></div></div>
+  <h2>Schedule</h2><div class="card" style="padding:4px 16px;max-height:36vh;overflow:auto">${rows.join('')}</div>
+  ${s.done?'':`<button class="btn ghost" data-a="emiclose" data-id="${p.id}">Closed early (foreclosed)</button>`}
+  <button class="btn red" data-a="emidel" data-id="${p.id}">Delete this EMI</button>`);
+}
 /* ---------- stats ---------- */
 function mstats(mk){
   const r={inc:0,oth:0,exp:0,cat:{},day:{}};
@@ -829,8 +920,8 @@ function accTile(a,i){
   const m=accMonth(a.id,month),bal=accBal(a.id),ty=accType(a),sel=accFilter===a.id?' · filtered':'';
   const io=`<div class="io"><span>↓ ${inrH(m.i)}</span><span>↑ ${inrH(m.o)}</span></div>`;
   if(ty==='card'){
-    const due=-bal,lim=a.limit||0,pct=lim?Math.min(100,Math.max(0,due)/lim*100):0;
-    return `<div class="acc" style="background:linear-gradient(135deg,#1f2937,#4b5563)" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${a.last4?' ••'+a.last4:''} · credit card${sel}</small><b class="num">${due>=0?'Due '+inrH(due):'Credit '+inrH(-due)}</b>${lim?`<div class="bar" style="background:rgba(255,255,255,.25);height:6px;margin:0 0 8px"><i style="width:${pct}%;background:#fff"></i></div><div class="io"><span>Available ${inrH(lim-due)}</span><span>Limit ${inrH(lim)}</span></div>`:io}</div>`;
+    const due=-bal,lim=a.limit||0,emi=emiBlocked(a.id),pct=lim?Math.min(100,Math.max(0,due+emi)/lim*100):0;
+    return `<div class="acc" style="background:linear-gradient(135deg,#1f2937,#4b5563)" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${a.last4?' ••'+a.last4:''} · credit card${sel}</small><b class="num">${due>=0?'Due '+inrH(due):'Credit '+inrH(-due)}</b>${lim?`<div class="bar" style="background:rgba(255,255,255,.25);height:6px;margin:0 0 8px"><i style="width:${pct}%;background:#fff"></i></div><div class="io"><span>Available ${inrH(lim-due-emi)}</span><span>Limit ${inrH(lim)}</span></div>`:io}${emi>0?`<div class="small" style="opacity:.85;margin-top:4px">EMI blocked ${inrH(Math.round(emi))}</div>`:''}</div>`;
   }
   const bg=ty==='cash'?'linear-gradient(135deg,#15803d,#4ade80)':`linear-gradient(135deg,${COLORS[i%6]},${COLORS[i%6]}bb)`;
   return `<div class="acc" style="background:${bg}" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${ty==='cash'?' · in hand':a.last4?' ••'+a.last4:''}${sel}</small><b class="num">${inrH(bal)}</b>${io}</div>`;
@@ -973,7 +1064,7 @@ function statsExtra(st){
   if(sits.length)out+=`<h2>Where your money sits</h2><div class="card">${miniDonut(sits)}</div>`;
   // card utilisation
   const cards=S.accounts.filter(a=>accType(a)==='card'&&a.limit>0);
-  if(cards.length)out+=`<h2>Credit card use</h2><div class="card">${hbars(cards.map(a=>{const due=Math.max(0,-accBal(a.id));return{label:esc(a.name),v:due,max:a.limit,color:due/a.limit>.5?'var(--debit)':'var(--brand)',right:Math.round(due/a.limit*100)+'% of '+inr(a.limit)}}))}<div class="small mute">Keeping this under 30% is good for your credit score.</div></div>`;
+  if(cards.length)out+=`<h2>Credit card use</h2><div class="card">${hbars(cards.map(a=>{const due=Math.max(0,-accBal(a.id))+emiBlocked(a.id);return{label:esc(a.name),v:due,max:a.limit,color:due/a.limit>.5?'var(--debit)':'var(--brand)',right:Math.round(due/a.limit*100)+'% of '+inr(a.limit)}}))}<div class="small mute">Keeping this under 30% is good for your credit score.</div></div>`;
   return out;
 }
 function stats(){
@@ -1001,7 +1092,7 @@ function khata(){
       return `<div class="card row sp" style="margin-bottom:10px" data-a="person" data-id="${p.id}"><div class="row"><div class="dot" style="color:var(--brand)">${ic('user',19)}</div><div><b>${esc(p.name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'}</div></div></div><div style="text-align:right"><b class="num ${b>0?'debit':b<0?'credit':''}">${inr(Math.abs(b))}</b><div class="small mute">${b>0?'owes you':b<0?'you owe':'settled'}</div></div></div>`}).join('')
       +`<button class="btn ghost" data-a="addperson">+ Add person / party</button>
       <p class="small mute">Money you send from your account for someone (e.g. a business UPI) is a <b>debit</b> on that person; when they pay it back it is a <b>credit</b>. These never count as your income or spending.</p>`;
-  }else{
+  }else if(seg==='emi'){body=emiBody()}else{
     const pl=pool(),noSrc=S.tx.some(t=>(t.kind==='other'&&!t.source)||(t.pool&&t.kind==='expense'&&!t.poolSrc));
     const card=(id,name)=>{const st=srcStats(id);const n=S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(t.pool&&t.kind==='expense'&&(t.poolSrc||'')===id)).length;
       return `<div class="card row sp" style="margin-bottom:10px" data-a="source" data-id="${esc(id)}"><div class="row"><div class="dot" style="color:var(--credit)">${ic('wallet',19)}</div><div><b>${esc(name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'} · earned ${inr(st.inc)}</div></div></div><div style="text-align:right"><b class="num ${st.left<0?'debit':'credit'}">${inr(st.left)}</b><div class="small mute">left to use</div></div></div>`};
@@ -1012,7 +1103,7 @@ function khata(){
     <button class="btn ghost" data-a="addsource">+ Add income source</button>
     <p class="small mute">Make one source per client or kind of side income. Add income to it with type <b>Other income</b>. When you spend from it, tick “Paid from other-income pool” on that expense and pick the source.</p>`;
   }
-  return `<h1>Ledger</h1><div class="seg" style="margin:14px 0"><button data-a="seg" data-id="people" class="${seg==='people'?'on':''}">People</button><button data-a="seg" data-id="other" class="${seg==='other'?'on':''}">Other income</button></div>${body}`;
+  return `<h1>Ledger</h1><div class="seg" style="margin:14px 0"><button data-a="seg" data-id="people" class="${seg==='people'?'on':''}">People</button><button data-a="seg" data-id="other" class="${seg==='other'?'on':''}">Other income</button><button data-a="seg" data-id="emi" class="${seg==='emi'?'on':''}">EMI</button></div>${body}`;
 }
 function accounts(){
   return `<h1>Accounts</h1><p class="small mute">Add the last 4 digits so SMS from that account is matched automatically. Use <b>Transfer</b> for ATM cash and credit-card bill payments: they move money between your accounts and are not counted as spending.</p>`+
@@ -1020,7 +1111,7 @@ function accounts(){
    <div class="grid2"><div><label>Name</label><input data-f="name" data-id="${a.id}" value="${esc(a.name)}"></div><div><label>Type</label><select data-f="type" data-id="${a.id}"><option value="bank" ${ty==='bank'?'selected':''}>Bank account</option><option value="cash" ${ty==='cash'?'selected':''}>Cash</option><option value="card" ${ty==='card'?'selected':''}>Credit card</option></select></div></div>
    <div class="grid2">${ty==='cash'?'':`<div><label>Last 4 digits</label><input data-f="last4" data-id="${a.id}" value="${esc(a.last4)}" maxlength="4" inputmode="numeric"></div>`}
    <div><label>${ty==='card'?'Opening due (₹)':ty==='cash'?'Cash in hand (₹)':'Opening balance (₹)'}</label><input data-f="${ty==='card'?'opendue':'open'}" data-id="${a.id}" value="${ty==='card'?-a.open||0:a.open}" inputmode="decimal"></div>
-   ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal" placeholder="optional"></div>`:''}</div>${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (PDF or CSV)</button>`}</div>`}).join('')+
+   ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal" placeholder="optional"></div>`:''}</div>${ty==='card'?`<div class="small mute" style="margin-top:10px">Used ${inr(Math.max(0,-bal))} · EMI blocked ${inr(Math.round(emiBlocked(a.id)))}${a.limit?` · <b style="color:var(--ink)">Available ${inr(Math.round(a.limit+bal-emiBlocked(a.id)))}</b>`:''}</div>`:''}${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (PDF or CSV)</button>`}</div>`}).join('')+
   (sms()&&smsCap?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
    <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+(sms()&&!smsCap?`<h2>Bank SMS</h2><div class="card"><div class="small mute">This version does not read your SMS by itself (Google Play Protect blocks apps that do). To add a bank SMS quickly: open your Messages app, long-press the SMS, tap <b>Share</b> and choose <b>Arthaly</b>. It is added right away. You can also paste SMS with the + button, or import a bank statement PDF/CSV.</div></div>`:'')+
   `<div class="grid2" style="grid-template-columns:repeat(3,1fr)"><button class="btn ghost" data-a="addacc" data-id="bank" style="margin-top:0">+ Bank</button><button class="btn ghost" data-a="addacc" data-id="cash" style="margin-top:0">+ Cash</button><button class="btn ghost" data-a="addacc" data-id="card" style="margin-top:0">+ Card</button></div>
@@ -1122,6 +1213,7 @@ function syncKind(){
 
 /* ---------- render & events ---------- */
 function render(){
+  applyEmis();
   $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView}[view]();
   const nav=[['home','home','Home'],['budget','target','Budget'],['add','+',''],['stats','chart','Insights'],['people','users','Ledger']];
   $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new">+</button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
@@ -1198,6 +1290,19 @@ document.addEventListener('click',e=>{
     const t=smsPending;closeSheet();
     txSheet(null,{type:id==='credit'?'credit':'debit',kind:id==='credit'?'income':'expense',amt:t.amt||'',note:t.note});
   }
+  else if(a==='addemi')emiSheet();
+  else if(a==='gocards'){closeSheet();navTo('accounts')}
+  else if(a==='saveemi'){
+    const name=$('#e-name').value.trim(),card=$('#e-card').value,amount=parseFloat($('#e-amt').value),months=parseInt($('#e-mo').value,10),monthly=parseFloat($('#e-mon').value),first=$('#e-first').value;
+    let before=parseInt($('#e-before').value,10)||0;
+    if(!name||!card||!(amount>0)||!(months>=1)||!(monthly>0)||!first){toast('Fill the name, card, amount, months and monthly EMI');return}
+    before=Math.max(0,Math.min(before,months));
+    S.emis.push({id:uid(),name,card,amount,months,monthly,first,before,closed:false});
+    save();applyEmis();closeSheet();seg='emi';render();toast('EMI added');
+  }
+  else if(a==='emi')emiDetail(id);
+  else if(a==='emiclose'){const p=S.emis.find(x=>x.id===id);if(p){p.closedPaid=emiState(p).paid;p.closed=true;save();closeSheet();render();toast('EMI marked as closed')}}
+  else if(a==='emidel'){if(confirm('Delete this EMI and the expenses it added?')){S.emis=S.emis.filter(x=>x.id!==id);S.tx=S.tx.filter(t=>t.emiId!==id);save();closeSheet();render()}}
   else if(a==='addsource'){const n=prompt('Income source name? (e.g. a client or project)');if(n&&n.trim()){S.sources.push({id:uid(),name:n.trim()});save();render()}}
   else if(a==='source')sourceSheet(id);
   else if(a==='srcadd'){closeSheet();txSheet(null,{type:'credit',kind:'other',source:id})}
@@ -1244,6 +1349,11 @@ document.addEventListener('click',e=>{
   else if(a==='reset'){if(confirm('Erase all data?')){S=defaults();normalize();save();render()}}
 });
 document.addEventListener('input',e=>{
+  if(e.target.id==='e-mon')emiMonTouched=true;
+  if((e.target.id==='e-amt'||e.target.id==='e-mo')&&!emiMonTouched){
+    const am=parseFloat($('#e-amt').value),mo=parseInt($('#e-mo').value,10);
+    if(am>0&&mo>0)$('#e-mon').value=Math.round(am/mo);
+  }
   if(e.target.id==='f-amt')updateBHint();
   if(e.target.id==='q'){q=e.target.value;$('#txlist').innerHTML=txListHTML()}
   else if(e.target.id==='f-note'&&!catTouched&&$('#f-kind').value==='expense'){
@@ -1319,6 +1429,8 @@ function demo(){
   }
   out.push({date:new Date().toISOString().slice(0,10),type:'debit',amt:4660,acc:ids[0],kind:'expense',cat:'Medical',note:'Medical',pool:true});
   const today=new Date().toISOString().slice(0,10);
+  const dcard=S.accounts.find(a=>a.type==='card');
+  if(dcard&&!S.emis.length){if(!dcard.limit)dcard.limit=100000;S.emis.push({id:uid(),name:'Phone',card:dcard.id,amount:24000,months:12,monthly:2200,first:addMonthsISO(todayISO(),-2),before:0,closed:false})}
   out.filter(t=>t.date<=today).forEach(t=>S.tx.push({id:uid(),pool:false,party:'',to:'',src:'manual',...t}));save();
 }
 document.addEventListener('pointermove',e=>{
