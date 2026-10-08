@@ -233,7 +233,7 @@ try{S=JSON.parse(localStorage.getItem(KEY))||defaults()}catch(e){S=defaults()}
 function applyTheme(){document.documentElement.dataset.theme=S.theme;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.theme==='neon'?'#0a0a10':S.theme==='black'?'#000000':'#0f766e'}
 /* fills in anything missing (old backups, reset) and re-applies saved look */
 function normalize(){
-  S.cats=S.cats||[];S.icons=S.icons||{};S.hide=!!S.hide;S.theme=['neon','black'].includes(S.theme)?S.theme:'fresh';
+  S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[{id:'s1',name:'Freelance'}];S.hide=!!S.hide;S.theme=['neon','black'].includes(S.theme)?S.theme:'fresh';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
   Object.entries(S.icons).forEach(([k,v])=>{if(CATS[k])CATS[k]=v});
@@ -363,6 +363,14 @@ function mstats(mk){
 const accBal=id=>{const a=acc(id);return (a?a.open:0)+S.tx.filter(t=>t.acc===id).reduce((s,t)=>s+signed(t),0)};
 const accMonth=(id,mk)=>{let i=0,o=0;S.tx.filter(t=>t.acc===id&&t.date.startsWith(mk)).forEach(t=>t.type==='credit'?i+=t.amt:o+=t.amt);return{i,o}};
 const personBal=id=>S.tx.filter(t=>t.kind==='pass'&&t.party===id).reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0); // + = owes you
+const srcName=id=>(S.sources.find(x=>x.id===id)||{name:'General'}).name;
+const srcStats=id=>{
+  const sid=id||'';const own=t=>(t.source||'')===sid,ps=t=>(t.poolSrc||'')===sid;
+  const inc=S.tx.filter(t=>t.kind==='other'&&own(t)).reduce((s,t)=>s+(t.type==='credit'?t.amt:-t.amt),0);
+  const used=S.tx.filter(t=>t.pool&&t.kind==='expense'&&ps(t)).reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0);
+  return{inc,used,left:inc-used};
+};
+const srcOptions=sel=>S.sources.map(x=>`<option value="${esc(x.id)}" ${x.id===sel?'selected':''}>${esc(x.name)}</option>`).join('')+`<option value="" ${sel===''?'selected':''}>General (no source)</option><option value="__new">＋ New income source…</option>`;
 const pool=()=>{const inc=S.tx.filter(t=>t.kind==='other').reduce((s,t)=>s+(t.type==='credit'?t.amt:-t.amt),0);const used=S.tx.filter(t=>t.pool&&t.kind==='expense').reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0);return{inc,used,left:inc-used}};
 
 /* ---------- charts (inline SVG) ---------- */
@@ -400,9 +408,9 @@ function pace(mk,st){
 function monthBar(){return `<div class="month"><button class="icon-btn" data-a="mprev">‹</button><b style="min-width:74px;text-align:center">${mlabel(month)}</b><button class="icon-btn" data-a="mnext">›</button></div>`}
 function txRow(t){
   const a=acc(t.acc),p=person(t.party);
-  const tag=t.kind==='pass'?esc(p?p.name:'party'):t.kind==='other'||t.kind==='income'?esc(t.cat==='Other'?(t.kind==='other'?'Other income':'Income'):t.cat):esc(t.cat);
+  const tag=t.kind==='pass'?esc(p?p.name:'party'):t.kind==='other'?esc(srcName(t.source||'')+' · '+(t.cat==='Other'?'Other income':t.cat)):t.kind==='income'?esc(t.cat==='Other'?'Income':t.cat):esc(t.cat);
   return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8')+'26':t.kind==='pass'?'var(--brand-soft)':(ICATCOL[t.cat]||'#94a3b8')+'26'};color:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8'):t.kind==='pass'?'var(--brand)':(ICATCOL[t.cat]||'var(--brand)')}">${t.kind==='pass'?ic('swap',19):t.kind==='expense'?ic(CATS[t.cat]||'receipt',19):ic(ICATS[t.cat]||'wallet',19)}</div>
-  <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">Unassigned</span>'}${t.src==='sms'?' · SMS':''}${t.pool?' · pool':''}</div></div>
+  <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">Unassigned</span>'}${t.src==='sms'?' · SMS':''}${t.pool?' · from '+esc(srcName(t.poolSrc||'')):''}</div></div>
   <b class="num ${t.type}">${t.type==='credit'?'+':'−'}${inr(t.amt)}</b></div>`;
 }
 function txListHTML(){
@@ -508,14 +516,18 @@ function khata(){
   let body='';
   if(seg==='people'){
     body=S.people.map(p=>{const b=personBal(p.id);const n=S.tx.filter(t=>t.kind==='pass'&&t.party===p.id).length;
-      return `<div class="card row sp" style="margin-bottom:10px" data-a="person" data-id="${p.id}"><div class="row"><div class="dot" style="color:var(--brand)">${ic('user',19)}</div><div><b>${esc(p.name)}</b><div class="small mute">${n} entries</div></div></div><div style="text-align:right"><b class="num ${b>0?'debit':b<0?'credit':''}">${inr(Math.abs(b))}</b><div class="small mute">${b>0?'owes you':b<0?'you owe':'settled'}</div></div></div>`}).join('')
+      return `<div class="card row sp" style="margin-bottom:10px" data-a="person" data-id="${p.id}"><div class="row"><div class="dot" style="color:var(--brand)">${ic('user',19)}</div><div><b>${esc(p.name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'}</div></div></div><div style="text-align:right"><b class="num ${b>0?'debit':b<0?'credit':''}">${inr(Math.abs(b))}</b><div class="small mute">${b>0?'owes you':b<0?'you owe':'settled'}</div></div></div>`}).join('')
       +`<button class="btn ghost" data-a="addperson">+ Add person / party</button>
       <p class="small mute">Money you send from your account for someone (e.g. a business UPI) is a <b>debit</b> on that person; when they pay it back it is a <b>credit</b>. These never count as your income or spending.</p>`;
   }else{
-    const pl=pool();const list=S.tx.filter(t=>t.kind==='other'||t.pool).sort((a,b)=>b.date.localeCompare(a.date));
-    body=`<div class="card"><div class="small mute">Pool left</div><div class="big ${pl.left<0?'debit':''}">${inr(pl.left)}</div><div class="row sp small mute"><span>Earned ${inr(pl.inc)}</span><span>Used ${inr(pl.used)}</span></div></div>
-    <p class="small mute">Add freelance / side income as <b>Other income</b>. When you spend from it, tick “Paid from other-income pool” on that expense.</p>
-    <div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No other income yet</div>'}</div>`;
+    const pl=pool(),noSrc=S.tx.some(t=>(t.kind==='other'&&!t.source)||(t.pool&&t.kind==='expense'&&!t.poolSrc));
+    const card=(id,name)=>{const st=srcStats(id);const n=S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(t.pool&&t.kind==='expense'&&(t.poolSrc||'')===id)).length;
+      return `<div class="card row sp" style="margin-bottom:10px" data-a="source" data-id="${esc(id)}"><div class="row"><div class="dot" style="color:var(--credit)">${ic('wallet',19)}</div><div><b>${esc(name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'} · earned ${inr(st.inc)}</div></div></div><div style="text-align:right"><b class="num ${st.left<0?'debit':'credit'}">${inr(st.left)}</b><div class="small mute">left to use</div></div></div>`};
+    body=`<div class="card"><div class="small mute">All other income · pool left</div><div class="big ${pl.left<0?'debit':''}">${inr(pl.left)}</div><div class="row sp small mute"><span>Earned ${inr(pl.inc)}</span><span>Used ${inr(pl.used)}</span></div></div>
+    <h2>Income sources</h2>
+    ${S.sources.map(x=>card(x.id,x.name)).join('')}${noSrc?card('','General'):''}
+    <button class="btn ghost" data-a="addsource">+ Add income source</button>
+    <p class="small mute">Make one source per client or kind of side income. Add income to it with type <b>Other income</b>. When you spend from it, tick “Paid from other-income pool” on that expense and pick the source.</p>`;
   }
   return `<h1>Ledger</h1><div class="seg" style="margin:14px 0"><button data-a="seg" data-id="people" class="${seg==='people'?'on':''}">People</button><button data-a="seg" data-id="other" class="${seg==='other'?'on':''}">Other income</button></div>${body}`;
 }
@@ -555,7 +567,9 @@ function txSheet(t,preset){
   <label>Account</label><select id="f-acc"><option value="">Unassigned</option>${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.acc)}</select>
   <label>Type</label><select id="f-kind">${opts(Object.entries(KINDS),t.kind)}</select>
   <div id="w-cat"><label id="cat-label">Category</label><input type="hidden" id="f-cat" value="${esc(t.cat)}"><div class="chips2" id="f-cats">${chips}</div><div id="smart"></div>
-  <label id="w-pool" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f-pool" style="width:auto" ${t.pool?'checked':''}> Paid from other-income pool</label></div>
+  <label id="w-pool" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f-pool" style="width:auto" ${t.pool?'checked':''}> Paid from other-income pool</label>
+  <div id="w-poolsrc" hidden><label>From which income source</label><select id="f-poolsrc">${srcOptions(t.poolSrc||'')}</select></div></div>
+  <div id="w-source"><label>Income source</label><select id="f-source">${srcOptions(t.source===undefined?(isNew&&S.sources[0]?S.sources[0].id:''):t.source)}</select></div>
   <div id="w-party"><label>Person / party</label><select id="f-party">${opts(S.people.map(p=>[p.id,p.name]),t.party)}</select></div>
   <label>Note</label><input id="f-note" value="${esc(t.note)}" placeholder="e.g. DMart groceries">
   <label>Date</label><input id="f-date" type="date" value="${t.date}">
@@ -569,7 +583,8 @@ function txSheet(t,preset){
 function syncKind(){
   const k=$('#f-kind');if(!k)return;const v=k.value;
   $('#w-cat').style.display=v==='pass'?'none':'';$('#w-party').style.display=v==='pass'?'':'none';
-  $('#w-pool').style.display=v==='expense'?'':'none';$('#cat-label').textContent=v==='expense'?'Category':'Source';
+  $('#w-pool').style.display=v==='expense'?'':'none';$('#cat-label').textContent=v==='expense'?'Category':'Income type';
+  $('#w-source').style.display=v==='other'?'':'none';$('#w-poolsrc').hidden=!(v==='expense'&&$('#f-pool').checked);
   const list=v==='expense'?CATS:ICATS,cur=$('#f-cat').value;
   if(!(cur in list))$('#f-cat').value=v==='expense'?'Other':v==='other'?'Freelance':'Salary';
   $('#f-cats').innerHTML=chipsHTML(v,$('#f-cat').value);$('#smart').innerHTML='';
@@ -627,7 +642,7 @@ document.addEventListener('click',e=>{
   else if(a==='savetx'){
     const amt=parseFloat($('#f-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     const kind=$('#f-kind').value;
-    const t={id:id||uid(),date:$('#f-date').value,type:tt,amt,acc:$('#f-acc').value,kind,cat:kind==='pass'?'Other':$('#f-cat').value,note:$('#f-note').value.trim(),party:kind==='pass'?$('#f-party').value:'',pool:kind==='expense'&&$('#f-pool').checked,src:'manual'};
+    const t={id:id||uid(),date:$('#f-date').value,type:tt,amt,acc:$('#f-acc').value,kind,cat:kind==='pass'?'Other':$('#f-cat').value,source:kind==='other'?$('#f-source').value:'',poolSrc:(kind==='expense'&&$('#f-pool').checked)?$('#f-poolsrc').value:'',note:$('#f-note').value.trim(),party:kind==='pass'?$('#f-party').value:'',pool:kind==='expense'&&$('#f-pool').checked,src:'manual'};
     const i=S.tx.findIndex(x=>x.id===id);if(i>=0){t.src=S.tx[i].src;S.tx[i]=t}else S.tx.push(t);
     save();closeSheet();render();toast('Saved');
   }
@@ -637,6 +652,13 @@ document.addEventListener('click',e=>{
     if(r.out.length){const f=r.out[0];toast(`Added ${r.out.length}: ${f.t.type==='debit'?'−':'+'}${inr(f.t.amt)}${f.matched?'':' (assign account)'}`)}
     else toast(r.bad[0]==='duplicate'?'Already added':'Couldn’t read that SMS');
   }
+  else if(a==='addsource'){const n=prompt('Income source name? (e.g. a client or project)');if(n&&n.trim()){S.sources.push({id:uid(),name:n.trim()});save();render()}}
+  else if(a==='source')sourceSheet(id);
+  else if(a==='srcadd'){closeSheet();txSheet(null,{type:'credit',kind:'other',source:id})}
+  else if(a==='srcren'){const x=S.sources.find(y=>y.id===id),n=prompt('Rename source',x.name);if(n&&n.trim()){x.name=n.trim();save();closeSheet();render()}}
+  else if(a==='srcdel'){
+    if(S.tx.some(t=>t.source===id||t.poolSrc===id)){toast('Has entries. Edit or delete them first.');return}
+    S.sources=S.sources.filter(y=>y.id!==id);save();closeSheet();render()}
   else if(a==='addperson'){const n=prompt('Name?');if(n&&n.trim()){S.people.push({id:uid(),name:n.trim()});save();render()}}
   else if(a==='person'){personSheet(id)}
   else if(a==='smson')enableSms();
@@ -655,13 +677,32 @@ document.addEventListener('input',e=>{
   }
 });
 document.addEventListener('change',e=>{
+  if(e.target.id==='f-pool')$('#w-poolsrc').hidden=!e.target.checked;
+  if((e.target.id==='f-source'||e.target.id==='f-poolsrc')&&e.target.value==='__new'){
+    const n=prompt('Income source name? (e.g. a client or project)');
+    if(n&&n.trim()){const id=uid();S.sources.push({id,name:n.trim()});save();['f-source','f-poolsrc'].forEach(i=>{const el=$('#'+i);el.innerHTML=srcOptions(id)})}
+    else e.target.value=S.sources[0]?S.sources[0].id:'';
+  }
   if(e.target.id==='b-cat')$('#b-new').hidden=e.target.value!=='__new';
-  if(e.target.id==='f-kind')syncKind();
+  if(e.target.id==='f-kind'){
+    const v=e.target.value,want=(v==='income'||v==='other')?'credit':v==='expense'?'debit':tt;
+    if(want!==tt){tt=want;document.querySelectorAll('#typeseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===want))}
+    syncKind();
+  }
   const f=e.target.dataset.f;if(!f)return;
   if(f==='budget'){S.budget=parseFloat(e.target.value)||0}
   else{const a=acc(e.target.dataset.id);a[f]=f==='open'?parseFloat(e.target.value)||0:e.target.value.trim()}
   save();render();
 });
+function sourceSheet(id){
+  const name=srcName(id),st=srcStats(id);
+  const list=S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(t.pool&&t.kind==='expense'&&(t.poolSrc||'')===id)).sort((a,b)=>b.date.localeCompare(a.date));
+  openSheet(`<div class="row sp"><h1>${esc(name)}</h1><button class="icon-btn" data-a="close">✕</button></div>
+   <div class="card" style="margin-top:14px"><div class="big ${st.left<0?'debit':'credit'}">${inr(st.left)}</div><div class="small mute">left to use</div><div class="row sp small mute" style="margin-top:6px"><span>Earned ${inr(st.inc)}</span><span>Used ${inr(st.used)}</span></div></div>
+   <button class="btn" data-a="srcadd" data-id="${esc(id)}">+ Add income to ${esc(name)}</button>
+   ${id?`<button class="btn ghost" data-a="srcren" data-id="${esc(id)}">Rename</button><button class="btn red" data-a="srcdel" data-id="${esc(id)}">Delete source</button>`:''}
+   <h2>History</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries yet</div>'}</div>`);
+}
 function personSheet(id){
   const p=person(id),list=S.tx.filter(t=>t.kind==='pass'&&t.party===id).sort((a,b)=>b.date.localeCompare(a.date)),b=personBal(id);
   openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><button class="icon-btn" data-a="close">✕</button></div>
