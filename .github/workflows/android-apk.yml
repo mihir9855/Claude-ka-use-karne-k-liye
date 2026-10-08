@@ -33,7 +33,7 @@ jobs:
           for F in lite full; do
             APK=app/android/app/build/outputs/apk/$F/debug/app-$F-debug.apk
             echo "######## $F ########"; ls -l "$APK"
-            "$BT/aapt" dump badging "$APK" | grep -E "^(package|uses-permission|sdkVersion|targetSdkVersion)"
+            "$BT/aapt" dump badging "$APK" | grep -E "^(package|application-icon|uses-permission|sdkVersion|targetSdkVersion)"
             "$BT/apksigner" verify --verbose "$APK" 2>&1 | grep -E "^(Verifies|Verified using v[123] )" || true
             "$BT/zipalign" -c -v 4 "$APK" | tail -1 || true
           done

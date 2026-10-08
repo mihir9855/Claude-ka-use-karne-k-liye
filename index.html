@@ -257,7 +257,7 @@ function addCategory(name,icon){
 }
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 let q='',catTouched=false,newIcon='star';
-let view='home',month=new Date().toISOString().slice(0,7),seg='people',accFilter='';
+let view='home',month=new Date().toISOString().slice(0,7),seg='people',accFilter='',homeRange='7';
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -906,12 +906,31 @@ function showTip(e){
   t.style.left=Math.max(0,Math.min(b.width-t.offsetWidth,r.left-b.left+r.width/2-t.offsetWidth/2))+'px';
   t.style.top=Math.max(0,r.top-b.top-28)+'px';
 }
-function last7(){
-  const out=[];
-  for(let i=6;i>=0;i--){
-    const d=new Date();d.setDate(d.getDate()-i);const iso=isoDay(d.getTime());
-    const v=S.tx.filter(t=>t.date===iso&&t.kind==='expense').reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0);
-    out.push({v,l:d.toLocaleDateString('en-IN',{weekday:'short'}).slice(0,2),tip:d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' · '+inr(v)});
+function spendSeries(r){
+  const spent=iso=>S.tx.filter(t=>t.date===iso&&t.kind==='expense').reduce((a,t)=>a+(t.type==='debit'?t.amt:-t.amt),0);
+  const out=[],now=new Date();
+  if(r==='12m'){
+    for(let i=11;i>=0;i--){
+      const d=new Date(now.getFullYear(),now.getMonth()-i,1),m=d.toISOString().slice(0,7);
+      const v=S.tx.filter(t=>t.date.slice(0,7)===m&&t.kind==='expense').reduce((a,t)=>a+(t.type==='debit'?t.amt:-t.amt),0);
+      const nm=d.toLocaleDateString('en-IN',{month:'short'});
+      out.push({v,l:nm.slice(0,1),tip:nm+' '+d.getFullYear()+' · '+inr(v)});
+    }
+    return out;
+  }
+  if(r==='3m'){
+    for(let w=12;w>=0;w--){
+      let v=0;const e=new Date(now);e.setDate(e.getDate()-w*7);const b=new Date(e);b.setDate(b.getDate()-6);
+      for(let k=0;k<7;k++){const d=new Date(e);d.setDate(d.getDate()-k);v+=spent(isoDay(d.getTime()))}
+      out.push({v,l:w%3===0?b.getDate()+'/'+(b.getMonth()+1):'',tip:b.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' – '+e.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' · '+inr(v)});
+    }
+    return out;
+  }
+  const n=r==='15'?15:r==='30'?30:7;
+  for(let i=n-1;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);const v=spent(isoDay(d.getTime()));
+    const lab=n===7?d.toLocaleDateString('en-IN',{weekday:'short'}).slice(0,2):(i%(n===15?2:5)===0?String(d.getDate()):'');
+    out.push({v,l:lab,tip:d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' · '+inr(v)});
   }
   return out;
 }
@@ -1008,8 +1027,9 @@ function home(){
     ${dlH&&left>0?`<div class="small mute" style="margin-top:6px">Safe to spend ${inrH(Math.round(left/dlH))}/day for ${dlH} more days</div>`:''}
   </div>`:`<div class="card" style="margin-top:12px;cursor:pointer" data-a="nav" data-id="budget"><div class="row sp"><div><b>Set your monthly budget</b><div class="small mute" style="margin-top:4px">Add a limit for each category to see how much is left to spend.</div></div><span class="pill">Budget ›</span></div></div>`}
   ${al.length?`<div class="alert ${al.some(x=>x.pct>100)?'':'soft'}" style="cursor:pointer" data-a="nav" data-id="budget"><b>Budget alert:</b> ${al.slice(0,3).map(x=>esc(cname(x.k))+(x.pct>100?' over by '+inr(x.used-x.lim):x.pct>=100?' at limit':' '+Math.round(x.pct)+'%')).join(' · ')}${al.length>3?' · +'+(al.length-3)+' more':''}</div>`:''}
-  ${(()=>{const l7=last7(),tot7=l7.reduce((a,b)=>a+b.v,0),cd=catData(st);
-    return `<div class="card" style="margin-top:12px"><div class="ctitle"><b>Last 7 days</b><span class="small mute">${inrH(tot7)} spent</span></div>${barChart(l7.map(x=>x.v),l7.map(x=>x.l),{tips:l7.map(x=>x.tip),hl:6})}</div>
+  ${(()=>{const RG=[['7','7D'],['15','15D'],['30','1M'],['3m','3M'],['12m','1Y']],T={'7':'Last 7 days','15':'Last 15 days','30':'Last 30 days','3m':'Last 3 months (weekly)','12m':'Last 12 months'};
+    const l7=spendSeries(homeRange),tot7=l7.reduce((a,b)=>a+b.v,0),cd=catData(st);
+    return `<div class="card" style="margin-top:12px"><div class="ctitle"><b>${T[homeRange]}</b><span class="small mute">${inrH(tot7)} spent</span></div><div class="seg" style="margin:8px 0">${RG.map(x=>`<button data-a="range" data-id="${x[0]}" class="${homeRange===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>${barChart(l7.map(x=>x.v),l7.map(x=>x.l),{tips:l7.map(x=>x.tip),hl:l7.length-1})}</div>
     <div class="card" style="margin-top:12px"><div class="ctitle"><b>Where it went</b><span class="small mute">${mlabel(month)}</span></div>${miniDonut(cd)}</div>`})()}
   ${npairs?`<div class="card small" style="margin-top:10px;cursor:pointer;background:var(--brand-soft)" data-a="pairs">${npairs} possible internal transfer${npairs>1?'s':''} found. Tap to review and merge.</div>`:''}
   ${un?`<div class="card small" style="margin-top:10px;background:var(--brand-soft)">⚠️ ${un} transaction${un>1?'s':''} not matched to an account. Tap one to assign it.</div>`:''}
@@ -1313,6 +1333,7 @@ document.addEventListener('click',e=>{
   else if(a==='mnext'){month=shiftMonth(month,1);render()}
   else if(a==='filter'){accFilter=accFilter===id?'':id;render()}
   else if(a==='seg'){seg=id;render()}
+  else if(a==='range'){homeRange=id;render()}
   else if(a==='new'){txSheet()}
   else if(a==='appear'){S.appearance=id;save();applyTheme();render()}
   else if(a==='eye'){S.hide=!S.hide;save();render()}
