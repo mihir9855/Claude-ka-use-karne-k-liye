@@ -388,7 +388,7 @@ function khata(){
     <p class="small mute">Add freelance / side income as <b>Other income</b>. When you spend from it, tick “Paid from other-income pool” on that expense.</p>
     <div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No other income yet</div>'}</div>`;
   }
-  return `<h1>Khata</h1><div class="seg" style="margin:14px 0"><button data-a="seg" data-id="people" class="${seg==='people'?'on':''}">People</button><button data-a="seg" data-id="other" class="${seg==='other'?'on':''}">Other income</button></div>${body}`;
+  return `<h1>Ledger</h1><div class="seg" style="margin:14px 0"><button data-a="seg" data-id="people" class="${seg==='people'?'on':''}">People</button><button data-a="seg" data-id="other" class="${seg==='other'?'on':''}">Other income</button></div>${body}`;
 }
 function accounts(){
   return `<h1>Accounts</h1><p class="small mute">Add the last 4 digits so SMS from that account is matched automatically.</p>`+
@@ -436,7 +436,7 @@ function syncKind(){const k=$('#f-kind');if(!k)return;$('#w-cat').style.display=
 /* ---------- render & events ---------- */
 function render(){
   $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView}[view]();
-  const nav=[['home','🏠','Home'],['budget','🎯','Budget'],['add','+',''],['stats','📊','Insights'],['people','🤝','Khata']];
+  const nav=[['home','🏠','Home'],['budget','🎯','Budget'],['add','+',''],['stats','📊','Insights'],['people','🤝','Ledger']];
   $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new">+</button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${i}</span>${l}</button>`).join('');
 }
 let tt='debit';
