@@ -1336,7 +1336,7 @@ function render(){
   applyEmis();
   $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView}[view]();
   const nav=[['home','home','Home'],['budget','target','Budget'],['add','+',''],['stats','chart','Insights'],['people','users','Ledger']];
-  $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new">+</button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
+  $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new" aria-label="Add"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
 }
 let tt='debit';
 document.addEventListener('click',e=>{
