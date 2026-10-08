@@ -212,9 +212,9 @@ const ICATS={Salary:'wallet',Freelance:'star',Business:'trend',Refund:'swap',Gif
 const ICATCOL={Salary:'#16a34a',Freelance:'#8b5cf6',Business:'#0891b2',Refund:'#f59e0b',Gift:'#ec4899',Other:'#94a3b8'};
 const KINDS={expense:'Expense',transfer:'Transfer / card bill / ATM',income:'Income (salary)',other:'Other income',pass:'Party / pass-through'};
 const defaults=()=>({
-  accounts:[{id:'a1',name:'Bank 1',type:'bank',last4:'',open:0},{id:'a2',name:'Bank 2',type:'bank',last4:'',open:0},{id:'a3',name:'Bank 3',type:'bank',last4:'',open:0},{id:'a4',name:'Bank 4',type:'bank',last4:'',open:0},{id:'cash',name:'Cash',type:'cash',last4:'',open:0},{id:'cc1',name:'Credit card',type:'card',last4:'',open:0,limit:0}],
-  people:[],sources:[],tx:[],budget:35000,seen:[],cats:[],hide:false,
-  budgets:{Rent:15000,Card:4680,Investment:5000,Groceries:5000,Fuel:2000,Other:2000}
+  accounts:[{id:'cash',name:'Cash',type:'cash',last4:'',open:0}],
+  people:[],sources:[],tx:[],budget:0,seen:[],cats:[],hide:false,name:'',salary:0,
+  budgets:{}
 });
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY))||defaults()}catch(e){S=defaults()}
@@ -232,9 +232,8 @@ if(mqDark)mqDark.addEventListener('change',()=>{if(S.appearance==='auto')applyTh
 /* fills in anything missing (old backups, reset) and re-applies saved look */
 function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
-  if(!S.accounts.some(a=>a.type==='cash'))S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
-  if(!S.accounts.some(a=>a.type==='card'))S.accounts.push({id:'cc1',name:'Credit card',type:'card',last4:'',open:0,limit:0});
-  S.salary=S.salary||48000;S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
+  if(!S.accounts.length||!S.accounts.some(a=>a.type==='cash'))S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
+  S.salary=S.salary||0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
   S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[];S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
@@ -507,20 +506,29 @@ async function pdfRows(buf){
   const lines=[];
   for(let n=1;n<=doc.numPages;n++){
     const tc=await (await doc.getPage(n)).getTextContent();
-    const items=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({s:i.str.trim(),x:i.transform[4],y:i.transform[5]-(n-1)*10000}));
+    const items=[];
+    tc.items.forEach(i=>{
+      const t=(i.str||'').trim();if(!t)return;
+      const parts=t.split(/\s+/),w=i.width||0,len=t.length;let off=0;
+      parts.forEach(pt=>{const at=t.indexOf(pt,off);items.push({s:pt,x:i.transform[4]+(len?w*at/len:0),y:i.transform[5]-(n-1)*10000});off=at+pt.length});
+    });
     items.sort((a,b)=>b.y-a.y||a.x-b.x);
     let cur=null;
     for(const it of items){
       if(cur&&Math.abs(cur.y-it.y)<=2.5)cur.items.push(it);
       else{cur={y:it.y,items:[it]};lines.push(cur)}
     }
-    lines.forEach(l=>l.items.sort((a,b)=>a.x-b.x));
+    lines.forEach(l=>{l.items.sort((a,b)=>a.x-b.x);
+      // glue a lone Dr/Cr token onto the amount before it
+      const m=[];l.items.forEach(it=>{if(/^(dr|cr)\.?$/i.test(it.s)&&m.length&&AMT_TOKEN.test(m[m.length-1].s))m[m.length-1].s+=' '+it.s;else m.push(it)});l.items=m;
+    });
   }
+  window.__pdfLines=lines.map(l=>l.items.map(i=>i.s).join(' '));
   return linesToRows(lines);
 }
 function linesToRows(lines){
   const rows=[];let dx=null,cx=null,prevBal=null,pending=[];
-  const DATE=/^\d{1,2}[\/\-. ](?:\d{1,2}|[A-Za-z]{3})[\/\-. ]\d{2,4}$/;
+  const DATE=/^(?:\d{1,2}[\/\-. ](?:\d{1,2}|[A-Za-z]{3})[\/\-. ]\d{2,4}|\d{4}-\d{1,2}-\d{1,2})$/;
   const JUNK=/page \d|statement|total|closing|summary|branch|ifsc|customer|a\/c|account no|generated|computer|opening/i;
   // a wrapped narration line may sit above or below the amounts line: give it to the nearer row
   const flush=(next)=>{
@@ -535,12 +543,14 @@ function linesToRows(lines){
     const txt=ln.items.map(i=>i.s).join(' ');
     if(/debit|withdrawal/i.test(txt)&&/credit|deposit/i.test(txt)){
       const d=ln.items.find(i=>/debit|withdrawal|^dr$/i.test(i.s)),c=ln.items.find(i=>/credit|deposit|^cr$/i.test(i.s));
-      if(d&&c){dx=d.x;cx=c.x}
+      if(d&&c){dx=d.x;cx=c.x;continue}
     }
     let date=null,used=0;
-    for(let k=1;k<=3&&!date;k++){
-      const t=ln.items.slice(0,k).map(i=>i.s).join(' ');
-      if(DATE.test(t)){date=parseAnyDate(t);used=k}
+    for(let st=0;st<=2&&!date;st++){
+      for(let k=1;k<=3&&!date;k++){
+        const t=ln.items.slice(st,st+k).map(i=>i.s).join(' ');
+        if(DATE.test(t)){date=parseAnyDate(t);if(date)used=st+k}
+      }
     }
     const amts=ln.items.slice(used).filter(i=>AMT_TOKEN.test(i.s));
     if(!date){
@@ -582,11 +592,22 @@ function pickStatement(accId){
       let rows;
       if(/\.pdf$/i.test(f.name)||f.type==='application/pdf'){toast('Reading PDF…',1500);rows=await pdfRows(await f.arrayBuffer())}
       else rows=parseStatement(await f.text());
-      if(!rows.length)return toast('No transactions found in this file. If it is a scanned image PDF, download the text/CSV version instead.',5000);
+      if(!rows.length){
+        if(/\.pdf$/i.test(f.name)||f.type==='application/pdf')return pdfDebugSheet();
+        return toast('No transactions found in this file.',4500);
+      }
       stmt=buildStmt(accId,rows);stmtSheet();
     }catch(e){toast(e&&e.message==='cancelled'?'Cancelled':'Could not read this file. Check the password or try the CSV version.',4500)}
   };
   i.click();
+}
+function pdfDebugSheet(){
+  const L=window.__pdfLines||[];
+  const nd=L.filter(t=>/\d{1,2}[\/\-. ](\d{1,2}|[A-Za-z]{3})[\/\-. ]\d{2,4}/.test(t)).length,na=L.filter(t=>/\d\.\d{2}\b/.test(t)).length;
+  const sample=L.slice(0,40).join('\n');
+  openSheet(`<div class="row sp"><h1>Could not read this PDF</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <div class="card small" style="margin-top:12px">${L.length?`The file has text (${L.length} lines, ${nd} with a date, ${na} with an amount), but Arthaly could not match the table layout.<br>Tap <b>Copy text</b> and send it to me (you may blur names and account numbers). I will fix the reader for your bank.`:'This PDF has no readable text. It is probably a scanned image. Download the statement again from net banking as a normal PDF or CSV.'}</div>
+  ${L.length?`<textarea id="pdfdbg" readonly style="margin-top:10px;min-height:180px;font-size:11px">${esc(sample)}</textarea><button class="btn" data-a="copydbg">Copy text</button>`:''}`);
 }
 function stmtSheet(){
   const a=acc(stmt.accId),n=stmt.rows.filter(r=>r.on).length;
@@ -769,8 +790,8 @@ function pace(mk,st){
   const line=pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
   const area=line+` L${X(upto)} ${H-14} L${X(1)} ${H-14} Z`;
   window.__pace={pts,dim,W,X:null,upto};
-  return `<div style="position:relative"><div id="tip"></div><svg class="pace" viewBox="0 0 ${W} ${H}" width="100%" style="touch-action:pan-y"><line id="cur" x1="0" x2="0" y1="6" y2="${H-14}" stroke="var(--ink)" stroke-dasharray="2 2" opacity="0"/><line x1="5" x2="${W-5}" y1="${Y(totalBudget())}" y2="${Y(totalBudget())}" stroke="var(--warn)" stroke-dasharray="4 3"/><text x="${W-5}" y="${Y(totalBudget())-4}" text-anchor="end">Budget ${inr(totalBudget())}</text>
-  <path d="${area}" fill="var(--brand)" opacity=".12"/>${proj&&upto<dim?`<line x1="${X(upto)}" y1="${Y(c)}" x2="${X(dim)}" y2="${Y(proj)}" stroke="${proj>totalBudget()?'var(--debit)':'var(--credit)'}" stroke-width="2" stroke-dasharray="5 4"/>`:''}<path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round"/><text x="5" y="${H-2}">1</text><text x="${W-5}" y="${H-2}" text-anchor="end">${dim}</text></svg></div>`;
+  return `<div style="position:relative"><div id="tip"></div><svg class="pace" viewBox="0 0 ${W} ${H}" width="100%" style="touch-action:pan-y"><line id="cur" x1="0" x2="0" y1="6" y2="${H-14}" stroke="var(--ink)" stroke-dasharray="2 2" opacity="0"/>${totalBudget()>0?`<line x1="5" x2="${W-5}" y1="${Y(totalBudget())}" y2="${Y(totalBudget())}" stroke="var(--warn)" stroke-dasharray="4 3"/><text x="${W-5}" y="${Y(totalBudget())-4}" text-anchor="end">Budget ${inr(totalBudget())}</text>`:''}
+  <path d="${area}" fill="var(--brand)" opacity=".12"/>${proj&&upto<dim?`<line x1="${X(upto)}" y1="${Y(c)}" x2="${X(dim)}" y2="${Y(proj)}" stroke="${totalBudget()>0&&proj>totalBudget()?'var(--debit)':'var(--credit)'}" stroke-width="2" stroke-dasharray="5 4"/>`:''}<path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round"/><text x="5" y="${H-2}">1</text><text x="${W-5}" y="${H-2}" text-anchor="end">${dim}</text></svg></div>`;
 }
 
 /* ---------- views ---------- */
@@ -804,14 +825,14 @@ function txListHTML(){
   return list.length?list.map(txRow).join(''):'<div class="empty">'+(ql?'No match.':'Nothing yet.<br>Tap + to add, or paste a bank SMS.')+'</div>';
 }
 function home(){
-  const st=mstats(month),tb=totalBudget(),left=tb-st.exp,pct=Math.min(100,st.exp/tb*100);
+  const st=mstats(month),tb=totalBudget(),left=tb-st.exp,pct=tb?Math.min(100,st.exp/tb*100):0;
   const un=S.tx.filter(t=>!t.acc).length,pl=pool();
   const curM=new Date().toISOString().slice(0,7),isCur=month===curM,al=isCur?alertsFor(month):[],npairs=findPairs().length;
   const dimH=new Date(+month.slice(0,4),+month.slice(5),0).getDate(),dlH=isCur?dimH-new Date().getDate()+1:0;
   const total=S.accounts.filter(x=>accType(x)!=='card').reduce((a,x)=>a+accBal(x.id),0);
   const cardDue=-S.accounts.filter(x=>accType(x)==='card').reduce((a,x)=>a+accBal(x.id),0);
   const cashBal=S.accounts.filter(x=>accType(x)==='cash').reduce((a,x)=>a+accBal(x.id),0);
-  return `<div class="row sp"><div><h1>Arthaly</h1><div class="small mute">Hello, Mihir</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="nav" data-id="accounts" title="Accounts & settings">${ic('sliders',18)}</button></div></div>
+  return `<div class="row sp"><div><h1>Arthaly</h1><div class="small mute">${S.name?'Hello, '+esc(S.name):'Welcome'}</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="nav" data-id="accounts" title="Accounts & settings">${ic('sliders',18)}</button></div></div>
   <div class="hero" style="margin-top:14px">
     <div class="row sp"><div><div class="sub">Bank + cash balance</div><div class="big num">${inrH(total)}</div></div><button class="eye" data-a="eye">${ic(S.hide?'eyeoff':'eye',18)}</button></div>
     <div class="chips"><span>↓ In ${inrH(st.inc+st.oth)}</span><span>↑ Out ${inrH(st.exp)}</span>${cashBal?`<span>Cash ${inrH(cashBal)}</span>`:''}${cardDue>0?`<span>Card due ${inrH(cardDue)}</span>`:''}</div>
@@ -823,12 +844,12 @@ function home(){
     <button style="background:#2196f3" data-a="qa" data-id="party"><span>${ic('users',22)}</span>Party</button>
     <button style="background:#f97316" data-a="qa" data-id="sms"><span>${ic('message',22)}</span>SMS</button>
   </div>
-  <div class="card" style="margin-top:12px" data-a="nav" data-id="budget">
+  ${tb>0?`  <div class="card" style="margin-top:12px" data-a="nav" data-id="budget">
     <div class="row sp"><div><div class="small mute">Left to spend this month</div><div class="big ${left<0?'debit':''} num">${inrH(left)}</div></div><span class="pill">Budget ›</span></div>
     <div class="bar" style="margin:10px 0 6px"><i style="width:${pct}%;background:${pct>90?'var(--debit)':pct>70?'var(--warn)':'var(--brand)'}"></i></div>
     <div class="row sp small mute"><span>Spent ${inrH(st.exp)}</span><span>of ${inrH(tb)}</span></div>
     ${dlH&&left>0?`<div class="small mute" style="margin-top:6px">Safe to spend ${inrH(Math.round(left/dlH))}/day for ${dlH} more days</div>`:''}
-  </div>
+  </div>`:`<div class="card" style="margin-top:12px;cursor:pointer" data-a="nav" data-id="budget"><div class="row sp"><div><b>Set your monthly budget</b><div class="small mute" style="margin-top:4px">Add a limit for each category to see how much is left to spend.</div></div><span class="pill">Budget ›</span></div></div>`}
   ${al.length?`<div class="alert ${al.some(x=>x.pct>100)?'':'soft'}" style="cursor:pointer" data-a="nav" data-id="budget"><b>Budget alert:</b> ${al.slice(0,3).map(x=>esc(cname(x.k))+(x.pct>100?' over by '+inr(x.used-x.lim):x.pct>=100?' at limit':' '+Math.round(x.pct)+'%')).join(' · ')}${al.length>3?' · +'+(al.length-3)+' more':''}</div>`:''}
   ${(()=>{const l7=last7(),tot7=l7.reduce((a,b)=>a+b.v,0),cd=catData(st);
     return `<div class="card" style="margin-top:12px"><div class="ctitle"><b>Last 7 days</b><span class="small mute">${inrH(tot7)} spent</span></div>${barChart(l7.map(x=>x.v),l7.map(x=>x.l),{tips:l7.map(x=>x.tip),hl:6})}</div>
@@ -861,18 +882,18 @@ function budgetView(){
       ${lim?`<div class="tb" style="--p:${Math.min(100,p)}%"><i></i></div>`:''}<div class="wm">${ic(CATS[k]||'receipt',76)}</div></div>`;
   };
   return `<div class="row sp"><h1>Budget</h1>${monthBar()}</div>
-  <div class="hero" style="margin-top:14px">
+  ${tb>0?`  <div class="hero" style="margin-top:14px">
     <div class="row sp"><div><div class="sub">${inr(used)} used of ${inr(tb)}</div><div class="big num ${left<0?'':''}" style="${left<0?'color:#ffb4bf':''}">${inr(Math.abs(left))}</div><div class="sub">${left<0?'over budget':'left this month'}</div></div>
     <svg viewBox="0 0 42 42" width="92" height="92"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="4.5"/><circle r="${R}" cx="21" cy="21" fill="none" stroke="${pct>100?'#ff8da0':'#fff'}" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="${rp} ${100-rp}"/></g><text x="21" y="23.5" text-anchor="middle" style="font-size:7px;font-weight:700;fill:#fff">${Math.round(pct)}%</text></svg></div>
     <div class="seg-bar" style="margin-top:14px">${segs}</div>
     ${daysLeft?`<div class="chips"><span>${daysLeft} days left</span><span>Safe to spend ${inr(Math.round(perDay))}/day</span></div>`:''}
-  </div>
+  </div>`:`<div class="card" style="margin-top:14px;text-align:center;padding:26px 18px"><b style="font-size:17px">No budget yet</b><div class="small mute" style="margin:6px 0 14px">Add a monthly limit for each category (Rent, Groceries, Fuel...). You will see how much is left, get alerts, and track your pace.</div><button class="btn" data-a="addbudget" style="margin-top:0">Add category budget</button></div>`}
   ${behind?`<div class="alert">⚠️ ${Math.round(pct)}% of budget used but only ${Math.round(elapsed)}% of the month has passed. Slow down a little.</div>`:(month===cur&&tb?`<div class="alert ok">✓ On track: ${Math.round(pct)}% used, ${Math.round(elapsed)}% of month passed.</div>`:'')}
   ${(()=>{const al=alertsFor(month);const bl=bufferLeft(month),bt=Math.max(0,S.salary-tb);
     return (al.length?`<h2>Needs attention</h2><div class="card" style="padding:4px 16px">${al.map(x=>`<div class="attn"><div class="grow"><b>${esc(cname(x.k))}</b><div class="small mute">${inr(x.used)} of ${inr(x.lim)} · ${x.pct>100?'over by '+inr(x.used-x.lim):x.pct>=100?'at limit':Math.round(x.pct)+'% used'}</div></div><button class="chip on" data-a="fix" data-id="${esc(x.k)}">Fix</button></div>`).join('')}</div>`:'')
-    +`<div class="card row sp" style="margin-top:12px"><div><div class="small mute">Buffer (salary ${inr(S.salary)} − budget ${inr(tb)})</div><b class="num ${bl<0?'debit':''}" style="font-size:18px">${inr(Math.max(0,bl))} left</b></div><div class="small mute" style="text-align:right">of ${inr(bt)}<br>overspend eats it first</div></div>`})()}
+    +(S.salary>0&&tb>0?`<div class="card row sp" style="margin-top:12px"><div><div class="small mute">Buffer (salary ${inr(S.salary)} − budget ${inr(tb)})</div><b class="num ${bl<0?'debit':''}" style="font-size:18px">${inr(Math.max(0,bl))} left</b></div><div class="small mute" style="text-align:right">of ${inr(bt)}<br>overspend eats it first</div></div>`:'')})()}
   ${(()=>{const pr=projection(month,st);
-    return `<h2>Month pace</h2><div class="card">${pace(month,st)}${pr!=null&&tb?`<div class="small" style="margin-top:6px;color:${pr>tb?'var(--debit)':'var(--credit)'}">At this pace you will spend about <b>${inr(Math.round(pr))}</b> by month end: ${pr>tb?inr(Math.round(pr-tb))+' over':inr(Math.round(tb-pr))+' under'} budget.</div>`:''}</div>`})()}
+    return !(tb>0||st.exp>0)?'':`<h2>Month pace</h2><div class="card">${pace(month,st)}${pr!=null&&tb?`<div class="small" style="margin-top:6px;color:${pr>tb?'var(--debit)':'var(--credit)'}">At this pace you will spend about <b>${inr(Math.round(pr))}</b> by month end: ${pr>tb?inr(Math.round(pr-tb))+' over':inr(Math.round(tb-pr))+' under'} budget.</div>`:''}</div>`})()}
   <h2>Categories</h2>
   <div class="tiles">${bk.map(k=>tile(k,S.budgets[k])).join('')}${extra.map(k=>tile(k,0)).join('')}<div class="tile add" data-a="addbudget"><div><div style="font-size:26px">＋</div><div class="small">Add category budget</div></div></div></div>
   <p class="small mute">Tap a tile to see its transactions, change the limit, or add an expense in that category.</p>
@@ -991,8 +1012,9 @@ function accounts(){
    <h2>Notifications</h2><div class="card"><div class="small mute">Alert when a category reaches 80% and when it goes over, and when the overall budget reaches 90%. In the Android app you also get a notice for each bank SMS it captures, even when the app is closed. In a browser, alerts only show while the page is open.</div>
    <button class="btn ${S.notify?'ghost':''}" data-a="notifon">${S.notify?'Notifications on (tap to turn off)':'Turn on notifications'}</button><button class="btn ghost" data-a="notiftest" style="margin-top:8px">Send test notification</button></div>
    <h2>Appearance</h2><div class="card" style="padding:4px 16px">${[['auto','Auto','Follow my phone'],['light','Light',''],['dark','Dark','']].map(([k,l,h])=>`<div class="opt" data-a="appear" data-id="${k}"><div class="grow"><b>${l}</b>${h?`<div class="small mute">${h}</div>`:''}</div><span class="rad ${S.appearance===k?'on':''}"></span></div>`).join('')}</div>
-   <h2>Budget & data</h2><div class="card"><div class="small mute">Budget limits now live in the <b>Budget</b> tab (one limit per category). Total budget = sum of limits.</div>
-   <label>Monthly salary (₹) · used for the buffer</label><input data-f="salary" value="${S.salary}" inputmode="numeric">
+   <h2>Budget & data</h2><div class="card"><div class="small mute">Budget limits live in the <b>Budget</b> tab (one limit per category). Total budget = sum of limits.</div>
+   <label>Your name (shown on the home screen)</label><input data-f="yourname" value="${esc(S.name)}" placeholder="optional">
+   <label>Monthly salary (₹) · used for the buffer</label><input data-f="salary" value="${S.salary||''}" inputmode="numeric" placeholder="optional">
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button>
    <button class="btn ghost" data-a="demo" style="margin-top:8px">Load demo data</button><button class="btn red" data-a="reset">Erase everything</button></div>${['black','sage','cocoa'].includes(S.theme)?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}<label class="custom ${((S.accents||{})[S.theme])==='custom'?'on':''}" style="margin:0" title="Pick any colour"><input type="color" id="accentpick" value="${S.customHex||'#0f766e'}"></label></div>`}`;
 }
@@ -1029,7 +1051,7 @@ function txSheet(t,preset){
   <button class="btn" data-a="savetx" data-id="${t.id}">Save</button>${isNew?'':`<button class="btn red" data-a="deltx" data-id="${t.id}">Delete</button>`}</div>
   <div id="tab-s" hidden><label>Paste bank SMS (separate several with a blank line)</label><textarea id="f-sms" placeholder="Rs.4337.86 debited from A/c XX3370 on 29-09-26 to DMART. Avl bal Rs.5200"></textarea>
   <button class="btn" data-a="parse">Detect & add</button></div>
-  <div id="tab-st" hidden><label>Import a bank statement (CSV) into</label><select id="st-acc">${opts(S.accounts.filter(a=>accType(a)!=='cash').map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),(S.accounts.find(a=>accType(a)==='bank')||{}).id)}</select>
+  <div id="tab-st" hidden><label>Import a bank statement (PDF or CSV) into</label><select id="st-acc">${opts(S.accounts.filter(a=>accType(a)!=='cash').map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),(S.accounts.find(a=>accType(a)==='bank')||{}).id)}</select>
   <p class="small mute">Choose the statement as PDF or CSV from net banking (PDFs with a password are fine, you will be asked). Everything is read on your phone, nothing is uploaded. Rows already in the app are skipped; ATM, card-bill and internal transfers are spotted.</p>
   <button class="btn" data-a="stmtpick">Choose statement (PDF or CSV)</button></div>`);
   syncKind();
@@ -1126,6 +1148,7 @@ document.addEventListener('click',e=>{
   else if(a==='srcdel'){
     if(S.tx.some(t=>t.source===id||t.poolSrc===id)){toast('Has entries. Edit or delete them first.');return}
     S.sources=S.sources.filter(y=>y.id!==id);save();closeSheet();render()}
+  else if(a==='copydbg'){const t=$('#pdfdbg');t.select();try{navigator.clipboard.writeText(t.value).then(()=>toast('Copied. Paste it in the chat.'),()=>{document.execCommand('copy');toast('Copied. Paste it in the chat.')})}catch(e){document.execCommand('copy');toast('Copied. Paste it in the chat.')}}
   else if(a==='stmt')pickStatement(id);
   else if(a==='stmtpick')pickStatement($('#st-acc').value);
   else if(a==='stmtrow'){stmt.rows[+id].on=el.checked;const b=$('#stmt-go');if(b)b.textContent='Import '+stmt.rows.filter(r=>r.on).length}
@@ -1188,6 +1211,7 @@ document.addEventListener('change',e=>{
   const f=e.target.dataset.f;if(!f)return;
   if(f==='budget'){S.budget=parseFloat(e.target.value)||0}
   else if(f==='salary'){S.salary=parseFloat(e.target.value)||0}
+  else if(f==='yourname'){S.name=e.target.value.trim()}
   else{const a=acc(e.target.dataset.id),v=e.target.value;if(f==='opendue')a.open=-(parseFloat(v)||0);else if(f==='open'||f==='limit')a[f]=parseFloat(v)||0;else a[f]=v.trim()}
   save();render();
 });
@@ -1209,6 +1233,11 @@ function personSheet(id){
 
 /* ---------- demo data ---------- */
 function demo(){
+  if(!S.accounts.some(a=>a.type==='bank'))S.accounts.unshift({id:'a1',name:'Bank 1',type:'bank',last4:'',open:0},{id:'a2',name:'Bank 2',type:'bank',last4:'',open:0});
+  if(!S.accounts.some(a=>a.type==='card'))S.accounts.push({id:'cc1',name:'Credit card',type:'card',last4:'',open:0,limit:0});
+  if(!S.people.length)S.people.push({id:'p1',name:'Papa'});
+  if(!Object.keys(S.budgets).length)S.budgets={Rent:15000,Card:4680,Investment:5000,Groceries:5000,Fuel:2000,Other:2000};
+  if(!S.salary)S.salary=48000;
   const rnd=(a,b)=>Math.round(a+Math.random()*(b-a));const ids=S.accounts.map(a=>a.id);const out=[];
   for(let k=5;k>=0;k--){
     const m=shiftMonth(new Date().toISOString().slice(0,7),-k);const d=n=>m+'-'+String(Math.min(n,28)).padStart(2,'0');
