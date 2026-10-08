@@ -1237,7 +1237,15 @@ const hrep=(s,u)=>{try{history.replaceState(s,'',u)}catch(e){}};
 let dlgDone=null;
 const dlgIsOpen=()=>!!$('#dlg').innerHTML;
 const sheetIsOpen=()=>!!$('#layer').innerHTML;
-function openSheet(html){$('#layer').innerHTML=`<div class="sheet-bg" data-a="close"><div class="sheet" data-stop>${html}</div></div>`}
+function openSheet(html){$('#layer').innerHTML=`<div class="sheet-bg" data-a="close"><div class="sheet" data-stop>${html}</div></div>`;refreshDates()}
+/* under every date box, show the full date with the weekday, e.g. Thursday, 8 October 2026 */
+function refreshDates(){
+  document.querySelectorAll('#layer input[type=date]').forEach(i=>{
+    let d=i.nextElementSibling;if(!d||!d.classList.contains('dfull')){d=document.createElement('div');d.className='dfull small';d.style.cssText='margin:6px 2px 0;color:var(--brand);font-weight:600';i.after(d)}
+    d.textContent=i.value?new Date(i.value+'T00:00').toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';
+  });
+}
+
 function closeSheet(){$('#layer').innerHTML=''}
 /* in-app dialogs: window.confirm/prompt do not work in every webview, so Arthaly draws its own */
 function dlgShow(html,done){$('#dlg').innerHTML=`<div class="dlg-bg" data-a="dlgcancel"><div class="dlg" data-stop>${html}</div></div>`;dlgDone=done}
@@ -1496,7 +1504,8 @@ document.addEventListener('click',e=>{
   else if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>i.files[0].text().then(x=>{try{S=JSON.parse(x);normalize();save();render();toast('Imported')}catch(e){toast('Invalid file')}});i.click()}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='dlg-in'){e.preventDefault();dlgClose(e.target.value)}});
-document.addEventListener('input',e=>{
+document.addEventListener('change',e=>{if(e.target.type==='date')refreshDates()});
+document.addEventListener('input',e=>{if(e.target.type==='date')refreshDates();
   if(e.target.id==='e-mon')emiMonTouched=true;
   if((e.target.id==='e-amt'||e.target.id==='e-mo')&&!emiMonTouched){
     const am=parseFloat($('#e-amt').value),mo=parseInt($('#e-mo').value,10);
