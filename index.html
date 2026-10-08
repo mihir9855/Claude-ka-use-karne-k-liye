@@ -37,7 +37,8 @@ h1{font-size:20px;margin:0}h2{font-size:13px;margin:22px 0 10px;color:var(--mute
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stat{background:var(--card);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow)}
 .stat b{display:block;font-size:18px;margin-top:2px}
-.hscroll{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none}
+.hscroll{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;scroll-padding:0 16px;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x pan-y;cursor:grab}
+.hscroll.drag{cursor:grabbing;scroll-snap-type:none}.hscroll.drag *{pointer-events:none}
 .hscroll::-webkit-scrollbar{display:none}
 .acc{flex:0 0 78%;scroll-snap-align:start;border-radius:18px;padding:14px 16px;color:#fff;position:relative;overflow:hidden;cursor:pointer}
 .acc small{opacity:.85}.acc b{display:block;font-size:22px;margin:6px 0 8px}
@@ -1262,6 +1263,15 @@ window.addEventListener('popstate',e=>{
   if(view!=='home'||accFilter){accFilter='';view='home';scrollTo(0,0);render();rearm();return}
   guarded=false;toast('Press back again to exit',1800);setTimeout(addGuard,2000);   // a second back now leaves the app
 });
+/* accounts strip: drag with the mouse, wheel scrolls sideways (touch screens already swipe) */
+(function(){
+  let el=null,x0=0,s0=0,moved=false;
+  document.addEventListener('mousedown',e=>{const h=e.target.closest('.hscroll');if(!h||e.button)return;el=h;x0=e.pageX;s0=h.scrollLeft;moved=false});
+  addEventListener('mousemove',e=>{if(!el)return;const dx=e.pageX-x0;if(!moved&&Math.abs(dx)>5){moved=true;el.classList.add('drag')}if(moved)el.scrollLeft=s0-dx});
+  addEventListener('mouseup',()=>{if(el){const h=el;el=null;if(moved)setTimeout(()=>h.classList.remove('drag'),0)}});
+  document.addEventListener('click',e=>{if(moved){e.stopPropagation();e.preventDefault();moved=false}},true);
+  document.addEventListener('wheel',e=>{const h=e.target.closest('.hscroll');if(!h||Math.abs(e.deltaY)<=Math.abs(e.deltaX)||h.scrollWidth<=h.clientWidth)return;h.scrollLeft+=e.deltaY;e.preventDefault()},{passive:false});
+})();
 function toast(m,ms){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),ms||2800)}
 const opts=(arr,sel,f=x=>x)=>arr.map(([v,l])=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`).join('');
 function chipsHTML(kind,sel){
