@@ -220,6 +220,8 @@ const ICON_PICK=['cart','food','coffee','fuel','car','train','home','bulb','phon
 const ic=(k,sz=20)=>ICONS[k]?`<svg class="ic" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`:`<span style="font-size:${sz-2}px;line-height:1">${esc(k||'')}</span>`;
 const CATS={Card:'card',Food:'food',Groceries:'cart',Fuel:'fuel',Rent:'home',Shopping:'bag',Bills:'bulb',Medical:'medical',Travel:'train',Investment:'trend',Transfer:'swap',Other:'receipt'};
 const CATCOL={Card:'#e11d48',Food:'#d97706',Groceries:'#16a34a',Fuel:'#0369a1',Rent:'#7c3aed',Shopping:'#be185d',Bills:'#0891b2',Medical:'#dc2626',Travel:'#4f46e5',Investment:'#0f766e',Transfer:'#64748b',Other:'#94a3b8'};
+const ICATS={Salary:'wallet',Freelance:'star',Business:'trend',Refund:'swap',Gift:'gift',Other:'receipt'};
+const ICATCOL={Salary:'#16a34a',Freelance:'#8b5cf6',Business:'#0891b2',Refund:'#f59e0b',Gift:'#ec4899',Other:'#94a3b8'};
 const KINDS={expense:'Expense',income:'Income (salary)',other:'Other income',pass:'Party / pass-through'};
 const defaults=()=>({
   accounts:[{id:'a1',name:'IOB',last4:'3370',open:0},{id:'a2',name:'Account 2',last4:'',open:0},{id:'a3',name:'Account 3',last4:'',open:0},{id:'a4',name:'Account 4',last4:'',open:0}],
@@ -398,8 +400,8 @@ function pace(mk,st){
 function monthBar(){return `<div class="month"><button class="icon-btn" data-a="mprev">‹</button><b style="min-width:74px;text-align:center">${mlabel(month)}</b><button class="icon-btn" data-a="mnext">›</button></div>`}
 function txRow(t){
   const a=acc(t.acc),p=person(t.party);
-  const tag=t.kind==='pass'?esc(p?p.name:'party'):t.kind==='other'?'Other income':t.kind==='income'?'Income':esc(t.cat);
-  return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8')+'26':'var(--brand-soft)'};color:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8'):'var(--brand)'}">${t.kind==='pass'?ic('swap',19):t.kind==='expense'?ic(CATS[t.cat]||'receipt',19):ic('wallet',19)}</div>
+  const tag=t.kind==='pass'?esc(p?p.name:'party'):t.kind==='other'||t.kind==='income'?esc(t.cat==='Other'?(t.kind==='other'?'Other income':'Income'):t.cat):esc(t.cat);
+  return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8')+'26':t.kind==='pass'?'var(--brand-soft)':(ICATCOL[t.cat]||'#94a3b8')+'26'};color:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8'):t.kind==='pass'?'var(--brand)':(ICATCOL[t.cat]||'var(--brand)')}">${t.kind==='pass'?ic('swap',19):t.kind==='expense'?ic(CATS[t.cat]||'receipt',19):ic(ICATS[t.cat]||'wallet',19)}</div>
   <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">Unassigned</span>'}${t.src==='sms'?' · SMS':''}${t.pool?' · pool':''}</div></div>
   <b class="num ${t.type}">${t.type==='credit'?'+':'−'}${inr(t.amt)}</b></div>`;
 }
@@ -536,19 +538,24 @@ function openSheet(html){$('#layer').innerHTML=`<div class="sheet-bg" data-a="cl
 const closeSheet=()=>{$('#layer').innerHTML=''};
 function toast(m){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),2800)}
 const opts=(arr,sel,f=x=>x)=>arr.map(([v,l])=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`).join('');
+function chipsHTML(kind,sel){
+  if(kind==='expense')return Object.keys(CATS).map(k=>`<button type="button" class="chip ${k===sel?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${ic(CATS[k],16)}${esc(cname(k))}</button>`).join('')+`<button type="button" class="chip" id="newcat" data-a="newcat">＋ New</button>`;
+  return Object.keys(ICATS).map(k=>`<button type="button" class="chip ${k===sel?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${ICATCOL[k]}">${ic(ICATS[k],16)}${esc(k)}</button>`).join('');
+}
 function txSheet(t,preset){
   const isNew=!t;t=t||{id:'',type:'debit',amt:'',acc:S.accounts[0].id,kind:'expense',cat:'Other',note:'',date:new Date().toISOString().slice(0,10),party:'',pool:false};
   if(isNew&&preset)Object.assign(t,preset);
+  if(isNew&&t.cat==='Other'&&(!preset||!preset.cat)&&t.kind!=='expense'&&t.kind!=='pass')t.cat=t.kind==='other'?'Freelance':'Salary';
   tt=t.type;catTouched=!isNew||!!(preset&&preset.cat);
-  const chips=Object.keys(CATS).map(k=>`<button type="button" class="chip ${k===t.cat?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${ic(CATS[k],16)}${esc(cname(k))}</button>`).join('')+`<button type="button" class="chip" id="newcat" data-a="newcat">＋ New</button>`;
+  const chips=chipsHTML(t.kind,t.cat);
   openSheet(`<div class="row sp"><h1>${isNew?'Add':'Edit'} transaction</h1><button class="icon-btn" data-a="close">✕</button></div>
   ${isNew?`<div class="seg" style="margin-top:14px" id="tabseg"><button class="on" data-a="tab" data-id="m">Manual</button><button data-a="tab" data-id="s">Paste SMS</button></div>`:''}
   <div id="tab-m"><div class="seg" style="margin-top:14px" id="typeseg"><button data-a="type" data-id="debit" class="${t.type==='debit'?'on':''}">Debit (out)</button><button data-a="type" data-id="credit" class="${t.type==='credit'?'on':''}">Credit (in)</button></div>
   <label>Amount (₹)</label><input class="amt-in" id="f-amt" inputmode="decimal" value="${t.amt}" placeholder="₹ 0">
   <label>Account</label><select id="f-acc"><option value="">Unassigned</option>${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.acc)}</select>
   <label>Type</label><select id="f-kind">${opts(Object.entries(KINDS),t.kind)}</select>
-  <div id="w-cat"><label>Category</label><input type="hidden" id="f-cat" value="${esc(t.cat)}"><div class="chips2" id="f-cats">${chips}</div><div id="smart"></div>
-  <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f-pool" style="width:auto" ${t.pool?'checked':''}> Paid from other-income pool</label></div>
+  <div id="w-cat"><label id="cat-label">Category</label><input type="hidden" id="f-cat" value="${esc(t.cat)}"><div class="chips2" id="f-cats">${chips}</div><div id="smart"></div>
+  <label id="w-pool" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f-pool" style="width:auto" ${t.pool?'checked':''}> Paid from other-income pool</label></div>
   <div id="w-party"><label>Person / party</label><select id="f-party">${opts(S.people.map(p=>[p.id,p.name]),t.party)}</select></div>
   <label>Note</label><input id="f-note" value="${esc(t.note)}" placeholder="e.g. DMart groceries">
   <label>Date</label><input id="f-date" type="date" value="${t.date}">
@@ -559,7 +566,14 @@ function txSheet(t,preset){
   if(preset&&preset.tab==='s'){$('#tab-m').hidden=true;$('#tab-s').hidden=false;document.querySelectorAll('#tabseg button').forEach((b,i)=>b.classList.toggle('on',i===1))}
   else if(isNew)setTimeout(()=>{const a=$('#f-amt');a&&a.focus()},60);
 }
-function syncKind(){const k=$('#f-kind');if(!k)return;$('#w-cat').style.display=k.value==='expense'?'':'none';$('#w-party').style.display=k.value==='pass'?'':'none'}
+function syncKind(){
+  const k=$('#f-kind');if(!k)return;const v=k.value;
+  $('#w-cat').style.display=v==='pass'?'none':'';$('#w-party').style.display=v==='pass'?'':'none';
+  $('#w-pool').style.display=v==='expense'?'':'none';$('#cat-label').textContent=v==='expense'?'Category':'Source';
+  const list=v==='expense'?CATS:ICATS,cur=$('#f-cat').value;
+  if(!(cur in list))$('#f-cat').value=v==='expense'?'Other':v==='other'?'Freelance':'Salary';
+  $('#f-cats').innerHTML=chipsHTML(v,$('#f-cat').value);$('#smart').innerHTML='';
+}
 
 /* ---------- render & events ---------- */
 function render(){
@@ -613,7 +627,7 @@ document.addEventListener('click',e=>{
   else if(a==='savetx'){
     const amt=parseFloat($('#f-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     const kind=$('#f-kind').value;
-    const t={id:id||uid(),date:$('#f-date').value,type:tt,amt,acc:$('#f-acc').value,kind,cat:kind==='expense'?$('#f-cat').value:'Other',note:$('#f-note').value.trim(),party:kind==='pass'?$('#f-party').value:'',pool:kind==='expense'&&$('#f-pool').checked,src:'manual'};
+    const t={id:id||uid(),date:$('#f-date').value,type:tt,amt,acc:$('#f-acc').value,kind,cat:kind==='pass'?'Other':$('#f-cat').value,note:$('#f-note').value.trim(),party:kind==='pass'?$('#f-party').value:'',pool:kind==='expense'&&$('#f-pool').checked,src:'manual'};
     const i=S.tx.findIndex(x=>x.id===id);if(i>=0){t.src=S.tx[i].src;S.tx[i]=t}else S.tx.push(t);
     save();closeSheet();render();toast('Saved');
   }
