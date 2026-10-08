@@ -1331,6 +1331,16 @@ document.addEventListener('pointermove',e=>{
 });
 render();
 drainSms();
+/* text shared to the installed web app (e.g. a bank SMS: Share -> Arthaly) arrives as ?text=... */
+(function(){
+  const q=new URLSearchParams(location.search),sh=q.get('text')||q.get('title')||q.get('url');
+  if(!sh)return;
+  history.replaceState({k:'view',v:'home'},'',location.pathname);
+  const r=addFromSms(sh);
+  if(r.out.length){render();toast(`Added ${r.out.length}: ${r.out[0].t.type==='debit'?'−':'+'}${inr(r.out[0].t.amt)}${r.out[0].matched?'':' (assign account)'}`)}
+  else if(r.bad[0]==='duplicate')toast('Already added');
+  else smsFallback(sh);
+})();
 /* installable web app: works offline after the first load (skipped inside the Android app and for local files) */
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)&&location.hostname!=='localhost'&&!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 </script>
