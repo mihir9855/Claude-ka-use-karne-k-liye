@@ -61,6 +61,34 @@ textarea{min-height:130px;resize:vertical}
 .legend{display:grid;gap:8px;margin-top:12px}.legend div{display:flex;align-items:center;gap:8px}.legend i{width:10px;height:10px;border-radius:3px;flex:none}
 .empty{text-align:center;color:var(--mute);padding:28px 10px}
 svg text{fill:var(--mute);font-size:9px}
+
+.hero{background:linear-gradient(140deg,#16322e 0%,#0f766e 70%,#2bb5a8 130%);color:#fff;border-radius:26px;padding:18px;box-shadow:0 14px 30px -14px rgba(15,118,110,.7)}
+.hero .big{color:#fff}.hero .sub{opacity:.75;font-size:12px}
+.hero .chips{display:flex;gap:8px;margin-top:12px}.hero .chips span{background:rgba(255,255,255,.14);border-radius:12px;padding:6px 10px;font-size:12px}
+.eye{border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:50%;width:34px;height:34px;font-size:15px;cursor:pointer}
+.qa{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.qa button{border:0;border-radius:18px;padding:12px 2px 10px;color:#fff;font:inherit;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.qa button span{font-size:20px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{position:relative;overflow:hidden;border-radius:22px;padding:14px;color:#fff;min-height:138px;cursor:pointer;box-shadow:0 10px 24px -10px var(--c)}
+.tile .wm{position:absolute;right:-4px;bottom:-12px;font-size:64px;opacity:.2}
+.tile h3{margin:0;font-size:14px;font-weight:700}.tile .pc{position:absolute;right:12px;top:12px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);border-radius:99px;padding:2px 8px}
+.tile .amt{font-size:18px;font-weight:700;margin-top:16px}.tile .of{font-size:11px;opacity:.85}
+.tile .tb{height:6px;background:rgba(255,255,255,.3);border-radius:9px;margin-top:10px;overflow:hidden}.tile .tb i{display:block;height:100%;background:#fff;border-radius:9px}
+.tile.over{outline:2px solid #ff4d6d;outline-offset:-2px}
+.tile.add{background:var(--card)!important;color:var(--mute);border:2px dashed var(--line);display:grid;place-items:center;box-shadow:none;text-align:center}
+.tile.nolim{opacity:.72}
+.seg-bar{display:flex;height:10px;border-radius:9px;overflow:hidden;gap:2px;background:rgba(255,255,255,.18)}
+.seg-bar i{display:block;height:100%}
+.alert{background:#f97316;color:#fff;border-radius:16px;padding:11px 14px;font-size:13px;margin-top:12px}
+.alert.ok{background:var(--credit)}
+.chips2{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
+.chip.on{background:var(--c,var(--brand));border-color:transparent;color:#fff}
+.amt-in{font-size:30px;font-weight:700;border:0;background:var(--card);text-align:center;padding:14px}
+.hint{background:#fff7e0;color:#7a5a00;border-radius:12px;padding:8px 12px;font-size:12px;margin-top:8px}
+.search{margin-top:10px}
+#tip{position:absolute;pointer-events:none;background:#14201d;color:#fff;border-radius:8px;padding:4px 8px;font-size:11px;white-space:nowrap;display:none;z-index:2}
 </style>
 </head>
 <body>
@@ -71,22 +99,37 @@ svg text{fill:var(--mute);font-size:9px}
 /* ---------- storage ---------- */
 const KEY='paisa.v1';
 const COLORS=['#0f766e','#6366f1','#d97706','#be185d','#0369a1','#7c3aed'];
-const CATS={Food:'🍽️',Groceries:'🛒',Fuel:'⛽',Rent:'🏠',Shopping:'🛍️',Bills:'💡',Medical:'💊',Travel:'🚆',Investment:'📈',Transfer:'🔁',Other:'🧾'};
-const CATCOL={Food:'#d97706',Groceries:'#16a34a',Fuel:'#0369a1',Rent:'#7c3aed',Shopping:'#be185d',Bills:'#0891b2',Medical:'#dc2626',Travel:'#4f46e5',Investment:'#0f766e',Transfer:'#64748b',Other:'#94a3b8'};
+const CATS={Card:'💳',Food:'🍽️',Groceries:'🛒',Fuel:'⛽',Rent:'🏠',Shopping:'🛍️',Bills:'💡',Medical:'💊',Travel:'🚆',Investment:'📈',Transfer:'🔁',Other:'🧾'};
+const CATCOL={Card:'#e11d48',Food:'#d97706',Groceries:'#16a34a',Fuel:'#0369a1',Rent:'#7c3aed',Shopping:'#be185d',Bills:'#0891b2',Medical:'#dc2626',Travel:'#4f46e5',Investment:'#0f766e',Transfer:'#64748b',Other:'#94a3b8'};
 const KINDS={expense:'Expense',income:'Income (salary)',other:'Other income',pass:'Party / pass-through'};
 const defaults=()=>({
   accounts:[{id:'a1',name:'IOB',last4:'3370',open:0},{id:'a2',name:'Account 2',last4:'',open:0},{id:'a3',name:'Account 3',last4:'',open:0},{id:'a4',name:'Account 4',last4:'',open:0}],
-  people:[{id:'p1',name:'Papa'}],tx:[],budget:35000,seen:[]
+  people:[{id:'p1',name:'Papa'}],tx:[],budget:35000,seen:[],cats:[],hide:false,
+  budgets:{Rent:15000,Card:4680,Investment:5000,Groceries:5000,Fuel:2000,Other:2000}
 });
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY))||defaults()}catch(e){S=defaults()}
+S.cats=S.cats||[];S.hide=!!S.hide;
+if(!S.budgets)S.budgets=defaults().budgets;
+S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
+const totalBudget=()=>{const v=Object.values(S.budgets).reduce((a,b)=>a+b,0);return v>0?v:S.budget};
+const cname=k=>k==='Other'?'Misc':k;
+const NEWCOL=['#14b8a6','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#84cc16'];
+function addCategory(name,emoji){
+  name=name.trim();if(!name)return null;
+  if(!CATS[name]){const c={k:name,e:emoji||'🏷️',c:NEWCOL[S.cats.length%NEWCOL.length]};S.cats.push(c);CATS[c.k]=c.e;CATCOL[c.k]=c.c;save()}
+  return name;
+}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+let q='',catTouched=false;
 let view='home',month=new Date().toISOString().slice(0,7),seg='people',accFilter='';
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- helpers ---------- */
+const inrH=n=>S.hide?'₹ ••••':inr(n);
+const compact=n=>n>=1e5?(n/1e5).toFixed(1)+'L':n>=1e3?(n/1e3).toFixed(1)+'k':String(Math.round(n));
 const inr=(n,sign)=>{const a=Math.abs(n);const s='₹'+a.toLocaleString('en-IN',{maximumFractionDigits:a%1?2:0,minimumFractionDigits:a%1?2:0});return (sign?(n<0?'−':'+'):'')+s};
 const acc=id=>S.accounts.find(a=>a.id===id);
 const accColor=id=>COLORS[Math.max(0,S.accounts.findIndex(a=>a.id===id))%COLORS.length];
@@ -199,9 +242,9 @@ function donut(data){
   const tot=data.reduce((s,d)=>s+d.v,0);if(!tot)return '<div class="empty">No spending yet</div>';
   let off=0;const R=15.9155;
   const segs=data.map(d=>{const p=d.v/tot*100;const s=`<circle r="${R}" cx="21" cy="21" fill="none" stroke="${d.c}" stroke-width="5.5" stroke-dasharray="${Math.max(p-.6,.1)} ${100-p+.6}" stroke-dashoffset="${-off}"/>`;off+=p;return s}).join('');
-  return `<div class="row" style="gap:16px"><svg viewBox="0 0 42 42" width="132" height="132" style="transform:rotate(-90deg)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="5.5"/>${segs}</svg>
-  <div class="grow"><div class="small mute">Total spent</div><div class="big" style="font-size:24px">${inr(tot)}</div></div></div>
-  <div class="legend">${data.map(d=>`<div><i style="background:${d.c}"></i><span class="grow">${CATS[d.k]||''} ${esc(d.k)}</span><b class="num">${inr(d.v)}</b><span class="mute small" style="width:34px;text-align:right">${Math.round(d.v/tot*100)}%</span></div>`).join('')}</div>`;
+  return `<div class="row" style="gap:16px"><svg viewBox="0 0 42 42" width="132" height="132"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="5.5"/>${segs}</g><text x="21" y="19.5" text-anchor="middle" style="font-size:3.2px">Spent</text><text x="21" y="25" text-anchor="middle" style="font-size:5.2px;font-weight:700;fill:var(--ink)">₹${compact(tot)}</text></svg>
+  <div class="grow small mute">Top: <b style="color:var(--ink)">${esc(cname(data[0].k))}</b><br>${Math.round(data[0].v/tot*100)}% of spending</div></div>
+  <div class="legend">${data.map(d=>`<div><i style="background:${d.c}"></i><span class="grow">${CATS[d.k]||''} ${esc(cname(d.k))}</span><b class="num">${inr(d.v)}</b><span class="mute small" style="width:34px;text-align:right">${Math.round(d.v/tot*100)}%</span></div>`).join('')}</div>`;
 }
 function bars(ms){
   const vals=ms.flatMap(m=>[m.inc+m.oth,m.exp]);const max=Math.max(...vals,1);const W=300,H=120,bw=14,gap=(W-ms.length*bw*2)/(ms.length+1);
@@ -217,11 +260,12 @@ function pace(mk,st){
   const [y,mo]=mk.split('-').map(Number);const dim=new Date(y,mo,0).getDate();
   const now=new Date();const upto=mk===now.toISOString().slice(0,7)?now.getDate():dim;
   let c=0;const pts=[];for(let d=1;d<=upto;d++){c+=st.day[d]||0;pts.push([d,c])}
-  const max=Math.max(S.budget,c,1)*1.05;const W=300,H=110,X=d=>(d-1)/(dim-1)*(W-10)+5,Y=v=>H-14-v/max*(H-24);
+  const max=Math.max(totalBudget(),c,1)*1.05;const W=300,H=110,X=d=>(d-1)/(dim-1)*(W-10)+5,Y=v=>H-14-v/max*(H-24);
   const line=pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
   const area=line+` L${X(upto)} ${H-14} L${X(1)} ${H-14} Z`;
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%"><line x1="5" x2="${W-5}" y1="${Y(S.budget)}" y2="${Y(S.budget)}" stroke="var(--warn)" stroke-dasharray="4 3"/><text x="${W-5}" y="${Y(S.budget)-4}" text-anchor="end">Budget ${inr(S.budget)}</text>
-  <path d="${area}" fill="var(--brand)" opacity=".12"/><path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round"/><text x="5" y="${H-2}">1</text><text x="${W-5}" y="${H-2}" text-anchor="end">${dim}</text></svg>`;
+  window.__pace={pts,dim,W,X:null,upto};
+  return `<div style="position:relative"><div id="tip"></div><svg class="pace" viewBox="0 0 ${W} ${H}" width="100%" style="touch-action:pan-y"><line id="cur" x1="0" x2="0" y1="6" y2="${H-14}" stroke="var(--ink)" stroke-dasharray="2 2" opacity="0"/><line x1="5" x2="${W-5}" y1="${Y(totalBudget())}" y2="${Y(totalBudget())}" stroke="var(--warn)" stroke-dasharray="4 3"/><text x="${W-5}" y="${Y(totalBudget())-4}" text-anchor="end">Budget ${inr(totalBudget())}</text>
+  <path d="${area}" fill="var(--brand)" opacity=".12"/><path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round"/><text x="5" y="${H-2}">1</text><text x="${W-5}" y="${H-2}" text-anchor="end">${dim}</text></svg></div>`;
 }
 
 /* ---------- views ---------- */
@@ -229,30 +273,94 @@ function monthBar(){return `<div class="month"><button class="icon-btn" data-a="
 function txRow(t){
   const a=acc(t.acc),p=person(t.party);
   const tag=t.kind==='pass'?`🤝 ${esc(p?p.name:'party')}`:t.kind==='other'?'Other income':t.kind==='income'?'Income':esc(t.cat);
-  return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot">${t.kind==='pass'?'🤝':t.kind==='expense'?CATS[t.cat]||'🧾':'💰'}</div>
+  return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8')+'26':'var(--brand-soft)'}">${t.kind==='pass'?'🤝':t.kind==='expense'?CATS[t.cat]||'🧾':'💰'}</div>
   <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">Unassigned</span>'}${t.src==='sms'?' · SMS':''}${t.pool?' · pool':''}</div></div>
   <b class="num ${t.type}">${t.type==='credit'?'+':'−'}${inr(t.amt)}</b></div>`;
 }
+function txListHTML(){
+  const ql=q.trim().toLowerCase();
+  const list=S.tx.filter(t=>t.date.startsWith(month)&&(!accFilter||t.acc===accFilter)&&(!ql||[t.note,t.cat,(person(t.party)||{}).name,String(t.amt)].join(' ').toLowerCase().includes(ql))).sort((a,b)=>b.date.localeCompare(a.date));
+  return list.length?list.map(txRow).join(''):'<div class="empty">'+(ql?'No match.':'Nothing yet.<br>Tap + to add, or paste a bank SMS.')+'</div>';
+}
 function home(){
-  const st=mstats(month),left=S.budget-st.exp,pct=Math.min(100,st.exp/S.budget*100);
-  const un=S.tx.filter(t=>!t.acc).length;
-  const list=S.tx.filter(t=>t.date.startsWith(month)&&(!accFilter||t.acc===accFilter)).sort((a,b)=>b.date.localeCompare(a.date));
-  const pl=pool();
-  return `<div class="row sp"><div><h1>Paisa</h1><div class="small mute">Hello Mihir 👋</div></div>${monthBar()}</div>
-  <div class="card" style="margin-top:14px">
-    <div class="small mute">Left to spend this month</div>
-    <div class="big ${left<0?'debit':''}">${inr(left)}</div>
-    <div class="bar" style="margin:10px 0 6px"><i style="width:${pct}%;background:${pct>90?'var(--debit)':pct>70?'var(--warn)':'var(--brand)'}"></i></div>
-    <div class="row sp small mute"><span>Spent ${inr(st.exp)}</span><span>Budget ${inr(S.budget)}</span></div>
+  const st=mstats(month),tb=totalBudget(),left=tb-st.exp,pct=Math.min(100,st.exp/tb*100);
+  const un=S.tx.filter(t=>!t.acc).length,pl=pool();
+  const total=S.accounts.reduce((a,x)=>a+accBal(x.id),0);
+  return `<div class="row sp"><div><h1>Paisa</h1><div class="small mute">Hello Mihir 👋</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="nav" data-id="accounts" title="Accounts & settings">⚙️</button></div></div>
+  <div class="hero" style="margin-top:14px">
+    <div class="row sp"><div><div class="sub">Total balance · ${S.accounts.length} accounts</div><div class="big num">${inrH(total)}</div></div><button class="eye" data-a="eye">${S.hide?'🙈':'👁️'}</button></div>
+    <div class="chips"><span>↓ Income ${inrH(st.inc+st.oth)}</span><span>↑ Spent ${inrH(st.exp)}</span></div>
   </div>
-  <div class="grid2" style="margin-top:10px"><div class="stat"><span class="small mute">Salary / income</span><b class="credit num">${inr(st.inc)}</b></div><div class="stat"><span class="small mute">Other income</span><b class="num">${inr(st.oth)}</b></div></div>
+  <div class="qa">
+    <button style="background:#7c5cff" data-a="qa" data-id="exp"><span>➖</span>Expense</button>
+    <button style="background:#16a34a" data-a="qa" data-id="inc"><span>➕</span>Income</button>
+    <button style="background:#2196f3" data-a="qa" data-id="party"><span>🤝</span>For someone</button>
+    <button style="background:#f97316" data-a="qa" data-id="sms"><span>💬</span>Paste SMS</button>
+  </div>
+  <div class="card" style="margin-top:12px" data-a="nav" data-id="budget">
+    <div class="row sp"><div><div class="small mute">Left to spend this month</div><div class="big ${left<0?'debit':''} num">${inrH(left)}</div></div><span class="pill">Budget ›</span></div>
+    <div class="bar" style="margin:10px 0 6px"><i style="width:${pct}%;background:${pct>90?'var(--debit)':pct>70?'var(--warn)':'var(--brand)'}"></i></div>
+    <div class="row sp small mute"><span>Spent ${inrH(st.exp)}</span><span>of ${inrH(tb)}</span></div>
+  </div>
   ${un?`<div class="card small" style="margin-top:10px;background:var(--brand-soft)">⚠️ ${un} transaction${un>1?'s':''} not matched to an account. Tap one to assign it.</div>`:''}
   <h2>Accounts</h2>
-  <div class="hscroll">${S.accounts.map((a,i)=>{const m=accMonth(a.id,month);return `<div class="acc" style="background:linear-gradient(135deg,${COLORS[i%6]},${COLORS[i%6]}bb)" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${a.last4?' ••'+a.last4:''}${accFilter===a.id?' · filtered':''}</small><b class="num">${inr(accBal(a.id))}</b><div class="io"><span>↓ ${inr(m.i)}</span><span>↑ ${inr(m.o)}</span></div></div>`}).join('')}</div>
-  ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inr(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inr(pl.inc)}<br>Used ${inr(pl.used)}</div></div>`:''}
+  <div class="hscroll">${S.accounts.map((a,i)=>{const m=accMonth(a.id,month);return `<div class="acc" style="background:linear-gradient(135deg,${COLORS[i%6]},${COLORS[i%6]}bb)" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${a.last4?' ••'+a.last4:''}${accFilter===a.id?' · filtered':''}</small><b class="num">${inrH(accBal(a.id))}</b><div class="io"><span>↓ ${inrH(m.i)}</span><span>↑ ${inrH(m.o)}</span></div></div>`}).join('')}</div>
+  ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inrH(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inrH(pl.inc)}<br>Used ${inrH(pl.used)}</div></div>`:''}
   <h2>${accFilter?'Transactions · '+esc(acc(accFilter).name):'Transactions'}</h2>
-  <div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">Nothing yet.<br>Tap + to add, or paste a bank SMS.</div>'}</div>`;
+  <input id="q" class="search" placeholder="🔍 Search note, category, person or amount" value="${esc(q)}">
+  <div class="card" style="padding:4px 16px;margin-top:10px" id="txlist">${txListHTML()}</div>`;
 }
+/* ---------- BUDGET ---------- */
+function budgetView(){
+  const st=mstats(month),tb=totalBudget(),used=st.exp,left=tb-used,pct=tb?used/tb*100:0;
+  const [y,mo]=month.split('-').map(Number),dim=new Date(y,mo,0).getDate(),now=new Date(),cur=now.toISOString().slice(0,7);
+  const dayN=month===cur?now.getDate():(month<cur?dim:0),daysLeft=month===cur?dim-dayN+1:0;
+  const elapsed=dayN/dim*100,perDay=daysLeft?Math.max(0,left)/daysLeft:0;
+  const bk=Object.keys(S.budgets).filter(k=>S.budgets[k]>0);
+  const extra=Object.keys(st.cat).filter(k=>st.cat[k]>0&&!(S.budgets[k]>0));
+  const segs=Object.entries(st.cat).filter(([,v])=>v>0).map(([k,v])=>`<i style="width:${v/Math.max(tb,used,1)*100}%;background:${CATCOL[k]||'#94a3b8'}"></i>`).join('');
+  const R=15.9155,rp=Math.min(100,pct);
+  const behind=month===cur&&pct>elapsed+10;
+  const tile=(k,lim)=>{
+    const u=st.cat[k]||0,p=lim?u/lim*100:0,c=CATCOL[k]||'#94a3b8',over=lim&&u>lim;
+    return `<div class="tile ${over?'over':''} ${lim?'':'nolim'}" data-a="tile" data-id="${esc(k)}" style="--c:${c};background:linear-gradient(150deg,${c},${c}bb)">
+      <h3>${esc(cname(k))}</h3>${lim?`<span class="pc">${Math.round(p)}%</span>`:'<span class="pc">no limit</span>'}
+      <div class="amt num">${inr(u)}</div><div class="of">${lim?(over?`<b>₹${Math.round(u-lim).toLocaleString('en-IN')} over</b> · limit ${inr(lim)}`:`of ${inr(lim)} · ${inr(lim-u)} left`):'tap to set a limit'}</div>
+      ${lim?`<div class="tb"><i style="width:${Math.min(100,p)}%"></i></div>`:''}<div class="wm">${CATS[k]||'🧾'}</div></div>`;
+  };
+  return `<div class="row sp"><h1>Budget</h1>${monthBar()}</div>
+  <div class="hero" style="margin-top:14px">
+    <div class="row sp"><div><div class="sub">${inr(used)} used of ${inr(tb)}</div><div class="big num ${left<0?'':''}" style="${left<0?'color:#ffb4bf':''}">${inr(Math.abs(left))}</div><div class="sub">${left<0?'over budget':'left this month'}</div></div>
+    <svg viewBox="0 0 42 42" width="92" height="92"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="4.5"/><circle r="${R}" cx="21" cy="21" fill="none" stroke="${pct>100?'#ff8da0':'#fff'}" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="${rp} ${100-rp}"/></g><text x="21" y="23.5" text-anchor="middle" style="font-size:7px;font-weight:700;fill:#fff">${Math.round(pct)}%</text></svg></div>
+    <div class="seg-bar" style="margin-top:14px">${segs}</div>
+    ${daysLeft?`<div class="chips"><span>${daysLeft} days left</span><span>Safe to spend ${inr(perDay)}/day</span></div>`:''}
+  </div>
+  ${behind?`<div class="alert">⚠️ ${Math.round(pct)}% of budget used but only ${Math.round(elapsed)}% of the month has passed. Slow down a little.</div>`:(month===cur&&tb?`<div class="alert ok">✓ On track: ${Math.round(pct)}% used, ${Math.round(elapsed)}% of month passed.</div>`:'')}
+  <h2>Categories</h2>
+  <div class="tiles">${bk.map(k=>tile(k,S.budgets[k])).join('')}${extra.map(k=>tile(k,0)).join('')}<div class="tile add" data-a="addbudget"><div><div style="font-size:26px">＋</div><div class="small">Add category budget</div></div></div></div>
+  <p class="small mute">Tap a tile to see its transactions, change the limit, or add an expense in that category.</p>`;
+}
+function catSheet(k){
+  const st=mstats(month),used=st.cat[k]||0,lim=S.budgets[k]||0,c=CATCOL[k]||'#94a3b8';
+  const list=S.tx.filter(t=>t.kind==='expense'&&t.cat===k&&t.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
+  openSheet(`<div class="row sp"><h1>${CATS[k]||''} ${esc(cname(k))}</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <div class="card" style="margin-top:14px;background:linear-gradient(150deg,${c},${c}bb);color:#fff"><div class="small" style="opacity:.85">${mlabel(month)} · used</div><div class="big num" style="color:#fff">${inr(used)}</div>
+  ${lim?`<div style="height:8px;background:rgba(255,255,255,.3);border-radius:9px;margin-top:8px;overflow:hidden"><i style="width:${Math.min(100,used/lim*100)}%;display:block;height:100%;background:#fff;border-radius:9px"></i></div><div class="small" style="margin-top:6px">${used>lim?'₹'+Math.round(used-lim).toLocaleString('en-IN')+' over':inr(lim-used)+' left'} · limit ${inr(lim)}</div>`:'<div class="small">No limit set</div>'}</div>
+  <label>Monthly limit (₹)</label><input id="f-lim" inputmode="numeric" value="${lim||''}" placeholder="0 = no limit">
+  <button class="btn" data-a="savelim" data-id="${esc(k)}">Save limit</button>
+  <button class="btn ghost" data-a="addin" data-id="${esc(k)}">+ Add ${esc(cname(k))} expense</button>
+  ${lim?`<button class="btn red" data-a="rmlim" data-id="${esc(k)}">Remove budget</button>`:''}
+  <h2>This month</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No spending yet</div>'}</div>`);
+}
+function budgetSheet(){
+  const free=Object.keys(CATS).filter(k=>!(S.budgets[k]>0));
+  openSheet(`<div class="row sp"><h1>Add category budget</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <label>Category</label><select id="b-cat">${opts(free.map(k=>[k,CATS[k]+' '+cname(k)]),'')}<option value="__new">＋ New category…</option></select>
+  <div id="b-new" hidden><label>New category name</label><input id="b-name" placeholder="e.g. Pet care"><label>Emoji</label><input id="b-emo" placeholder="🐶" maxlength="4"></div>
+  <label>Monthly limit (₹)</label><input id="b-lim" inputmode="numeric" placeholder="0">
+  <button class="btn" data-a="savebudget">Add</button>`);
+}
+
 function stats(){
   const st=mstats(month);
   const data=Object.entries(st.cat).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({k,v,c:CATCOL[k]||'#94a3b8'}));
@@ -290,7 +398,7 @@ function accounts(){
   (sms()?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
    <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+
   `<button class="btn ghost" data-a="addacc">+ Add account</button>
-   <h2>Budget & data</h2><div class="card"><label style="margin-top:0">Monthly spending budget (₹)</label><input data-f="budget" value="${S.budget}" inputmode="numeric">
+   <h2>Budget & data</h2><div class="card"><div class="small mute">Budget limits now live in the <b>Budget</b> tab (one limit per category). Total budget = sum of limits.</div>
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button>
    <button class="btn ghost" data-a="demo" style="margin-top:8px">Load demo data</button><button class="btn red" data-a="reset">Erase everything</button></div>`;
 }
@@ -300,15 +408,18 @@ function openSheet(html){$('#layer').innerHTML=`<div class="sheet-bg" data-a="cl
 const closeSheet=()=>{$('#layer').innerHTML=''};
 function toast(m){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),2800)}
 const opts=(arr,sel,f=x=>x)=>arr.map(([v,l])=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`).join('');
-function txSheet(t){
+function txSheet(t,preset){
   const isNew=!t;t=t||{id:'',type:'debit',amt:'',acc:S.accounts[0].id,kind:'expense',cat:'Other',note:'',date:new Date().toISOString().slice(0,10),party:'',pool:false};
+  if(isNew&&preset)Object.assign(t,preset);
+  tt=t.type;catTouched=!isNew||!!(preset&&preset.cat);
+  const chips=Object.keys(CATS).map(k=>`<button type="button" class="chip ${k===t.cat?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${CATS[k]} ${esc(cname(k))}</button>`).join('')+`<button type="button" class="chip" id="newcat" data-a="newcat">＋ New</button>`;
   openSheet(`<div class="row sp"><h1>${isNew?'Add':'Edit'} transaction</h1><button class="icon-btn" data-a="close">✕</button></div>
-  ${isNew?`<div class="seg" style="margin-top:14px"><button class="on" data-a="tab" data-id="m">Manual</button><button data-a="tab" data-id="s">Paste SMS</button></div>`:''}
+  ${isNew?`<div class="seg" style="margin-top:14px" id="tabseg"><button class="on" data-a="tab" data-id="m">Manual</button><button data-a="tab" data-id="s">Paste SMS</button></div>`:''}
   <div id="tab-m"><div class="seg" style="margin-top:14px" id="typeseg"><button data-a="type" data-id="debit" class="${t.type==='debit'?'on':''}">Debit (out)</button><button data-a="type" data-id="credit" class="${t.type==='credit'?'on':''}">Credit (in)</button></div>
-  <label>Amount (₹)</label><input id="f-amt" inputmode="decimal" value="${t.amt}" placeholder="0">
+  <label>Amount (₹)</label><input class="amt-in" id="f-amt" inputmode="decimal" value="${t.amt}" placeholder="₹ 0">
   <label>Account</label><select id="f-acc"><option value="">Unassigned</option>${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.acc)}</select>
   <label>Type</label><select id="f-kind">${opts(Object.entries(KINDS),t.kind)}</select>
-  <div id="w-cat"><label>Category</label><select id="f-cat">${opts(Object.keys(CATS).map(k=>[k,CATS[k]+' '+k]),t.cat)}</select>
+  <div id="w-cat"><label>Category</label><input type="hidden" id="f-cat" value="${esc(t.cat)}"><div class="chips2" id="f-cats">${chips}</div><div id="smart"></div>
   <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f-pool" style="width:auto" ${t.pool?'checked':''}> Paid from other-income pool</label></div>
   <div id="w-party"><label>Person / party</label><select id="f-party">${opts(S.people.map(p=>[p.id,p.name]),t.party)}</select></div>
   <label>Note</label><input id="f-note" value="${esc(t.note)}" placeholder="e.g. DMart groceries">
@@ -317,13 +428,15 @@ function txSheet(t){
   <div id="tab-s" hidden><label>Paste bank SMS (separate several with a blank line)</label><textarea id="f-sms" placeholder="Rs.4337.86 debited from A/c XX3370 on 29-09-26 to DMART. Avl bal Rs.5200"></textarea>
   <button class="btn" data-a="parse">Detect & add</button></div>`);
   syncKind();
+  if(preset&&preset.tab==='s'){$('#tab-m').hidden=true;$('#tab-s').hidden=false;document.querySelectorAll('#tabseg button').forEach((b,i)=>b.classList.toggle('on',i===1))}
+  else if(isNew)setTimeout(()=>{const a=$('#f-amt');a&&a.focus()},60);
 }
 function syncKind(){const k=$('#f-kind');if(!k)return;$('#w-cat').style.display=k.value==='expense'?'':'none';$('#w-party').style.display=k.value==='pass'?'':'none'}
 
 /* ---------- render & events ---------- */
 function render(){
-  $('#app').innerHTML={home,stats,people:khata,accounts}[view==='people'?'people':view]();
-  const nav=[['home','🏠','Home'],['stats','📊','Insights'],['add','+',''],['people','🤝','Khata'],['accounts','🏦','Accounts']];
+  $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView}[view]();
+  const nav=[['home','🏠','Home'],['budget','🎯','Budget'],['add','+',''],['stats','📊','Insights'],['people','🤝','Khata']];
   $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new">+</button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${i}</span>${l}</button>`).join('');
 }
 let tt='debit';
@@ -336,10 +449,35 @@ document.addEventListener('click',e=>{
   else if(a==='mnext'){month=shiftMonth(month,1);render()}
   else if(a==='filter'){accFilter=accFilter===id?'':id;render()}
   else if(a==='seg'){seg=id;render()}
-  else if(a==='new'){tt='debit';txSheet()}
+  else if(a==='new'){txSheet()}
+  else if(a==='eye'){S.hide=!S.hide;save();render()}
+  else if(a==='qa'){
+    if(id==='exp')txSheet();
+    else if(id==='inc')txSheet(null,{type:'credit',kind:'income'});
+    else if(id==='party')txSheet(null,{kind:'pass'});
+    else txSheet(null,{tab:'s'});
+  }
+  else if(a==='tile')catSheet(id);
+  else if(a==='addbudget')budgetSheet();
+  else if(a==='savelim'){const v=parseFloat($('#f-lim').value)||0;if(v>0)S.budgets[id]=v;else delete S.budgets[id];save();closeSheet();render()}
+  else if(a==='rmlim'){delete S.budgets[id];save();closeSheet();render()}
+  else if(a==='addin'){closeSheet();txSheet(null,{cat:id})}
+  else if(a==='savebudget'){
+    const sel=$('#b-cat').value,lim=parseFloat($('#b-lim').value);
+    const k=sel==='__new'?addCategory($('#b-name').value,$('#b-emo').value.trim()):sel;
+    if(!k||!(lim>0)){toast('Pick a category and enter a limit');return}
+    S.budgets[k]=lim;save();closeSheet();render();
+  }
+  else if(a==='cat'){catTouched=true;$('#f-cat').value=id;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#smart').innerHTML=''}
+  else if(a==='newcat'){
+    const n=prompt('New category name?');if(!n||!n.trim())return;
+    const k=addCategory(n,(prompt('Emoji (optional)')||'').trim());
+    if(!document.querySelector(`#f-cats [data-id="${k}"]`))el.insertAdjacentHTML('beforebegin',`<button type="button" class="chip" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${CATS[k]} ${esc(k)}</button>`);
+    document.querySelector(`#f-cats [data-id="${k}"]`).click();
+  }
   else if(a==='edit'){const t=S.tx.find(x=>x.id===id);tt=t.type;txSheet(t)}
   else if(a==='close')closeSheet();
-  else if(a==='tab'){document.querySelectorAll('.sheet .seg:first-of-type button').forEach(b=>b.classList.toggle('on',b===el));$('#tab-m').hidden=id!=='m';$('#tab-s').hidden=id!=='s'}
+  else if(a==='tab'){document.querySelectorAll('#tabseg button').forEach(b=>b.classList.toggle('on',b===el));$('#tab-m').hidden=id!=='m';$('#tab-s').hidden=id!=='s'}
   else if(a==='type'){tt=id;document.querySelectorAll('#typeseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));if(id==='credit'&&$('#f-kind').value==='expense'){$('#f-kind').value='income';syncKind()}}
   else if(a==='savetx'){
     const amt=parseFloat($('#f-amt').value);if(!(amt>0)){toast('Enter an amount');return}
@@ -364,7 +502,15 @@ document.addEventListener('click',e=>{
   else if(a==='demo'){demo();render();toast('Demo data loaded')}
   else if(a==='reset'){if(confirm('Erase all data?')){S=defaults();save();render()}}
 });
+document.addEventListener('input',e=>{
+  if(e.target.id==='q'){q=e.target.value;$('#txlist').innerHTML=txListHTML()}
+  else if(e.target.id==='f-note'&&!catTouched&&$('#f-kind').value==='expense'){
+    const g=guessCat(e.target.value);
+    if(g!=='Other'){$('#f-cat').value=g;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===g));$('#smart').innerHTML=`<div class="hint">🏷️ Smart category: ${CATS[g]} ${g}. Tap another chip to change.</div>`}
+  }
+});
 document.addEventListener('change',e=>{
+  if(e.target.id==='b-cat')$('#b-new').hidden=e.target.value!=='__new';
   if(e.target.id==='f-kind')syncKind();
   const f=e.target.dataset.f;if(!f)return;
   if(f==='budget'){S.budget=parseFloat(e.target.value)||0}
@@ -396,6 +542,14 @@ function demo(){
   const today=new Date().toISOString().slice(0,10);
   out.filter(t=>t.date<=today).forEach(t=>S.tx.push({id:uid(),pool:false,party:'',src:'manual',...t}));save();
 }
+document.addEventListener('pointermove',e=>{
+  const sv=e.target.closest&&e.target.closest('svg.pace');if(!sv||!window.__pace)return;
+  const P=__pace,r=sv.getBoundingClientRect(),f=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));
+  const d=Math.min(P.upto,Math.max(1,Math.round(f*(P.dim-1))+1)),pt=P.pts[d-1];if(!pt)return;
+  const x=(d-1)/(P.dim-1)*(P.W-10)+5,cur=sv.querySelector('#cur');cur.setAttribute('x1',x);cur.setAttribute('x2',x);cur.setAttribute('opacity',.5);
+  const tip=$('#tip');tip.style.display='block';tip.textContent=`Day ${d} · ${inr(pt[1])} so far`;
+  tip.style.left=Math.min(r.width-120,Math.max(0,x/P.W*r.width-50))+'px';tip.style.top='-6px';
+});
 render();
 drainSms();
 </script>
