@@ -281,15 +281,18 @@ const CAT_RULES=[
   ['Investment',/zerodha|groww|upstox|\bsip\b|mutual fund|nippon|hdfc amc|coin/]
 ];
 const guessCat=s=>{const l=s.toLowerCase();for(const [c,r] of CAT_RULES)if(r.test(l))return c;return 'Other'};
+/* amount in many bank styles: Rs.100, Rs:100, Rs 100, INR 1,000.50, ₹100, 100.00 INR */
+function smsAmount(s){
+  const m=s.match(/(?:rs|inr|₹|rupees?)\s*[.:\-]*\s*([\d,]+(?:\.\d{1,2})?)/i)||s.match(/([\d,]*\d(?:\.\d{1,2})?)\s*(?:rs|inr|₹)(?![a-z])/i)||s.match(/\b(?:dr|cr|debited|credited|withdrawn|paid|spent|received|deposited)\b[^\d]{0,14}([\d,]*\d\.\d{2})/i);
+  return m?parseFloat(m[1].replace(/,/g,'')):0;
+}
 function parseSms(raw,fallbackIso){
   const s=raw.replace(/\s+/g,' ').trim();
-  const am=s.match(/(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{1,2})?)/i);
-  if(!am)return null;
-  const amt=parseFloat(am[1].replace(/,/g,''));
+  const amt=smsAmount(s);
   if(!(amt>0))return null;
-  const low=s.toLowerCase();
-  const d=low.search(/\b(debited|debit|spent|withdrawn|paid|purchase|sent|deducted)\b/);
-  const c=low.search(/\b(credited|credit|received|deposited|refund)\b/);
+  const low=s.toLowerCase().replace(/\b(credit|debit) cards?\b/g,' card ');
+  const d=low.search(/\b(debited|debit|dr|spent|withdrawn|withdrawal|withdrew|paid|purchase|purchased|sent|deducted|used|transferred to|trf to)\b/);
+  const c=low.search(/\b(credited|credit|cr|received|deposited|deposit|refund|reversal|added|transferred from|trf from)\b/);
   let type;
   if(d<0&&c<0)return null;
   type=(c<0||(d>=0&&d<c))?'debit':'credit';
@@ -600,6 +603,19 @@ function pickStatement(accId){
     }catch(e){toast(e&&e.message==='cancelled'?'Cancelled':'Could not read this file. Check the password or try the CSV version.',4500)}
   };
   i.click();
+}
+/* an SMS Arthaly could not understand: never a dead end, finish it by hand */
+let smsPending={amt:0,note:''};
+function smsFallback(text){
+  const t=(text||'').replace(/\s+/g,' ').trim(),amt=smsAmount(t);
+  smsPending={amt,note:t.slice(0,60)};
+  openSheet(`<div class="row sp"><h1>Could not read this SMS</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <div class="card small" style="margin-top:12px;word-break:break-word">${esc(t.slice(0,300))||'(empty)'}</div>
+  ${amt?`<p style="margin:14px 0 4px">Found <b>${inr(amt)}</b> in it. Was this money going out or coming in?</p>
+  <button class="btn" data-a="smsas" data-id="debit">Money out (expense)</button><button class="btn ghost" data-a="smsas" data-id="credit" style="margin-top:8px">Money in (income)</button>`
+  :`<p class="small mute" style="margin:14px 0 4px">No amount found in this text. Add it by hand.</p><button class="btn" data-a="smsas" data-id="debit">Add by hand</button>`}
+  <p class="small mute" style="margin-top:14px">If this is a normal bank SMS, tap the bar below to copy its text and send it to me (hide names and account numbers); I will teach Arthaly your bank's format.</p>
+  <textarea readonly style="min-height:90px;font-size:12px" onclick="this.select()">${esc(t)}</textarea>`);
 }
 function pdfDebugSheet(){
   const L=window.__pdfLines||[];
@@ -1172,9 +1188,15 @@ document.addEventListener('click',e=>{
   }
   else if(a==='deltx'){S.tx=S.tx.filter(x=>x.id!==id);save();closeSheet();render()}
   else if(a==='parse'){
-    const r=addFromSms($('#f-sms').value);closeSheet();render();
+    const text=$('#f-sms').value,r=addFromSms(text);closeSheet();render();
     if(r.out.length){const f=r.out[0];toast(`Added ${r.out.length}: ${f.t.type==='debit'?'−':'+'}${inr(f.t.amt)}${f.matched?'':' (assign account)'}`)}
-    else toast(r.bad[0]==='duplicate'?'Already added':r.bad[0]==='card payment'?'Card payment received. Counted from your bank SMS.':'Couldn’t read that SMS');
+    else if(r.bad[0]==='duplicate')toast('Already added');
+    else if(r.bad[0]==='card payment')toast('Card payment received. Counted from your bank SMS.');
+    else smsFallback(text);
+  }
+  else if(a==='smsas'){
+    const t=smsPending;closeSheet();
+    txSheet(null,{type:id==='credit'?'credit':'debit',kind:id==='credit'?'income':'expense',amt:t.amt||'',note:t.note});
   }
   else if(a==='addsource'){const n=prompt('Income source name? (e.g. a client or project)');if(n&&n.trim()){S.sources.push({id:uid(),name:n.trim()});save();render()}}
   else if(a==='source')sourceSheet(id);
