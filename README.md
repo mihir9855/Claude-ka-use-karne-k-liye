@@ -1,5 +1,5 @@
 # Claude-ka-use-karne-k-liye
-## Paisa – Expense & Budget Tracker
+## Arthaly – Expense & Budget Tracker
 
 Open `index.html` on a phone (or host it anywhere static). Data stays in the browser (`localStorage`); use Accounts → Export for backups.
 

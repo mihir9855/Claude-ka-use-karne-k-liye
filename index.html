@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
-<title>Paisa – Expense & Budget Tracker</title>
+<title>Arthaly – Expense & Budget Tracker</title>
 <style>
 :root{
   --bg:#f6f7f5;--card:#fff;--ink:#14201d;--mute:#6b7773;--line:#e6e9e6;
@@ -55,7 +55,7 @@ label{display:block;font-size:12px;color:var(--mute);margin:12px 0 5px}
 input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;outline:none}
 input:focus,select:focus,textarea:focus{border-color:var(--brand)}
 textarea{min-height:130px;resize:vertical}
-.btn{width:100%;border:0;border-radius:14px;padding:13px;font:inherit;font-weight:600;background:var(--brand);color:#fff;margin-top:16px;cursor:pointer}
+.btn{width:100%;border:0;border-radius:14px;padding:13px;font:inherit;font-weight:600;background:var(--btn,var(--brand));color:var(--btn-ink,#fff);margin-top:16px;cursor:pointer}
 .btn.ghost{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}.btn.red{background:none;color:var(--debit);margin-top:4px}
 .toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#14201d;color:#fff;padding:10px 16px;border-radius:12px;z-index:20;max-width:90%;font-size:13px}
 .legend{display:grid;gap:8px;margin-top:12px}.legend div{display:flex;align-items:center;gap:8px}.legend i{width:10px;height:10px;border-radius:3px;flex:none}
@@ -214,6 +214,41 @@ nav button span{display:flex;justify-content:center}
 .swatches .custom{position:relative;width:34px;height:34px;border-radius:50%;overflow:hidden;border:3px solid var(--line);background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red)}
 .swatches .custom input{position:absolute;inset:-8px;width:60px;height:60px;opacity:0;cursor:pointer;border:0;padding:0}
 .swatches .custom.on{border-color:var(--ink)}
+
+/* ===== Earthy themes from the reference: Sage (light) and Cocoa (dark) ===== */
+:root[data-theme=sage]{color-scheme:light;--bg:#f6f1ee;--card:#fffdfb;--ink:#4a2c1f;--mute:#9a8a82;--line:#eadfd9;--brand:#7f9a45;--brand-soft:#e7edd8;--btn:#4a2c1f;--btn-ink:#fff;--on-brand:#fff;--debit:#c4573a;--credit:#5f7d2e;--warn:#c9871a;--hero1:#3a2218;--hero2:#5b3a2a;--hero3:#8da35a;--shadow:0 2px 4px rgba(74,44,31,.05),0 12px 28px -8px rgba(74,44,31,.14)}
+:root[data-theme=cocoa]{color-scheme:dark;--bg:#1c120e;--card:#2a1c16;--ink:#f6ece6;--mute:#b3a096;--line:#3c2a22;--brand:#a3b86c;--brand-soft:#33401f;--btn:#f1e4d8;--btn-ink:#3a2218;--on-brand:#1c120e;--debit:#ef8a6a;--credit:#a3c46a;--warn:#f2b84b;--hero1:#3a2218;--hero2:#58392a;--hero3:#8da35a;--shadow:none}
+[data-theme=sage] body{background:#f6f1ee}[data-theme=cocoa] body{background:#1c120e}
+[data-theme=sage] .card,[data-theme=sage] .stat,[data-theme=sage] .hero,[data-theme=cocoa] .card,[data-theme=cocoa] .stat,[data-theme=cocoa] .hero{border-radius:26px}
+[data-theme=cocoa] .card,[data-theme=cocoa] .stat{border:1px solid #33241d}
+[data-theme=sage] h1,[data-theme=cocoa] h1{font-size:24px;letter-spacing:-.02em}
+[data-theme=sage] .big,[data-theme=cocoa] .big{letter-spacing:-.03em}
+[data-theme=sage] .seg,[data-theme=cocoa] .seg{border-radius:99px;background:var(--line)}
+[data-theme=sage] .seg button,[data-theme=cocoa] .seg button{border-radius:99px}
+[data-theme=sage] .seg button.on,[data-theme=cocoa] .seg button.on{background:var(--brand);color:var(--on-brand);box-shadow:none}
+[data-theme=sage] .chip.on,[data-theme=cocoa] .chip.on{color:var(--on-brand)}
+[data-theme=sage] .pill,[data-theme=cocoa] .pill{background:var(--brand-soft);color:var(--ink)}
+[data-theme=sage] .btn,[data-theme=cocoa] .btn{border-radius:99px}
+[data-theme=sage] .btn.ghost,[data-theme=cocoa] .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+[data-theme=sage] .btn.red,[data-theme=cocoa] .btn.red{background:none;color:var(--debit);border:0}
+[data-theme=sage] .icon-btn,[data-theme=cocoa] .icon-btn{border:1.5px solid var(--line);box-shadow:none;background:transparent}
+[data-theme=sage] nav,[data-theme=cocoa] nav{left:50%;right:auto;width:min(456px,calc(100% - 24px));transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));border-radius:34px;background:var(--card);border:1px solid var(--line);padding:8px 10px;box-shadow:0 14px 30px -12px rgba(74,44,31,.4)}
+[data-theme=sage] .fab,[data-theme=cocoa] .fab{background:var(--btn)!important;color:var(--btn-ink)!important;margin:0 auto;width:50px;height:50px;box-shadow:none}
+[data-theme=sage] #app,[data-theme=cocoa] #app{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+[data-theme=sage] .sheet{background:#f6f1ee}[data-theme=cocoa] .sheet{background:#1c120e}
+[data-theme=sage] .toast{background:#4a2c1f;color:#fff}[data-theme=cocoa] .toast{background:#f1e4d8;color:#3a2218}
+[data-theme=cocoa] input,[data-theme=cocoa] select,[data-theme=cocoa] textarea{background:#2a1c16;border-color:#3c2a22}
+[data-theme=sage] .qa button,[data-theme=cocoa] .qa button{border-radius:22px}
+[data-theme=sage] .qa button:nth-child(1),[data-theme=cocoa] .qa button:nth-child(1){background:#8da35a!important}
+[data-theme=sage] .qa button:nth-child(2),[data-theme=cocoa] .qa button:nth-child(2){background:#ef8a2a!important}
+[data-theme=sage] .qa button:nth-child(3),[data-theme=cocoa] .qa button:nth-child(3){background:#7a4b34!important}
+[data-theme=sage] .qa button:nth-child(4),[data-theme=cocoa] .qa button:nth-child(4){background:#d99a1e!important}
+[data-theme=sage] .qa button:nth-child(5),[data-theme=cocoa] .qa button:nth-child(5){background:#8f7bd6!important}
+[data-theme=sage] .acc:nth-child(3n+1),[data-theme=cocoa] .acc:nth-child(3n+1){background:linear-gradient(135deg,#7a4b34,#5b3a2a)!important}
+[data-theme=sage] .acc:nth-child(3n+2),[data-theme=cocoa] .acc:nth-child(3n+2){background:linear-gradient(135deg,#8da35a,#6f8a3a)!important}
+[data-theme=sage] .acc:nth-child(3n),[data-theme=cocoa] .acc:nth-child(3n){background:linear-gradient(135deg,#ef8a2a,#c9701a)!important}
+[data-theme=sage] .alert.soft{background:#f7e9c8;color:#8a5a0a}[data-theme=cocoa] .alert.soft{background:rgba(242,184,75,.16)}
+[data-theme=sage] .hint{background:#f7ecd0;color:#7a5a00}
 </style>
 </head>
 <body>
@@ -273,10 +308,17 @@ let S;
 try{S=JSON.parse(localStorage.getItem(KEY))||defaults()}catch(e){S=defaults()}
 const ACCENTS={indigo:['Indigo','#4338ca','#818cf8'],cyan:['Cyan','#0e7490','#22d3ee'],mint:['Mint','#059669','#6ee7b7'],lime:['Lime','#4d7c0f','#a3e635'],rose:['Rose','#e11d48','#fb7185'],plum:['Plum','#86198f','#e879f9'],brown:['Brown','#92400e','#d6a06a'],slate:['Slate','#334155','#94a3b8'],teal:['Teal','#0f766e','#2bb5a8'],green:['Green','#16a34a','#4ade80'],blue:['Blue','#2563eb','#60a5fa'],violet:['Violet','#6d4cff','#a78bfa'],orange:['Orange','#ea580c','#fb923c'],pink:['Pink','#db2777','#f472b6'],red:['Red','#dc2626','#f87171'],gold:['Gold','#b8860b','#facc15']};
 (function(){const first=['teal','green','blue','violet','orange','pink','red','gold'];const o={};first.forEach(k=>o[k]=ACCENTS[k]);Object.keys(ACCENTS).forEach(k=>{if(!o[k])o[k]=ACCENTS[k]});Object.keys(ACCENTS).forEach(k=>delete ACCENTS[k]);Object.assign(ACCENTS,o)})();
+const EARTH=['#8da35a','#ef8a2a','#7a4b34','#d99a1e','#8f7bd6','#c4573a','#5d8a7a','#a0724a','#6f8a3a','#c9776b','#7d6a9c','#4f7a5a'];
+let ORIGCOL=null;
+const isEarth=()=>S.theme==='sage'||S.theme==='cocoa';
+function paintCats(){
+  if(!ORIGCOL)ORIGCOL={...CATCOL};
+  Object.keys(CATCOL).forEach((k,i)=>{CATCOL[k]=isEarth()?EARTH[i%EARTH.length]:(ORIGCOL[k]||(S.cats.find(c=>c.k===k)||{}).c||'#94a3b8')});
+}
 function applyAccent(){
   const root=document.documentElement,th=S.theme;
   ['--brand','--brand-soft','--hero1','--hero2','--hero3'].forEach(v=>root.style.removeProperty(v));
-  if(th==='black')return;
+  if(th==='black'||th==='sage'||th==='cocoa')return;
   const key=(S.accents||{})[th]||(th==='neon'?'violet':'teal');
   const a=key==='custom'&&S.customHex?['Custom',S.customHex,`color-mix(in srgb,${S.customHex} 60%,#fff)`]:(ACCENTS[key]||ACCENTS.teal);
   const dark=th==='neon'||(th==='fresh'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches),b=dark?a[2]:a[1];
@@ -287,14 +329,14 @@ function applyAccent(){
   const m=document.querySelector('meta[name=theme-color]');if(m&&(th==='fresh'||th==='white'||th==='cream'))m.content=th==='white'?'#ffffff':th==='cream'?'#f7f1e3':a[1];
 }
 if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>applyAccent());
-function applyTheme(){document.documentElement.dataset.theme=S.theme;applyAccent();const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.theme==='neon'?'#0a0a10':S.theme==='black'?'#000000':S.theme==='white'?'#ffffff':S.theme==='cream'?'#f7f1e3':'#0f766e'}
+function applyTheme(){document.documentElement.dataset.theme=S.theme;paintCats();applyAccent();const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.theme==='neon'?'#0a0a10':S.theme==='black'?'#000000':S.theme==='white'?'#ffffff':S.theme==='cream'?'#f7f1e3':S.theme==='sage'?'#f6f1ee':S.theme==='cocoa'?'#1c120e':'#0f766e'}
 /* fills in anything missing (old backups, reset) and re-applies saved look */
 function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
   if(!S.accounts.some(a=>a.type==='cash'))S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
   if(!S.accounts.some(a=>a.type==='card'))S.accounts.push({id:'cc1',name:'Credit card',type:'card',last4:'',open:0,limit:0});
   S.accents=S.accents||{};S.salary=S.salary||48000;S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
-  S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[{id:'s1',name:'Freelance'}];S.hide=!!S.hide;S.theme=['neon','black','white','cream'].includes(S.theme)?S.theme:'fresh';S.customHex=S.customHex||'';
+  S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[{id:'s1',name:'Freelance'}];S.hide=!!S.hide;S.theme=['neon','black','white','cream','sage','cocoa'].includes(S.theme)?S.theme:'fresh';S.customHex=S.customHex||'';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
   Object.entries(S.icons).forEach(([k,v])=>{if(CATS[k])CATS[k]=v});
@@ -307,6 +349,7 @@ const NEWCOL=['#14b8a6','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#84cc16'];
 function addCategory(name,icon){
   name=name.trim();if(!name)return null;
   if(!CATS[name]){const c={k:name,e:icon||'star',c:NEWCOL[S.cats.length%NEWCOL.length]};S.cats.push(c);CATS[c.k]=c.e;CATCOL[c.k]=c.c;save()}
+  paintCats();
   return name;
 }
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
@@ -446,7 +489,7 @@ function checkBudgetNotify(){
     const lvl=it.pct>100?100:it.lo,key=mk+'|'+it.key+'|'+lvl;
     if(S.notified[key])continue;
     S.notified[key]=1;if(lvl===100)S.notified[mk+'|'+it.key+'|'+it.lo]=1;
-    note.send('Paisa budget alert',lvl===100?`${it.name} is over budget by ${inr(it.used-it.lim)}. Open Paisa to fix it.`:`${it.name} is at ${Math.round(it.pct)}% (${inr(it.used)} of ${inr(it.lim)}).`,id++);
+    note.send('Arthaly budget alert',lvl===100?`${it.name} is over budget by ${inr(it.used-it.lim)}. Open Arthaly to fix it.`:`${it.name} is at ${Math.round(it.pct)}% (${inr(it.used)} of ${inr(it.lim)}).`,id++);
   }
   save();
 }
@@ -710,7 +753,7 @@ function fixSheet(k){
   const buf=bufferLeft(month);
   openSheet(`<div class="row sp"><h1>${esc(cname(k))}: ${over>0?'over budget':'nearly used'}</h1><button class="icon-btn" data-a="close">✕</button></div>
   <div class="card" style="margin-top:14px"><div class="big num ${over>0?'debit':''}">${inr(Math.abs(over>0?over:lim-used))}</div><div class="small mute">${over>0?'over the '+inr(lim)+' limit':'left of '+inr(lim)}</div>
-  ${over<=0&&dl?`<div class="small" style="margin-top:8px">To stay inside, spend at most <b>${inr((lim-used)/dl)}/day</b> on this for the next ${dl} days.</div>`:''}</div>
+  ${over<=0&&dl?`<div class="small" style="margin-top:8px">To stay inside, spend at most <b>${inr(Math.round((lim-used)/dl))}/day</b> on this for the next ${dl} days.</div>`:''}</div>
   <label>Amount to add to this category (₹)</label><input id="fx-amt" inputmode="numeric" value="${need}">
   <h2>Cover it from</h2>
   ${others.map(o=>`<button class="btn ghost" data-a="fxmove" data-id="${esc(k)}|${esc(o.x)}" style="margin-top:8px">Take from ${esc(cname(o.x))} <span class="mute">(${inr(o.left)} left)</span></button>`).join('')||'<div class="small mute">No other category has money left.</div>'}
@@ -753,7 +796,7 @@ function barChart(vals,labels,o={}){
     g+=`<rect x="${x.toFixed(1)}" y="${(H-16-h).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(h,v>0?1.5:0).toFixed(1)}" rx="${Math.min(4,w/2).toFixed(1)}" fill="${o.colors?o.colors[i]:'var(--brand)'}" opacity="${o.hl==null||o.hl===i?1:.5}" data-tip="${esc(o.tips?o.tips[i]:labels[i]+' · '+inr(v))}"/>`;
     if(labels[i]!=='')g+=`<text x="${(x+w/2).toFixed(1)}" y="${H-4}" text-anchor="middle">${labels[i]}</text>`;
   });
-  if(o.line){const y=H-16-o.line/max*(H-24);g+=`<line x1="${pad}" x2="${W-pad}" y1="${y}" y2="${y}" stroke="var(--warn)" stroke-dasharray="4 3"/><text x="${W-pad}" y="${y-3}" text-anchor="end">${o.lineLabel||'avg'} ${inr(o.line)}</text>`}
+  if(o.line){const y=H-16-o.line/max*(H-24);g+=`<line x1="${pad}" x2="${W-pad}" y1="${y}" y2="${y}" stroke="var(--warn)" stroke-dasharray="4 3"/><text x="${W-pad}" y="${y-3}" text-anchor="end">${o.lineLabel||'avg'} ${inr(Math.round(o.line))}</text>`}
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg></div>`;
 }
 function lineChart(vals,labels,o={}){
@@ -867,7 +910,7 @@ function home(){
   const total=S.accounts.filter(x=>accType(x)!=='card').reduce((a,x)=>a+accBal(x.id),0);
   const cardDue=-S.accounts.filter(x=>accType(x)==='card').reduce((a,x)=>a+accBal(x.id),0);
   const cashBal=S.accounts.filter(x=>accType(x)==='cash').reduce((a,x)=>a+accBal(x.id),0);
-  return `<div class="row sp"><div><h1>Paisa</h1><div class="small mute">Hello, Mihir</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="theme" data-id="toggle" title="Switch look">${ic('palette',18)}</button><button class="icon-btn" data-a="nav" data-id="accounts" title="Accounts & settings">${ic('sliders',18)}</button></div></div>
+  return `<div class="row sp"><div><h1>Arthaly</h1><div class="small mute">Hello, Mihir</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="theme" data-id="toggle" title="Switch look">${ic('palette',18)}</button><button class="icon-btn" data-a="nav" data-id="accounts" title="Accounts & settings">${ic('sliders',18)}</button></div></div>
   <div class="hero" style="margin-top:14px">
     <div class="row sp"><div><div class="sub">Bank + cash balance</div><div class="big num">${inrH(total)}</div></div><button class="eye" data-a="eye">${ic(S.hide?'eyeoff':'eye',18)}</button></div>
     <div class="chips"><span>↓ In ${inrH(st.inc+st.oth)}</span><span>↑ Out ${inrH(st.exp)}</span>${cashBal?`<span>Cash ${inrH(cashBal)}</span>`:''}${cardDue>0?`<span>Card due ${inrH(cardDue)}</span>`:''}</div>
@@ -883,7 +926,7 @@ function home(){
     <div class="row sp"><div><div class="small mute">Left to spend this month</div><div class="big ${left<0?'debit':''} num">${inrH(left)}</div></div><span class="pill">Budget ›</span></div>
     <div class="bar" style="margin:10px 0 6px"><i style="width:${pct}%;background:${pct>90?'var(--debit)':pct>70?'var(--warn)':'var(--brand)'}"></i></div>
     <div class="row sp small mute"><span>Spent ${inrH(st.exp)}</span><span>of ${inrH(tb)}</span></div>
-    ${dlH&&left>0?`<div class="small mute" style="margin-top:6px">Safe to spend ${inrH(left/dlH)}/day for ${dlH} more days</div>`:''}
+    ${dlH&&left>0?`<div class="small mute" style="margin-top:6px">Safe to spend ${inrH(Math.round(left/dlH))}/day for ${dlH} more days</div>`:''}
   </div>
   ${al.length?`<div class="alert ${al.some(x=>x.pct>100)?'':'soft'}" style="cursor:pointer" data-a="nav" data-id="budget"><b>Budget alert:</b> ${al.slice(0,3).map(x=>esc(cname(x.k))+(x.pct>100?' over by '+inr(x.used-x.lim):x.pct>=100?' at limit':' '+Math.round(x.pct)+'%')).join(' · ')}${al.length>3?' · +'+(al.length-3)+' more':''}</div>`:''}
   ${(()=>{const l7=last7(),tot7=l7.reduce((a,b)=>a+b.v,0),cd=catData(st);
@@ -921,14 +964,14 @@ function budgetView(){
     <div class="row sp"><div><div class="sub">${inr(used)} used of ${inr(tb)}</div><div class="big num ${left<0?'':''}" style="${left<0?'color:#ffb4bf':''}">${inr(Math.abs(left))}</div><div class="sub">${left<0?'over budget':'left this month'}</div></div>
     <svg viewBox="0 0 42 42" width="92" height="92"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="4.5"/><circle r="${R}" cx="21" cy="21" fill="none" stroke="${pct>100?'#ff8da0':'#fff'}" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="${rp} ${100-rp}"/></g><text x="21" y="23.5" text-anchor="middle" style="font-size:7px;font-weight:700;fill:#fff">${Math.round(pct)}%</text></svg></div>
     <div class="seg-bar" style="margin-top:14px">${segs}</div>
-    ${daysLeft?`<div class="chips"><span>${daysLeft} days left</span><span>Safe to spend ${inr(perDay)}/day</span></div>`:''}
+    ${daysLeft?`<div class="chips"><span>${daysLeft} days left</span><span>Safe to spend ${inr(Math.round(perDay))}/day</span></div>`:''}
   </div>
   ${behind?`<div class="alert">⚠️ ${Math.round(pct)}% of budget used but only ${Math.round(elapsed)}% of the month has passed. Slow down a little.</div>`:(month===cur&&tb?`<div class="alert ok">✓ On track: ${Math.round(pct)}% used, ${Math.round(elapsed)}% of month passed.</div>`:'')}
   ${(()=>{const al=alertsFor(month);const bl=bufferLeft(month),bt=Math.max(0,S.salary-tb);
     return (al.length?`<h2>Needs attention</h2><div class="card" style="padding:4px 16px">${al.map(x=>`<div class="attn"><div class="grow"><b>${esc(cname(x.k))}</b><div class="small mute">${inr(x.used)} of ${inr(x.lim)} · ${x.pct>100?'over by '+inr(x.used-x.lim):x.pct>=100?'at limit':Math.round(x.pct)+'% used'}</div></div><button class="chip on" data-a="fix" data-id="${esc(x.k)}">Fix</button></div>`).join('')}</div>`:'')
     +`<div class="card row sp" style="margin-top:12px"><div><div class="small mute">Buffer (salary ${inr(S.salary)} − budget ${inr(tb)})</div><b class="num ${bl<0?'debit':''}" style="font-size:18px">${inr(Math.max(0,bl))} left</b></div><div class="small mute" style="text-align:right">of ${inr(bt)}<br>overspend eats it first</div></div>`})()}
   ${(()=>{const pr=projection(month,st);
-    return `<h2>Month pace</h2><div class="card">${pace(month,st)}${pr!=null&&tb?`<div class="small" style="margin-top:6px;color:${pr>tb?'var(--debit)':'var(--credit)'}">At this pace you will spend about <b>${inr(pr)}</b> by month end: ${pr>tb?inr(pr-tb)+' over':inr(tb-pr)+' under'} budget.</div>`:''}</div>`})()}
+    return `<h2>Month pace</h2><div class="card">${pace(month,st)}${pr!=null&&tb?`<div class="small" style="margin-top:6px;color:${pr>tb?'var(--debit)':'var(--credit)'}">At this pace you will spend about <b>${inr(Math.round(pr))}</b> by month end: ${pr>tb?inr(Math.round(pr-tb))+' over':inr(Math.round(tb-pr))+' under'} budget.</div>`:''}</div>`})()}
   <h2>Categories</h2>
   <div class="tiles">${bk.map(k=>tile(k,S.budgets[k])).join('')}${extra.map(k=>tile(k,0)).join('')}<div class="tile add" data-a="addbudget"><div><div style="font-size:26px">＋</div><div class="small">Add category budget</div></div></div></div>
   <p class="small mute">Tap a tile to see its transactions, change the limit, or add an expense in that category.</p>
@@ -1043,14 +1086,14 @@ function accounts(){
   (sms()?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
    <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+
   `<div class="grid2" style="grid-template-columns:repeat(3,1fr)"><button class="btn ghost" data-a="addacc" data-id="bank" style="margin-top:0">+ Bank</button><button class="btn ghost" data-a="addacc" data-id="cash" style="margin-top:0">+ Cash</button><button class="btn ghost" data-a="addacc" data-id="card" style="margin-top:0">+ Card</button></div>
-   <h2>Internal transfers</h2><div class="card"><div class="small mute">Moving money between your own accounts should not count as spending or income. Paisa can find matching pairs (same amount out of one account and into another within 2 days) and merge each into one transfer.</div><button class="btn ghost" data-a="pairs">Find possible transfers${findPairs().length?' ('+findPairs().length+')':''}</button></div>
+   <h2>Internal transfers</h2><div class="card"><div class="small mute">Moving money between your own accounts should not count as spending or income. Arthaly can find matching pairs (same amount out of one account and into another within 2 days) and merge each into one transfer.</div><button class="btn ghost" data-a="pairs">Find possible transfers${findPairs().length?' ('+findPairs().length+')':''}</button></div>
    <h2>Notifications</h2><div class="card"><div class="small mute">Alert when a category reaches 80% and when it goes over, and when the overall budget reaches 90%. In the Android app you also get a notice for each bank SMS it captures, even when the app is closed. In a browser, alerts only show while the page is open.</div>
    <button class="btn ${S.notify?'ghost':''}" data-a="notifon">${S.notify?'Notifications on (tap to turn off)':'Turn on notifications'}</button><button class="btn ghost" data-a="notiftest" style="margin-top:8px">Send test notification</button></div>
-   <h2>Look</h2><div class="themes"><button class="${S.theme==='fresh'?'on':''}" data-a="theme" data-id="fresh"><i style="background:linear-gradient(140deg,#16322e,#0f766e)"></i><b>Fresh</b><div class="small mute">Auto light/dark</div></button><button class="${S.theme==='white'?'on':''}" data-a="theme" data-id="white"><i style="background:#fff;border:1px solid #d1d5db"></i><b>White</b><div class="small mute">Clean and bright</div></button><button class="${S.theme==='cream'?'on':''}" data-a="theme" data-id="cream"><i style="background:#f7f1e3;border:1px solid #e3d6b8"></i><b>Cream</b><div class="small mute">Warm paper</div></button><button class="${S.theme==='neon'?'on':''}" data-a="theme" data-id="neon"><i style="background:linear-gradient(140deg,#1d1740,#6d4cff);box-shadow:0 0 14px #7c5cff"></i><b>Neon</b><div class="small mute">Glowing cards</div></button><button class="${S.theme==='black'?'on':''}" data-a="theme" data-id="black"><i style="background:#000;border:1px solid #333"></i><b>Black</b><div class="small mute">Pure black, flat</div></button></div>
+   <h2>Look</h2><div class="themes"><button class="${S.theme==='fresh'?'on':''}" data-a="theme" data-id="fresh"><i style="background:linear-gradient(140deg,#16322e,#0f766e)"></i><b>Fresh</b><div class="small mute">Auto light/dark</div></button><button class="${S.theme==='white'?'on':''}" data-a="theme" data-id="white"><i style="background:#fff;border:1px solid #d1d5db"></i><b>White</b><div class="small mute">Clean and bright</div></button><button class="${S.theme==='cream'?'on':''}" data-a="theme" data-id="cream"><i style="background:#f7f1e3;border:1px solid #e3d6b8"></i><b>Cream</b><div class="small mute">Warm paper</div></button><button class="${S.theme==='sage'?'on':''}" data-a="theme" data-id="sage"><i style="background:linear-gradient(90deg,#8da35a 33%,#ef8a2a 33% 66%,#4a2c1f 66%)"></i><b>Sage</b><div class="small mute">Earthy, light</div></button><button class="${S.theme==='cocoa'?'on':''}" data-a="theme" data-id="cocoa"><i style="background:linear-gradient(90deg,#1c120e 40%,#8da35a 40% 70%,#ef8a2a 70%)"></i><b>Cocoa</b><div class="small mute">Earthy, dark</div></button><button class="${S.theme==='neon'?'on':''}" data-a="theme" data-id="neon"><i style="background:linear-gradient(140deg,#1d1740,#6d4cff);box-shadow:0 0 14px #7c5cff"></i><b>Neon</b><div class="small mute">Glowing cards</div></button><button class="${S.theme==='black'?'on':''}" data-a="theme" data-id="black"><i style="background:#000;border:1px solid #333"></i><b>Black</b><div class="small mute">Pure black, flat</div></button></div>
    <h2>Budget & data</h2><div class="card"><div class="small mute">Budget limits now live in the <b>Budget</b> tab (one limit per category). Total budget = sum of limits.</div>
    <label>Monthly salary (₹) · used for the buffer</label><input data-f="salary" value="${S.salary}" inputmode="numeric">
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button>
-   <button class="btn ghost" data-a="demo" style="margin-top:8px">Load demo data</button><button class="btn red" data-a="reset">Erase everything</button></div>${S.theme==='black'?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}<label class="custom ${((S.accents||{})[S.theme])==='custom'?'on':''}" style="margin:0" title="Pick any colour"><input type="color" id="accentpick" value="${S.customHex||'#0f766e'}"></label></div>`}`;
+   <button class="btn ghost" data-a="demo" style="margin-top:8px">Load demo data</button><button class="btn red" data-a="reset">Erase everything</button></div>${['black','sage','cocoa'].includes(S.theme)?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}<label class="custom ${((S.accents||{})[S.theme])==='custom'?'on':''}" style="margin:0" title="Pick any colour"><input type="color" id="accentpick" value="${S.customHex||'#0f766e'}"></label></div>`}`;
 }
 
 /* ---------- sheet ---------- */
@@ -1121,7 +1164,7 @@ document.addEventListener('click',e=>{
   else if(a==='seg'){seg=id;render()}
   else if(a==='new'){txSheet()}
   else if(a==='accent'){S.accents[S.theme]=id;save();applyAccent();render()}
-  else if(a==='theme'){S.theme=id==='toggle'?({fresh:'white',white:'cream',cream:'neon',neon:'black',black:'fresh'}[S.theme]):id;save();applyTheme();render()}
+  else if(a==='theme'){S.theme=id==='toggle'?({fresh:'white',white:'cream',cream:'sage',sage:'cocoa',cocoa:'neon',neon:'black',black:'fresh'}[S.theme]):id;save();applyTheme();render()}
   else if(a==='eye'){S.hide=!S.hide;save();render()}
   else if(a==='qa'){
     if(id==='exp')txSheet();
@@ -1208,13 +1251,13 @@ document.addEventListener('click',e=>{
       else toast('Permission denied. Allow notifications in phone settings.');
     })();
   }
-  else if(a==='notiftest'){if(!S.notify)return toast('Turn notifications on first');note.send('Paisa','Notifications are working.',99)}
+  else if(a==='notiftest'){if(!S.notify)return toast('Turn notifications on first');note.send('Arthaly','Notifications are working.',99)}
   else if(a==='addperson'){const n=prompt('Name?');if(n&&n.trim()){S.people.push({id:uid(),name:n.trim()});save();render()}}
   else if(a==='person'){personSheet(id)}
   else if(a==='smson')enableSms();
   else if(a==='smsimport')importInbox();
   else if(a==='addacc'){S.accounts.push({id:uid(),name:id==='cash'?'Cash':id==='card'?'Credit card':'Account '+(S.accounts.length+1),type:id||'bank',last4:'',open:0,limit:0});save();render()}
-  else if(a==='export'){const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download='paisa-backup.json';l.click()}
+  else if(a==='export'){const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download='arthaly-backup.json';l.click()}
   else if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>i.files[0].text().then(x=>{try{S=JSON.parse(x);normalize();save();render();toast('Imported')}catch(e){toast('Invalid file')}});i.click()}
   else if(a==='demo'){demo();render();toast('Demo data loaded')}
   else if(a==='reset'){if(confirm('Erase all data?')){S=defaults();normalize();save();render()}}

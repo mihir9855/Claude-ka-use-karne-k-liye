@@ -37,6 +37,6 @@ public class SmsReceiver extends BroadcastReceiver {
         Matcher d = DEBIT.matcher(body), c = CREDIT.matcher(body);
         boolean hasD = d.find(), hasC = c.find();
         String dir = hasD && (!hasC || d.start() < c.start()) ? " debited" : hasC ? " credited" : "";
-        return amt + dir + ". Open Paisa to review.";
+        return amt + dir + ". Open Arthaly to review.";
     }
 }

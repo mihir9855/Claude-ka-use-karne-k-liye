@@ -12,7 +12,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import androidx.core.app.NotificationCompat;
 
-/** Posts Paisa notifications (budget alerts and captured-SMS notices). */
+/** Posts Arthaly notifications (budget alerts and captured-SMS notices). */
 final class Notifier {
     private static final String CHANNEL = "paisa_alerts";
     private static final String PREFS = "paisa_sms";
@@ -36,7 +36,7 @@ final class Notifier {
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
-            nm.createNotificationChannel(new NotificationChannel(CHANNEL, "Paisa alerts", NotificationManager.IMPORTANCE_DEFAULT));
+            nm.createNotificationChannel(new NotificationChannel(CHANNEL, "Arthaly alerts", NotificationManager.IMPORTANCE_DEFAULT));
         }
         Intent open = new Intent(ctx, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pi = PendingIntent.getActivity(ctx, 0, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);

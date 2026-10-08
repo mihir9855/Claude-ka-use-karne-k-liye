@@ -76,7 +76,7 @@ public class PaisaSmsPlugin extends Plugin {
     /** Shows a notification (budget alerts raised by the web app). */
     @PluginMethod
     public void showNotification(PluginCall call) {
-        Notifier.post(getContext(), call.getInt("id", 1), call.getString("title", "Paisa"), call.getString("body", ""));
+        Notifier.post(getContext(), call.getInt("id", 1), call.getString("title", "Arthaly"), call.getString("body", ""));
         call.resolve();
     }
 
