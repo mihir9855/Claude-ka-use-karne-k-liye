@@ -780,7 +780,7 @@ function emiBody(){
       <div class="row sp"><b>${esc(p.name)}</b><span class="pill">${s.done?(p.closed?'Closed':'Done'):s.paid+' of '+p.months+' paid'}</span></div>
       <div class="small mute" style="margin:2px 0 8px">${esc(a?a.name:'card')} · ${inr(p.monthly)}/month</div>
       <div class="bar"><i style="width:${pct}%"></i></div>
-      <div class="row sp small mute" style="margin-top:6px"><span>${s.done?'No instalments left':s.left+' left · next '+new Date(s.next+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span><b class="num" style="color:var(--ink)">${s.done?'':inr(s.remainingAmt)+' to pay'}</b></div></div>`}).join('');
+      <div class="row sp small mute" style="margin-top:6px"><span>${s.done?'No instalments left':s.left+' left · next '+new Date(s.next+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}</span><b class="num" style="color:var(--ink)">${s.done?'':inr(s.remainingAmt)+' to pay'}</b></div></div>`}).join('');
   return `${summary}
   ${all.length?`<h2>Your EMIs</h2>${cardsHtml}`:`<div class="card empty">No EMIs yet.<br>Add something you bought on EMI to track instalments and your card limit.</div>`}
   <button class="btn ghost" data-a="addemi">+ Add EMI</button>
@@ -856,7 +856,7 @@ function emiUpcomingHtml(){
   const mk=today.slice(0,7),thisM=L.filter(x=>x.s.next.slice(0,7)<=mk).reduce((a,x)=>a+x.p.monthly,0);
   return `<div class="card" style="margin-top:12px"><div class="ctitle"><b>EMI due</b><span class="small mute">${thisM?inrH(thisM)+' this month':'nothing more this month'}</span></div>`+
   L.slice(0,4).map(({p,s})=>{const d=dd(s.next),w=d<0?`overdue ${-d}d`:d===0?'today':d===1?'tomorrow':`in ${d} days`,a=acc(p.card);
-    return `<div class="attn" style="cursor:pointer" data-a="emi" data-id="${p.id}"><div class="grow"><b>${esc(p.name)}</b><div class="small mute">${new Date(s.next+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${w} · ${esc(a?a.name:'card')}</div></div><span class="num">${inrH(p.monthly)}</span></div>`}).join('')+
+    return `<div class="attn" style="cursor:pointer" data-a="emi" data-id="${p.id}"><div class="grow"><b>${esc(p.name)}</b><div class="small mute">${new Date(s.next+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})} · ${w} · ${esc(a?a.name:'card')}</div></div><span class="num">${inrH(p.monthly)}</span></div>`}).join('')+
   `<div class="small mute" style="margin-top:6px">${S.emis.filter(p=>!emiState(p).done).length} running · tap one for its schedule</div></div>`;
 }
 function emiDetail(id){
@@ -864,7 +864,7 @@ function emiDetail(id){
   const s=emiState(p),a=acc(p.card),today=todayISO();
   const rows=[];for(let k=0;k<p.months;k++){
     const dt=addMonthsISO(p.first,k),paid=p.closed?k<s.paid:emiIdxPaid(p,k,today),due=!paid&&dt<=today;
-    rows.push(`<div class="attn"><div class="grow"><b>EMI ${k+1}</b><div class="small mute">${new Date(dt+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div></div><span class="num">${inr(p.monthly)}</span><span class="pill" style="${paid?'':due?'background:rgba(240,138,36,.18);color:#f08a24':'background:var(--line);color:var(--mute)'}">${paid?'Paid':due?'Due':'Upcoming'}</span></div>`);
+    rows.push(`<div class="attn"><div class="grow"><b>EMI ${k+1}</b><div class="small mute">${new Date(dt+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}</div></div><span class="num">${inr(p.monthly)}</span><span class="pill" style="${paid?'':due?'background:rgba(240,138,36,.18);color:#f08a24':'background:var(--line);color:var(--mute)'}">${paid?'Paid':due?'Due':'Upcoming'}</span></div>`);
   }
   openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><button class="icon-btn" data-a="close">✕</button></div>
   <div class="card" style="margin-top:14px"><div class="small mute">${esc(a?a.name:'card')} · ${p.months} months · ${inr(p.monthly)}/month</div>
@@ -959,7 +959,7 @@ function spendSeries(r){
     for(let w=12;w>=0;w--){
       let v=0;const e=new Date(now);e.setDate(e.getDate()-w*7);const b=new Date(e);b.setDate(b.getDate()-6);
       for(let k=0;k<7;k++){const d=new Date(e);d.setDate(d.getDate()-k);v+=spent(isoDay(d.getTime()))}
-      out.push({v,l:w%3===0?b.getDate()+'/'+(b.getMonth()+1):'',tip:b.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' – '+e.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' · '+inr(v)});
+      out.push({v,l:w%3===0?b.getDate()+'/'+(b.getMonth()+1):'',tip:b.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})+' – '+e.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})+' · '+inr(v)});
     }
     return out;
   }
@@ -967,7 +967,7 @@ function spendSeries(r){
   for(let i=n-1;i>=0;i--){
     const d=new Date();d.setDate(d.getDate()-i);const v=spent(isoDay(d.getTime()));
     const lab=n===7?d.toLocaleDateString('en-IN',{weekday:'short'}).slice(0,2):(i%(n===15?2:5)===0?String(d.getDate()):'');
-    out.push({v,l:lab,tip:d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' · '+inr(v)});
+    out.push({v,l:lab,tip:d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})+' · '+inr(v)});
   }
   return out;
 }
@@ -1013,13 +1013,13 @@ function txRow(t){
   if(t.kind==='transfer'){
     const f=acc(t.acc),to=acc(t.to);
     return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:var(--brand-soft);color:var(--brand)">${ic('swap',19)}</div>
-    <div class="grow"><div class="t">${esc(t.note||'Transfer')}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${t.to?esc(f?f.name:'?')+' → '+esc(to?to.name:'?'):esc(f?f.name:'?')+' · payment received'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}</div></div>
+    <div class="grow"><div class="t">${esc(t.note||'Transfer')}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})} · ${t.to?esc(f?f.name:'?')+' → '+esc(to?to.name:'?'):esc(f?f.name:'?')+' · payment received'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}</div></div>
     <b class="num mute">${inr(t.amt)}</b></div>`;
   }
   const a=acc(t.acc),p=person(t.party);
   const tag=t.kind==='pass'?esc(p?p.name:'party'):t.kind==='other'?esc(srcName(t.source||'')+' · '+(t.cat==='Other'?'Other income':t.cat)):t.kind==='income'?esc(t.cat==='Other'?'Income':t.cat):esc(t.cat);
   return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8')+'26':t.kind==='pass'?'var(--brand-soft)':(ICATCOL[t.cat]||'#94a3b8')+'26'};color:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8'):t.kind==='pass'?'var(--brand)':(ICATCOL[t.cat]||'var(--brand)')}">${t.kind==='pass'?ic('swap',19):t.kind==='expense'?ic(CATS[t.cat]||'receipt',19):ic(ICATS[t.cat]||'wallet',19)}</div>
-  <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">Unassigned</span>'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}${t.pool?' · from '+esc(srcName(t.poolSrc||'')):''}</div></div>
+  <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">Unassigned</span>'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}${t.pool?' · from '+esc(srcName(t.poolSrc||'')):''}</div></div>
   <b class="num ${t.type}">${t.type==='credit'?'+':'−'}${inr(t.amt)}</b></div>`;
 }
 function accTile(a,i){
@@ -1295,7 +1295,7 @@ function emiSuggest(){
   const el=$('#smart');if(!el||$('#f-kind').value!=='expense'||$('#f-cat').value!=='EMI')return;
   const L=S.emis.map(p=>({p,s:emiState(p)})).filter(x=>!x.s.done);
   if(!L.length)return;
-  el.innerHTML=`<div class="small mute" style="margin:8px 0 4px">Your EMIs, tap to fill</div><div class="chips2">${L.map(({p,s})=>`<button type="button" class="chip" data-a="emipick" data-id="${p.id}">${esc(p.name)} · ${inrH(p.monthly)} · ${new Date(s.next+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</button>`).join('')}</div>`;
+  el.innerHTML=`<div class="small mute" style="margin:8px 0 4px">Your EMIs, tap to fill</div><div class="chips2">${L.map(({p,s})=>`<button type="button" class="chip" data-a="emipick" data-id="${p.id}">${esc(p.name)} · ${inrH(p.monthly)} · ${new Date(s.next+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}</button>`).join('')}</div>`;
 }
 function txSheet(t,preset){
   emiPick=null;
