@@ -1,0 +1,6 @@
+{
+  "appId": "in.mihir.paisa",
+  "appName": "Paisa",
+  "webDir": "www",
+  "android": { "allowMixedContent": false }
+}

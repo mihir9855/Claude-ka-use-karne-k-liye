@@ -108,7 +108,7 @@ const CAT_RULES=[
   ['Investment',/zerodha|groww|upstox|\bsip\b|mutual fund|nippon|hdfc amc|coin/]
 ];
 const guessCat=s=>{const l=s.toLowerCase();for(const [c,r] of CAT_RULES)if(r.test(l))return c;return 'Other'};
-function parseSms(raw){
+function parseSms(raw,fallbackIso){
   const s=raw.replace(/\s+/g,' ').trim();
   const am=s.match(/(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{1,2})?)/i);
   if(!am)return null;
@@ -126,7 +126,7 @@ function parseSms(raw){
   const mm=[...s.matchAll(/(?:\bto\b|\bat\b|towards|VPA|Info:?|\bfrom\b|\bby\b)\s+([A-Za-z][A-Za-z0-9@._&\- ]{2,30}?)(?=\s+(?:on|ref|upi|via|avl|bal|not|if|a\/c|ac|\d{2}[-/])|[.,;]|$)/gi)]
     .map(x=>x[1].trim()).filter(x=>!/^(a\/c|ac|acct|account|your|bank|card|rs|inr)\b/i.test(x));
   const party=mm[0]||'';
-  let date=new Date();
+  let date=fallbackIso?new Date(fallbackIso+'T12:00'):new Date();
   const dm=s.match(/(\d{1,2})[-\/ ](\d{1,2}|[A-Za-z]{3})[-\/ ](\d{2,4})/);
   if(dm){
     const mo=isNaN(dm[2])?['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(dm[2].toLowerCase()):dm[2]-1;
@@ -136,18 +136,45 @@ function parseSms(raw){
   const iso=new Date(date.getTime()-date.getTimezoneOffset()*6e4).toISOString().slice(0,10);
   return {type,amt,last4,note:party||'SMS',date:iso,cat:type==='debit'?guessCat(s):'Other',kind:type==='credit'?'income':'expense',raw:s};
 }
-function addFromSms(text){
+const isoDay=ms=>{const d=new Date(ms);return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+function addFromSms(text,fallbackIso){
   const out=[],bad=[];
   for(const chunk of text.split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean)){
     const key=chunk.replace(/\s+/g,' ');
     if(S.seen.includes(key)){bad.push('duplicate');continue}
-    const p=parseSms(chunk);
+    const p=parseSms(chunk,fallbackIso);
     if(!p){bad.push('unreadable');continue}
     const a=p.last4&&S.accounts.find(a=>a.last4&&a.last4===p.last4);
     const t={id:uid(),date:p.date,type:p.type,amt:p.amt,acc:a?a.id:'',kind:p.kind,cat:p.cat,note:p.note,party:'',pool:false,src:'sms'};
     S.tx.push(t);S.seen.push(key);out.push({t,last4:p.last4,matched:!!a});
   }
+  if(S.seen.length>2000)S.seen=S.seen.slice(-2000);
   save();return {out,bad};
+}
+
+/* ---------- Android SMS bridge (Capacitor) ---------- */
+const sms=()=>window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()?Capacitor.Plugins.PaisaSms:null;
+function ingest(msgs){
+  let n=0,un=0;
+  for(const m of msgs){const r=addFromSms(m.body,isoDay(m.ts));n+=r.out.length;un+=r.out.filter(o=>!o.matched).length}
+  if(n){render();toast(`${n} new from SMS${un?` · ${un} need an account`:''}`)}
+  return n;
+}
+async function drainSms(){const p=sms();if(!p)return;try{const r=await p.drain();if(r.messages.length)ingest(r.messages)}catch(e){}}
+async function enableSms(){
+  const p=sms();if(!p)return toast('Only in the Android app');
+  const r=await p.requestPermissions();
+  if(r.sms!=='granted')return toast('Permission denied. Allow SMS in app settings.');
+  toast('SMS capture is on');render();
+}
+async function importInbox(){
+  const p=sms();if(!p)return;
+  try{const r=await p.readInbox({days:30});const n=ingest(r.messages);if(!n)toast('Nothing new to import')}
+  catch(e){toast('Enable SMS capture first')}
+}
+if(sms()){
+  sms().addListener('smsReceived',drainSms);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)drainSms()});
 }
 
 /* ---------- stats ---------- */
@@ -260,6 +287,8 @@ function accounts(){
   S.accounts.map((a,i)=>`<div class="card" style="margin-bottom:10px"><div class="row sp"><b style="color:${COLORS[i%6]}">● ${esc(a.name)}</b><b class="num">${inr(accBal(a.id))}</b></div>
    <div class="grid2"><div><label>Name</label><input data-f="name" data-id="${a.id}" value="${esc(a.name)}"></div><div><label>Last 4 digits</label><input data-f="last4" data-id="${a.id}" value="${esc(a.last4)}" maxlength="4" inputmode="numeric"></div></div>
    <label>Opening balance (₹)</label><input data-f="open" data-id="${a.id}" value="${a.open}" inputmode="decimal"></div>`).join('')+
+  (sms()?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
+   <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+
   `<button class="btn ghost" data-a="addacc">+ Add account</button>
    <h2>Budget & data</h2><div class="card"><label style="margin-top:0">Monthly spending budget (₹)</label><input data-f="budget" value="${S.budget}" inputmode="numeric">
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button>
@@ -327,6 +356,8 @@ document.addEventListener('click',e=>{
   }
   else if(a==='addperson'){const n=prompt('Name?');if(n&&n.trim()){S.people.push({id:uid(),name:n.trim()});save();render()}}
   else if(a==='person'){personSheet(id)}
+  else if(a==='smson')enableSms();
+  else if(a==='smsimport')importInbox();
   else if(a==='addacc'){S.accounts.push({id:uid(),name:'Account '+(S.accounts.length+1),last4:'',open:0});save();render()}
   else if(a==='export'){const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download='paisa-backup.json';l.click()}
   else if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>i.files[0].text().then(x=>{try{S=JSON.parse(x);save();render();toast('Imported')}catch(e){toast('Invalid file')}});i.click()}
@@ -366,6 +397,7 @@ function demo(){
   out.filter(t=>t.date<=today).forEach(t=>S.tx.push({id:uid(),pool:false,party:'',src:'manual',...t}));save();
 }
 render();
+drainSms();
 </script>
 </body>
 </html>
