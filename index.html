@@ -185,6 +185,7 @@ nav button span{display:flex;justify-content:center}
 
 .chart{position:relative}
 .gtip{position:absolute;background:#14201d;color:#fff;font-size:11px;padding:3px 8px;border-radius:8px;pointer-events:none;white-space:nowrap;z-index:3}
+.pb{margin:12px 0}
 .hb{display:grid;grid-template-columns:86px 1fr auto;gap:8px;align-items:center;margin:9px 0;font-size:12px}
 .hl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .htr{position:relative;height:10px;background:var(--line);border-radius:9px;overflow:hidden}
@@ -946,14 +947,20 @@ function statsExtra(st){
   // savings trend
   const ms=[];for(let i=5;i>=0;i--){const m=shiftMonth(month,-i),x=mstats(m);ms.push({l:mlabel(m).slice(0,3),v:x.inc+x.oth-x.exp})}
   out+=`<h2>Saved each month</h2><div class="card">${lineChart(ms.map(x=>x.v),ms.map(x=>x.l))}<div class="small mute">Income minus spending. Below the line means you spent more than you earned.</div></div>`;
-  // top spends
-  const g={};S.tx.filter(t=>t.kind==='expense'&&t.type==='debit'&&t.date.startsWith(month)).forEach(t=>{const k=(t.note||t.cat).trim().toLowerCase();g[k]=g[k]||{name:t.note||t.cat,v:0,cat:t.cat};g[k].v+=t.amt});
-  const top=Object.values(g).sort((a,b)=>b.v-a.v).slice(0,6);
-  if(top.length)out+=`<h2>Biggest spends</h2><div class="card">${hbars(top.map(x=>({label:esc(x.name),v:x.v,max:top[0].v,color:CATCOL[x.cat]||'var(--brand)',right:inr(x.v)})))}</div>`;
-  // vs last month
-  const lm=mstats(shiftMonth(month,-1)),cats=catData(st).slice(0,5);
-  if(cats.length){const mx=Math.max(...cats.map(c=>Math.max(c.v,lm.cat[c.k]||0)),1);
-    out+=`<h2>vs last month</h2><div class="card">${hbars(cats.map(c=>({label:esc(cname(c.k)),v:c.v,max:mx,mark:lm.cat[c.k]||0,color:c.c,right:inr(c.v)})))}<div class="small mute">Bar = this month, black line = last month.</div></div>`}
+  // biggest spends + vs last month, in one chart: paired bars per category
+  const lm=mstats(shiftMonth(month,-1));
+  const keys=[...new Set([...Object.keys(st.cat),...Object.keys(lm.cat)])].filter(k=>(st.cat[k]||0)>0||(lm.cat[k]||0)>0);
+  const rows=keys.map(k=>({k,t:st.cat[k]||0,l:lm.cat[k]||0})).sort((x,y)=>Math.max(y.t,y.l)-Math.max(x.t,x.l)).slice(0,7);
+  if(rows.length){
+    const mx=Math.max(...rows.map(r=>Math.max(r.t,r.l)),1);
+    out+=`<h2>Biggest spends: this month vs last</h2><div class="card">${rows.map(r=>{
+      const d=r.l>0?Math.round((r.t-r.l)/r.l*100):null;
+      const dt=d==null?(r.t>0?'new':''):(d>0?'▲ '+d+'%':d<0?'▼ '+Math.abs(d)+'%':'same');
+      return `<div class="pb"><div class="row sp small"><b>${esc(cname(r.k))}</b><span class="num">${inr(r.t)} <span class="mute">vs ${inr(r.l)}</span> <b style="color:${d>0?'var(--debit)':d<0?'var(--credit)':'var(--mute)'}">${dt}</b></span></div>
+      <div class="htr" style="margin-top:5px"><i style="width:${Math.max(r.t>0?1.5:0,r.t/mx*100)}%;background:${CATCOL[r.k]||'var(--brand)'}"></i></div>
+      <div class="htr" style="margin-top:3px;height:6px"><i style="width:${Math.max(r.l>0?1.5:0,r.l/mx*100)}%;background:var(--mute);opacity:.45"></i></div></div>`}).join('')}
+    <div class="small mute" style="margin-top:6px">Coloured bar = ${mlabel(month)}, grey bar = ${mlabel(shiftMonth(month,-1))}. Red arrow means you spent more than last month.</div></div>`;
+  }
   // weekday pattern (last 90 days)
   const sum=Array(7).fill(0),cnt=Array(7).fill(0);
   for(let i=0;i<90;i++){const d=new Date();d.setDate(d.getDate()-i);const wd=(d.getDay()+6)%7,iso=isoDay(d.getTime());cnt[wd]++;sum[wd]+=S.tx.filter(t=>t.date===iso&&t.kind==='expense').reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0)}
