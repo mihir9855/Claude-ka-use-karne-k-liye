@@ -784,6 +784,23 @@ function removeAccount(id,target){
   if(accFilter===id)accFilter='';
   save();closeSheet();render();toast('Account deleted');
 }
+/* backup: Android share sheet inside the app, share/download in a browser */
+async function exportBackup(){
+  const text=JSON.stringify(S,null,1),name='arthaly-backup-'+todayISO()+'.json',p=sms();
+  if(p&&p.shareFile){
+    try{await p.shareFile({filename:name,content:text,mime:'application/json'});toast('Choose where to save it (Drive, Files, WhatsApp...)',4500);return}
+    catch(e){toast('Could not open the share sheet')}
+  }
+  try{
+    if(navigator.canShare&&navigator.share){
+      const f=new File([text],name,{type:'application/json'});
+      if(navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Arthaly backup'});return}
+    }
+  }catch(e){if(e&&e.name==='AbortError')return}
+  const b=new Blob([text],{type:'application/json'}),l=document.createElement('a');
+  l.href=URL.createObjectURL(b);l.download=name;document.body.appendChild(l);l.click();l.remove();
+  setTimeout(()=>URL.revokeObjectURL(l.href),4000);toast('Backup downloaded');
+}
 let emiMonTouched=false;
 function emiSheet(){
   const cards=S.accounts.filter(a=>accType(a)==='card');
@@ -1374,7 +1391,7 @@ document.addEventListener('click',e=>{
   else if(a==='smson')enableSms();
   else if(a==='smsimport')importInbox();
   else if(a==='addacc'){S.accounts.push({id:uid(),name:id==='cash'?'Cash':id==='card'?'Credit card':'Account '+(S.accounts.length+1),type:id||'bank',last4:'',open:0,limit:0});save();render()}
-  else if(a==='export'){const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download='arthaly-backup.json';l.click()}
+  else if(a==='export')exportBackup();
   else if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>i.files[0].text().then(x=>{try{S=JSON.parse(x);normalize();save();render();toast('Imported')}catch(e){toast('Invalid file')}});i.click()}
   else if(a==='reset'){if(confirm('Erase all data?')){S=defaults();normalize();save();render()}}
 });

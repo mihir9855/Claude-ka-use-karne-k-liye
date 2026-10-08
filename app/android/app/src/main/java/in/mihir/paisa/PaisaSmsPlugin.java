@@ -1,10 +1,15 @@
 package in.mihir.paisa;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import androidx.core.content.FileProvider;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -47,6 +52,31 @@ public class PaisaSmsPlugin extends Plugin {
         JSObject out = new JSObject();
         out.put("sms", sms);
         call.resolve(out);
+    }
+
+    /** Backup export: the web view cannot download files, so write it to cache and open the Android share sheet. */
+    @PluginMethod
+    public void shareFile(PluginCall call) {
+        String name = call.getString("filename", "arthaly-backup.json").replaceAll("[^A-Za-z0-9._-]", "_");
+        String content = call.getString("content", "");
+        String mime = call.getString("mime", "application/json");
+        try {
+            File dir = new File(getContext().getCacheDir(), "exports");
+            if (!dir.exists()) dir.mkdirs();
+            File f = new File(dir, name);
+            try (FileOutputStream out = new FileOutputStream(f)) {
+                out.write(content.getBytes(StandardCharsets.UTF_8));
+            }
+            Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", f);
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType(mime);
+            send.putExtra(Intent.EXTRA_STREAM, uri);
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            getActivity().startActivity(Intent.createChooser(send, "Save or send backup"));
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Could not share the file: " + e.getMessage());
+        }
     }
 
     /** Returns (and clears) bank SMS captured since the last call. */
