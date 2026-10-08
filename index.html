@@ -195,6 +195,25 @@ nav button span{display:flex;justify-content:center}
 .swatches{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
 .swatches button{width:34px;height:34px;border-radius:50%;border:3px solid transparent;cursor:pointer;padding:0}
 .swatches button.on{border-color:var(--ink)}
+
+/* ===== Theme: White (crisp, bordered cards) ===== */
+:root[data-theme=white]{color-scheme:light;--bg:#ffffff;--card:#ffffff;--ink:#0f172a;--mute:#64748b;--line:#e5e7eb;--shadow:none;--debit:#dc2626;--credit:#15803d;--warn:#b45309}
+[data-theme=white] .card,[data-theme=white] .stat,[data-theme=white] .icon-btn,[data-theme=white] .themes button{border:1px solid var(--line)}
+[data-theme=white] .themes button.on{border-color:var(--brand)}
+[data-theme=white] nav{border-top:1px solid var(--line)}
+[data-theme=white] .seg{background:#f1f5f9}
+[data-theme=white] .sheet{background:#fff}
+[data-theme=white] input,[data-theme=white] select,[data-theme=white] textarea{background:#fff}
+/* ===== Theme: Cream (warm paper, soft shadows) ===== */
+:root[data-theme=cream]{color-scheme:light;--bg:#f7f1e3;--card:#fffcf5;--ink:#2b2418;--mute:#8a7c64;--line:#eadfc7;--shadow:0 1px 2px rgba(120,90,30,.06),0 8px 22px rgba(120,90,30,.09);--debit:#c2410c;--credit:#4d7c0f;--warn:#a16207}
+[data-theme=cream] .sheet{background:#f7f1e3}
+[data-theme=cream] .seg{background:#efe5cf}
+[data-theme=cream] input,[data-theme=cream] select,[data-theme=cream] textarea{background:#fffcf5}
+.themes{grid-template-columns:repeat(3,1fr)}
+.themes b{font-size:13px}.themes .small{font-size:11px}
+.swatches .custom{position:relative;width:34px;height:34px;border-radius:50%;overflow:hidden;border:3px solid var(--line);background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red)}
+.swatches .custom input{position:absolute;inset:-8px;width:60px;height:60px;opacity:0;cursor:pointer;border:0;padding:0}
+.swatches .custom.on{border-color:var(--ink)}
 </style>
 </head>
 <body>
@@ -252,28 +271,30 @@ const defaults=()=>({
 });
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY))||defaults()}catch(e){S=defaults()}
-const ACCENTS={teal:['Teal','#0f766e','#2bb5a8'],green:['Green','#16a34a','#4ade80'],blue:['Blue','#2563eb','#60a5fa'],violet:['Violet','#6d4cff','#a78bfa'],orange:['Orange','#ea580c','#fb923c'],pink:['Pink','#db2777','#f472b6'],red:['Red','#dc2626','#f87171'],gold:['Gold','#b8860b','#facc15']};
+const ACCENTS={indigo:['Indigo','#4338ca','#818cf8'],cyan:['Cyan','#0e7490','#22d3ee'],mint:['Mint','#059669','#6ee7b7'],lime:['Lime','#4d7c0f','#a3e635'],rose:['Rose','#e11d48','#fb7185'],plum:['Plum','#86198f','#e879f9'],brown:['Brown','#92400e','#d6a06a'],slate:['Slate','#334155','#94a3b8'],teal:['Teal','#0f766e','#2bb5a8'],green:['Green','#16a34a','#4ade80'],blue:['Blue','#2563eb','#60a5fa'],violet:['Violet','#6d4cff','#a78bfa'],orange:['Orange','#ea580c','#fb923c'],pink:['Pink','#db2777','#f472b6'],red:['Red','#dc2626','#f87171'],gold:['Gold','#b8860b','#facc15']};
+(function(){const first=['teal','green','blue','violet','orange','pink','red','gold'];const o={};first.forEach(k=>o[k]=ACCENTS[k]);Object.keys(ACCENTS).forEach(k=>{if(!o[k])o[k]=ACCENTS[k]});Object.keys(ACCENTS).forEach(k=>delete ACCENTS[k]);Object.assign(ACCENTS,o)})();
 function applyAccent(){
   const root=document.documentElement,th=S.theme;
   ['--brand','--brand-soft','--hero1','--hero2','--hero3'].forEach(v=>root.style.removeProperty(v));
   if(th==='black')return;
-  const key=(S.accents||{})[th]||(th==='neon'?'violet':'teal'),a=ACCENTS[key]||ACCENTS.teal;
-  const dark=th==='neon'||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches),b=dark?a[2]:a[1];
+  const key=(S.accents||{})[th]||(th==='neon'?'violet':'teal');
+  const a=key==='custom'&&S.customHex?['Custom',S.customHex,`color-mix(in srgb,${S.customHex} 60%,#fff)`]:(ACCENTS[key]||ACCENTS.teal);
+  const dark=th==='neon'||(th==='fresh'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches),b=dark?a[2]:a[1];
   root.style.setProperty('--brand',b);
   root.style.setProperty('--brand-soft',`color-mix(in srgb,${b} ${dark?22:16}%,${dark?'#000':'#fff'})`);
   root.style.setProperty('--hero1',`color-mix(in srgb,${a[1]} 38%,#05080a)`);
   root.style.setProperty('--hero2',a[1]);root.style.setProperty('--hero3',a[2]);
-  const m=document.querySelector('meta[name=theme-color]');if(m&&th==='fresh')m.content=a[1];
+  const m=document.querySelector('meta[name=theme-color]');if(m&&(th==='fresh'||th==='white'||th==='cream'))m.content=th==='white'?'#ffffff':th==='cream'?'#f7f1e3':a[1];
 }
 if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>applyAccent());
-function applyTheme(){document.documentElement.dataset.theme=S.theme;applyAccent();const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.theme==='neon'?'#0a0a10':S.theme==='black'?'#000000':'#0f766e'}
+function applyTheme(){document.documentElement.dataset.theme=S.theme;applyAccent();const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.theme==='neon'?'#0a0a10':S.theme==='black'?'#000000':S.theme==='white'?'#ffffff':S.theme==='cream'?'#f7f1e3':'#0f766e'}
 /* fills in anything missing (old backups, reset) and re-applies saved look */
 function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
   if(!S.accounts.some(a=>a.type==='cash'))S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
   if(!S.accounts.some(a=>a.type==='card'))S.accounts.push({id:'cc1',name:'Credit card',type:'card',last4:'',open:0,limit:0});
   S.accents=S.accents||{};S.salary=S.salary||48000;S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
-  S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[{id:'s1',name:'Freelance'}];S.hide=!!S.hide;S.theme=['neon','black'].includes(S.theme)?S.theme:'fresh';
+  S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[{id:'s1',name:'Freelance'}];S.hide=!!S.hide;S.theme=['neon','black','white','cream'].includes(S.theme)?S.theme:'fresh';S.customHex=S.customHex||'';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
   Object.entries(S.icons).forEach(([k,v])=>{if(CATS[k])CATS[k]=v});
@@ -1025,11 +1046,11 @@ function accounts(){
    <h2>Internal transfers</h2><div class="card"><div class="small mute">Moving money between your own accounts should not count as spending or income. Paisa can find matching pairs (same amount out of one account and into another within 2 days) and merge each into one transfer.</div><button class="btn ghost" data-a="pairs">Find possible transfers${findPairs().length?' ('+findPairs().length+')':''}</button></div>
    <h2>Notifications</h2><div class="card"><div class="small mute">Alert when a category reaches 80% and when it goes over, and when the overall budget reaches 90%. In the Android app you also get a notice for each bank SMS it captures, even when the app is closed. In a browser, alerts only show while the page is open.</div>
    <button class="btn ${S.notify?'ghost':''}" data-a="notifon">${S.notify?'Notifications on (tap to turn off)':'Turn on notifications'}</button><button class="btn ghost" data-a="notiftest" style="margin-top:8px">Send test notification</button></div>
-   <h2>Look</h2><div class="themes"><button class="${S.theme==='fresh'?'on':''}" data-a="theme" data-id="fresh"><i style="background:linear-gradient(140deg,#16322e,#0f766e)"></i><b>Fresh</b><div class="small mute">Calm teal</div></button><button class="${S.theme==='neon'?'on':''}" data-a="theme" data-id="neon"><i style="background:linear-gradient(140deg,#1d1740,#6d4cff);box-shadow:0 0 14px #7c5cff"></i><b>Neon</b><div class="small mute">Glowing cards</div></button><button class="${S.theme==='black'?'on':''}" data-a="theme" data-id="black"><i style="background:#000;border:1px solid #333"></i><b>Black</b><div class="small mute">Pure black, flat</div></button></div>
+   <h2>Look</h2><div class="themes"><button class="${S.theme==='fresh'?'on':''}" data-a="theme" data-id="fresh"><i style="background:linear-gradient(140deg,#16322e,#0f766e)"></i><b>Fresh</b><div class="small mute">Auto light/dark</div></button><button class="${S.theme==='white'?'on':''}" data-a="theme" data-id="white"><i style="background:#fff;border:1px solid #d1d5db"></i><b>White</b><div class="small mute">Clean and bright</div></button><button class="${S.theme==='cream'?'on':''}" data-a="theme" data-id="cream"><i style="background:#f7f1e3;border:1px solid #e3d6b8"></i><b>Cream</b><div class="small mute">Warm paper</div></button><button class="${S.theme==='neon'?'on':''}" data-a="theme" data-id="neon"><i style="background:linear-gradient(140deg,#1d1740,#6d4cff);box-shadow:0 0 14px #7c5cff"></i><b>Neon</b><div class="small mute">Glowing cards</div></button><button class="${S.theme==='black'?'on':''}" data-a="theme" data-id="black"><i style="background:#000;border:1px solid #333"></i><b>Black</b><div class="small mute">Pure black, flat</div></button></div>
    <h2>Budget & data</h2><div class="card"><div class="small mute">Budget limits now live in the <b>Budget</b> tab (one limit per category). Total budget = sum of limits.</div>
    <label>Monthly salary (₹) · used for the buffer</label><input data-f="salary" value="${S.salary}" inputmode="numeric">
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button>
-   <button class="btn ghost" data-a="demo" style="margin-top:8px">Load demo data</button><button class="btn red" data-a="reset">Erase everything</button></div>${S.theme==='black'?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}</div>`}`;
+   <button class="btn ghost" data-a="demo" style="margin-top:8px">Load demo data</button><button class="btn red" data-a="reset">Erase everything</button></div>${S.theme==='black'?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}<label class="custom ${((S.accents||{})[S.theme])==='custom'?'on':''}" style="margin:0" title="Pick any colour"><input type="color" id="accentpick" value="${S.customHex||'#0f766e'}"></label></div>`}`;
 }
 
 /* ---------- sheet ---------- */
@@ -1100,7 +1121,7 @@ document.addEventListener('click',e=>{
   else if(a==='seg'){seg=id;render()}
   else if(a==='new'){txSheet()}
   else if(a==='accent'){S.accents[S.theme]=id;save();applyAccent();render()}
-  else if(a==='theme'){S.theme=id==='toggle'?({fresh:'neon',neon:'black',black:'fresh'}[S.theme]):id;save();applyTheme();render()}
+  else if(a==='theme'){S.theme=id==='toggle'?({fresh:'white',white:'cream',cream:'neon',neon:'black',black:'fresh'}[S.theme]):id;save();applyTheme();render()}
   else if(a==='eye'){S.hide=!S.hide;save();render()}
   else if(a==='qa'){
     if(id==='exp')txSheet();
@@ -1199,6 +1220,7 @@ document.addEventListener('click',e=>{
   else if(a==='reset'){if(confirm('Erase all data?')){S=defaults();normalize();save();render()}}
 });
 document.addEventListener('input',e=>{
+  if(e.target.id==='accentpick'){S.customHex=e.target.value;S.accents[S.theme]='custom';applyAccent();return}
   if(e.target.id==='f-amt')updateBHint();
   if(e.target.id==='q'){q=e.target.value;$('#txlist').innerHTML=txListHTML()}
   else if(e.target.id==='f-note'&&!catTouched&&$('#f-kind').value==='expense'){
@@ -1207,6 +1229,7 @@ document.addEventListener('input',e=>{
   }
 });
 document.addEventListener('change',e=>{
+  if(e.target.id==='accentpick'){save();render();return}
   if(e.target.id==='f-date')updateBHint();
   if(e.target.id==='f-pool')$('#w-poolsrc').hidden=!e.target.checked;
   if((e.target.id==='f-source'||e.target.id==='f-poolsrc')&&e.target.value==='__new'){
