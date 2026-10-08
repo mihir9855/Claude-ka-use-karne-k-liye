@@ -827,21 +827,22 @@ async function exportBackup(){
   setTimeout(()=>URL.revokeObjectURL(l.href),4000);toast('Backup downloaded');
 }
 let emiMonTouched=false;
-function emiSheet(){
-  const cards=S.accounts.filter(a=>accType(a)==='card');
+function emiSheet(eid){
+  const ep=eid?S.emis.find(x=>x.id===eid):null,cards=S.accounts.filter(a=>accType(a)==='card');
   if(!cards.length){
     openSheet(`<div class="row sp"><h1>Add EMI</h1><button class="icon-btn" data-a="close">✕</button></div><div class="card" style="margin-top:14px">An EMI sits on a credit card. Add your credit card first (Accounts → + Card).</div><button class="btn" data-a="gocards">Go to Accounts</button>`);return;
   }
-  emiMonTouched=false;
-  openSheet(`<div class="row sp"><h1>Add EMI</h1><button class="icon-btn" data-a="close">✕</button></div>
-  <label>What did you buy?</label><input id="e-name" placeholder="e.g. Phone, Fridge">
-  <label>Credit card</label><select id="e-card">${opts(cards.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),cards[0].id)}</select>
-  <div class="grid2"><div><label>Purchase amount (₹)</label><input id="e-amt" inputmode="decimal" placeholder="blocks your limit"></div><div><label>Number of months</label><input id="e-mo" inputmode="numeric" placeholder="e.g. 12"></div></div>
-  <label>Monthly EMI (₹)</label><input id="e-mon" inputmode="decimal" placeholder="amount + interest per month">
-  <label>First EMI date</label><input id="e-first" type="date" value="${todayISO()}">
-  <label>EMIs already paid before today</label><input id="e-before" inputmode="numeric" value="0">
+  emiMonTouched=!!ep;
+  const V=(k,d='')=>ep&&ep[k]!=null?esc(String(ep[k])):d;
+  openSheet(`<div class="row sp"><h1>${ep?'Edit EMI':'Add EMI'}</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <label>What did you buy?</label><input id="e-name" placeholder="e.g. Phone, Fridge" value="${V('name')}">
+  <label>Credit card</label><select id="e-card">${opts(cards.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),ep?ep.card:cards[0].id)}</select>
+  <div class="grid2"><div><label>Purchase amount (₹)</label><input id="e-amt" inputmode="decimal" placeholder="blocks your limit" value="${V('amount')}"></div><div><label>Number of months</label><input id="e-mo" inputmode="numeric" placeholder="e.g. 12" value="${V('months')}"></div></div>
+  <label>Monthly EMI (₹)</label><input id="e-mon" inputmode="decimal" placeholder="amount + interest per month" value="${V('monthly')}">
+  <label>First EMI date</label><input id="e-first" type="date" value="${V('first',todayISO())}">
+  <label>EMIs already paid before today</label><input id="e-before" inputmode="numeric" value="${V('before','0')}">
   <div class="small mute" style="margin-top:6px">If you bought it earlier, enter its first EMI date and how many are already paid. Those are counted but not added again as expenses.</div>
-  <button class="btn" data-a="saveemi">Save EMI</button>`);
+  <button class="btn" data-a="saveemi" data-id="${ep?ep.id:''}">${ep?'Save changes':'Save EMI'}</button>`);
 }
 function emiDetail(id){
   const p=S.emis.find(x=>x.id===id);if(!p)return;
@@ -857,6 +858,7 @@ function emiDetail(id){
   <div class="row sp small mute"><span>${s.left} left</span><span>${inr(s.remainingAmt)} to pay</span></div>
   <div class="row sp small mute" style="margin-top:6px"><span>Blocked in card limit</span><span>${inr(Math.round(s.blocked))}</span></div></div>
   <h2>Schedule</h2><div class="card" style="padding:4px 16px;max-height:36vh;overflow:auto">${rows.join('')}</div>
+  <button class="btn" data-a="emiedit" data-id="${p.id}">Edit this EMI</button>
   ${s.done?'':`<button class="btn ghost" data-a="emiclose" data-id="${p.id}">Closed early (foreclosed)</button>`}
   <button class="btn red" data-a="emidel" data-id="${p.id}">Delete this EMI</button>`);
 }
@@ -1426,10 +1428,16 @@ document.addEventListener('click',e=>{
     let before=parseInt($('#e-before').value,10)||0;
     if(!name||!card||!(amount>0)||!(months>=1)||!(monthly>0)||!first){toast('Fill the name, card, amount, months and monthly EMI');return}
     before=Math.max(0,Math.min(before,months));
-    S.emis.push({id:uid(),name,card,amount,months,monthly,first,before,closed:false});
-    save();applyEmis();closeSheet();seg='emi';render();toast('EMI added');
+    const ex=id&&S.emis.find(x=>x.id===id);
+    if(ex){
+      Object.assign(ex,{name,card,amount,months,monthly,first,before});
+      if(ex.closed)ex.closedPaid=Math.min(ex.closedPaid||0,months);
+      S.tx=S.tx.filter(t=>t.emiId!==ex.id);
+    }else S.emis.push({id:uid(),name,card,amount,months,monthly,first,before,closed:false});
+    save();applyEmis();closeSheet();seg='emi';render();toast(ex?'EMI updated':'EMI added');
   }
   else if(a==='emi')emiDetail(id);
+  else if(a==='emiedit')emiSheet(id);
   else if(a==='emiclose'){const p=S.emis.find(x=>x.id===id);if(p){p.closedPaid=emiState(p).paid;p.closed=true;save();closeSheet();render();toast('EMI marked as closed')}}
   else if(a==='emidel'){askConfirm('Delete this EMI and the expenses it added?','Delete',true).then(ok=>{if(ok){S.emis=S.emis.filter(x=>x.id!==id);S.tx=S.tx.filter(t=>t.emiId!==id);save();closeSheet();render()}})}
   else if(a==='addsource'){askText('Income source name','','e.g. a client or project').then(n=>{if(n&&n.trim()){S.sources.push({id:uid(),name:n.trim()});save();render()}})}
