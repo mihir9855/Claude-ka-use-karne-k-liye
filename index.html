@@ -74,7 +74,7 @@ svg text{fill:var(--mute);font-size:9px}
 .tile .wm{position:absolute;right:-4px;bottom:-12px;font-size:64px;opacity:.2}
 .tile h3{margin:0;font-size:14px;font-weight:700}.tile .pc{position:absolute;right:12px;top:12px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);border-radius:99px;padding:2px 8px}
 .tile .amt{font-size:18px;font-weight:700;margin-top:16px}.tile .of{font-size:11px;opacity:.85}
-.tile .tb{height:6px;background:rgba(255,255,255,.3);border-radius:9px;margin-top:10px;overflow:hidden}.tile .tb i{display:block;height:100%;background:#fff;border-radius:9px}
+.tile .tb{height:6px;background:rgba(255,255,255,.3);border-radius:9px;margin-top:10px;overflow:hidden}.tile .tb i{display:block;width:var(--p,0%);height:100%;background:#fff;border-radius:9px}
 .tile.over{outline:2px solid #ff4d6d;outline-offset:-2px}
 .tile.add{background:var(--card)!important;color:var(--mute);border:2px dashed var(--line);display:grid;place-items:center;box-shadow:none;text-align:center}
 .tile.nolim{opacity:.72}
@@ -89,6 +89,40 @@ svg text{fill:var(--mute);font-size:9px}
 .hint{background:#fff7e0;color:#7a5a00;border-radius:12px;padding:8px 12px;font-size:12px;margin-top:8px}
 .search{margin-top:10px}
 #tip{position:absolute;pointer-events:none;background:#14201d;color:#fff;border-radius:8px;padding:4px 8px;font-size:11px;white-space:nowrap;display:none;z-index:2}
+
+/* ===== Theme 2: Neon (dark, glowing, vertical-bar tiles) ===== */
+:root[data-theme=neon]{color-scheme:dark;
+  --bg:#0a0a10;--card:#17171f;--ink:#f3f3f8;--mute:#8d8d9e;--line:#262632;
+  --brand:#8b6cff;--brand-soft:#2a2352;--debit:#ff6b86;--credit:#4ade80;--warn:#fbbf24;--shadow:none}
+[data-theme=neon] body{background:radial-gradient(520px 320px at 85% -60px,#2b1f6e 0,transparent 70%),radial-gradient(420px 260px at -10% 30%,#10343a 0,transparent 70%),var(--bg);background-attachment:fixed}
+[data-theme=neon] .hero{background:linear-gradient(140deg,#1d1740,#3b2a9c 75%,#6d4cff 140%);box-shadow:0 0 40px -10px #7c5cff}
+[data-theme=neon] .card,[data-theme=neon] .stat{border:1px solid #20202b}
+[data-theme=neon] .tiles{display:flex;overflow-x:auto;gap:14px;margin:0 -16px;padding:8px 16px 26px;scroll-snap-type:x mandatory;scrollbar-width:none}
+[data-theme=neon] .tiles::-webkit-scrollbar{display:none}
+[data-theme=neon] .tile{flex:0 0 44%;min-height:230px;border-radius:32px;scroll-snap-align:start;box-shadow:0 0 34px -6px var(--c)}
+[data-theme=neon] .tile .pc{left:14px;right:auto;top:auto;bottom:46px;background:none;padding:0;font-size:12px;opacity:.9}
+[data-theme=neon] .tile .amt{position:absolute;left:14px;bottom:16px;margin:0;font-size:15px}
+[data-theme=neon] .tile .of{display:none}
+[data-theme=neon] .tile h3{font-size:17px;max-width:70%;line-height:1.2}
+[data-theme=neon] .tile .wm{right:auto;left:-6px;bottom:50px;font-size:78px;opacity:.16}
+[data-theme=neon] .tile .tb{position:absolute;right:16px;top:20px;bottom:20px;width:6px;height:auto;margin:0;background:rgba(255,255,255,.28)}
+[data-theme=neon] .tile .tb i{position:absolute;left:0;right:0;bottom:0;width:100%;height:var(--p,0%)}
+[data-theme=neon] .tile.add{flex:0 0 40%;background:#12121a!important;border-color:#2a2a38}
+[data-theme=neon] #txlist{background:none!important;box-shadow:none!important;padding:0!important;border:0!important}
+[data-theme=neon] .tx{background:var(--card);border-radius:20px;padding:13px 14px;margin-bottom:10px;border:0}
+[data-theme=neon] .dot{border-radius:50%}
+[data-theme=neon] nav{left:50%;right:auto;width:min(456px,calc(100% - 24px));transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));border-radius:34px;background:#000;border:1px solid #24242f;padding:8px 10px}
+[data-theme=neon] nav button{color:#7d7d8c}[data-theme=neon] nav button.on{color:#fff}
+[data-theme=neon] .fab{background:#fff!important;color:#000!important;margin:0 auto;box-shadow:0 0 22px -2px rgba(255,255,255,.55);width:50px;height:50px}
+[data-theme=neon] .sheet{background:#0f0f16}
+[data-theme=neon] .toast{background:#fff;color:#000}
+[data-theme=neon] #app{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+[data-theme=neon] .alert{background:#7c2d12;color:#ffd7b0}[data-theme=neon] .alert.ok{background:#14532d;color:#bbf7d0}
+[data-theme=neon] .hint{background:#3a2f0a;color:#fde68a}
+.themes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.themes button{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:16px;padding:10px;font:inherit;cursor:pointer;text-align:left}
+.themes button.on{border-color:var(--brand)}
+.themes i{display:block;height:46px;border-radius:10px;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -109,7 +143,9 @@ const defaults=()=>({
 });
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY))||defaults()}catch(e){S=defaults()}
-S.cats=S.cats||[];S.hide=!!S.hide;
+S.cats=S.cats||[];S.hide=!!S.hide;S.theme=S.theme==='neon'?'neon':'fresh';
+function applyTheme(){document.documentElement.dataset.theme=S.theme;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.theme==='neon'?'#0a0a10':'#0f766e'}
+applyTheme();
 if(!S.budgets)S.budgets=defaults().budgets;
 S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
 const totalBudget=()=>{const v=Object.values(S.budgets).reduce((a,b)=>a+b,0);return v>0?v:S.budget};
@@ -286,7 +322,7 @@ function home(){
   const st=mstats(month),tb=totalBudget(),left=tb-st.exp,pct=Math.min(100,st.exp/tb*100);
   const un=S.tx.filter(t=>!t.acc).length,pl=pool();
   const total=S.accounts.reduce((a,x)=>a+accBal(x.id),0);
-  return `<div class="row sp"><div><h1>Paisa</h1><div class="small mute">Hello Mihir 👋</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="nav" data-id="accounts" title="Accounts & settings">⚙️</button></div></div>
+  return `<div class="row sp"><div><h1>Paisa</h1><div class="small mute">Hello Mihir 👋</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="theme" data-id="toggle" title="Switch look">🎨</button><button class="icon-btn" data-a="nav" data-id="accounts" title="Accounts & settings">⚙️</button></div></div>
   <div class="hero" style="margin-top:14px">
     <div class="row sp"><div><div class="sub">Total balance · ${S.accounts.length} accounts</div><div class="big num">${inrH(total)}</div></div><button class="eye" data-a="eye">${S.hide?'🙈':'👁️'}</button></div>
     <div class="chips"><span>↓ Income ${inrH(st.inc+st.oth)}</span><span>↑ Spent ${inrH(st.exp)}</span></div>
@@ -326,7 +362,7 @@ function budgetView(){
     return `<div class="tile ${over?'over':''} ${lim?'':'nolim'}" data-a="tile" data-id="${esc(k)}" style="--c:${c};background:linear-gradient(150deg,${c},${c}bb)">
       <h3>${esc(cname(k))}</h3>${lim?`<span class="pc">${Math.round(p)}%</span>`:'<span class="pc">no limit</span>'}
       <div class="amt num">${inr(u)}</div><div class="of">${lim?(over?`<b>₹${Math.round(u-lim).toLocaleString('en-IN')} over</b> · limit ${inr(lim)}`:`of ${inr(lim)} · ${inr(lim-u)} left`):'tap to set a limit'}</div>
-      ${lim?`<div class="tb"><i style="width:${Math.min(100,p)}%"></i></div>`:''}<div class="wm">${CATS[k]||'🧾'}</div></div>`;
+      ${lim?`<div class="tb" style="--p:${Math.min(100,p)}%"><i></i></div>`:''}<div class="wm">${CATS[k]||'🧾'}</div></div>`;
   };
   return `<div class="row sp"><h1>Budget</h1>${monthBar()}</div>
   <div class="hero" style="margin-top:14px">
@@ -398,6 +434,7 @@ function accounts(){
   (sms()?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
    <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+
   `<button class="btn ghost" data-a="addacc">+ Add account</button>
+   <h2>Look</h2><div class="themes"><button class="${S.theme==='fresh'?'on':''}" data-a="theme" data-id="fresh"><i style="background:linear-gradient(140deg,#16322e,#0f766e)"></i><b>Fresh</b><div class="small mute">Light or dark, calm teal</div></button><button class="${S.theme==='neon'?'on':''}" data-a="theme" data-id="neon"><i style="background:linear-gradient(140deg,#1d1740,#6d4cff);box-shadow:0 0 14px #7c5cff"></i><b>Neon</b><div class="small mute">Dark, glowing cards</div></button></div>
    <h2>Budget & data</h2><div class="card"><div class="small mute">Budget limits now live in the <b>Budget</b> tab (one limit per category). Total budget = sum of limits.</div>
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button>
    <button class="btn ghost" data-a="demo" style="margin-top:8px">Load demo data</button><button class="btn red" data-a="reset">Erase everything</button></div>`;
@@ -450,6 +487,7 @@ document.addEventListener('click',e=>{
   else if(a==='filter'){accFilter=accFilter===id?'':id;render()}
   else if(a==='seg'){seg=id;render()}
   else if(a==='new'){txSheet()}
+  else if(a==='theme'){S.theme=id==='toggle'?(S.theme==='neon'?'fresh':'neon'):id;save();applyTheme();render()}
   else if(a==='eye'){S.hide=!S.hide;save();render()}
   else if(a==='qa'){
     if(id==='exp')txSheet();
