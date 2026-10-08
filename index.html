@@ -747,12 +747,13 @@ function applyEmis(){
   const today=todayISO();let changed=false;
   S.emis.forEach(p=>{
     if(p.closed)return;
-    for(let i=p.before||0;i<p.months;i++){
-      const date=addMonthsISO(p.first,i);
+    for(let i=0;i<p.months;i++){
+      const date=addMonthsISO(p.first,i),pre=i<(p.before||0);
       if(date>today)break;
-      if(date<=(p.addedOn||''))continue;
+      if(!pre&&date<=(p.addedOn||''))continue;
       if(!S.tx.some(t=>t.emiId===p.id&&t.emiNo===i+1)){
-        S.tx.push({id:uid(),date,type:'debit',amt:p.monthly,acc:p.card,to:'',kind:'expense',cat:'EMI',note:`${p.name} EMI ${i+1}/${p.months}`,party:'',pool:false,src:'emi',emiId:p.id,emiNo:i+1});
+        // pre = paid before the EMI was added: shown in the account's history but it does not change the card balance
+        S.tx.push({id:uid(),date,type:'debit',amt:p.monthly,acc:p.card,to:'',kind:'expense',cat:'EMI',note:`${p.name} EMI ${i+1}/${p.months}${pre?' (paid earlier)':''}`,party:'',pool:false,src:'emi',emiId:p.id,emiNo:i+1,prepaid:pre||undefined});
         changed=true;
       }
     }
@@ -848,6 +849,16 @@ function emiSheet(eid){
   <div class="small mute" style="margin-top:6px">Enter the original first EMI date and how many are already paid. Those are counted as paid but not added again as expenses; only EMIs falling due after today are added automatically.</div>
   <button class="btn" data-a="saveemi" data-id="${ep?ep.id:''}">${ep?'Save changes':'Save EMI'}</button>`);
 }
+function emiUpcomingHtml(){
+  const today=todayISO(),L=S.emis.map(p=>({p,s:emiState(p)})).filter(x=>!x.s.done).sort((a,b)=>a.s.next<b.s.next?-1:1);
+  if(!L.length)return '';
+  const dd=iso=>Math.round((new Date(iso+'T00:00')-new Date(today+'T00:00'))/864e5);
+  const mk=today.slice(0,7),thisM=L.filter(x=>x.s.next.slice(0,7)<=mk).reduce((a,x)=>a+x.p.monthly,0);
+  return `<div class="card" style="margin-top:12px"><div class="ctitle"><b>EMI due</b><span class="small mute">${thisM?inrH(thisM)+' this month':'nothing more this month'}</span></div>`+
+  L.slice(0,4).map(({p,s})=>{const d=dd(s.next),w=d<0?`overdue ${-d}d`:d===0?'today':d===1?'tomorrow':`in ${d} days`,a=acc(p.card);
+    return `<div class="attn" style="cursor:pointer" data-a="emi" data-id="${p.id}"><div class="grow"><b>${esc(p.name)}</b><div class="small mute">${new Date(s.next+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${w} · ${esc(a?a.name:'card')}</div></div><span class="num">${inrH(p.monthly)}</span></div>`}).join('')+
+  `<div class="small mute" style="margin-top:6px">${S.emis.filter(p=>!emiState(p).done).length} running · tap one for its schedule</div></div>`;
+}
 function emiDetail(id){
   const p=S.emis.find(x=>x.id===id);if(!p)return;
   const s=emiState(p),a=acc(p.card),today=todayISO();
@@ -879,8 +890,8 @@ function mstats(mk){
   return r;
 }
 const accType=a=>(a&&a.type)||'bank';
-const accBal=id=>{const a=acc(id);return (a?a.open:0)+S.tx.reduce((s,t)=>s+(t.acc===id?signed(t):0)+(t.to===id?t.amt:0),0)};
-const accMonth=(id,mk)=>{let i=0,o=0;S.tx.filter(t=>t.date.startsWith(mk)).forEach(t=>{if(t.acc===id)t.type==='credit'?i+=t.amt:o+=t.amt;if(t.to===id)i+=t.amt});return{i,o}};
+const accBal=id=>{const a=acc(id);return (a?a.open:0)+S.tx.reduce((s,t)=>t.prepaid?s:s+(t.acc===id?signed(t):0)+(t.to===id?t.amt:0),0)};
+const accMonth=(id,mk)=>{let i=0,o=0;S.tx.filter(t=>t.date.startsWith(mk)&&!t.prepaid).forEach(t=>{if(t.acc===id)t.type==='credit'?i+=t.amt:o+=t.amt;if(t.to===id)i+=t.amt});return{i,o}};
 const personBal=id=>S.tx.filter(t=>t.kind==='pass'&&t.party===id).reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0); // + = owes you
 const srcName=id=>(S.sources.find(x=>x.id===id)||{name:'General'}).name;
 const srcStats=id=>{
@@ -1054,6 +1065,7 @@ function home(){
   ${(()=>{const RG=[['7','7D'],['15','15D'],['30','1M'],['3m','3M'],['12m','1Y']],T={'7':'Last 7 days','15':'Last 15 days','30':'Last 30 days','3m':'Last 3 months (weekly)','12m':'Last 12 months'};
     const l7=spendSeries(homeRange),tot7=l7.reduce((a,b)=>a+b.v,0),cd=catData(st);
     return `<div class="card" style="margin-top:12px"><div class="ctitle"><b>${T[homeRange]}</b><span class="small mute">${inrH(tot7)} spent</span></div><div class="seg" style="margin:8px 0">${RG.map(x=>`<button data-a="range" data-id="${x[0]}" class="${homeRange===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>${barChart(l7.map(x=>x.v),l7.map(x=>x.l),{tips:l7.map(x=>x.tip),hl:l7.length-1})}</div>
+    ${emiUpcomingHtml()}
     <div class="card" style="margin-top:12px"><div class="ctitle"><b>Where it went</b><span class="small mute">${mlabel(month)}</span></div>${miniDonut(cd)}</div>`})()}
   ${npairs?`<div class="card small" style="margin-top:10px;cursor:pointer;background:var(--brand-soft)" data-a="pairs">${npairs} possible internal transfer${npairs>1?'s':''} found. Tap to review and merge.</div>`:''}
   ${un?`<div class="card small" style="margin-top:10px;background:var(--brand-soft)">⚠️ ${un} transaction${un>1?'s':''} not matched to an account. Tap one to assign it.</div>`:''}
@@ -1278,7 +1290,15 @@ function chipsHTML(kind,sel){
   if(kind==='expense')return Object.keys(CATS).map(k=>`<button type="button" class="chip ${k===sel?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${ic(CATS[k],16)}${esc(cname(k))}</button>`).join('')+`<button type="button" class="chip" id="newcat" data-a="newcat">＋ New</button>`;
   return Object.keys(ICATS).map(k=>`<button type="button" class="chip ${k===sel?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${ICATCOL[k]}">${ic(ICATS[k],16)}${esc(k)}</button>`).join('');
 }
+let emiPick=null;
+function emiSuggest(){
+  const el=$('#smart');if(!el||$('#f-kind').value!=='expense'||$('#f-cat').value!=='EMI')return;
+  const L=S.emis.map(p=>({p,s:emiState(p)})).filter(x=>!x.s.done);
+  if(!L.length)return;
+  el.innerHTML=`<div class="small mute" style="margin:8px 0 4px">Your EMIs, tap to fill</div><div class="chips2">${L.map(({p,s})=>`<button type="button" class="chip" data-a="emipick" data-id="${p.id}">${esc(p.name)} · ${inrH(p.monthly)} · ${new Date(s.next+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</button>`).join('')}</div>`;
+}
 function txSheet(t,preset){
+  emiPick=null;
   const isNew=!t;t=t||{id:'',type:'debit',amt:'',acc:S.accounts[0].id,kind:'expense',cat:'Other',note:'',date:new Date().toISOString().slice(0,10),party:'',pool:false};
   if(isNew&&preset)Object.assign(t,preset);
   if(isNew&&t.cat==='Other'&&(!preset||!preset.cat)&&t.kind!=='expense'&&t.kind!=='pass')t.cat=t.kind==='other'?'Freelance':'Salary';
@@ -1365,7 +1385,7 @@ document.addEventListener('click',e=>{
     if(!k||!(lim>0)){toast('Pick a category and enter a limit');return}
     S.budgets[k]=lim;save();closeSheet();render();
   }
-  else if(a==='cat'){catTouched=true;$('#f-cat').value=id;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#smart').innerHTML='';updateBHint()}
+  else if(a==='cat'){catTouched=true;$('#f-cat').value=id;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#smart').innerHTML='';updateBHint();emiPick=null;if(id==='EMI')emiSuggest()}
   else if(a==='newcat'){
     askText('New category name','','e.g. Pet care').then(n=>{
       if(!n||!n.trim())return;
@@ -1378,13 +1398,18 @@ document.addEventListener('click',e=>{
   else if(a==='close')closeSheet();
   else if(a==='tab'){document.querySelectorAll('#tabseg button').forEach(b=>b.classList.toggle('on',b===el));$('#tab-m').hidden=id!=='m';$('#tab-s').hidden=id!=='s';$('#tab-st').hidden=id!=='st'}
   else if(a==='type'){tt=id;document.querySelectorAll('#typeseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));if(id==='credit'&&$('#f-kind').value==='expense'){$('#f-kind').value='income';syncKind()}updateBHint()}
+  else if(a==='emipick'){
+    const p=S.emis.find(x=>x.id===id);if(!p)return;const s=emiState(p),no=s.paid+1;
+    $('#f-amt').value=p.monthly;$('#f-acc').value=p.card;$('#f-note').value=`${p.name} EMI ${no}/${p.months}`;$('#f-date').value=s.next;
+    emiPick={id:p.id,no};toast(`${p.name}: EMI ${no} of ${p.months} filled in`);
+  }
   else if(a==='savetx'){
     const amt=parseFloat($('#f-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     const kind=$('#f-kind').value;
     if(kind==='pass'&&!$('#f-party').value){toast('Add a person first: Ledger → People → Add person');return}
     if(kind==='transfer'&&(!$('#f-acc').value||!$('#f-to').value||$('#f-acc').value===$('#f-to').value)){toast('Pick two different accounts');return}
     const t={id:id||uid(),date:$('#f-date').value,type:kind==='transfer'?'debit':tt,to:kind==='transfer'?$('#f-to').value:'',amt,acc:$('#f-acc').value,kind,cat:kind==='pass'?'Other':$('#f-cat').value,source:kind==='other'?$('#f-source').value:'',poolSrc:(kind==='expense'&&$('#f-pool').checked)?$('#f-poolsrc').value:'',note:$('#f-note').value.trim(),party:kind==='pass'?$('#f-party').value:'',pool:kind==='expense'&&$('#f-pool').checked,src:'manual'};
-    const i=S.tx.findIndex(x=>x.id===id);if(i>=0){t.src=S.tx[i].src;S.tx[i]=t}else S.tx.push(t);
+    const i=S.tx.findIndex(x=>x.id===id);if(i>=0){const o=S.tx[i];t.src=o.src;if(o.emiId){t.emiId=o.emiId;t.emiNo=o.emiNo}if(o.prepaid)t.prepaid=true;S.tx[i]=t}else{if(emiPick&&t.cat==='EMI'){t.emiId=emiPick.id;t.emiNo=emiPick.no;t.src='emi'}S.tx.push(t)}
     save();closeSheet();render();
     let msg='Saved',ms;
     if(t.kind==='expense'&&t.type==='debit'&&S.budgets[t.cat]>0){
