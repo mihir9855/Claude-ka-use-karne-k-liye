@@ -161,12 +161,17 @@ nav button span{display:flex;justify-content:center}
 [data-theme=sage] .acc:nth-child(3n),[data-theme=cocoa] .acc:nth-child(3n){background:linear-gradient(135deg,#ef8a2a,#c9701a)!important}
 [data-theme=sage] .alert.soft{background:#f7e9c8;color:#8a5a0a}[data-theme=cocoa] .alert.soft{background:rgba(242,184,75,.16)}
 [data-theme=sage] .hint{background:#f7ecd0;color:#7a5a00}
+
+.dlg-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:30;display:flex;align-items:center;justify-content:center;padding:20px}
+.dlg{background:var(--card);color:var(--ink);border-radius:22px;padding:18px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.btn.danger{background:var(--debit)!important;color:#fff!important}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <nav><div class="in" id="nav"></div></nav>
 <div id="layer"></div>
+<div id="dlg"></div>
 <script>
 /* ---------- storage ---------- */
 const KEY='arthaly.v1'; // fresh storage: nothing from earlier test versions is carried over
@@ -500,7 +505,7 @@ async function pdfRows(buf){
     try{doc=await lib.getDocument({data:new Uint8Array(buf.slice(0)),password:pw}).promise;break}
     catch(e){
       if(e&&e.name==='PasswordException'){
-        pw=prompt(e.code===2?'Wrong password. Try again:':'This PDF is password protected. Enter its password (banks often use customer ID, date of birth or a mix):');
+        pw=await askText(e.code===2?'Wrong password. Try again':'This PDF is password protected. Enter its password (banks often use customer ID, date of birth or a mix)','','Password','password');
         if(pw==null)throw new Error('cancelled');continue;
       }
       throw e;
@@ -762,7 +767,7 @@ function delAccSheet(id){
   if(S.accounts.length<=1)return toast('Keep at least one account');
   const n=S.tx.filter(t=>t.acc===id||t.to===id).length,pe=S.emis.filter(p=>p.card===id).length;
   const others=S.accounts.filter(x=>x.id!==id);
-  if(!n&&!pe){if(confirm('Delete "'+a.name+'"?'))removeAccount(id,'');return}
+  if(!n&&!pe){askConfirm('Delete "'+a.name+'"?','Delete',true).then(ok=>{if(ok)removeAccount(id,'')});return}
   openSheet(`<div class="row sp"><h1>Delete ${esc(a.name)}?</h1><button class="icon-btn" data-a="close">✕</button></div>
   <div class="card small" style="margin-top:12px"><b>${n}</b> entr${n===1?'y':'ies'} use this account${pe?` and <b>${pe}</b> EMI${pe>1?'s':''} sit on it (they will be deleted with their instalments)`:''}. What should happen to the entries?</div>
   ${n?`<label>Move the entries to</label><select id="da-to">${opts(others.map(x=>[x.id,x.name+(x.last4?' ••'+x.last4:'')]),others[0].id)}</select>
@@ -1173,13 +1178,17 @@ function accounts(){
 
 /* ---------- sheet ---------- */
 /* ---------- back button: close sheet -> previous screen -> Home -> exit ---------- */
-let sheetEntry=false,staleSheets=0,suppressPop=0,viewDepth=0;
+const hpush=s=>{try{history.pushState(s,'')}catch(e){}};
+const hrep=(s,u)=>{try{history.replaceState(s,'',u)}catch(e){}};
+const hgo=n=>{try{history.go(n)}catch(e){}};
+let sheetEntry=false,dlgEntry=false,dlgDone=null,staleSheets=0,suppressPop=0,viewDepth=0;
+const dlgIsOpen=()=>!!$('#dlg').innerHTML;
 const sheetIsOpen=()=>!!$('#layer').innerHTML;
 function openSheet(html){
   $('#layer').innerHTML=`<div class="sheet-bg" data-a="close"><div class="sheet" data-stop>${html}</div></div>`;
   if(!sheetEntry){
     if(staleSheets>0)staleSheets--;                 // reuse a history entry left by a sheet that was just closed in code
-    else history.pushState({k:'sheet'},'');
+    else hpush({k:'sheet'});
     sheetEntry=true;
   }
 }
@@ -1189,24 +1198,50 @@ function closeSheet(){
 }
 // drop leftover sheet entries once no sheet is open again
 function settleHistory(){
-  if(!sheetIsOpen()&&staleSheets>0){const n=staleSheets;staleSheets=0;suppressPop++;history.go(-n)}
+  if(!sheetIsOpen()&&!dlgIsOpen()&&staleSheets>0){const n=staleSheets;staleSheets=0;suppressPop++;hgo(-n)}
+}
+/* in-app dialogs: window.confirm/prompt do not work in every webview, so Arthaly draws its own */
+function dlgShow(html,done){
+  $('#dlg').innerHTML=`<div class="dlg-bg" data-a="dlgcancel"><div class="dlg" data-stop>${html}</div></div>`;dlgDone=done;
+  if(!dlgEntry){if(staleSheets>0)staleSheets--;else hpush({k:'sheet'});dlgEntry=true}
+}
+function dlgClose(val){
+  const d=dlgDone;dlgDone=null;$('#dlg').innerHTML='';
+  if(dlgEntry){dlgEntry=false;staleSheets++;setTimeout(settleHistory,0)}
+  if(d)d(val);
+}
+function askConfirm(msg,ok,danger){
+  return new Promise(res=>dlgShow(`<div style="font-size:16px;line-height:1.45">${esc(msg)}</div>
+  <div class="row" style="gap:10px;margin-top:16px"><button class="btn ghost" data-a="dlgno" style="margin:0">Cancel</button><button class="btn ${danger?'danger':''}" data-a="dlgyes" style="margin:0">${esc(ok||'OK')}</button></div>`,v=>res(v===true)));
+}
+function askText(title,def,ph,type){
+  return new Promise(res=>{
+    dlgShow(`<b style="font-size:16px">${esc(title)}</b><input id="dlg-in" type="${type||'text'}" value="${esc(def||'')}" placeholder="${esc(ph||'')}" autocomplete="off" style="margin-top:12px">
+    <div class="row" style="gap:10px;margin-top:14px"><button class="btn ghost" data-a="dlgno" style="margin:0">Cancel</button><button class="btn" data-a="dlgok" style="margin:0">OK</button></div>`,v=>res(typeof v==='string'?v:null));
+    setTimeout(()=>{const i=$('#dlg-in');if(i)i.focus()},60);
+  });
 }
 function navTo(id){
   accFilter='';scrollTo(0,0);
   if(id!==view){
-    if(id==='home'){if(viewDepth>0){viewDepth=0;suppressPop++;history.back()}}
-    else if(viewDepth===0){viewDepth=1;history.pushState({k:'view',v:id},'')}
-    else history.replaceState({k:'view',v:id},'');
+    if(id==='home'){if(viewDepth>0){viewDepth=0;suppressPop++;hgo(-1)}}
+    else if(viewDepth===0){viewDepth=1;hpush({k:'view',v:id})}
+    else hrep({k:'view',v:id});
     view=id;
   }
   render();
 }
-history.replaceState({k:'view',v:'home'},'');
+hrep({k:'view',v:'home'});
 window.addEventListener('popstate',e=>{
   if(suppressPop>0){suppressPop--;return}
-  if(sheetIsOpen()){$('#layer').innerHTML='';sheetEntry=false;return}   // back closes the open sheet
+  if(dlgIsOpen()){const d=dlgDone;dlgDone=null;$('#dlg').innerHTML='';dlgEntry=false;if(d)d(null);return}   // back cancels a dialog
+  if(sheetIsOpen()){
+    $('#layer').innerHTML='';sheetEntry=false;                                                       // back closes the open sheet
+    if(staleSheets>0){const n=staleSheets;staleSheets=0;suppressPop++;hgo(-n)}
+    return;
+  }
   const st=e.state;
-  if(st&&st.k==='sheet')return;
+  if(st&&st.k==='sheet'){if(staleSheets>0)staleSheets--;hgo(-1);return}                              // skip a leftover entry
   view=(st&&st.k==='view')?st.v:'home';viewDepth=view==='home'?0:1;accFilter='';render();
 });
 function toast(m,ms){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),ms||2800)}
@@ -1266,9 +1301,14 @@ function render(){
 let tt='debit';
 document.addEventListener('click',e=>{
   const el=e.target.closest('[data-a]');if(!el)return;
+  if(el.dataset.a==='dlgcancel'&&e.target.closest('[data-stop]'))return;
   if(el.dataset.a==='close'&&e.target.closest('[data-stop]')&&!e.target.closest('button[data-a=close]'))return;
   const a=el.dataset.a,id=el.dataset.id;
-  if(a==='nav')navTo(id)
+  if(a==='dlgno')dlgClose(null);
+  else if(a==='dlgyes')dlgClose(true);
+  else if(a==='dlgok')dlgClose($('#dlg-in').value);
+  else if(a==='dlgcancel')dlgClose(null);
+  else if(a==='nav')navTo(id)
   else if(a==='mprev'){month=shiftMonth(month,-1);render()}
   else if(a==='mnext'){month=shiftMonth(month,1);render()}
   else if(a==='filter'){accFilter=accFilter===id?'':id;render()}
@@ -1298,10 +1338,12 @@ document.addEventListener('click',e=>{
   }
   else if(a==='cat'){catTouched=true;$('#f-cat').value=id;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#smart').innerHTML='';updateBHint()}
   else if(a==='newcat'){
-    const n=prompt('New category name?');if(!n||!n.trim())return;
-    const k=addCategory(n,'star');
-    if(!document.querySelector(`#f-cats [data-id="${k}"]`))el.insertAdjacentHTML('beforebegin',`<button type="button" class="chip" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${ic(CATS[k],16)}${esc(k)}</button>`);
-    document.querySelector(`#f-cats [data-id="${k}"]`).click();
+    askText('New category name','','e.g. Pet care').then(n=>{
+      if(!n||!n.trim())return;
+      const k=addCategory(n,'star');
+      if(!document.querySelector(`#f-cats [data-id="${k}"]`))el.insertAdjacentHTML('beforebegin',`<button type="button" class="chip" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${ic(CATS[k],16)}${esc(k)}</button>`);
+      const chip=document.querySelector(`#f-cats [data-id="${k}"]`);if(chip)chip.click();
+    });
   }
   else if(a==='edit'){const t=S.tx.find(x=>x.id===id);tt=t.type;txSheet(t)}
   else if(a==='close')closeSheet();
@@ -1350,11 +1392,11 @@ document.addEventListener('click',e=>{
   }
   else if(a==='emi')emiDetail(id);
   else if(a==='emiclose'){const p=S.emis.find(x=>x.id===id);if(p){p.closedPaid=emiState(p).paid;p.closed=true;save();closeSheet();render();toast('EMI marked as closed')}}
-  else if(a==='emidel'){if(confirm('Delete this EMI and the expenses it added?')){S.emis=S.emis.filter(x=>x.id!==id);S.tx=S.tx.filter(t=>t.emiId!==id);save();closeSheet();render()}}
-  else if(a==='addsource'){const n=prompt('Income source name? (e.g. a client or project)');if(n&&n.trim()){S.sources.push({id:uid(),name:n.trim()});save();render()}}
+  else if(a==='emidel'){askConfirm('Delete this EMI and the expenses it added?','Delete',true).then(ok=>{if(ok){S.emis=S.emis.filter(x=>x.id!==id);S.tx=S.tx.filter(t=>t.emiId!==id);save();closeSheet();render()}})}
+  else if(a==='addsource'){askText('Income source name','','e.g. a client or project').then(n=>{if(n&&n.trim()){S.sources.push({id:uid(),name:n.trim()});save();render()}})}
   else if(a==='source')sourceSheet(id);
   else if(a==='srcadd'){closeSheet();txSheet(null,{type:'credit',kind:'other',source:id})}
-  else if(a==='srcren'){const x=S.sources.find(y=>y.id===id),n=prompt('Rename source',x.name);if(n&&n.trim()){x.name=n.trim();save();closeSheet();render()}}
+  else if(a==='srcren'){const x=S.sources.find(y=>y.id===id);askText('Rename source',x.name).then(n=>{if(n&&n.trim()){x.name=n.trim();save();closeSheet();render()}})}
   else if(a==='srcdel'){
     if(S.tx.some(t=>t.source===id||t.poolSrc===id)){toast('Has entries. Edit or delete them first.');return}
     S.sources=S.sources.filter(y=>y.id!==id);save();closeSheet();render()}
@@ -1386,15 +1428,16 @@ document.addEventListener('click',e=>{
     })();
   }
   else if(a==='notiftest'){if(!S.notify)return toast('Turn notifications on first');note.send('Arthaly','Notifications are working.',99)}
-  else if(a==='addperson'){const n=prompt('Name?');if(n&&n.trim()){S.people.push({id:uid(),name:n.trim()});save();render()}}
+  else if(a==='addperson'){askText('Add person / party','','Name').then(n=>{if(n&&n.trim()){S.people.push({id:uid(),name:n.trim()});save();render()}})}
   else if(a==='person'){personSheet(id)}
   else if(a==='smson')enableSms();
   else if(a==='smsimport')importInbox();
   else if(a==='addacc'){S.accounts.push({id:uid(),name:id==='cash'?'Cash':id==='card'?'Credit card':'Account '+(S.accounts.length+1),type:id||'bank',last4:'',open:0,limit:0});save();render()}
   else if(a==='export')exportBackup();
   else if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>i.files[0].text().then(x=>{try{S=JSON.parse(x);normalize();save();render();toast('Imported')}catch(e){toast('Invalid file')}});i.click()}
-  else if(a==='reset'){if(confirm('Erase all data?')){S=defaults();normalize();save();render()}}
+  else if(a==='reset'){askConfirm('Erase all data? This cannot be undone.','Erase everything',true).then(ok=>{if(ok){S=defaults();normalize();save();render()}})}
 });
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='dlg-in'){e.preventDefault();dlgClose(e.target.value)}});
 document.addEventListener('input',e=>{
   if(e.target.id==='e-mon')emiMonTouched=true;
   if((e.target.id==='e-amt'||e.target.id==='e-mo')&&!emiMonTouched){
@@ -1412,9 +1455,11 @@ document.addEventListener('change',e=>{
   if(e.target.id==='f-date')updateBHint();
   if(e.target.id==='f-pool')$('#w-poolsrc').hidden=!e.target.checked;
   if((e.target.id==='f-source'||e.target.id==='f-poolsrc')&&e.target.value==='__new'){
-    const n=prompt('Income source name? (e.g. a client or project)');
-    if(n&&n.trim()){const id=uid();S.sources.push({id,name:n.trim()});save();['f-source','f-poolsrc'].forEach(i=>{const el=$('#'+i);el.innerHTML=srcOptions(id)})}
-    else e.target.value=S.sources[0]?S.sources[0].id:'';
+    const sel=e.target;
+    askText('Income source name','','e.g. a client or project').then(n=>{
+      if(n&&n.trim()){const id=uid();S.sources.push({id,name:n.trim()});save();['f-source','f-poolsrc'].forEach(i=>{const el=$('#'+i);if(el)el.innerHTML=srcOptions(id)})}
+      else sel.value=S.sources[0]?S.sources[0].id:'';
+    });
   }
   if(e.target.id==='b-cat')$('#b-new').hidden=e.target.value!=='__new';
   if(e.target.id==='f-kind'){
@@ -1494,7 +1539,7 @@ drainSms();
 (function(){
   const q=new URLSearchParams(location.search),sh=q.get('text')||q.get('title')||q.get('url');
   if(!sh)return;
-  history.replaceState({k:'view',v:'home'},'',location.pathname);
+  hrep({k:'view',v:'home'},location.pathname);
   const r=addFromSms(sh);
   if(r.out.length){render();toast(`Added ${r.out.length}: ${r.out[0].t.type==='debit'?'−':'+'}${inr(r.out[0].t.amt)}${r.out[0].matched?'':' (assign account)'}`)}
   else if(r.bad[0]==='duplicate')toast('Already added');
