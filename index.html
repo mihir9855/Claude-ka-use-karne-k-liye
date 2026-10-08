@@ -232,7 +232,7 @@ if(mqDark)mqDark.addEventListener('change',()=>{if(S.appearance==='auto')applyTh
 /* fills in anything missing (old backups, reset) and re-applies saved look */
 function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
-  if(!S.accounts.length||!S.accounts.some(a=>a.type==='cash'))S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
+  if(!S.accounts.length)S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
   S.emis=S.emis||[];S.salary=S.salary||0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
   S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[];S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
   if(!S.budgets)S.budgets=defaults().budgets;
@@ -756,6 +756,34 @@ function emiBody(){
   <button class="btn ghost" data-a="addemi">+ Add EMI</button>
   <p class="small mute">Each instalment is added to the card as an expense (category EMI) on its due date. The purchase amount stays blocked in your card limit until the EMI is paid off.</p>${cards.length?'':'<p class="small debit">Add a credit card in Accounts first.</p>'}`;
 }
+/* ---------- delete an account ---------- */
+function delAccSheet(id){
+  const a=acc(id);if(!a)return;
+  if(S.accounts.length<=1)return toast('Keep at least one account');
+  const n=S.tx.filter(t=>t.acc===id||t.to===id).length,pe=S.emis.filter(p=>p.card===id).length;
+  const others=S.accounts.filter(x=>x.id!==id);
+  if(!n&&!pe){if(confirm('Delete "'+a.name+'"?'))removeAccount(id,'');return}
+  openSheet(`<div class="row sp"><h1>Delete ${esc(a.name)}?</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <div class="card small" style="margin-top:12px"><b>${n}</b> entr${n===1?'y':'ies'} use this account${pe?` and <b>${pe}</b> EMI${pe>1?'s':''} sit on it (they will be deleted with their instalments)`:''}. What should happen to the entries?</div>
+  ${n?`<label>Move the entries to</label><select id="da-to">${opts(others.map(x=>[x.id,x.name+(x.last4?' ••'+x.last4:'')]),others[0].id)}</select>
+  <button class="btn" data-a="delmove" data-id="${id}">Move entries and delete account</button>
+  <button class="btn red" data-a="delall" data-id="${id}">Delete account and its entries</button>
+  <div class="small mute" style="margin-top:6px">Deleting entries also removes transfers that went into or out of this account, so the other account's balance changes too.</div>`
+  :`<button class="btn red" data-a="delall" data-id="${id}">Delete account</button>`}
+  <button class="btn ghost" data-a="close" style="margin-top:8px">Cancel</button>`);
+}
+function removeAccount(id,target){
+  const gone=new Set(S.emis.filter(p=>p.card===id).map(p=>p.id));
+  S.emis=S.emis.filter(p=>!gone.has(p.id));
+  S.tx=S.tx.filter(t=>!gone.has(t.emiId));
+  if(target){
+    S.tx.forEach(t=>{if(t.acc===id)t.acc=target;if(t.to===id)t.to=target});
+    S.tx=S.tx.filter(t=>!(t.kind==='transfer'&&t.acc&&t.acc===t.to));   // a transfer into itself means nothing
+  }else S.tx=S.tx.filter(t=>t.acc!==id&&t.to!==id);
+  S.accounts=S.accounts.filter(x=>x.id!==id);
+  if(accFilter===id)accFilter='';
+  save();closeSheet();render();toast('Account deleted');
+}
 let emiMonTouched=false;
 function emiSheet(){
   const cards=S.accounts.filter(a=>accType(a)==='card');
@@ -1111,7 +1139,7 @@ function accounts(){
    <div class="grid2"><div><label>Name</label><input data-f="name" data-id="${a.id}" value="${esc(a.name)}"></div><div><label>Type</label><select data-f="type" data-id="${a.id}"><option value="bank" ${ty==='bank'?'selected':''}>Bank account</option><option value="cash" ${ty==='cash'?'selected':''}>Cash</option><option value="card" ${ty==='card'?'selected':''}>Credit card</option></select></div></div>
    <div class="grid2">${ty==='cash'?'':`<div><label>Last 4 digits</label><input data-f="last4" data-id="${a.id}" value="${esc(a.last4)}" maxlength="4" inputmode="numeric"></div>`}
    <div><label>${ty==='card'?'Opening due (₹)':ty==='cash'?'Cash in hand (₹)':'Opening balance (₹)'}</label><input data-f="${ty==='card'?'opendue':'open'}" data-id="${a.id}" value="${ty==='card'?-a.open||0:a.open}" inputmode="decimal"></div>
-   ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal" placeholder="optional"></div>`:''}</div>${ty==='card'?`<div class="small mute" style="margin-top:10px">Used ${inr(Math.max(0,-bal))} · EMI blocked ${inr(Math.round(emiBlocked(a.id)))}${a.limit?` · <b style="color:var(--ink)">Available ${inr(Math.round(a.limit+bal-emiBlocked(a.id)))}</b>`:''}</div>`:''}${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (PDF or CSV)</button>`}</div>`}).join('')+
+   ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal" placeholder="optional"></div>`:''}</div>${ty==='card'?`<div class="small mute" style="margin-top:10px">Used ${inr(Math.max(0,-bal))} · EMI blocked ${inr(Math.round(emiBlocked(a.id)))}${a.limit?` · <b style="color:var(--ink)">Available ${inr(Math.round(a.limit+bal-emiBlocked(a.id)))}</b>`:''}</div>`:''}${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (PDF or CSV)</button>`}<button class="btn red" data-a="delacc" data-id="${a.id}" style="margin-top:6px">Delete this account</button></div>`}).join('')+
   (sms()&&smsCap?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
    <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+(sms()&&!smsCap?`<h2>Bank SMS</h2><div class="card"><div class="small mute">This version does not read your SMS by itself (Google Play Protect blocks apps that do). To add a bank SMS quickly: open your Messages app, long-press the SMS, tap <b>Share</b> and choose <b>Arthaly</b>. It is added right away. You can also paste SMS with the + button, or import a bank statement PDF/CSV.</div></div>`:'')+
   `<div class="grid2" style="grid-template-columns:repeat(3,1fr)"><button class="btn ghost" data-a="addacc" data-id="bank" style="margin-top:0">+ Bank</button><button class="btn ghost" data-a="addacc" data-id="cash" style="margin-top:0">+ Cash</button><button class="btn ghost" data-a="addacc" data-id="card" style="margin-top:0">+ Card</button></div>
@@ -1290,6 +1318,9 @@ document.addEventListener('click',e=>{
     const t=smsPending;closeSheet();
     txSheet(null,{type:id==='credit'?'credit':'debit',kind:id==='credit'?'income':'expense',amt:t.amt||'',note:t.note});
   }
+  else if(a==='delacc')delAccSheet(id);
+  else if(a==='delmove')removeAccount(id,$('#da-to').value);
+  else if(a==='delall')removeAccount(id,'');
   else if(a==='addemi')emiSheet();
   else if(a==='gocards'){closeSheet();navTo('accounts')}
   else if(a==='saveemi'){
