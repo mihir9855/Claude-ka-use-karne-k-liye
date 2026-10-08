@@ -732,10 +732,12 @@ function addMonthsISO(iso,n){
 const todayISO=()=>isoDay(Date.now());
 /* paid = instalments already paid before using the app + those whose date has passed. The purchase amount blocks
    the card limit and is released month by month (straight-line approximation). */
+/* instalment k (0-based) is paid if it is within the 'already paid' count, or it fell due after the EMI was entered */
+const emiIdxPaid=(p,k,today)=>k<(p.before||0)||(addMonthsISO(p.first,k)<=today&&addMonthsISO(p.first,k)>(p.addedOn||''));
 function emiState(p){
-  const today=todayISO();let paid=p.before||0;
+  const today=todayISO();let paid=0;
   if(p.closed)paid=p.closedPaid;
-  else for(let i=p.before||0;i<p.months;i++){if(addMonthsISO(p.first,i)<=today)paid++;else break}
+  else for(let i=0;i<p.months;i++)if(emiIdxPaid(p,i,today))paid++;
   const left=p.closed?0:p.months-paid;
   return {paid,left,next:left>0?addMonthsISO(p.first,paid):null,remainingAmt:left*p.monthly,blocked:left*(p.amount/p.months),done:left===0};
 }
@@ -747,6 +749,7 @@ function applyEmis(){
     for(let i=p.before||0;i<p.months;i++){
       const date=addMonthsISO(p.first,i);
       if(date>today)break;
+      if(date<=(p.addedOn||''))continue;
       if(!S.tx.some(t=>t.emiId===p.id&&t.emiNo===i+1)){
         S.tx.push({id:uid(),date,type:'debit',amt:p.monthly,acc:p.card,to:'',kind:'expense',cat:'EMI',note:`${p.name} EMI ${i+1}/${p.months}`,party:'',pool:false,src:'emi',emiId:p.id,emiNo:i+1});
         changed=true;
@@ -840,16 +843,16 @@ function emiSheet(eid){
   <div class="grid2"><div><label>Purchase amount (₹)</label><input id="e-amt" inputmode="decimal" placeholder="blocks your limit" value="${V('amount')}"></div><div><label>Number of months</label><input id="e-mo" inputmode="numeric" placeholder="e.g. 12" value="${V('months')}"></div></div>
   <label>Monthly EMI (₹)</label><input id="e-mon" inputmode="decimal" placeholder="amount + interest per month" value="${V('monthly')}">
   <label>First EMI date</label><input id="e-first" type="date" value="${V('first',todayISO())}">
-  <label>EMIs already paid before today</label><input id="e-before" inputmode="numeric" value="${V('before','0')}">
-  <div class="small mute" style="margin-top:6px">If you bought it earlier, enter its first EMI date and how many are already paid. Those are counted but not added again as expenses.</div>
+  <label>EMIs already paid (till today)</label><input id="e-before" inputmode="numeric" value="${V('before','0')}">
+  <div class="small mute" style="margin-top:6px">Enter the original first EMI date and how many are already paid. Those are counted as paid but not added again as expenses; only EMIs falling due after today are added automatically.</div>
   <button class="btn" data-a="saveemi" data-id="${ep?ep.id:''}">${ep?'Save changes':'Save EMI'}</button>`);
 }
 function emiDetail(id){
   const p=S.emis.find(x=>x.id===id);if(!p)return;
   const s=emiState(p),a=acc(p.card),today=todayISO();
   const rows=[];for(let k=0;k<p.months;k++){
-    const dt=addMonthsISO(p.first,k),paid=p.closed?k<s.paid:(k<(p.before||0)||dt<=today);
-    rows.push(`<div class="attn"><div class="grow"><b>EMI ${k+1}</b><div class="small mute">${new Date(dt+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div></div><span class="num">${inr(p.monthly)}</span><span class="pill" style="${paid?'':'background:var(--line);color:var(--mute)'}">${paid?'Paid':'Upcoming'}</span></div>`);
+    const dt=addMonthsISO(p.first,k),paid=p.closed?k<s.paid:emiIdxPaid(p,k,today),due=!paid&&dt<=today;
+    rows.push(`<div class="attn"><div class="grow"><b>EMI ${k+1}</b><div class="small mute">${new Date(dt+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div></div><span class="num">${inr(p.monthly)}</span><span class="pill" style="${paid?'':due?'background:rgba(240,138,36,.18);color:#f08a24':'background:var(--line);color:var(--mute)'}">${paid?'Paid':due?'Due':'Upcoming'}</span></div>`);
   }
   openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><button class="icon-btn" data-a="close">✕</button></div>
   <div class="card" style="margin-top:14px"><div class="small mute">${esc(a?a.name:'card')} · ${p.months} months · ${inr(p.monthly)}/month</div>
@@ -1430,10 +1433,10 @@ document.addEventListener('click',e=>{
     before=Math.max(0,Math.min(before,months));
     const ex=id&&S.emis.find(x=>x.id===id);
     if(ex){
-      Object.assign(ex,{name,card,amount,months,monthly,first,before});
+      Object.assign(ex,{name,card,amount,months,monthly,first,before,addedOn:todayISO()});
       if(ex.closed)ex.closedPaid=Math.min(ex.closedPaid||0,months);
       S.tx=S.tx.filter(t=>t.emiId!==ex.id);
-    }else S.emis.push({id:uid(),name,card,amount,months,monthly,first,before,closed:false});
+    }else S.emis.push({id:uid(),name,card,amount,months,monthly,first,before,addedOn:todayISO(),closed:false});
     save();applyEmis();closeSheet();seg='emi';render();toast(ex?'EMI updated':'EMI added');
   }
   else if(a==='emi')emiDetail(id);
