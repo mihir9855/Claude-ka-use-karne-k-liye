@@ -237,6 +237,8 @@ const CATS={Card:'card',EMI:'card',Food:'food',Groceries:'cart',Fuel:'fuel',Rent
 const CATCOL={Card:'#e11d48',EMI:'#0ea5e9',Food:'#d97706',Groceries:'#16a34a',Fuel:'#0369a1',Rent:'#7c3aed',Shopping:'#be185d',Bills:'#0891b2',Medical:'#dc2626',Travel:'#4f46e5',Investment:'#0f766e',Transfer:'#64748b',Other:'#94a3b8'};
 const ICATS={Salary:'wallet',Freelance:'star',Business:'trend',Refund:'swap',Gift:'gift',Other:'receipt'};
 const ICATCOL={Salary:'#16a34a',Freelance:'#8b5cf6',Business:'#0891b2',Refund:'#f59e0b',Gift:'#ec4899',Other:'#94a3b8'};
+const KINDS_OUT=['expense','transfer','pass'],KINDS_IN=['income','other','pass'];
+const kindsFor=ty=>Object.entries(KINDS).filter(([k])=>(ty==='credit'?KINDS_IN:KINDS_OUT).includes(k));
 const KINDS={expense:'Expense',transfer:'Transfer / card bill / ATM',income:'Income (salary)',other:'Other income',pass:'Party / pass-through'};
 const defaults=()=>({
   accounts:[{id:'cash',name:'Cash',type:'cash',last4:'',open:0}],
@@ -1318,7 +1320,7 @@ function txSheet(t,preset){
   <label>Amount (₹)</label><input class="amt-in" id="f-amt" inputmode="decimal" value="${t.amt}" placeholder="₹ 0">
   <label id="acc-label">Account</label><select id="f-acc"><option value="">Unassigned</option>${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.acc)}</select>
   <div id="w-to" hidden><label>To account (card bill: pick the credit card · ATM: pick Cash)</label><select id="f-to">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.to||'')}</select></div>
-  <label>Type</label><select id="f-kind">${opts(Object.entries(KINDS),t.kind)}</select>
+  <label>Type</label><select id="f-kind">${opts(kindsFor(tt),t.kind)}</select>
   <div id="w-cat"><label id="cat-label">Category</label><input type="hidden" id="f-cat" value="${esc(t.cat)}"><div class="chips2" id="f-cats">${chips}</div><div id="smart"></div><div id="bhint"></div>
   <label id="w-pool" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f-pool" style="width:auto" ${t.pool?'checked':''}> Paid from other-income pool</label>
   <div id="w-poolsrc" hidden><label>From which income source</label><select id="f-poolsrc">${srcOptions(t.poolSrc||'')}</select></div></div>
@@ -1405,7 +1407,7 @@ document.addEventListener('click',e=>{
   else if(a==='edit'){const t=S.tx.find(x=>x.id===id);tt=t.type;txSheet(t)}
   else if(a==='close')closeSheet();
   else if(a==='tab'){document.querySelectorAll('#tabseg button').forEach(b=>b.classList.toggle('on',b===el));$('#tab-m').hidden=id!=='m';$('#tab-s').hidden=id!=='s';$('#tab-st').hidden=id!=='st'}
-  else if(a==='type'){tt=id;document.querySelectorAll('#typeseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));if(id==='credit'&&$('#f-kind').value==='expense'){$('#f-kind').value='income';syncKind()}updateBHint()}
+  else if(a==='type'){tt=id;document.querySelectorAll('#typeseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));const k=$('#f-kind'),cur=k.value;k.innerHTML=opts(kindsFor(id),cur);if(!kindsFor(id).some(x=>x[0]===cur))k.value=id==='credit'?'income':'expense';syncKind()}
   else if(a==='emipick'){
     const p=S.emis.find(x=>x.id===id);if(!p)return;const s=emiState(p),no=s.paid+1;
     $('#f-amt').value=p.monthly;$('#f-acc').value=p.card;$('#f-note').value=`${p.name} EMI ${no}/${p.months}`;$('#f-date').value=s.next;
