@@ -1228,8 +1228,7 @@ function accounts(){
    <h2>Budget & data</h2><div class="card"><div class="small mute">Budget limits live in the <b>Budget</b> tab (one limit per category). Total budget = sum of limits.</div>
    <label>Your name (shown on the home screen)</label><input data-f="yourname" value="${esc(S.name)}" placeholder="optional">
    <label>Monthly salary (₹) · used for the buffer</label><input data-f="salary" value="${S.salary||''}" inputmode="numeric" placeholder="optional">
-   <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button>
-   <button class="btn red" data-a="reset">Erase everything</button></div>${['black','sage','cocoa'].includes(S.theme)?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}<label class="custom ${((S.accents||{})[S.theme])==='custom'?'on':''}" style="margin:0" title="Pick any colour"><input type="color" id="accentpick" value="${S.customHex||'#0f766e'}"></label></div>`}`;
+   <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button></div>${['black','sage','cocoa'].includes(S.theme)?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}<label class="custom ${((S.accents||{})[S.theme])==='custom'?'on':''}" style="margin:0" title="Pick any colour"><input type="color" id="accentpick" value="${S.customHex||'#0f766e'}"></label></div>`}`;
 }
 
 /* ---------- sheet ---------- */
@@ -1495,7 +1494,6 @@ document.addEventListener('click',e=>{
   else if(a==='addacc'){S.accounts.push({id:uid(),name:id==='cash'?'Cash':id==='card'?'Credit card':'Account '+(S.accounts.length+1),type:id||'bank',last4:'',open:0,limit:0});save();render()}
   else if(a==='export')exportBackup();
   else if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>i.files[0].text().then(x=>{try{S=JSON.parse(x);normalize();save();render();toast('Imported')}catch(e){toast('Invalid file')}});i.click()}
-  else if(a==='reset'){askConfirm('Erase all data? This cannot be undone.','Erase everything',true).then(ok=>{if(ok){S=defaults();normalize();save();render()}})}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='dlg-in'){e.preventDefault();dlgClose(e.target.value)}});
 document.addEventListener('input',e=>{
