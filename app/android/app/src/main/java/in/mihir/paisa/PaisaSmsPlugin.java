@@ -15,7 +15,8 @@ import org.json.JSONArray;
 @CapacitorPlugin(
     name = "PaisaSms",
     permissions = {
-        @Permission(alias = "sms", strings = { Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS })
+        @Permission(alias = "sms", strings = { Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS }),
+        @Permission(alias = "notif", strings = { Manifest.permission.POST_NOTIFICATIONS })
     }
 )
 public class PaisaSmsPlugin extends Plugin {
@@ -63,6 +64,20 @@ public class PaisaSmsPlugin extends Plugin {
         JSObject out = new JSObject();
         out.put("messages", list);
         call.resolve(out);
+    }
+
+    /** Remembers whether the user turned notifications on, so the receiver can honour it when the app is closed. */
+    @PluginMethod
+    public void setNotify(PluginCall call) {
+        Notifier.setEnabled(getContext(), Boolean.TRUE.equals(call.getBoolean("enabled", false)));
+        call.resolve();
+    }
+
+    /** Shows a notification (budget alerts raised by the web app). */
+    @PluginMethod
+    public void showNotification(PluginCall call) {
+        Notifier.post(getContext(), call.getInt("id", 1), call.getString("title", "Paisa"), call.getString("body", ""));
+        call.resolve();
     }
 
     private static JSArray fromJson(JSONArray a) {

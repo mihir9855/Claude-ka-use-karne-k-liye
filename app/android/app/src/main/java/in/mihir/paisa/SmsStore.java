@@ -23,15 +23,18 @@ final class SmsStore {
         return body != null && AMOUNT.matcher(body).find() && MOVEMENT.matcher(body).find();
     }
 
-    static synchronized void add(Context ctx, String sender, String body, long ts) {
-        if (!looksFinancial(body)) return;
+    static synchronized boolean add(Context ctx, String sender, String body, long ts) {
+        if (!looksFinancial(body)) return false;
         SharedPreferences p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         try {
             JSONArray arr = new JSONArray(p.getString(KEY, "[]"));
-            if (arr.length() >= MAX_PENDING) return;
+            if (arr.length() >= MAX_PENDING) return false;
             arr.put(item(sender, body, ts));
             p.edit().putString(KEY, arr.toString()).apply();
-        } catch (Exception ignored) { }
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     static synchronized JSONArray drain(Context ctx) {

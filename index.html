@@ -174,6 +174,14 @@ nav button span{display:flex;justify-content:center}
 [data-theme=black] .hint{background:#241d05;color:#fde68a}
 [data-theme=black] .picker button.on{border-color:#fff;color:#fff}
 .themes{grid-template-columns:repeat(3,1fr)}
+
+.bh{border-radius:12px;padding:8px 12px;font-size:12px;margin-top:8px}
+.bh.ok{background:var(--brand-soft);color:var(--ink)}
+.bh.warn{background:rgba(251,191,36,.16);color:var(--warn)}
+.bh.over{background:rgba(255,107,107,.16);color:var(--debit)}
+.alert.soft{background:rgba(251,191,36,.18);color:var(--warn)}
+.attn{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.attn:last-child{border:0}
 </style>
 </head>
 <body>
@@ -237,6 +245,7 @@ function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
   if(!S.accounts.some(a=>a.type==='cash'))S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
   if(!S.accounts.some(a=>a.type==='card'))S.accounts.push({id:'cc1',name:'Credit card',type:'card',last4:'',open:0,limit:0});
+  S.salary=S.salary||48000;S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
   S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[{id:'s1',name:'Freelance'}];S.hide=!!S.hide;S.theme=['neon','black'].includes(S.theme)?S.theme:'fresh';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
@@ -340,7 +349,7 @@ const sms=()=>window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePl
 function ingest(msgs){
   let n=0,un=0;
   for(const m of msgs){const r=addFromSms(m.body,isoDay(m.ts));n+=r.out.length;un+=r.out.filter(o=>!o.matched).length}
-  if(n){render();toast(`${n} new from SMS${un?` · ${un} need an account`:''}`)}
+  if(n){render();toast(`${n} new from SMS${un?` · ${un} need an account`:''}`);checkBudgetNotify()}
   return n;
 }
 async function drainSms(){const p=sms();if(!p)return;try{const r=await p.drain();if(r.messages.length)ingest(r.messages)}catch(e){}}
@@ -357,7 +366,209 @@ async function importInbox(){
 }
 if(sms()){
   sms().addListener('smsReceived',drainSms);
+  setTimeout(()=>note.sync(),0);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)drainSms()});
+}
+
+/* ---------- notifications ---------- */
+const note={
+  async ask(){
+    const p=sms();
+    if(p){try{const r=await p.requestPermissions({permissions:['notif']});return r.notif==='granted'}catch(e){return false}}
+    if(!('Notification' in window))return false;
+    return (await Notification.requestPermission())==='granted';
+  },
+  send(title,body,id){
+    if(!S.notify)return;
+    const p=sms();
+    if(p&&p.showNotification){p.showNotification({title,body,id:id||1}).catch(()=>{});return}
+    if('Notification' in window&&Notification.permission==='granted'){try{new Notification(title,{body})}catch(e){}}
+  },
+  sync(){const p=sms();if(p&&p.setNotify)p.setNotify({enabled:!!S.notify}).catch(()=>{})}
+};
+function checkBudgetNotify(){
+  if(!S.notify)return;
+  const mk=new Date().toISOString().slice(0,7),st=mstats(mk),tb=totalBudget();
+  S.notified=S.notified||{};
+  Object.keys(S.notified).forEach(k=>{if(!k.startsWith(mk))delete S.notified[k]});
+  const items=alertsFor(mk).map(a=>({key:a.k,name:cname(a.k),used:a.used,lim:a.lim,pct:a.pct,lo:80}));
+  if(tb>0&&st.exp/tb>=.9)items.push({key:'ALL',name:'Overall budget',used:st.exp,lim:tb,pct:st.exp/tb*100,lo:90});
+  let id=10;
+  for(const it of items){
+    const lvl=it.pct>=100?100:it.lo,key=mk+'|'+it.key+'|'+lvl;
+    if(S.notified[key])continue;
+    S.notified[key]=1;if(lvl===100)S.notified[mk+'|'+it.key+'|'+it.lo]=1;
+    note.send('Paisa budget alert',lvl===100?`${it.name} is over budget by ${inr(it.used-it.lim)}. Open Paisa to fix it.`:`${it.name} is at ${Math.round(it.pct)}% (${inr(it.used)} of ${inr(it.lim)}).`,id++);
+  }
+  save();
+}
+
+/* ---------- bank statement import (CSV) ---------- */
+const MON=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+const isoYMD=(y,m,d)=>(m>=1&&m<=12&&d>=1&&d<=31)?y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'):null;
+function parseAnyDate(x){
+  x=String(x||'').trim();let m;
+  if(m=x.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))return isoYMD(+m[1],+m[2],+m[3]);
+  if(m=x.match(/^(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{2,4})/)){let y=+m[3];if(y<100)y+=2000;return isoYMD(y,+m[2],+m[1])}
+  if(m=x.match(/^(\d{1,2})[\/\-. ]([A-Za-z]{3})[a-z]*[\/\-. ,]*(\d{2,4})/)){const mo=MON.indexOf(m[2].toLowerCase());if(mo<0)return null;let y=+m[3];if(y<100)y+=2000;return isoYMD(y,mo+1,+m[1])}
+  return null;
+}
+const numOf=x=>{const m=String(x||'').replace(/[,₹\s]/g,'').match(/-?\d+(\.\d+)?/);return m?parseFloat(m[0]):0};
+function parseCSV(text){
+  text=text.replace(/^\uFEFF/,'');
+  const head=text.split(/\r?\n/).slice(0,12).join('\n');
+  const cnt=d=>head.split(d).length-1;
+  const delim=[',',';','\t'].sort((a,b)=>cnt(b)-cnt(a))[0];
+  const rows=[];let row=[],cell='',q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++}else q=false}else cell+=c}
+    else if(c==='"')q=true;
+    else if(c===delim){row.push(cell);cell=''}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);cell='';if(row.some(x=>x.trim()))rows.push(row);row=[]}
+    else cell+=c}
+  row.push(cell);if(row.some(x=>x.trim()))rows.push(row);
+  return rows;
+}
+function shortNote(d){
+  d=String(d||'').replace(/\s+/g,' ').trim();
+  const u=d.match(/UPI[\/-][^\/]*[\/-][^\/]*[\/-]([^\/]+)/i);
+  return (u?u[1].trim():d).slice(0,42)||'Statement entry';
+}
+function parseStatement(text){
+  const rows=parseCSV(text);
+  let hi=-1,cells=[];
+  for(let i=0;i<Math.min(rows.length,40);i++){
+    const c=rows[i].map(x=>x.trim().toLowerCase());
+    if(c.some(x=>/date/.test(x))&&c.some(x=>/debit|credit|withdrawal|deposit|amount|^dr\.?$|^cr\.?$/.test(x))){hi=i;cells=c;break}
+  }
+  if(hi<0)return [];
+  const idx=f=>cells.findIndex(f);
+  let di=idx(c=>/^(tran(saction)?|txn|posting)\s*date/.test(c));if(di<0)di=idx(c=>/date/.test(c)&&!/value/.test(c));if(di<0)di=idx(c=>/date/.test(c));
+  const de=idx(c=>/narration|description|particulars|details|remarks/.test(c));
+  const split=c=>/dr\s*\/\s*cr|cr\s*\/\s*dr/.test(c);
+  const dbi=idx(c=>!split(c)&&(/debit|withdrawal|paid out/.test(c)||/^dr\.?$/.test(c)));
+  const cri=idx(c=>!split(c)&&(/credit|deposit|paid in/.test(c)||/^cr\.?$/.test(c)));
+  const ami=idx(c=>/^amount/.test(c)),ti=idx(c=>split(c)||/^(txn |transaction )?type$/.test(c));
+  const out=[];
+  for(const r of rows.slice(hi+1)){
+    const date=parseAnyDate(r[di]);if(!date)continue;
+    let type,amt;
+    if(dbi>=0||cri>=0){const d=numOf(r[dbi]),c=numOf(r[cri]);if(d>0){type='debit';amt=d}else if(c>0){type='credit';amt=c}else continue}
+    else if(ami>=0){const a=numOf(r[ami]);if(!a)continue;const t=(r[ti]||'')+' '+(r[ami]||'');type=(/\bcr\b|credit/i.test(t)&&!/\bdr\b|debit/i.test(t))?'credit':(a<0||/\bdr\b|debit/i.test(t))?'debit':'credit';amt=Math.abs(a)}
+    else continue;
+    const desc=r[de]||'';
+    out.push({date,type,amt:Math.round(amt*100)/100,desc,note:shortNote(desc)});
+  }
+  return out;
+}
+let stmt=null;
+const dayDiff=(x,y)=>Math.abs((new Date(x+'T12:00')-new Date(y+'T12:00'))/864e5);
+function buildStmt(accId,rows){
+  const a=acc(accId),isCard=accType(a)==='card',used=new Set(),pairedUsed=new Set(),out=[];let dup=0;
+  const cash=S.accounts.find(x=>accType(x)==='cash'),cards=S.accounts.filter(x=>accType(x)==='card');
+  for(const r of rows){
+    const ex=S.tx.find(t=>!used.has(t.id)&&((t.acc===accId&&t.date===r.date&&t.amt===r.amt&&t.type===r.type)||(r.type==='credit'&&t.to===accId&&t.amt===r.amt&&dayDiff(t.date,r.date)<=2)));
+    if(ex){used.add(ex.id);dup++;continue}
+    const low=r.desc.toLowerCase();
+    const c={...r,on:true,kind:r.type==='credit'?'income':'expense',to:'',cat:r.type==='credit'?(/salary/.test(low)?'Salary':'Other'):guessCat(r.desc),pair:'',mergeInto:'',tag:''};
+    if(r.type==='debit'&&/\batm\b|cash withdrawal|cash wdl|\bnwd\b|\bnfs\b/.test(low)&&cash&&cash.id!==accId){c.kind='transfer';c.to=cash.id;c.cat='Other';c.tag='ATM → '+cash.name}
+    else if(r.type==='debit'&&!isCard&&/credit card|card bill|cc bill|card payment|card outstanding|cred club/.test(low)&&cards.length===1){c.kind='transfer';c.to=cards[0].id;c.cat='Other';c.tag='Card bill → '+cards[0].name}
+    else if(r.type==='credit'&&isCard){c.kind='transfer';c.cat='Other';c.tag='Card payment received'}
+    if(c.kind==='expense'||c.kind==='income'){
+      if(r.type==='debit'){
+        const m=S.tx.find(t=>!pairedUsed.has(t.id)&&t.type==='credit'&&(t.kind==='income'||t.kind==='other')&&t.acc&&t.acc!==accId&&t.amt===r.amt&&dayDiff(t.date,r.date)<=2);
+        if(m){pairedUsed.add(m.id);c.pair=m.id;c.kind='transfer';c.to=m.acc;c.cat='Other';c.tag='Internal transfer → '+acc(m.acc).name}
+      }else{
+        const m=S.tx.find(t=>!pairedUsed.has(t.id)&&t.type==='debit'&&t.kind==='expense'&&t.acc&&t.acc!==accId&&t.amt===r.amt&&dayDiff(t.date,r.date)<=2);
+        if(m){pairedUsed.add(m.id);c.mergeInto=m.id;c.tag='Same as '+acc(m.acc).name+' debit: becomes a transfer'}
+      }
+    }
+    out.push(c);
+  }
+  return {accId,rows:out,dup};
+}
+function pickStatement(accId){
+  if(!accId)return toast('Pick an account first');
+  const i=document.createElement('input');i.type='file';i.accept='.csv,.txt,text/csv,text/plain';
+  i.onchange=()=>{const f=i.files[0];if(!f)return;f.text().then(t=>{
+    const rows=parseStatement(t);
+    if(!rows.length)return toast('No transactions found. Download the statement as CSV or Excel and save as CSV.');
+    stmt=buildStmt(accId,rows);stmtSheet();
+  })};
+  i.click();
+}
+function stmtSheet(){
+  const a=acc(stmt.accId),n=stmt.rows.filter(r=>r.on).length;
+  const tr=stmt.rows.filter(r=>r.tag).length;
+  openSheet(`<div class="row sp"><h1>Statement · ${esc(a.name)}</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <div class="card small" style="margin-top:12px"><b>${stmt.rows.length+stmt.dup}</b> rows read · <b>${stmt.rows.length}</b> new · <b>${stmt.dup}</b> already in the app${tr?` · <b>${tr}</b> transfers spotted`:''}.<br>Untick anything you do not want. Categories are guessed from the narration; you can edit after.</div>
+  <div class="card" style="padding:4px 14px;margin-top:10px;max-height:46vh;overflow:auto">${stmt.rows.map((r,i)=>`<label class="srow" style="display:flex;gap:10px;align-items:center;margin:0;padding:9px 0;border-bottom:1px solid var(--line);color:var(--ink);font-size:13px"><input type="checkbox" style="width:auto" data-a="stmtrow" data-id="${i}" ${r.on?'checked':''}><span class="grow"><b>${esc(r.note)}</b><br><span class="mute small">${r.date} · ${r.tag?esc(r.tag):r.type==='credit'?'Income':esc(cname(r.cat))}</span></span><b class="num ${r.type}">${r.type==='credit'?'+':'−'}${inr(r.amt)}</b></label>`).join('')||'<div class="empty">Everything in this file is already in the app.</div>'}</div>
+  <button class="btn" id="stmt-go" data-a="stmtgo">Import ${n}</button>`);
+}
+function doStmt(){
+  let n=0,m=0;
+  for(const c of stmt.rows){
+    if(!c.on)continue;
+    if(c.mergeInto){const d=S.tx.find(t=>t.id===c.mergeInto);if(d){d.kind='transfer';d.to=stmt.accId;d.cat='Other';m++;continue}}
+    if(c.pair){S.tx=S.tx.filter(t=>t.id!==c.pair);m++}
+    S.tx.push({id:uid(),date:c.date,type:c.type,amt:c.amt,acc:stmt.accId,to:c.to||'',kind:c.kind,cat:c.cat,note:c.note,party:'',pool:false,src:'stmt'});n++;
+  }
+  save();closeSheet();render();toast(`Imported ${n}${m?` · merged ${m} internal transfer${m>1?'s':''}`:''}`);checkBudgetNotify();
+}
+
+/* ---------- internal transfer finder ---------- */
+function findPairs(){
+  const used=new Set(),out=[];
+  const ds=S.tx.filter(t=>t.type==='debit'&&t.kind==='expense'&&t.acc).sort((a,b)=>a.date.localeCompare(b.date));
+  for(const d of ds){
+    const c=S.tx.find(t=>!used.has(t.id)&&t.type==='credit'&&(t.kind==='income'||t.kind==='other')&&t.acc&&t.acc!==d.acc&&t.amt===d.amt&&dayDiff(t.date,d.date)<=2);
+    if(c&&!S.ignored.includes(d.id+c.id)){used.add(c.id);out.push({d,c})}
+  }
+  return out;
+}
+function mergePair(dId,cId){
+  const d=S.tx.find(t=>t.id===dId),c=S.tx.find(t=>t.id===cId);if(!d||!c)return;
+  d.kind='transfer';d.to=c.acc;d.cat='Other';d.pool=false;S.tx=S.tx.filter(t=>t.id!==cId);
+}
+function pairsSheet(){
+  const ps=findPairs();
+  openSheet(`<div class="row sp"><h1>Possible internal transfers</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <p class="small mute">Same amount went out of one account and into another within 2 days. Merging turns the pair into one transfer, so it stops counting as spending and income.</p>
+  ${ps.length?`<button class="btn" data-a="pairall">Merge all ${ps.length}</button>`:''}
+  <div class="card" style="padding:4px 14px;margin-top:10px">${ps.map(({d,c})=>`<div class="tx" style="cursor:default"><div class="grow"><div class="t">${inr(d.amt)} · ${esc(acc(d.acc).name)} → ${esc(acc(c.acc).name)}</div><div class="small mute">${d.date} · ${esc(d.note||'')}</div></div><button class="chip on" data-a="pairmerge" data-id="${d.id}|${c.id}">Merge</button><button class="chip" data-a="pairskip" data-id="${d.id}|${c.id}">Not a transfer</button></div>`).join('')||'<div class="empty">No pairs found</div>'}</div>`);
+}
+
+/* ---------- budget guard-rails ---------- */
+function catUsed(k,mk,excludeId){return S.tx.filter(t=>t.kind==='expense'&&t.cat===k&&t.date.startsWith(mk)&&t.id!==excludeId).reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0)}
+function alertsFor(mk){
+  const st=mstats(mk);
+  return Object.keys(S.budgets).filter(k=>S.budgets[k]>0).map(k=>({k,used:st.cat[k]||0,lim:S.budgets[k]})).map(x=>({...x,pct:x.used/x.lim*100})).filter(x=>x.pct>=80).sort((a,b)=>b.pct-a.pct);
+}
+function bufferLeft(mk){const tb=totalBudget(),st=mstats(mk);return Math.max(0,S.salary-tb)-Math.max(0,st.exp-tb)}
+let editId='';
+function updateBHint(){
+  const h=$('#bhint');if(!h)return;h.innerHTML='';
+  if(!$('#f-kind')||$('#f-kind').value!=='expense'||tt!=='debit')return;
+  const k=$('#f-cat').value,lim=S.budgets[k]||0,amt=parseFloat($('#f-amt').value)||0;if(!lim)return;
+  const mk=($('#f-date').value||'').slice(0,7)||month,used=catUsed(k,mk,editId),after=used+amt,pct=Math.round(after/lim*100);
+  const cls=pct>100?'over':pct>=80?'warn':'ok';
+  h.innerHTML=`<div class="bh ${cls}">${esc(cname(k))}: ${inr(used)} of ${inr(lim)} used${amt?` → after this ${pct}%${after>lim?' · over by '+inr(after-lim):''}`:''}</div>`;
+}
+function fixSheet(k){
+  const st=mstats(month),lim=S.budgets[k]||0,used=st.cat[k]||0,over=used-lim;
+  const [y,mo]=month.split('-').map(Number),dim=new Date(y,mo,0).getDate(),now=new Date();
+  const dl=month===now.toISOString().slice(0,7)?dim-now.getDate()+1:0;
+  const need=over>0?Math.ceil(over/100)*100:Math.max(500,Math.round(lim*.1/100)*100);
+  const others=Object.keys(S.budgets).filter(x=>x!==k&&S.budgets[x]>0).map(x=>({x,left:S.budgets[x]-(st.cat[x]||0)})).filter(o=>o.left>0).sort((a,b)=>b.left-a.left).slice(0,4);
+  const buf=bufferLeft(month);
+  openSheet(`<div class="row sp"><h1>${esc(cname(k))}: ${over>0?'over budget':'nearly used'}</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <div class="card" style="margin-top:14px"><div class="big num ${over>0?'debit':''}">${inr(Math.abs(over>0?over:lim-used))}</div><div class="small mute">${over>0?'over the '+inr(lim)+' limit':'left of '+inr(lim)}</div>
+  ${over<=0&&dl?`<div class="small" style="margin-top:8px">To stay inside, spend at most <b>${inr((lim-used)/dl)}/day</b> on this for the next ${dl} days.</div>`:''}</div>
+  <label>Amount to add to this category (₹)</label><input id="fx-amt" inputmode="numeric" value="${need}">
+  <h2>Cover it from</h2>
+  ${others.map(o=>`<button class="btn ghost" data-a="fxmove" data-id="${esc(k)}|${esc(o.x)}" style="margin-top:8px">Take from ${esc(cname(o.x))} <span class="mute">(${inr(o.left)} left)</span></button>`).join('')||'<div class="small mute">No other category has money left.</div>'}
+  <button class="btn" data-a="fxbuf" data-id="${esc(k)}">Use buffer <span style="opacity:.7">(${inr(Math.max(0,buf))} left)</span></button>
+  <button class="btn red" data-a="close">Keep as is</button>`);
 }
 
 /* ---------- stats ---------- */
@@ -423,13 +634,13 @@ function txRow(t){
   if(t.kind==='transfer'){
     const f=acc(t.acc),to=acc(t.to);
     return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:var(--brand-soft);color:var(--brand)">${ic('swap',19)}</div>
-    <div class="grow"><div class="t">${esc(t.note||'Transfer')}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${esc(f?f.name:'?')} → ${esc(to?to.name:'?')}${t.src==='sms'?' · SMS':''}</div></div>
+    <div class="grow"><div class="t">${esc(t.note||'Transfer')}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${t.to?esc(f?f.name:'?')+' → '+esc(to?to.name:'?'):esc(f?f.name:'?')+' · payment received'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}</div></div>
     <b class="num mute">${inr(t.amt)}</b></div>`;
   }
   const a=acc(t.acc),p=person(t.party);
   const tag=t.kind==='pass'?esc(p?p.name:'party'):t.kind==='other'?esc(srcName(t.source||'')+' · '+(t.cat==='Other'?'Other income':t.cat)):t.kind==='income'?esc(t.cat==='Other'?'Income':t.cat):esc(t.cat);
   return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8')+'26':t.kind==='pass'?'var(--brand-soft)':(ICATCOL[t.cat]||'#94a3b8')+'26'};color:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8'):t.kind==='pass'?'var(--brand)':(ICATCOL[t.cat]||'var(--brand)')}">${t.kind==='pass'?ic('swap',19):t.kind==='expense'?ic(CATS[t.cat]||'receipt',19):ic(ICATS[t.cat]||'wallet',19)}</div>
-  <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">Unassigned</span>'}${t.src==='sms'?' · SMS':''}${t.pool?' · from '+esc(srcName(t.poolSrc||'')):''}</div></div>
+  <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">Unassigned</span>'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}${t.pool?' · from '+esc(srcName(t.poolSrc||'')):''}</div></div>
   <b class="num ${t.type}">${t.type==='credit'?'+':'−'}${inr(t.amt)}</b></div>`;
 }
 function accTile(a,i){
@@ -450,6 +661,8 @@ function txListHTML(){
 function home(){
   const st=mstats(month),tb=totalBudget(),left=tb-st.exp,pct=Math.min(100,st.exp/tb*100);
   const un=S.tx.filter(t=>!t.acc).length,pl=pool();
+  const curM=new Date().toISOString().slice(0,7),isCur=month===curM,al=isCur?alertsFor(month):[],npairs=findPairs().length;
+  const dimH=new Date(+month.slice(0,4),+month.slice(5),0).getDate(),dlH=isCur?dimH-new Date().getDate()+1:0;
   const total=S.accounts.filter(x=>accType(x)!=='card').reduce((a,x)=>a+accBal(x.id),0);
   const cardDue=-S.accounts.filter(x=>accType(x)==='card').reduce((a,x)=>a+accBal(x.id),0);
   const cashBal=S.accounts.filter(x=>accType(x)==='cash').reduce((a,x)=>a+accBal(x.id),0);
@@ -469,7 +682,10 @@ function home(){
     <div class="row sp"><div><div class="small mute">Left to spend this month</div><div class="big ${left<0?'debit':''} num">${inrH(left)}</div></div><span class="pill">Budget ›</span></div>
     <div class="bar" style="margin:10px 0 6px"><i style="width:${pct}%;background:${pct>90?'var(--debit)':pct>70?'var(--warn)':'var(--brand)'}"></i></div>
     <div class="row sp small mute"><span>Spent ${inrH(st.exp)}</span><span>of ${inrH(tb)}</span></div>
+    ${dlH&&left>0?`<div class="small mute" style="margin-top:6px">Safe to spend ${inrH(left/dlH)}/day for ${dlH} more days</div>`:''}
   </div>
+  ${al.length?`<div class="alert ${al.some(x=>x.pct>=100)?'':'soft'}" style="cursor:pointer" data-a="nav" data-id="budget"><b>Budget alert:</b> ${al.slice(0,3).map(x=>esc(cname(x.k))+(x.pct>=100?' over by '+inr(x.used-x.lim):' '+Math.round(x.pct)+'%')).join(' · ')}${al.length>3?' · +'+(al.length-3)+' more':''}</div>`:''}
+  ${npairs?`<div class="card small" style="margin-top:10px;cursor:pointer;background:var(--brand-soft)" data-a="pairs">${npairs} possible internal transfer${npairs>1?'s':''} found. Tap to review and merge.</div>`:''}
   ${un?`<div class="card small" style="margin-top:10px;background:var(--brand-soft)">⚠️ ${un} transaction${un>1?'s':''} not matched to an account. Tap one to assign it.</div>`:''}
   <h2>Accounts</h2>
   <div class="hscroll">${S.accounts.map(accTile).join('')}</div>
@@ -504,6 +720,9 @@ function budgetView(){
     ${daysLeft?`<div class="chips"><span>${daysLeft} days left</span><span>Safe to spend ${inr(perDay)}/day</span></div>`:''}
   </div>
   ${behind?`<div class="alert">⚠️ ${Math.round(pct)}% of budget used but only ${Math.round(elapsed)}% of the month has passed. Slow down a little.</div>`:(month===cur&&tb?`<div class="alert ok">✓ On track: ${Math.round(pct)}% used, ${Math.round(elapsed)}% of month passed.</div>`:'')}
+  ${(()=>{const al=alertsFor(month);const bl=bufferLeft(month),bt=Math.max(0,S.salary-tb);
+    return (al.length?`<h2>Needs attention</h2><div class="card" style="padding:4px 16px">${al.map(x=>`<div class="attn"><div class="grow"><b>${esc(cname(x.k))}</b><div class="small mute">${inr(x.used)} of ${inr(x.lim)} · ${x.pct>=100?'over by '+inr(x.used-x.lim):Math.round(x.pct)+'% used'}</div></div><button class="chip on" data-a="fix" data-id="${esc(x.k)}">Fix</button></div>`).join('')}</div>`:'')
+    +`<div class="card row sp" style="margin-top:12px"><div><div class="small mute">Buffer (salary ${inr(S.salary)} − budget ${inr(tb)})</div><b class="num ${bl<0?'debit':''}" style="font-size:18px">${inr(Math.max(0,bl))} left</b></div><div class="small mute" style="text-align:right">of ${inr(bt)}<br>overspend eats it first</div></div>`})()}
   <h2>Categories</h2>
   <div class="tiles">${bk.map(k=>tile(k,S.budgets[k])).join('')}${extra.map(k=>tile(k,0)).join('')}<div class="tile add" data-a="addbudget"><div><div style="font-size:26px">＋</div><div class="small">Add category budget</div></div></div></div>
   <p class="small mute">Tap a tile to see its transactions, change the limit, or add an expense in that category.</p>`;
@@ -569,12 +788,16 @@ function accounts(){
    <div class="grid2"><div><label>Name</label><input data-f="name" data-id="${a.id}" value="${esc(a.name)}"></div><div><label>Type</label><select data-f="type" data-id="${a.id}"><option value="bank" ${ty==='bank'?'selected':''}>Bank account</option><option value="cash" ${ty==='cash'?'selected':''}>Cash</option><option value="card" ${ty==='card'?'selected':''}>Credit card</option></select></div></div>
    <div class="grid2">${ty==='cash'?'':`<div><label>Last 4 digits</label><input data-f="last4" data-id="${a.id}" value="${esc(a.last4)}" maxlength="4" inputmode="numeric"></div>`}
    <div><label>${ty==='card'?'Opening due (₹)':ty==='cash'?'Cash in hand (₹)':'Opening balance (₹)'}</label><input data-f="${ty==='card'?'opendue':'open'}" data-id="${a.id}" value="${ty==='card'?-a.open||0:a.open}" inputmode="decimal"></div>
-   ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal" placeholder="optional"></div>`:''}</div></div>`}).join('')+
+   ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal" placeholder="optional"></div>`:''}</div>${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (CSV)</button>`}</div>`}).join('')+
   (sms()?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
    <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+
   `<div class="grid2" style="grid-template-columns:repeat(3,1fr)"><button class="btn ghost" data-a="addacc" data-id="bank" style="margin-top:0">+ Bank</button><button class="btn ghost" data-a="addacc" data-id="cash" style="margin-top:0">+ Cash</button><button class="btn ghost" data-a="addacc" data-id="card" style="margin-top:0">+ Card</button></div>
+   <h2>Internal transfers</h2><div class="card"><div class="small mute">Moving money between your own accounts should not count as spending or income. Paisa can find matching pairs (same amount out of one account and into another within 2 days) and merge each into one transfer.</div><button class="btn ghost" data-a="pairs">Find possible transfers${findPairs().length?' ('+findPairs().length+')':''}</button></div>
+   <h2>Notifications</h2><div class="card"><div class="small mute">Alert when a category reaches 80% and when it goes over, and when the overall budget reaches 90%. In the Android app you also get a notice for each bank SMS it captures, even when the app is closed. In a browser, alerts only show while the page is open.</div>
+   <button class="btn ${S.notify?'ghost':''}" data-a="notifon">${S.notify?'Notifications on (tap to turn off)':'Turn on notifications'}</button><button class="btn ghost" data-a="notiftest" style="margin-top:8px">Send test notification</button></div>
    <h2>Look</h2><div class="themes"><button class="${S.theme==='fresh'?'on':''}" data-a="theme" data-id="fresh"><i style="background:linear-gradient(140deg,#16322e,#0f766e)"></i><b>Fresh</b><div class="small mute">Calm teal</div></button><button class="${S.theme==='neon'?'on':''}" data-a="theme" data-id="neon"><i style="background:linear-gradient(140deg,#1d1740,#6d4cff);box-shadow:0 0 14px #7c5cff"></i><b>Neon</b><div class="small mute">Glowing cards</div></button><button class="${S.theme==='black'?'on':''}" data-a="theme" data-id="black"><i style="background:#000;border:1px solid #333"></i><b>Black</b><div class="small mute">Pure black, flat</div></button></div>
    <h2>Budget & data</h2><div class="card"><div class="small mute">Budget limits now live in the <b>Budget</b> tab (one limit per category). Total budget = sum of limits.</div>
+   <label>Monthly salary (₹) · used for the buffer</label><input data-f="salary" value="${S.salary}" inputmode="numeric">
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button>
    <button class="btn ghost" data-a="demo" style="margin-top:8px">Load demo data</button><button class="btn red" data-a="reset">Erase everything</button></div>`;
 }
@@ -582,7 +805,7 @@ function accounts(){
 /* ---------- sheet ---------- */
 function openSheet(html){$('#layer').innerHTML=`<div class="sheet-bg" data-a="close"><div class="sheet" data-stop>${html}</div></div>`}
 const closeSheet=()=>{$('#layer').innerHTML=''};
-function toast(m){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),2800)}
+function toast(m,ms){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),ms||2800)}
 const opts=(arr,sel,f=x=>x)=>arr.map(([v,l])=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`).join('');
 function chipsHTML(kind,sel){
   if(kind==='expense')return Object.keys(CATS).map(k=>`<button type="button" class="chip ${k===sel?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${ic(CATS[k],16)}${esc(cname(k))}</button>`).join('')+`<button type="button" class="chip" id="newcat" data-a="newcat">＋ New</button>`;
@@ -592,16 +815,16 @@ function txSheet(t,preset){
   const isNew=!t;t=t||{id:'',type:'debit',amt:'',acc:S.accounts[0].id,kind:'expense',cat:'Other',note:'',date:new Date().toISOString().slice(0,10),party:'',pool:false};
   if(isNew&&preset)Object.assign(t,preset);
   if(isNew&&t.cat==='Other'&&(!preset||!preset.cat)&&t.kind!=='expense'&&t.kind!=='pass')t.cat=t.kind==='other'?'Freelance':'Salary';
-  tt=t.type;catTouched=!isNew||!!(preset&&preset.cat);
+  tt=t.type;editId=t.id;catTouched=!isNew||!!(preset&&preset.cat);
   const chips=chipsHTML(t.kind,t.cat);
   openSheet(`<div class="row sp"><h1>${isNew?'Add':'Edit'} transaction</h1><button class="icon-btn" data-a="close">✕</button></div>
-  ${isNew?`<div class="seg" style="margin-top:14px" id="tabseg"><button class="on" data-a="tab" data-id="m">Manual</button><button data-a="tab" data-id="s">Paste SMS</button></div>`:''}
+  ${isNew?`<div class="seg" style="margin-top:14px" id="tabseg"><button class="on" data-a="tab" data-id="m">Manual</button><button data-a="tab" data-id="s">Paste SMS</button><button data-a="tab" data-id="st">Statement</button></div>`:''}
   <div id="tab-m"><div class="seg" style="margin-top:14px" id="typeseg"><button data-a="type" data-id="debit" class="${t.type==='debit'?'on':''}">Debit (out)</button><button data-a="type" data-id="credit" class="${t.type==='credit'?'on':''}">Credit (in)</button></div>
   <label>Amount (₹)</label><input class="amt-in" id="f-amt" inputmode="decimal" value="${t.amt}" placeholder="₹ 0">
   <label id="acc-label">Account</label><select id="f-acc"><option value="">Unassigned</option>${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.acc)}</select>
   <div id="w-to" hidden><label>To account (card bill: pick the credit card · ATM: pick Cash)</label><select id="f-to">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.to||'')}</select></div>
   <label>Type</label><select id="f-kind">${opts(Object.entries(KINDS),t.kind)}</select>
-  <div id="w-cat"><label id="cat-label">Category</label><input type="hidden" id="f-cat" value="${esc(t.cat)}"><div class="chips2" id="f-cats">${chips}</div><div id="smart"></div>
+  <div id="w-cat"><label id="cat-label">Category</label><input type="hidden" id="f-cat" value="${esc(t.cat)}"><div class="chips2" id="f-cats">${chips}</div><div id="smart"></div><div id="bhint"></div>
   <label id="w-pool" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f-pool" style="width:auto" ${t.pool?'checked':''}> Paid from other-income pool</label>
   <div id="w-poolsrc" hidden><label>From which income source</label><select id="f-poolsrc">${srcOptions(t.poolSrc||'')}</select></div></div>
   <div id="w-source"><label>Income source</label><select id="f-source">${srcOptions(t.source===undefined?(isNew&&S.sources[0]?S.sources[0].id:''):t.source)}</select></div>
@@ -610,7 +833,10 @@ function txSheet(t,preset){
   <label>Date</label><input id="f-date" type="date" value="${t.date}">
   <button class="btn" data-a="savetx" data-id="${t.id}">Save</button>${isNew?'':`<button class="btn red" data-a="deltx" data-id="${t.id}">Delete</button>`}</div>
   <div id="tab-s" hidden><label>Paste bank SMS (separate several with a blank line)</label><textarea id="f-sms" placeholder="Rs.4337.86 debited from A/c XX3370 on 29-09-26 to DMART. Avl bal Rs.5200"></textarea>
-  <button class="btn" data-a="parse">Detect & add</button></div>`);
+  <button class="btn" data-a="parse">Detect & add</button></div>
+  <div id="tab-st" hidden><label>Import a bank statement (CSV) into</label><select id="st-acc">${opts(S.accounts.filter(a=>accType(a)!=='cash').map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),(S.accounts.find(a=>accType(a)==='bank')||{}).id)}</select>
+  <p class="small mute">Download the statement from net banking as CSV (or Excel, then Save as CSV). Everything is read on your phone, nothing is uploaded. Rows already in the app are skipped; ATM, card-bill and internal transfers are spotted.</p>
+  <button class="btn" data-a="stmtpick">Choose statement file</button></div>`);
   syncKind();
   if(preset&&preset.tab==='s'){$('#tab-m').hidden=true;$('#tab-s').hidden=false;document.querySelectorAll('#tabseg button').forEach((b,i)=>b.classList.toggle('on',i===1))}
   else if(isNew)setTimeout(()=>{const a=$('#f-amt');a&&a.focus()},60);
@@ -623,7 +849,7 @@ function syncKind(){
   $('#w-source').style.display=v==='other'?'':'none';$('#w-poolsrc').hidden=!(v==='expense'&&$('#f-pool').checked);
   const list=v==='expense'?CATS:ICATS,cur=$('#f-cat').value;
   if(!(cur in list))$('#f-cat').value=v==='expense'?'Other':v==='other'?'Freelance':'Salary';
-  $('#f-cats').innerHTML=chipsHTML(v,$('#f-cat').value);$('#smart').innerHTML='';
+  $('#f-cats').innerHTML=chipsHTML(v,$('#f-cat').value);$('#smart').innerHTML='';updateBHint();
 }
 
 /* ---------- render & events ---------- */
@@ -665,7 +891,7 @@ document.addEventListener('click',e=>{
     if(!k||!(lim>0)){toast('Pick a category and enter a limit');return}
     S.budgets[k]=lim;save();closeSheet();render();
   }
-  else if(a==='cat'){catTouched=true;$('#f-cat').value=id;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#smart').innerHTML=''}
+  else if(a==='cat'){catTouched=true;$('#f-cat').value=id;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#smart').innerHTML='';updateBHint()}
   else if(a==='newcat'){
     const n=prompt('New category name?');if(!n||!n.trim())return;
     const k=addCategory(n,'star');
@@ -674,15 +900,22 @@ document.addEventListener('click',e=>{
   }
   else if(a==='edit'){const t=S.tx.find(x=>x.id===id);tt=t.type;txSheet(t)}
   else if(a==='close')closeSheet();
-  else if(a==='tab'){document.querySelectorAll('#tabseg button').forEach(b=>b.classList.toggle('on',b===el));$('#tab-m').hidden=id!=='m';$('#tab-s').hidden=id!=='s'}
-  else if(a==='type'){tt=id;document.querySelectorAll('#typeseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));if(id==='credit'&&$('#f-kind').value==='expense'){$('#f-kind').value='income';syncKind()}}
+  else if(a==='tab'){document.querySelectorAll('#tabseg button').forEach(b=>b.classList.toggle('on',b===el));$('#tab-m').hidden=id!=='m';$('#tab-s').hidden=id!=='s';$('#tab-st').hidden=id!=='st'}
+  else if(a==='type'){tt=id;document.querySelectorAll('#typeseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));if(id==='credit'&&$('#f-kind').value==='expense'){$('#f-kind').value='income';syncKind()}updateBHint()}
   else if(a==='savetx'){
     const amt=parseFloat($('#f-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     const kind=$('#f-kind').value;
     if(kind==='transfer'&&(!$('#f-acc').value||!$('#f-to').value||$('#f-acc').value===$('#f-to').value)){toast('Pick two different accounts');return}
     const t={id:id||uid(),date:$('#f-date').value,type:kind==='transfer'?'debit':tt,to:kind==='transfer'?$('#f-to').value:'',amt,acc:$('#f-acc').value,kind,cat:kind==='pass'?'Other':$('#f-cat').value,source:kind==='other'?$('#f-source').value:'',poolSrc:(kind==='expense'&&$('#f-pool').checked)?$('#f-poolsrc').value:'',note:$('#f-note').value.trim(),party:kind==='pass'?$('#f-party').value:'',pool:kind==='expense'&&$('#f-pool').checked,src:'manual'};
     const i=S.tx.findIndex(x=>x.id===id);if(i>=0){t.src=S.tx[i].src;S.tx[i]=t}else S.tx.push(t);
-    save();closeSheet();render();toast('Saved');
+    save();closeSheet();render();
+    let msg='Saved',ms;
+    if(t.kind==='expense'&&t.type==='debit'&&S.budgets[t.cat]>0){
+      const lim=S.budgets[t.cat],mk=t.date.slice(0,7),before=catUsed(t.cat,mk,t.id),after=before+t.amt;
+      if(after>lim){msg=`${cname(t.cat)} is over budget by ${inr(after-lim)}. Open Budget to cover it.`;ms=5000}
+      else if(after/lim>=.8&&before/lim<.8){msg=`${cname(t.cat)} is at ${Math.round(after/lim*100)}% of its budget.`;ms=4000}
+    }
+    toast(msg,ms);checkBudgetNotify();
   }
   else if(a==='deltx'){S.tx=S.tx.filter(x=>x.id!==id);save();closeSheet();render()}
   else if(a==='parse'){
@@ -697,6 +930,33 @@ document.addEventListener('click',e=>{
   else if(a==='srcdel'){
     if(S.tx.some(t=>t.source===id||t.poolSrc===id)){toast('Has entries. Edit or delete them first.');return}
     S.sources=S.sources.filter(y=>y.id!==id);save();closeSheet();render()}
+  else if(a==='stmt')pickStatement(id);
+  else if(a==='stmtpick')pickStatement($('#st-acc').value);
+  else if(a==='stmtrow'){stmt.rows[+id].on=el.checked;const b=$('#stmt-go');if(b)b.textContent='Import '+stmt.rows.filter(r=>r.on).length}
+  else if(a==='stmtgo')doStmt();
+  else if(a==='pairs')pairsSheet();
+  else if(a==='pairmerge'){const [d,c]=id.split('|');mergePair(d,c);save();pairsSheet();render()}
+  else if(a==='pairskip'){S.ignored.push(id.replace('|',''));save();pairsSheet();render()}
+  else if(a==='pairall'){findPairs().forEach(({d,c})=>mergePair(d.id,c.id));save();closeSheet();render();toast('Merged')}
+  else if(a==='fix')fixSheet(id);
+  else if(a==='fxmove'){
+    const [k,from]=id.split('|'),st=mstats(month),left=(S.budgets[from]||0)-(st.cat[from]||0);
+    const amt=Math.min(parseFloat($('#fx-amt').value)||0,left);if(!(amt>0)){toast('Enter an amount');return}
+    S.budgets[from]-=amt;S.budgets[k]=(S.budgets[k]||0)+amt;save();closeSheet();render();toast(`Moved ${inr(amt)} from ${cname(from)} to ${cname(k)}`);
+  }
+  else if(a==='fxbuf'){
+    const buf=bufferLeft(month),amt=Math.min(parseFloat($('#fx-amt').value)||0,buf);
+    if(!(amt>0)){toast(buf>0?'Enter an amount':'No buffer left');return}
+    S.budgets[id]=(S.budgets[id]||0)+amt;save();closeSheet();render();toast(`Added ${inr(amt)} from buffer to ${cname(id)}`);
+  }
+  else if(a==='notifon'){
+    (async()=>{
+      if(S.notify){S.notify=false;save();note.sync();render();return}
+      if(await note.ask()){S.notify=true;save();note.sync();render();toast('Notifications are on')}
+      else toast('Permission denied. Allow notifications in phone settings.');
+    })();
+  }
+  else if(a==='notiftest'){if(!S.notify)return toast('Turn notifications on first');note.send('Paisa','Notifications are working.',99)}
   else if(a==='addperson'){const n=prompt('Name?');if(n&&n.trim()){S.people.push({id:uid(),name:n.trim()});save();render()}}
   else if(a==='person'){personSheet(id)}
   else if(a==='smson')enableSms();
@@ -708,6 +968,7 @@ document.addEventListener('click',e=>{
   else if(a==='reset'){if(confirm('Erase all data?')){S=defaults();normalize();save();render()}}
 });
 document.addEventListener('input',e=>{
+  if(e.target.id==='f-amt')updateBHint();
   if(e.target.id==='q'){q=e.target.value;$('#txlist').innerHTML=txListHTML()}
   else if(e.target.id==='f-note'&&!catTouched&&$('#f-kind').value==='expense'){
     const g=guessCat(e.target.value);
@@ -715,6 +976,7 @@ document.addEventListener('input',e=>{
   }
 });
 document.addEventListener('change',e=>{
+  if(e.target.id==='f-date')updateBHint();
   if(e.target.id==='f-pool')$('#w-poolsrc').hidden=!e.target.checked;
   if((e.target.id==='f-source'||e.target.id==='f-poolsrc')&&e.target.value==='__new'){
     const n=prompt('Income source name? (e.g. a client or project)');
@@ -729,6 +991,7 @@ document.addEventListener('change',e=>{
   }
   const f=e.target.dataset.f;if(!f)return;
   if(f==='budget'){S.budget=parseFloat(e.target.value)||0}
+  else if(f==='salary'){S.salary=parseFloat(e.target.value)||0}
   else{const a=acc(e.target.dataset.id),v=e.target.value;if(f==='opendue')a.open=-(parseFloat(v)||0);else if(f==='open'||f==='limit')a[f]=parseFloat(v)||0;else a[f]=v.trim()}
   save();render();
 });
