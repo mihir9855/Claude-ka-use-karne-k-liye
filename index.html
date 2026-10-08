@@ -3,7 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f766e">
+<meta name="theme-color" content="#f6f1ee">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Arthaly – Expense & Budget Tracker</title>
 <style>
 :root{
@@ -349,7 +354,9 @@ async function importInbox(){
   try{const r=await p.readInbox({days:30});const n=ingest(r.messages);if(!n)toast('Nothing new to import')}
   catch(e){toast('Enable SMS capture first')}
 }
+let smsCap=false;
 if(sms()){
+  if(sms().capabilities)sms().capabilities().then(c=>{smsCap=!!c.sms;if(view==='accounts')render()}).catch(()=>{});
   sms().addListener('smsReceived',drainSms);
   setTimeout(()=>note.sync(),0);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)drainSms()});
@@ -977,8 +984,8 @@ function accounts(){
    <div class="grid2">${ty==='cash'?'':`<div><label>Last 4 digits</label><input data-f="last4" data-id="${a.id}" value="${esc(a.last4)}" maxlength="4" inputmode="numeric"></div>`}
    <div><label>${ty==='card'?'Opening due (₹)':ty==='cash'?'Cash in hand (₹)':'Opening balance (₹)'}</label><input data-f="${ty==='card'?'opendue':'open'}" data-id="${a.id}" value="${ty==='card'?-a.open||0:a.open}" inputmode="decimal"></div>
    ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal" placeholder="optional"></div>`:''}</div>${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (PDF or CSV)</button>`}</div>`}).join('')+
-  (sms()?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
-   <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+
+  (sms()&&smsCap?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
+   <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+(sms()&&!smsCap?`<h2>Bank SMS</h2><div class="card"><div class="small mute">This version does not read your SMS by itself (Google Play Protect blocks apps that do). To add a bank SMS quickly: open your Messages app, long-press the SMS, tap <b>Share</b> and choose <b>Arthaly</b>. It is added right away. You can also paste SMS with the + button, or import a bank statement PDF/CSV.</div></div>`:'')+
   `<div class="grid2" style="grid-template-columns:repeat(3,1fr)"><button class="btn ghost" data-a="addacc" data-id="bank" style="margin-top:0">+ Bank</button><button class="btn ghost" data-a="addacc" data-id="cash" style="margin-top:0">+ Cash</button><button class="btn ghost" data-a="addacc" data-id="card" style="margin-top:0">+ Card</button></div>
    <h2>Internal transfers</h2><div class="card"><div class="small mute">Moving money between your own accounts should not count as spending or income. Arthaly can find matching pairs (same amount out of one account and into another within 2 days) and merge each into one transfer.</div><button class="btn ghost" data-a="pairs">Find possible transfers${findPairs().length?' ('+findPairs().length+')':''}</button></div>
    <h2>Notifications</h2><div class="card"><div class="small mute">Alert when a category reaches 80% and when it goes over, and when the overall budget reaches 90%. In the Android app you also get a notice for each bank SMS it captures, even when the app is closed. In a browser, alerts only show while the page is open.</div>
@@ -1238,6 +1245,8 @@ document.addEventListener('pointermove',e=>{
 });
 render();
 drainSms();
+/* installable web app: works offline after the first load (skipped inside the Android app and for local files) */
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)&&location.hostname!=='localhost'&&!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 </script>
 </body>
 </html>

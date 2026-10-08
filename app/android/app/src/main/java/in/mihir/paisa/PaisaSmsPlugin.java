@@ -1,6 +1,8 @@
 package in.mihir.paisa;
 
 import android.Manifest;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import com.getcapacitor.JSArray;
@@ -28,6 +30,23 @@ public class PaisaSmsPlugin extends Plugin {
     /** Called by the receiver; wakes the web app if it is in the foreground. */
     static void notifyNewSms() {
         if (instance != null) instance.notifyListeners("smsReceived", new JSObject());
+    }
+
+    /** Tells the web app whether this build can read SMS (the lite build cannot). */
+    @PluginMethod
+    public void capabilities(PluginCall call) {
+        boolean sms = false;
+        try {
+            PackageInfo pi = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), PackageManager.GET_PERMISSIONS);
+            if (pi.requestedPermissions != null) {
+                for (String p : pi.requestedPermissions) {
+                    if ("android.permission.RECEIVE_SMS".equals(p)) sms = true;
+                }
+            }
+        } catch (Exception ignored) { }
+        JSObject out = new JSObject();
+        out.put("sms", sms);
+        call.resolve(out);
     }
 
     /** Returns (and clears) bank SMS captured since the last call. */

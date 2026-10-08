@@ -16,6 +16,13 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // "lite" has no SMS permissions, so Google Play Protect does not block it when sideloaded.
+    // "full" can read bank SMS by itself, but Play Protect blocks it on many phones in India.
+    flavorDimensions "sms"
+    productFlavors {
+        full { dimension "sms" }
+        lite { dimension "sms" }
+    }
     buildTypes {
         release {
             minifyEnabled false

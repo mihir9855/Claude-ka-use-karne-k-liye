@@ -24,20 +24,24 @@ jobs:
         run: |
           npm ci
           npm run sync
-      - name: Build debug APK
+      - name: Build debug APKs (lite and full)
         working-directory: app/android
-        run: ./gradlew assembleDebug --no-daemon
-      - name: Inspect APK (signing, SDK levels, manifest)
+        run: ./gradlew assembleLiteDebug assembleFullDebug --no-daemon
+      - name: Inspect APKs (package, permissions, signing)
         run: |
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
-          APK=app/android/app/build/outputs/apk/debug/app-debug.apk
-          ls -l "$APK"
-          echo "== badging =="; "$BT/aapt" dump badging "$APK" | head -60
-          echo "== signature =="; "$BT/apksigner" verify --verbose --print-certs "$APK" || true
-          echo "== alignment =="; "$BT/zipalign" -c -v 4 "$APK" | tail -3 || true
-          echo "== native libs =="; unzip -l "$APK" | grep -E "\.so$" | head || true
-          echo "== manifest =="; "$BT/aapt" dump xmltree "$APK" AndroidManifest.xml | head -150
+          for F in lite full; do
+            APK=app/android/app/build/outputs/apk/$F/debug/app-$F-debug.apk
+            echo "######## $F ########"; ls -l "$APK"
+            "$BT/aapt" dump badging "$APK" | grep -E "^(package|uses-permission|sdkVersion|targetSdkVersion)"
+            "$BT/apksigner" verify --verbose "$APK" 2>&1 | grep -E "^(Verifies|Verified using v[123] )" || true
+            "$BT/zipalign" -c -v 4 "$APK" | tail -1 || true
+          done
       - uses: actions/upload-artifact@v4
         with:
-          name: arthaly-apk
-          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          name: arthaly-lite-apk
+          path: app/android/app/build/outputs/apk/lite/debug/app-lite-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arthaly-full-apk
+          path: app/android/app/build/outputs/apk/full/debug/app-full-debug.apk

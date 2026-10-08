@@ -17,3 +17,11 @@ Automatic SMS capture needs a native Android wrapper (browsers can't read SMS; i
 
 Build: the **Build Android APK** workflow (Actions tab → run → artifact `arthaly-apk`), or locally `cd app && npm ci && npm run sync && cd android && ./gradlew assembleDebug`.
 Install: copy `app-debug.apk` to the phone, allow install from unknown sources. On Android 13+ you may also need App info → ⋮ → *Allow restricted settings* before SMS permission can be granted. Then open Accounts → *Enable SMS capture*.
+
+### Which APK to install
+
+The build makes two APKs:
+- **arthaly-lite-apk**: no SMS permission. Google Play Protect does not block it. Add bank SMS with Share → Arthaly, paste, or a statement import.
+- **arthaly-full-apk**: reads bank SMS by itself, but Google Play Protect blocks sideloaded apps with SMS permission on many phones (India).
+
+The web app can also be installed from a browser (Add to Home screen) when it is served over https; see `manifest.webmanifest` and `sw.js`.
