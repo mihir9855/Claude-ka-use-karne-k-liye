@@ -15,5 +15,5 @@ Automatic SMS capture needs a native Android wrapper (browsers can't read SMS; i
 
 `app/` wraps the web app with Capacitor and adds a native SMS receiver (`app/android/.../SmsReceiver.java`). Bank SMS (amount + debit/credit words only) are queued while the app is closed and added to the tracker when it opens or is open.
 
-Build: the **Build Android APK** workflow (Actions tab → run → artifact `paisa-debug-apk`), or locally `cd app && npm ci && npm run sync && cd android && ./gradlew assembleDebug`.
+Build: the **Build Android APK** workflow (Actions tab → run → artifact `arthaly-apk`), or locally `cd app && npm ci && npm run sync && cd android && ./gradlew assembleDebug`.
 Install: copy `app-debug.apk` to the phone, allow install from unknown sources. On Android 13+ you may also need App info → ⋮ → *Allow restricted settings* before SMS permission can be granted. Then open Accounts → *Enable SMS capture*.

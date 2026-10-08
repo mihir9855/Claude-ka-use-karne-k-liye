@@ -164,7 +164,7 @@ nav button span{display:flex;justify-content:center}
 <div id="layer"></div>
 <script>
 /* ---------- storage ---------- */
-const KEY='paisa.v1';
+const KEY='arthaly.v1'; // fresh storage: nothing from earlier test versions is carried over
 const COLORS=['#0f766e','#6366f1','#d97706','#be185d','#0369a1','#7c3aed'];
 const ICONS={
  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
@@ -207,8 +207,8 @@ const ICATS={Salary:'wallet',Freelance:'star',Business:'trend',Refund:'swap',Gif
 const ICATCOL={Salary:'#16a34a',Freelance:'#8b5cf6',Business:'#0891b2',Refund:'#f59e0b',Gift:'#ec4899',Other:'#94a3b8'};
 const KINDS={expense:'Expense',transfer:'Transfer / card bill / ATM',income:'Income (salary)',other:'Other income',pass:'Party / pass-through'};
 const defaults=()=>({
-  accounts:[{id:'a1',name:'IOB',type:'bank',last4:'3370',open:0},{id:'a2',name:'Account 2',type:'bank',last4:'',open:0},{id:'a3',name:'Account 3',type:'bank',last4:'',open:0},{id:'a4',name:'Account 4',type:'bank',last4:'',open:0},{id:'cash',name:'Cash',type:'cash',last4:'',open:0},{id:'cc1',name:'Credit card',type:'card',last4:'',open:0,limit:0}],
-  people:[{id:'p1',name:'Papa'}],tx:[],budget:35000,seen:[],cats:[],hide:false,
+  accounts:[{id:'a1',name:'Bank 1',type:'bank',last4:'',open:0},{id:'a2',name:'Bank 2',type:'bank',last4:'',open:0},{id:'a3',name:'Bank 3',type:'bank',last4:'',open:0},{id:'a4',name:'Bank 4',type:'bank',last4:'',open:0},{id:'cash',name:'Cash',type:'cash',last4:'',open:0},{id:'cc1',name:'Credit card',type:'card',last4:'',open:0,limit:0}],
+  people:[],sources:[],tx:[],budget:35000,seen:[],cats:[],hide:false,
   budgets:{Rent:15000,Card:4680,Investment:5000,Groceries:5000,Fuel:2000,Other:2000}
 });
 let S;
@@ -230,7 +230,7 @@ function normalize(){
   if(!S.accounts.some(a=>a.type==='cash'))S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
   if(!S.accounts.some(a=>a.type==='card'))S.accounts.push({id:'cc1',name:'Credit card',type:'card',last4:'',open:0,limit:0});
   S.salary=S.salary||48000;S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
-  S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[{id:'s1',name:'Freelance'}];S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
+  S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[];S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
   Object.entries(S.icons).forEach(([k,v])=>{if(CATS[k])CATS[k]=v});
@@ -1093,6 +1093,7 @@ document.addEventListener('click',e=>{
   else if(a==='savetx'){
     const amt=parseFloat($('#f-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     const kind=$('#f-kind').value;
+    if(kind==='pass'&&!$('#f-party').value){toast('Add a person first: Ledger → People → Add person');return}
     if(kind==='transfer'&&(!$('#f-acc').value||!$('#f-to').value||$('#f-acc').value===$('#f-to').value)){toast('Pick two different accounts');return}
     const t={id:id||uid(),date:$('#f-date').value,type:kind==='transfer'?'debit':tt,to:kind==='transfer'?$('#f-to').value:'',amt,acc:$('#f-acc').value,kind,cat:kind==='pass'?'Other':$('#f-cat').value,source:kind==='other'?$('#f-source').value:'',poolSrc:(kind==='expense'&&$('#f-pool').checked)?$('#f-poolsrc').value:'',note:$('#f-note').value.trim(),party:kind==='pass'?$('#f-party').value:'',pool:kind==='expense'&&$('#f-pool').checked,src:'manual'};
     const i=S.tx.findIndex(x=>x.id===id);if(i>=0){t.src=S.tx[i].src;S.tx[i]=t}else S.tx.push(t);

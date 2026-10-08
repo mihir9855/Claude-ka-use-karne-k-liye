@@ -39,5 +39,5 @@ jobs:
           echo "== manifest =="; "$BT/aapt" dump xmltree "$APK" AndroidManifest.xml | head -150
       - uses: actions/upload-artifact@v4
         with:
-          name: paisa-debug-apk
+          name: arthaly-apk
           path: app/android/app/build/outputs/apk/debug/app-debug.apk

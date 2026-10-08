@@ -4,7 +4,7 @@ android {
     namespace "in.mihir.paisa"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "in.mihir.paisa"
+        applicationId "in.mihir.arthaly"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
