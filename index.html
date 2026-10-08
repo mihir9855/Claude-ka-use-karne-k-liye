@@ -90,40 +90,10 @@ svg text{fill:var(--mute);font-size:9px}
 .search{margin-top:10px}
 #tip{position:absolute;pointer-events:none;background:#14201d;color:#fff;border-radius:8px;padding:4px 8px;font-size:11px;white-space:nowrap;display:none;z-index:2}
 
-/* ===== Theme 2: Neon (dark, glowing, vertical-bar tiles) ===== */
-:root[data-theme=neon]{color-scheme:dark;
-  --bg:#0a0a10;--card:#17171f;--ink:#f3f3f8;--mute:#8d8d9e;--line:#262632;
-  --brand:#8b6cff;--brand-soft:#2a2352;--debit:#ff6b86;--credit:#4ade80;--warn:#fbbf24;--shadow:none}
-[data-theme=neon] body{background:radial-gradient(520px 320px at 85% -60px,#2b1f6e 0,transparent 70%),radial-gradient(420px 260px at -10% 30%,#10343a 0,transparent 70%),var(--bg);background-attachment:fixed}
-[data-theme=neon] .hero{background:linear-gradient(140deg,var(--hero1,#1d1740),var(--hero2,#3b2a9c) 75%,var(--hero3,#6d4cff) 140%);box-shadow:0 0 40px -10px var(--hero3,#7c5cff)}
-[data-theme=neon] .card,[data-theme=neon] .stat{border:1px solid #20202b}
-[data-theme=neon] .tiles{display:flex;overflow-x:auto;gap:14px;margin:0 -16px;padding:8px 16px 26px;scroll-snap-type:x mandatory;scrollbar-width:none}
-[data-theme=neon] .tiles::-webkit-scrollbar{display:none}
-[data-theme=neon] .tile{flex:0 0 44%;min-height:230px;border-radius:32px;scroll-snap-align:start;box-shadow:0 0 34px -6px var(--c)}
-[data-theme=neon] .tile .pc{left:14px;right:auto;top:auto;bottom:46px;background:none;padding:0;font-size:12px;opacity:.9}
-[data-theme=neon] .tile .amt{position:absolute;left:14px;bottom:16px;margin:0;font-size:15px}
-[data-theme=neon] .tile .of{display:none}
-[data-theme=neon] .tile h3{font-size:17px;max-width:70%;line-height:1.2}
-[data-theme=neon] .tile .wm{right:auto;left:-6px;bottom:50px;font-size:78px;opacity:.16}
-[data-theme=neon] .tile .tb{position:absolute;right:16px;top:20px;bottom:20px;width:6px;height:auto;margin:0;background:rgba(255,255,255,.28)}
-[data-theme=neon] .tile .tb i{position:absolute;left:0;right:0;bottom:0;width:100%;height:var(--p,0%)}
-[data-theme=neon] .tile.add{flex:0 0 40%;background:#12121a!important;border-color:#2a2a38}
-[data-theme=neon] #txlist{background:none!important;box-shadow:none!important;padding:0!important;border:0!important}
-[data-theme=neon] .tx{background:var(--card);border-radius:20px;padding:13px 14px;margin-bottom:10px;border:0}
-[data-theme=neon] .dot{border-radius:50%}
-[data-theme=neon] nav{left:50%;right:auto;width:min(456px,calc(100% - 24px));transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));border-radius:34px;background:#000;border:1px solid #24242f;padding:8px 10px}
-[data-theme=neon] nav button{color:#7d7d8c}[data-theme=neon] nav button.on{color:#fff}
-[data-theme=neon] .fab{background:#fff!important;color:#000!important;margin:0 auto;box-shadow:0 0 22px -2px rgba(255,255,255,.55);width:50px;height:50px}
-[data-theme=neon] .sheet{background:#0f0f16}
-[data-theme=neon] .toast{background:#fff;color:#000}
-[data-theme=neon] #app{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
-[data-theme=neon] .alert{background:#7c2d12;color:#ffd7b0}[data-theme=neon] .alert.ok{background:#14532d;color:#bbf7d0}
-[data-theme=neon] .hint{background:#3a2f0a;color:#fde68a}
-.themes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.themes button{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:16px;padding:10px;font:inherit;cursor:pointer;text-align:left}
-.themes button.on{border-color:var(--brand)}
-.themes i{display:block;height:46px;border-radius:10px;margin-bottom:6px}
-
+/* appearance picker */
+.appr{display:flex;gap:8px;background:var(--line);border-radius:99px;padding:4px}
+.appr button{flex:1;border:0;background:none;color:var(--mute);padding:10px 6px;border-radius:99px;font:inherit;font-weight:600;cursor:pointer}
+.appr button.on{background:var(--brand);color:var(--on-brand)}
 .ic{display:block;flex:none}
 nav button span{display:flex;justify-content:center}
 .qa button span{display:flex}
@@ -133,48 +103,6 @@ nav button span{display:flex;justify-content:center}
 .picker{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
 .picker button{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;height:46px;display:grid;place-items:center;cursor:pointer;padding:0}
 .picker button.on{border-color:var(--brand);color:var(--brand)}
-
-/* ===== Theme 3: Black (pure AMOLED black, flat, monochrome) ===== */
-:root[data-theme=black]{color-scheme:dark;
-  --bg:#000;--card:#111;--ink:#fff;--mute:#8a8a8a;--line:#1f1f1f;
-  --brand:#fff;--brand-soft:#1e1e1e;--debit:#ff6b6b;--credit:#4ade80;--warn:#fbbf24;--shadow:none}
-[data-theme=black] body{background:#000}
-[data-theme=black] .card,[data-theme=black] .stat,[data-theme=black] .acc,[data-theme=black] .qa button{border:1px solid #1f1f1f}
-[data-theme=black] .hero{background:#111;border:1px solid #1f1f1f;box-shadow:none;color:#fff}
-[data-theme=black] .hero .chips span,[data-theme=black] .eye{background:#1e1e1e}
-[data-theme=black] .acc{background:#111!important}
-[data-theme=black] .qa button{background:#111!important;color:#fff}
-[data-theme=black] .qa button:nth-child(1) span{color:#a78bfa}
-[data-theme=black] .qa button:nth-child(2) span{color:#4ade80}
-[data-theme=black] .qa button:nth-child(3) span{color:#2dd4bf}
-[data-theme=black] .qa button:nth-child(4) span{color:#60a5fa}
-[data-theme=black] .qa button:nth-child(5) span{color:#fb923c}
-[data-theme=black] .tile{background:#111!important;color:#fff;box-shadow:none;border:1px solid #1f1f1f}
-[data-theme=black] .tile .pc{background:none;color:var(--c);padding:0}
-[data-theme=black] .tile .tb{background:#242424}
-[data-theme=black] .tile .tb i{background:var(--c)}
-[data-theme=black] .tile .wm{color:var(--c);opacity:.2}
-[data-theme=black] .tile.over{outline:1.5px solid #ff6b6b}
-[data-theme=black] .tile.add{background:#000!important;border:2px dashed #2a2a2a}
-[data-theme=black] .bar{background:#222}
-[data-theme=black] nav{background:#000;border-top:1px solid #1a1a1a}
-[data-theme=black] nav button.on{color:#fff}
-[data-theme=black] .fab{background:#fff!important;color:#000!important;box-shadow:none}
-[data-theme=black] .btn{background:#fff;color:#000}
-[data-theme=black] .btn.ghost{background:#161616;color:#fff}
-[data-theme=black] .btn.red{background:none;color:var(--debit)}
-[data-theme=black] .seg{background:#161616}[data-theme=black] .seg button.on{background:#2a2a2a;color:#fff;box-shadow:none}
-[data-theme=black] .sheet{background:#0a0a0a}
-[data-theme=black] input,[data-theme=black] select,[data-theme=black] textarea{background:#111;border-color:#242424}
-[data-theme=black] input:focus,[data-theme=black] select:focus,[data-theme=black] textarea:focus{border-color:#fff}
-[data-theme=black] .chip.on{color:#000}
-[data-theme=black] .pill{background:#1e1e1e;color:#fff}
-[data-theme=black] .toast{background:#fff;color:#000}
-[data-theme=black] .alert{background:#2a1608;color:#ffcf9f;border:1px solid #4a2a10}[data-theme=black] .alert.ok{background:#0b2414;color:#bbf7d0;border:1px solid #14452a}
-[data-theme=black] .hint{background:#241d05;color:#fde68a}
-[data-theme=black] .picker button.on{border-color:#fff;color:#fff}
-.themes{grid-template-columns:repeat(3,1fr)}
-
 .bh{border-radius:12px;padding:8px 12px;font-size:12px;margin-top:8px}
 .bh.ok{background:var(--brand-soft);color:var(--ink)}
 .bh.warn{background:rgba(251,191,36,.16);color:var(--warn)}
@@ -182,7 +110,6 @@ nav button span{display:flex;justify-content:center}
 .alert.soft{background:rgba(251,191,36,.18);color:var(--warn)}
 .attn{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .attn:last-child{border:0}
-
 .chart{position:relative}
 .gtip{position:absolute;background:#14201d;color:#fff;font-size:11px;padding:3px 8px;border-radius:8px;pointer-events:none;white-space:nowrap;z-index:3}
 .pb{margin:12px 0}
@@ -192,28 +119,6 @@ nav button span{display:flex;justify-content:center}
 .htr i{display:block;height:100%;border-radius:9px}
 .htr u{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.75}
 .ctitle{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.ctitle b{font-size:15px}
-.swatches{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
-.swatches button{width:34px;height:34px;border-radius:50%;border:3px solid transparent;cursor:pointer;padding:0}
-.swatches button.on{border-color:var(--ink)}
-
-/* ===== Theme: White (crisp, bordered cards) ===== */
-:root[data-theme=white]{color-scheme:light;--bg:#ffffff;--card:#ffffff;--ink:#0f172a;--mute:#64748b;--line:#e5e7eb;--shadow:none;--debit:#dc2626;--credit:#15803d;--warn:#b45309}
-[data-theme=white] .card,[data-theme=white] .stat,[data-theme=white] .icon-btn,[data-theme=white] .themes button{border:1px solid var(--line)}
-[data-theme=white] .themes button.on{border-color:var(--brand)}
-[data-theme=white] nav{border-top:1px solid var(--line)}
-[data-theme=white] .seg{background:#f1f5f9}
-[data-theme=white] .sheet{background:#fff}
-[data-theme=white] input,[data-theme=white] select,[data-theme=white] textarea{background:#fff}
-/* ===== Theme: Cream (warm paper, soft shadows) ===== */
-:root[data-theme=cream]{color-scheme:light;--bg:#f7f1e3;--card:#fffcf5;--ink:#2b2418;--mute:#8a7c64;--line:#eadfc7;--shadow:0 1px 2px rgba(120,90,30,.06),0 8px 22px rgba(120,90,30,.09);--debit:#c2410c;--credit:#4d7c0f;--warn:#a16207}
-[data-theme=cream] .sheet{background:#f7f1e3}
-[data-theme=cream] .seg{background:#efe5cf}
-[data-theme=cream] input,[data-theme=cream] select,[data-theme=cream] textarea{background:#fffcf5}
-.themes{grid-template-columns:repeat(3,1fr)}
-.themes b{font-size:13px}.themes .small{font-size:11px}
-.swatches .custom{position:relative;width:34px;height:34px;border-radius:50%;overflow:hidden;border:3px solid var(--line);background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red)}
-.swatches .custom input{position:absolute;inset:-8px;width:60px;height:60px;opacity:0;cursor:pointer;border:0;padding:0}
-.swatches .custom.on{border-color:var(--ink)}
 
 /* ===== Earthy themes from the reference: Sage (light) and Cocoa (dark) ===== */
 :root[data-theme=sage]{color-scheme:light;--bg:#f6f1ee;--card:#fffdfb;--ink:#4a2c1f;--mute:#9a8a82;--line:#eadfd9;--brand:#7f9a45;--brand-soft:#e7edd8;--btn:#4a2c1f;--btn-ink:#fff;--on-brand:#fff;--debit:#c4573a;--credit:#5f7d2e;--warn:#c9871a;--hero1:#3a2218;--hero2:#5b3a2a;--hero3:#8da35a;--shadow:0 2px 4px rgba(74,44,31,.05),0 12px 28px -8px rgba(74,44,31,.14)}
@@ -306,37 +211,24 @@ const defaults=()=>({
 });
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY))||defaults()}catch(e){S=defaults()}
-const ACCENTS={indigo:['Indigo','#4338ca','#818cf8'],cyan:['Cyan','#0e7490','#22d3ee'],mint:['Mint','#059669','#6ee7b7'],lime:['Lime','#4d7c0f','#a3e635'],rose:['Rose','#e11d48','#fb7185'],plum:['Plum','#86198f','#e879f9'],brown:['Brown','#92400e','#d6a06a'],slate:['Slate','#334155','#94a3b8'],teal:['Teal','#0f766e','#2bb5a8'],green:['Green','#16a34a','#4ade80'],blue:['Blue','#2563eb','#60a5fa'],violet:['Violet','#6d4cff','#a78bfa'],orange:['Orange','#ea580c','#fb923c'],pink:['Pink','#db2777','#f472b6'],red:['Red','#dc2626','#f87171'],gold:['Gold','#b8860b','#facc15']};
-(function(){const first=['teal','green','blue','violet','orange','pink','red','gold'];const o={};first.forEach(k=>o[k]=ACCENTS[k]);Object.keys(ACCENTS).forEach(k=>{if(!o[k])o[k]=ACCENTS[k]});Object.keys(ACCENTS).forEach(k=>delete ACCENTS[k]);Object.assign(ACCENTS,o)})();
 const EARTH=['#8da35a','#ef8a2a','#7a4b34','#d99a1e','#8f7bd6','#c4573a','#5d8a7a','#a0724a','#6f8a3a','#c9776b','#7d6a9c','#4f7a5a'];
-let ORIGCOL=null;
-const isEarth=()=>S.theme==='sage'||S.theme==='cocoa';
-function paintCats(){
-  if(!ORIGCOL)ORIGCOL={...CATCOL};
-  Object.keys(CATCOL).forEach((k,i)=>{CATCOL[k]=isEarth()?EARTH[i%EARTH.length]:(ORIGCOL[k]||(S.cats.find(c=>c.k===k)||{}).c||'#94a3b8')});
+function paintCats(){Object.keys(CATCOL).forEach((k,i)=>{CATCOL[k]=EARTH[i%EARTH.length]})}
+const mqDark=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;
+/* Appearance: 'auto' follows the phone, 'light' = Sage, 'dark' = Cocoa */
+function applyTheme(){
+  const a=S.appearance;
+  S.theme=a==='light'?'sage':a==='dark'?'cocoa':(mqDark&&mqDark.matches?'cocoa':'sage');
+  document.documentElement.dataset.theme=S.theme;paintCats();
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.theme==='cocoa'?'#1c120e':'#f6f1ee';
 }
-function applyAccent(){
-  const root=document.documentElement,th=S.theme;
-  ['--brand','--brand-soft','--hero1','--hero2','--hero3'].forEach(v=>root.style.removeProperty(v));
-  if(th==='black'||th==='sage'||th==='cocoa')return;
-  const key=(S.accents||{})[th]||(th==='neon'?'violet':'teal');
-  const a=key==='custom'&&S.customHex?['Custom',S.customHex,`color-mix(in srgb,${S.customHex} 60%,#fff)`]:(ACCENTS[key]||ACCENTS.teal);
-  const dark=th==='neon'||(th==='fresh'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches),b=dark?a[2]:a[1];
-  root.style.setProperty('--brand',b);
-  root.style.setProperty('--brand-soft',`color-mix(in srgb,${b} ${dark?22:16}%,${dark?'#000':'#fff'})`);
-  root.style.setProperty('--hero1',`color-mix(in srgb,${a[1]} 38%,#05080a)`);
-  root.style.setProperty('--hero2',a[1]);root.style.setProperty('--hero3',a[2]);
-  const m=document.querySelector('meta[name=theme-color]');if(m&&(th==='fresh'||th==='white'||th==='cream'))m.content=th==='white'?'#ffffff':th==='cream'?'#f7f1e3':a[1];
-}
-if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>applyAccent());
-function applyTheme(){document.documentElement.dataset.theme=S.theme;paintCats();applyAccent();const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.theme==='neon'?'#0a0a10':S.theme==='black'?'#000000':S.theme==='white'?'#ffffff':S.theme==='cream'?'#f7f1e3':S.theme==='sage'?'#f6f1ee':S.theme==='cocoa'?'#1c120e':'#0f766e'}
+if(mqDark)mqDark.addEventListener('change',()=>{if(S.appearance==='auto')applyTheme()});
 /* fills in anything missing (old backups, reset) and re-applies saved look */
 function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
   if(!S.accounts.some(a=>a.type==='cash'))S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
   if(!S.accounts.some(a=>a.type==='card'))S.accounts.push({id:'cc1',name:'Credit card',type:'card',last4:'',open:0,limit:0});
-  S.accents=S.accents||{};S.salary=S.salary||48000;S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
-  S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[{id:'s1',name:'Freelance'}];S.hide=!!S.hide;S.theme=['neon','black','white','cream','sage','cocoa'].includes(S.theme)?S.theme:'fresh';S.customHex=S.customHex||'';
+  S.salary=S.salary||48000;S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
+  S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[{id:'s1',name:'Freelance'}];S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
   Object.entries(S.icons).forEach(([k,v])=>{if(CATS[k])CATS[k]=v});
@@ -910,7 +802,7 @@ function home(){
   const total=S.accounts.filter(x=>accType(x)!=='card').reduce((a,x)=>a+accBal(x.id),0);
   const cardDue=-S.accounts.filter(x=>accType(x)==='card').reduce((a,x)=>a+accBal(x.id),0);
   const cashBal=S.accounts.filter(x=>accType(x)==='cash').reduce((a,x)=>a+accBal(x.id),0);
-  return `<div class="row sp"><div><h1>Arthaly</h1><div class="small mute">Hello, Mihir</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="theme" data-id="toggle" title="Switch look">${ic('palette',18)}</button><button class="icon-btn" data-a="nav" data-id="accounts" title="Accounts & settings">${ic('sliders',18)}</button></div></div>
+  return `<div class="row sp"><div><h1>Arthaly</h1><div class="small mute">Hello, Mihir</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="nav" data-id="accounts" title="Accounts & settings">${ic('sliders',18)}</button></div></div>
   <div class="hero" style="margin-top:14px">
     <div class="row sp"><div><div class="sub">Bank + cash balance</div><div class="big num">${inrH(total)}</div></div><button class="eye" data-a="eye">${ic(S.hide?'eyeoff':'eye',18)}</button></div>
     <div class="chips"><span>↓ In ${inrH(st.inc+st.oth)}</span><span>↑ Out ${inrH(st.exp)}</span>${cashBal?`<span>Cash ${inrH(cashBal)}</span>`:''}${cardDue>0?`<span>Card due ${inrH(cardDue)}</span>`:''}</div>
@@ -1089,7 +981,7 @@ function accounts(){
    <h2>Internal transfers</h2><div class="card"><div class="small mute">Moving money between your own accounts should not count as spending or income. Arthaly can find matching pairs (same amount out of one account and into another within 2 days) and merge each into one transfer.</div><button class="btn ghost" data-a="pairs">Find possible transfers${findPairs().length?' ('+findPairs().length+')':''}</button></div>
    <h2>Notifications</h2><div class="card"><div class="small mute">Alert when a category reaches 80% and when it goes over, and when the overall budget reaches 90%. In the Android app you also get a notice for each bank SMS it captures, even when the app is closed. In a browser, alerts only show while the page is open.</div>
    <button class="btn ${S.notify?'ghost':''}" data-a="notifon">${S.notify?'Notifications on (tap to turn off)':'Turn on notifications'}</button><button class="btn ghost" data-a="notiftest" style="margin-top:8px">Send test notification</button></div>
-   <h2>Look</h2><div class="themes"><button class="${S.theme==='fresh'?'on':''}" data-a="theme" data-id="fresh"><i style="background:linear-gradient(140deg,#16322e,#0f766e)"></i><b>Fresh</b><div class="small mute">Auto light/dark</div></button><button class="${S.theme==='white'?'on':''}" data-a="theme" data-id="white"><i style="background:#fff;border:1px solid #d1d5db"></i><b>White</b><div class="small mute">Clean and bright</div></button><button class="${S.theme==='cream'?'on':''}" data-a="theme" data-id="cream"><i style="background:#f7f1e3;border:1px solid #e3d6b8"></i><b>Cream</b><div class="small mute">Warm paper</div></button><button class="${S.theme==='sage'?'on':''}" data-a="theme" data-id="sage"><i style="background:linear-gradient(90deg,#8da35a 33%,#ef8a2a 33% 66%,#4a2c1f 66%)"></i><b>Sage</b><div class="small mute">Earthy, light</div></button><button class="${S.theme==='cocoa'?'on':''}" data-a="theme" data-id="cocoa"><i style="background:linear-gradient(90deg,#1c120e 40%,#8da35a 40% 70%,#ef8a2a 70%)"></i><b>Cocoa</b><div class="small mute">Earthy, dark</div></button><button class="${S.theme==='neon'?'on':''}" data-a="theme" data-id="neon"><i style="background:linear-gradient(140deg,#1d1740,#6d4cff);box-shadow:0 0 14px #7c5cff"></i><b>Neon</b><div class="small mute">Glowing cards</div></button><button class="${S.theme==='black'?'on':''}" data-a="theme" data-id="black"><i style="background:#000;border:1px solid #333"></i><b>Black</b><div class="small mute">Pure black, flat</div></button></div>
+   <h2>Appearance</h2><div class="card"><div class="appr">${[['auto','Auto'],['light','Light'],['dark','Dark']].map(([k,l])=>`<button data-a="appear" data-id="${k}" class="${S.appearance===k?'on':''}">${l}</button>`).join('')}</div><div class="small mute" style="margin-top:10px">Auto follows your phone: dark when the phone is in dark mode, light otherwise.</div></div>
    <h2>Budget & data</h2><div class="card"><div class="small mute">Budget limits now live in the <b>Budget</b> tab (one limit per category). Total budget = sum of limits.</div>
    <label>Monthly salary (₹) · used for the buffer</label><input data-f="salary" value="${S.salary}" inputmode="numeric">
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button>
@@ -1163,8 +1055,7 @@ document.addEventListener('click',e=>{
   else if(a==='filter'){accFilter=accFilter===id?'':id;render()}
   else if(a==='seg'){seg=id;render()}
   else if(a==='new'){txSheet()}
-  else if(a==='accent'){S.accents[S.theme]=id;save();applyAccent();render()}
-  else if(a==='theme'){S.theme=id==='toggle'?({fresh:'white',white:'cream',cream:'sage',sage:'cocoa',cocoa:'neon',neon:'black',black:'fresh'}[S.theme]):id;save();applyTheme();render()}
+  else if(a==='appear'){S.appearance=id;save();applyTheme();render()}
   else if(a==='eye'){S.hide=!S.hide;save();render()}
   else if(a==='qa'){
     if(id==='exp')txSheet();
@@ -1263,7 +1154,6 @@ document.addEventListener('click',e=>{
   else if(a==='reset'){if(confirm('Erase all data?')){S=defaults();normalize();save();render()}}
 });
 document.addEventListener('input',e=>{
-  if(e.target.id==='accentpick'){S.customHex=e.target.value;S.accents[S.theme]='custom';applyAccent();return}
   if(e.target.id==='f-amt')updateBHint();
   if(e.target.id==='q'){q=e.target.value;$('#txlist').innerHTML=txListHTML()}
   else if(e.target.id==='f-note'&&!catTouched&&$('#f-kind').value==='expense'){
@@ -1272,7 +1162,6 @@ document.addEventListener('input',e=>{
   }
 });
 document.addEventListener('change',e=>{
-  if(e.target.id==='accentpick'){save();render();return}
   if(e.target.id==='f-date')updateBHint();
   if(e.target.id==='f-pool')$('#w-poolsrc').hidden=!e.target.checked;
   if((e.target.id==='f-source'||e.target.id==='f-poolsrc')&&e.target.value==='__new'){
