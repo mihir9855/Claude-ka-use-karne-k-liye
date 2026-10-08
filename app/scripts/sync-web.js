@@ -1,4 +1,7 @@
-// Copies the web app (repo root index.html) into www/ for Capacitor.
+// Copies the web app (repo root index.html) and the bundled PDF reader into www/ for Capacitor.
 const fs = require('fs'), path = require('path');
-fs.mkdirSync(path.join(__dirname, '../www'), { recursive: true });
-fs.copyFileSync(path.join(__dirname, '../../index.html'), path.join(__dirname, '../www/index.html'));
+const www = path.join(__dirname, '../www');
+fs.mkdirSync(path.join(www, 'pdfjs'), { recursive: true });
+fs.copyFileSync(path.join(__dirname, '../../index.html'), path.join(www, 'index.html'));
+const build = path.join(__dirname, '../node_modules/pdfjs-dist/build');
+for (const f of ['pdf.min.js', 'pdf.worker.min.js']) fs.copyFileSync(path.join(build, f), path.join(www, 'pdfjs', f));
