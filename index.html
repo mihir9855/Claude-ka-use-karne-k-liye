@@ -1020,8 +1020,43 @@ function accounts(){
 }
 
 /* ---------- sheet ---------- */
-function openSheet(html){$('#layer').innerHTML=`<div class="sheet-bg" data-a="close"><div class="sheet" data-stop>${html}</div></div>`}
-const closeSheet=()=>{$('#layer').innerHTML=''};
+/* ---------- back button: close sheet -> previous screen -> Home -> exit ---------- */
+let sheetEntry=false,staleSheets=0,suppressPop=0,viewDepth=0;
+const sheetIsOpen=()=>!!$('#layer').innerHTML;
+function openSheet(html){
+  $('#layer').innerHTML=`<div class="sheet-bg" data-a="close"><div class="sheet" data-stop>${html}</div></div>`;
+  if(!sheetEntry){
+    if(staleSheets>0)staleSheets--;                 // reuse a history entry left by a sheet that was just closed in code
+    else history.pushState({k:'sheet'},'');
+    sheetEntry=true;
+  }
+}
+function closeSheet(){
+  $('#layer').innerHTML='';
+  if(sheetEntry){sheetEntry=false;staleSheets++;setTimeout(settleHistory,0)}
+}
+// drop leftover sheet entries once no sheet is open again
+function settleHistory(){
+  if(!sheetIsOpen()&&staleSheets>0){const n=staleSheets;staleSheets=0;suppressPop++;history.go(-n)}
+}
+function navTo(id){
+  accFilter='';scrollTo(0,0);
+  if(id!==view){
+    if(id==='home'){if(viewDepth>0){viewDepth=0;suppressPop++;history.back()}}
+    else if(viewDepth===0){viewDepth=1;history.pushState({k:'view',v:id},'')}
+    else history.replaceState({k:'view',v:id},'');
+    view=id;
+  }
+  render();
+}
+history.replaceState({k:'view',v:'home'},'');
+window.addEventListener('popstate',e=>{
+  if(suppressPop>0){suppressPop--;return}
+  if(sheetIsOpen()){$('#layer').innerHTML='';sheetEntry=false;return}   // back closes the open sheet
+  const st=e.state;
+  if(st&&st.k==='sheet')return;
+  view=(st&&st.k==='view')?st.v:'home';viewDepth=view==='home'?0:1;accFilter='';render();
+});
 function toast(m,ms){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),ms||2800)}
 const opts=(arr,sel,f=x=>x)=>arr.map(([v,l])=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`).join('');
 function chipsHTML(kind,sel){
@@ -1080,7 +1115,7 @@ document.addEventListener('click',e=>{
   const el=e.target.closest('[data-a]');if(!el)return;
   if(el.dataset.a==='close'&&e.target.closest('[data-stop]')&&!e.target.closest('button[data-a=close]'))return;
   const a=el.dataset.a,id=el.dataset.id;
-  if(a==='nav'){view=id;accFilter='';render();scrollTo(0,0)}
+  if(a==='nav')navTo(id)
   else if(a==='mprev'){month=shiftMonth(month,-1);render()}
   else if(a==='mnext'){month=shiftMonth(month,1);render()}
   else if(a==='filter'){accFilter=accFilter===id?'':id;render()}
