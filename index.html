@@ -133,6 +133,46 @@ nav button span{display:flex;justify-content:center}
 .picker{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
 .picker button{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;height:46px;display:grid;place-items:center;cursor:pointer;padding:0}
 .picker button.on{border-color:var(--brand);color:var(--brand)}
+
+/* ===== Theme 3: Black (pure AMOLED black, flat, monochrome) ===== */
+:root[data-theme=black]{color-scheme:dark;
+  --bg:#000;--card:#111;--ink:#fff;--mute:#8a8a8a;--line:#1f1f1f;
+  --brand:#fff;--brand-soft:#1e1e1e;--debit:#ff6b6b;--credit:#4ade80;--warn:#fbbf24;--shadow:none}
+[data-theme=black] body{background:#000}
+[data-theme=black] .card,[data-theme=black] .stat,[data-theme=black] .acc,[data-theme=black] .qa button{border:1px solid #1f1f1f}
+[data-theme=black] .hero{background:#111;border:1px solid #1f1f1f;box-shadow:none;color:#fff}
+[data-theme=black] .hero .chips span,[data-theme=black] .eye{background:#1e1e1e}
+[data-theme=black] .acc{background:#111!important}
+[data-theme=black] .qa button{background:#111!important;color:#fff}
+[data-theme=black] .qa button:nth-child(1) span{color:#a78bfa}
+[data-theme=black] .qa button:nth-child(2) span{color:#4ade80}
+[data-theme=black] .qa button:nth-child(3) span{color:#60a5fa}
+[data-theme=black] .qa button:nth-child(4) span{color:#fb923c}
+[data-theme=black] .tile{background:#111!important;color:#fff;box-shadow:none;border:1px solid #1f1f1f}
+[data-theme=black] .tile .pc{background:none;color:var(--c);padding:0}
+[data-theme=black] .tile .tb{background:#242424}
+[data-theme=black] .tile .tb i{background:var(--c)}
+[data-theme=black] .tile .wm{color:var(--c);opacity:.2}
+[data-theme=black] .tile.over{outline:1.5px solid #ff6b6b}
+[data-theme=black] .tile.add{background:#000!important;border:2px dashed #2a2a2a}
+[data-theme=black] .bar{background:#222}
+[data-theme=black] nav{background:#000;border-top:1px solid #1a1a1a}
+[data-theme=black] nav button.on{color:#fff}
+[data-theme=black] .fab{background:#fff!important;color:#000!important;box-shadow:none}
+[data-theme=black] .btn{background:#fff;color:#000}
+[data-theme=black] .btn.ghost{background:#161616;color:#fff}
+[data-theme=black] .btn.red{background:none;color:var(--debit)}
+[data-theme=black] .seg{background:#161616}[data-theme=black] .seg button.on{background:#2a2a2a;color:#fff;box-shadow:none}
+[data-theme=black] .sheet{background:#0a0a0a}
+[data-theme=black] input,[data-theme=black] select,[data-theme=black] textarea{background:#111;border-color:#242424}
+[data-theme=black] input:focus,[data-theme=black] select:focus,[data-theme=black] textarea:focus{border-color:#fff}
+[data-theme=black] .chip.on{color:#000}
+[data-theme=black] .pill{background:#1e1e1e;color:#fff}
+[data-theme=black] .toast{background:#fff;color:#000}
+[data-theme=black] .alert{background:#2a1608;color:#ffcf9f;border:1px solid #4a2a10}[data-theme=black] .alert.ok{background:#0b2414;color:#bbf7d0;border:1px solid #14452a}
+[data-theme=black] .hint{background:#241d05;color:#fde68a}
+[data-theme=black] .picker button.on{border-color:#fff;color:#fff}
+.themes{grid-template-columns:repeat(3,1fr)}
 </style>
 </head>
 <body>
@@ -188,10 +228,10 @@ const defaults=()=>({
 });
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY))||defaults()}catch(e){S=defaults()}
-function applyTheme(){document.documentElement.dataset.theme=S.theme;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.theme==='neon'?'#0a0a10':'#0f766e'}
+function applyTheme(){document.documentElement.dataset.theme=S.theme;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.theme==='neon'?'#0a0a10':S.theme==='black'?'#000000':'#0f766e'}
 /* fills in anything missing (old backups, reset) and re-applies saved look */
 function normalize(){
-  S.cats=S.cats||[];S.icons=S.icons||{};S.hide=!!S.hide;S.theme=S.theme==='neon'?'neon':'fresh';
+  S.cats=S.cats||[];S.icons=S.icons||{};S.hide=!!S.hide;S.theme=['neon','black'].includes(S.theme)?S.theme:'fresh';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
   Object.entries(S.icons).forEach(([k,v])=>{if(CATS[k])CATS[k]=v});
@@ -485,7 +525,7 @@ function accounts(){
   (sms()?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
    <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+
   `<button class="btn ghost" data-a="addacc">+ Add account</button>
-   <h2>Look</h2><div class="themes"><button class="${S.theme==='fresh'?'on':''}" data-a="theme" data-id="fresh"><i style="background:linear-gradient(140deg,#16322e,#0f766e)"></i><b>Fresh</b><div class="small mute">Light or dark, calm teal</div></button><button class="${S.theme==='neon'?'on':''}" data-a="theme" data-id="neon"><i style="background:linear-gradient(140deg,#1d1740,#6d4cff);box-shadow:0 0 14px #7c5cff"></i><b>Neon</b><div class="small mute">Dark, glowing cards</div></button></div>
+   <h2>Look</h2><div class="themes"><button class="${S.theme==='fresh'?'on':''}" data-a="theme" data-id="fresh"><i style="background:linear-gradient(140deg,#16322e,#0f766e)"></i><b>Fresh</b><div class="small mute">Calm teal</div></button><button class="${S.theme==='neon'?'on':''}" data-a="theme" data-id="neon"><i style="background:linear-gradient(140deg,#1d1740,#6d4cff);box-shadow:0 0 14px #7c5cff"></i><b>Neon</b><div class="small mute">Glowing cards</div></button><button class="${S.theme==='black'?'on':''}" data-a="theme" data-id="black"><i style="background:#000;border:1px solid #333"></i><b>Black</b><div class="small mute">Pure black, flat</div></button></div>
    <h2>Budget & data</h2><div class="card"><div class="small mute">Budget limits now live in the <b>Budget</b> tab (one limit per category). Total budget = sum of limits.</div>
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button>
    <button class="btn ghost" data-a="demo" style="margin-top:8px">Load demo data</button><button class="btn red" data-a="reset">Erase everything</button></div>`;
@@ -538,7 +578,7 @@ document.addEventListener('click',e=>{
   else if(a==='filter'){accFilter=accFilter===id?'':id;render()}
   else if(a==='seg'){seg=id;render()}
   else if(a==='new'){txSheet()}
-  else if(a==='theme'){S.theme=id==='toggle'?(S.theme==='neon'?'fresh':'neon'):id;save();applyTheme();render()}
+  else if(a==='theme'){S.theme=id==='toggle'?({fresh:'neon',neon:'black',black:'fresh'}[S.theme]):id;save();applyTheme();render()}
   else if(a==='eye'){S.hide=!S.hide;save();render()}
   else if(a==='qa'){
     if(id==='exp')txSheet();
