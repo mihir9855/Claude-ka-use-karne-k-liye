@@ -123,6 +123,16 @@ svg text{fill:var(--mute);font-size:9px}
 .themes button{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:16px;padding:10px;font:inherit;cursor:pointer;text-align:left}
 .themes button.on{border-color:var(--brand)}
 .themes i{display:block;height:46px;border-radius:10px;margin-bottom:6px}
+
+.ic{display:block;flex:none}
+nav button span{display:flex;justify-content:center}
+.qa button span{display:flex}
+.icon-btn{display:inline-grid;place-items:center;padding:0}
+.chip{display:inline-flex;align-items:center;gap:6px}
+.legend .ic{display:inline-block}
+.picker{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.picker button{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;height:46px;display:grid;place-items:center;cursor:pointer;padding:0}
+.picker button.on{border-color:var(--brand);color:var(--brand)}
 </style>
 </head>
 <body>
@@ -133,7 +143,42 @@ svg text{fill:var(--mute);font-size:9px}
 /* ---------- storage ---------- */
 const KEY='paisa.v1';
 const COLORS=['#0f766e','#6366f1','#d97706','#be185d','#0369a1','#7c3aed'];
-const CATS={Card:'💳',Food:'🍽️',Groceries:'🛒',Fuel:'⛽',Rent:'🏠',Shopping:'🛍️',Bills:'💡',Medical:'💊',Travel:'🚆',Investment:'📈',Transfer:'🔁',Other:'🧾'};
+const ICONS={
+ home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+ target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
+ chart:'<path d="M5 20V11M12 20V4M19 20v-6"/>',
+ users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 14c2.9 0 4.8 1.9 4.8 4.5"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',
+ swap:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',
+ message:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+ sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+ palette:'<path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="14.5" cy="7.5" r="1"/>',
+ eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+ eyeoff:'<path d="M3 3l18 18"/><path d="M10.6 6.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1"/>',
+ food:'<path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10"/><path d="M17 3c-2 1.5-3 4-3 7h3v11"/>',
+ cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11l2-8H6"/>',
+ fuel:'<path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12M6 8h6"/><path d="M14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V9l-3-3"/>',
+ bag:'<path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+ bulb:'<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/>',
+ medical:'<path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6z"/>',
+ train:'<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14"/><circle cx="9" cy="14" r=".8"/><circle cx="15" cy="14" r=".8"/><path d="M8 17l-2 4M16 17l2 4"/>',
+ trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+ card:'<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6 15h4"/>',
+ receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/>',
+ wallet:'<path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>',
+ gift:'<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v9h14v-9M8 8a2.5 2.5 0 1 1 4-2 2.5 2.5 0 1 1 4 2"/>',
+ heart:'<path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z"/>',
+ book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5z"/><path d="M8 7h7"/>',
+ phone:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+ car:'<path d="M5 17H3v-4l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v4h-2"/><path d="M7 17h10M3 12h18"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/>',
+ film:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4v16M16 4v16M3 9h5M3 15h5M16 9h5M16 15h5"/>',
+ coffee:'<path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8z"/><path d="M17 10h2a2 2 0 0 1 0 4h-2M7 3v2M11 3v2M14 3v2"/>',
+ star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'
+};
+const ICON_PICK=['cart','food','coffee','fuel','car','train','home','bulb','phone','bag','gift','film','book','heart','medical','card','wallet','trend','swap','receipt','user','star'];
+const ic=(k,sz=20)=>ICONS[k]?`<svg class="ic" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`:`<span style="font-size:${sz-2}px;line-height:1">${esc(k||'')}</span>`;
+const CATS={Card:'card',Food:'food',Groceries:'cart',Fuel:'fuel',Rent:'home',Shopping:'bag',Bills:'bulb',Medical:'medical',Travel:'train',Investment:'trend',Transfer:'swap',Other:'receipt'};
 const CATCOL={Card:'#e11d48',Food:'#d97706',Groceries:'#16a34a',Fuel:'#0369a1',Rent:'#7c3aed',Shopping:'#be185d',Bills:'#0891b2',Medical:'#dc2626',Travel:'#4f46e5',Investment:'#0f766e',Transfer:'#64748b',Other:'#94a3b8'};
 const KINDS={expense:'Expense',income:'Income (salary)',other:'Other income',pass:'Party / pass-through'};
 const defaults=()=>({
@@ -143,21 +188,26 @@ const defaults=()=>({
 });
 let S;
 try{S=JSON.parse(localStorage.getItem(KEY))||defaults()}catch(e){S=defaults()}
-S.cats=S.cats||[];S.hide=!!S.hide;S.theme=S.theme==='neon'?'neon':'fresh';
 function applyTheme(){document.documentElement.dataset.theme=S.theme;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.theme==='neon'?'#0a0a10':'#0f766e'}
-applyTheme();
-if(!S.budgets)S.budgets=defaults().budgets;
-S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
+/* fills in anything missing (old backups, reset) and re-applies saved look */
+function normalize(){
+  S.cats=S.cats||[];S.icons=S.icons||{};S.hide=!!S.hide;S.theme=S.theme==='neon'?'neon':'fresh';
+  if(!S.budgets)S.budgets=defaults().budgets;
+  S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
+  Object.entries(S.icons).forEach(([k,v])=>{if(CATS[k])CATS[k]=v});
+  applyTheme();
+}
+normalize();
 const totalBudget=()=>{const v=Object.values(S.budgets).reduce((a,b)=>a+b,0);return v>0?v:S.budget};
 const cname=k=>k==='Other'?'Misc':k;
 const NEWCOL=['#14b8a6','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#84cc16'];
-function addCategory(name,emoji){
+function addCategory(name,icon){
   name=name.trim();if(!name)return null;
-  if(!CATS[name]){const c={k:name,e:emoji||'🏷️',c:NEWCOL[S.cats.length%NEWCOL.length]};S.cats.push(c);CATS[c.k]=c.e;CATCOL[c.k]=c.c;save()}
+  if(!CATS[name]){const c={k:name,e:icon||'star',c:NEWCOL[S.cats.length%NEWCOL.length]};S.cats.push(c);CATS[c.k]=c.e;CATCOL[c.k]=c.c;save()}
   return name;
 }
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
-let q='',catTouched=false;
+let q='',catTouched=false,newIcon='star';
 let view='home',month=new Date().toISOString().slice(0,7),seg='people',accFilter='';
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const $=s=>document.querySelector(s);
@@ -280,7 +330,7 @@ function donut(data){
   const segs=data.map(d=>{const p=d.v/tot*100;const s=`<circle r="${R}" cx="21" cy="21" fill="none" stroke="${d.c}" stroke-width="5.5" stroke-dasharray="${Math.max(p-.6,.1)} ${100-p+.6}" stroke-dashoffset="${-off}"/>`;off+=p;return s}).join('');
   return `<div class="row" style="gap:16px"><svg viewBox="0 0 42 42" width="132" height="132"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="5.5"/>${segs}</g><text x="21" y="19.5" text-anchor="middle" style="font-size:3.2px">Spent</text><text x="21" y="25" text-anchor="middle" style="font-size:5.2px;font-weight:700;fill:var(--ink)">₹${compact(tot)}</text></svg>
   <div class="grow small mute">Top: <b style="color:var(--ink)">${esc(cname(data[0].k))}</b><br>${Math.round(data[0].v/tot*100)}% of spending</div></div>
-  <div class="legend">${data.map(d=>`<div><i style="background:${d.c}"></i><span class="grow">${CATS[d.k]||''} ${esc(cname(d.k))}</span><b class="num">${inr(d.v)}</b><span class="mute small" style="width:34px;text-align:right">${Math.round(d.v/tot*100)}%</span></div>`).join('')}</div>`;
+  <div class="legend">${data.map(d=>`<div><i style="background:${d.c}"></i><span class="grow row" style="gap:6px"><span style="color:${d.c};display:inline-flex">${ic(CATS[d.k]||'receipt',16)}</span>${esc(cname(d.k))}</span><b class="num">${inr(d.v)}</b><span class="mute small" style="width:34px;text-align:right">${Math.round(d.v/tot*100)}%</span></div>`).join('')}</div>`;
 }
 function bars(ms){
   const vals=ms.flatMap(m=>[m.inc+m.oth,m.exp]);const max=Math.max(...vals,1);const W=300,H=120,bw=14,gap=(W-ms.length*bw*2)/(ms.length+1);
@@ -308,8 +358,8 @@ function pace(mk,st){
 function monthBar(){return `<div class="month"><button class="icon-btn" data-a="mprev">‹</button><b style="min-width:74px;text-align:center">${mlabel(month)}</b><button class="icon-btn" data-a="mnext">›</button></div>`}
 function txRow(t){
   const a=acc(t.acc),p=person(t.party);
-  const tag=t.kind==='pass'?`🤝 ${esc(p?p.name:'party')}`:t.kind==='other'?'Other income':t.kind==='income'?'Income':esc(t.cat);
-  return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8')+'26':'var(--brand-soft)'}">${t.kind==='pass'?'🤝':t.kind==='expense'?CATS[t.cat]||'🧾':'💰'}</div>
+  const tag=t.kind==='pass'?esc(p?p.name:'party'):t.kind==='other'?'Other income':t.kind==='income'?'Income':esc(t.cat);
+  return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8')+'26':'var(--brand-soft)'};color:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8'):'var(--brand)'}">${t.kind==='pass'?ic('swap',19):t.kind==='expense'?ic(CATS[t.cat]||'receipt',19):ic('wallet',19)}</div>
   <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">Unassigned</span>'}${t.src==='sms'?' · SMS':''}${t.pool?' · pool':''}</div></div>
   <b class="num ${t.type}">${t.type==='credit'?'+':'−'}${inr(t.amt)}</b></div>`;
 }
@@ -322,16 +372,16 @@ function home(){
   const st=mstats(month),tb=totalBudget(),left=tb-st.exp,pct=Math.min(100,st.exp/tb*100);
   const un=S.tx.filter(t=>!t.acc).length,pl=pool();
   const total=S.accounts.reduce((a,x)=>a+accBal(x.id),0);
-  return `<div class="row sp"><div><h1>Paisa</h1><div class="small mute">Hello Mihir 👋</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="theme" data-id="toggle" title="Switch look">🎨</button><button class="icon-btn" data-a="nav" data-id="accounts" title="Accounts & settings">⚙️</button></div></div>
+  return `<div class="row sp"><div><h1>Paisa</h1><div class="small mute">Hello, Mihir</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="theme" data-id="toggle" title="Switch look">${ic('palette',18)}</button><button class="icon-btn" data-a="nav" data-id="accounts" title="Accounts & settings">${ic('sliders',18)}</button></div></div>
   <div class="hero" style="margin-top:14px">
-    <div class="row sp"><div><div class="sub">Total balance · ${S.accounts.length} accounts</div><div class="big num">${inrH(total)}</div></div><button class="eye" data-a="eye">${S.hide?'🙈':'👁️'}</button></div>
+    <div class="row sp"><div><div class="sub">Total balance · ${S.accounts.length} accounts</div><div class="big num">${inrH(total)}</div></div><button class="eye" data-a="eye">${ic(S.hide?'eyeoff':'eye',18)}</button></div>
     <div class="chips"><span>↓ Income ${inrH(st.inc+st.oth)}</span><span>↑ Spent ${inrH(st.exp)}</span></div>
   </div>
   <div class="qa">
-    <button style="background:#7c5cff" data-a="qa" data-id="exp"><span>➖</span>Expense</button>
-    <button style="background:#16a34a" data-a="qa" data-id="inc"><span>➕</span>Income</button>
-    <button style="background:#2196f3" data-a="qa" data-id="party"><span>🤝</span>For someone</button>
-    <button style="background:#f97316" data-a="qa" data-id="sms"><span>💬</span>Paste SMS</button>
+    <button style="background:#7c5cff" data-a="qa" data-id="exp"><span>${ic('minus',22)}</span>Expense</button>
+    <button style="background:#16a34a" data-a="qa" data-id="inc"><span>${ic('plus',22)}</span>Income</button>
+    <button style="background:#2196f3" data-a="qa" data-id="party"><span>${ic('swap',22)}</span>For someone</button>
+    <button style="background:#f97316" data-a="qa" data-id="sms"><span>${ic('message',22)}</span>Paste SMS</button>
   </div>
   <div class="card" style="margin-top:12px" data-a="nav" data-id="budget">
     <div class="row sp"><div><div class="small mute">Left to spend this month</div><div class="big ${left<0?'debit':''} num">${inrH(left)}</div></div><span class="pill">Budget ›</span></div>
@@ -343,7 +393,7 @@ function home(){
   <div class="hscroll">${S.accounts.map((a,i)=>{const m=accMonth(a.id,month);return `<div class="acc" style="background:linear-gradient(135deg,${COLORS[i%6]},${COLORS[i%6]}bb)" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${a.last4?' ••'+a.last4:''}${accFilter===a.id?' · filtered':''}</small><b class="num">${inrH(accBal(a.id))}</b><div class="io"><span>↓ ${inrH(m.i)}</span><span>↑ ${inrH(m.o)}</span></div></div>`}).join('')}</div>
   ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inrH(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inrH(pl.inc)}<br>Used ${inrH(pl.used)}</div></div>`:''}
   <h2>${accFilter?'Transactions · '+esc(acc(accFilter).name):'Transactions'}</h2>
-  <input id="q" class="search" placeholder="🔍 Search note, category, person or amount" value="${esc(q)}">
+  <input id="q" class="search" placeholder="Search note, category, person or amount" value="${esc(q)}">
   <div class="card" style="padding:4px 16px;margin-top:10px" id="txlist">${txListHTML()}</div>`;
 }
 /* ---------- BUDGET ---------- */
@@ -362,7 +412,7 @@ function budgetView(){
     return `<div class="tile ${over?'over':''} ${lim?'':'nolim'}" data-a="tile" data-id="${esc(k)}" style="--c:${c};background:linear-gradient(150deg,${c},${c}bb)">
       <h3>${esc(cname(k))}</h3>${lim?`<span class="pc">${Math.round(p)}%</span>`:'<span class="pc">no limit</span>'}
       <div class="amt num">${inr(u)}</div><div class="of">${lim?(over?`<b>₹${Math.round(u-lim).toLocaleString('en-IN')} over</b> · limit ${inr(lim)}`:`of ${inr(lim)} · ${inr(lim-u)} left`):'tap to set a limit'}</div>
-      ${lim?`<div class="tb" style="--p:${Math.min(100,p)}%"><i></i></div>`:''}<div class="wm">${CATS[k]||'🧾'}</div></div>`;
+      ${lim?`<div class="tb" style="--p:${Math.min(100,p)}%"><i></i></div>`:''}<div class="wm">${ic(CATS[k]||'receipt',76)}</div></div>`;
   };
   return `<div class="row sp"><h1>Budget</h1>${monthBar()}</div>
   <div class="hero" style="margin-top:14px">
@@ -379,20 +429,21 @@ function budgetView(){
 function catSheet(k){
   const st=mstats(month),used=st.cat[k]||0,lim=S.budgets[k]||0,c=CATCOL[k]||'#94a3b8';
   const list=S.tx.filter(t=>t.kind==='expense'&&t.cat===k&&t.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
-  openSheet(`<div class="row sp"><h1>${CATS[k]||''} ${esc(cname(k))}</h1><button class="icon-btn" data-a="close">✕</button></div>
+  openSheet(`<div class="row sp"><h1 class="row" style="gap:8px"><span style="color:${c};display:inline-flex">${ic(CATS[k]||'receipt',24)}</span>${esc(cname(k))}</h1><button class="icon-btn" data-a="close">✕</button></div>
   <div class="card" style="margin-top:14px;background:linear-gradient(150deg,${c},${c}bb);color:#fff"><div class="small" style="opacity:.85">${mlabel(month)} · used</div><div class="big num" style="color:#fff">${inr(used)}</div>
   ${lim?`<div style="height:8px;background:rgba(255,255,255,.3);border-radius:9px;margin-top:8px;overflow:hidden"><i style="width:${Math.min(100,used/lim*100)}%;display:block;height:100%;background:#fff;border-radius:9px"></i></div><div class="small" style="margin-top:6px">${used>lim?'₹'+Math.round(used-lim).toLocaleString('en-IN')+' over':inr(lim-used)+' left'} · limit ${inr(lim)}</div>`:'<div class="small">No limit set</div>'}</div>
   <label>Monthly limit (₹)</label><input id="f-lim" inputmode="numeric" value="${lim||''}" placeholder="0 = no limit">
   <button class="btn" data-a="savelim" data-id="${esc(k)}">Save limit</button>
   <button class="btn ghost" data-a="addin" data-id="${esc(k)}">+ Add ${esc(cname(k))} expense</button>
   ${lim?`<button class="btn red" data-a="rmlim" data-id="${esc(k)}">Remove budget</button>`:''}
+  <h2>Icon</h2><div class="picker">${ICON_PICK.map(i=>`<button type="button" data-a="seticon" data-id="${esc(k)}|${i}" class="${CATS[k]===i?'on':''}">${ic(i,22)}</button>`).join('')}</div>
   <h2>This month</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No spending yet</div>'}</div>`);
 }
 function budgetSheet(){
   const free=Object.keys(CATS).filter(k=>!(S.budgets[k]>0));
   openSheet(`<div class="row sp"><h1>Add category budget</h1><button class="icon-btn" data-a="close">✕</button></div>
-  <label>Category</label><select id="b-cat">${opts(free.map(k=>[k,CATS[k]+' '+cname(k)]),'')}<option value="__new">＋ New category…</option></select>
-  <div id="b-new" hidden><label>New category name</label><input id="b-name" placeholder="e.g. Pet care"><label>Emoji</label><input id="b-emo" placeholder="🐶" maxlength="4"></div>
+  <label>Category</label><select id="b-cat">${opts(free.map(k=>[k,cname(k)]),'')}<option value="__new">＋ New category…</option></select>
+  <div id="b-new" hidden><label>New category name</label><input id="b-name" placeholder="e.g. Pet care"><label>Icon</label><div class="picker" id="b-icons">${ICON_PICK.map(i=>`<button type="button" data-a="pickicon" data-id="${i}" class="${i===newIcon?'on':''}">${ic(i,22)}</button>`).join('')}</div></div>
   <label>Monthly limit (₹)</label><input id="b-lim" inputmode="numeric" placeholder="0">
   <button class="btn" data-a="savebudget">Add</button>`);
 }
@@ -415,7 +466,7 @@ function khata(){
   let body='';
   if(seg==='people'){
     body=S.people.map(p=>{const b=personBal(p.id);const n=S.tx.filter(t=>t.kind==='pass'&&t.party===p.id).length;
-      return `<div class="card row sp" style="margin-bottom:10px" data-a="person" data-id="${p.id}"><div class="row"><div class="dot">👤</div><div><b>${esc(p.name)}</b><div class="small mute">${n} entries</div></div></div><div style="text-align:right"><b class="num ${b>0?'debit':b<0?'credit':''}">${inr(Math.abs(b))}</b><div class="small mute">${b>0?'owes you':b<0?'you owe':'settled'}</div></div></div>`}).join('')
+      return `<div class="card row sp" style="margin-bottom:10px" data-a="person" data-id="${p.id}"><div class="row"><div class="dot" style="color:var(--brand)">${ic('user',19)}</div><div><b>${esc(p.name)}</b><div class="small mute">${n} entries</div></div></div><div style="text-align:right"><b class="num ${b>0?'debit':b<0?'credit':''}">${inr(Math.abs(b))}</b><div class="small mute">${b>0?'owes you':b<0?'you owe':'settled'}</div></div></div>`}).join('')
       +`<button class="btn ghost" data-a="addperson">+ Add person / party</button>
       <p class="small mute">Money you send from your account for someone (e.g. a business UPI) is a <b>debit</b> on that person; when they pay it back it is a <b>credit</b>. These never count as your income or spending.</p>`;
   }else{
@@ -449,7 +500,7 @@ function txSheet(t,preset){
   const isNew=!t;t=t||{id:'',type:'debit',amt:'',acc:S.accounts[0].id,kind:'expense',cat:'Other',note:'',date:new Date().toISOString().slice(0,10),party:'',pool:false};
   if(isNew&&preset)Object.assign(t,preset);
   tt=t.type;catTouched=!isNew||!!(preset&&preset.cat);
-  const chips=Object.keys(CATS).map(k=>`<button type="button" class="chip ${k===t.cat?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${CATS[k]} ${esc(cname(k))}</button>`).join('')+`<button type="button" class="chip" id="newcat" data-a="newcat">＋ New</button>`;
+  const chips=Object.keys(CATS).map(k=>`<button type="button" class="chip ${k===t.cat?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${ic(CATS[k],16)}${esc(cname(k))}</button>`).join('')+`<button type="button" class="chip" id="newcat" data-a="newcat">＋ New</button>`;
   openSheet(`<div class="row sp"><h1>${isNew?'Add':'Edit'} transaction</h1><button class="icon-btn" data-a="close">✕</button></div>
   ${isNew?`<div class="seg" style="margin-top:14px" id="tabseg"><button class="on" data-a="tab" data-id="m">Manual</button><button data-a="tab" data-id="s">Paste SMS</button></div>`:''}
   <div id="tab-m"><div class="seg" style="margin-top:14px" id="typeseg"><button data-a="type" data-id="debit" class="${t.type==='debit'?'on':''}">Debit (out)</button><button data-a="type" data-id="credit" class="${t.type==='credit'?'on':''}">Credit (in)</button></div>
@@ -473,8 +524,8 @@ function syncKind(){const k=$('#f-kind');if(!k)return;$('#w-cat').style.display=
 /* ---------- render & events ---------- */
 function render(){
   $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView}[view]();
-  const nav=[['home','🏠','Home'],['budget','🎯','Budget'],['add','+',''],['stats','📊','Insights'],['people','🤝','Ledger']];
-  $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new">+</button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${i}</span>${l}</button>`).join('');
+  const nav=[['home','home','Home'],['budget','target','Budget'],['add','+',''],['stats','chart','Insights'],['people','users','Ledger']];
+  $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new">+</button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
 }
 let tt='debit';
 document.addEventListener('click',e=>{
@@ -496,21 +547,23 @@ document.addEventListener('click',e=>{
     else txSheet(null,{tab:'s'});
   }
   else if(a==='tile')catSheet(id);
-  else if(a==='addbudget')budgetSheet();
+  else if(a==='addbudget'){newIcon='star';budgetSheet()}
+  else if(a==='pickicon'){newIcon=id;document.querySelectorAll('#b-icons button').forEach(b=>b.classList.toggle('on',b.dataset.id===id))}
+  else if(a==='seticon'){const [ck,ik]=id.split('|');S.icons[ck]=ik;CATS[ck]=ik;save();render();catSheet(ck)}
   else if(a==='savelim'){const v=parseFloat($('#f-lim').value)||0;if(v>0)S.budgets[id]=v;else delete S.budgets[id];save();closeSheet();render()}
   else if(a==='rmlim'){delete S.budgets[id];save();closeSheet();render()}
   else if(a==='addin'){closeSheet();txSheet(null,{cat:id})}
   else if(a==='savebudget'){
     const sel=$('#b-cat').value,lim=parseFloat($('#b-lim').value);
-    const k=sel==='__new'?addCategory($('#b-name').value,$('#b-emo').value.trim()):sel;
+    const k=sel==='__new'?addCategory($('#b-name').value,newIcon):sel;
     if(!k||!(lim>0)){toast('Pick a category and enter a limit');return}
     S.budgets[k]=lim;save();closeSheet();render();
   }
   else if(a==='cat'){catTouched=true;$('#f-cat').value=id;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#smart').innerHTML=''}
   else if(a==='newcat'){
     const n=prompt('New category name?');if(!n||!n.trim())return;
-    const k=addCategory(n,(prompt('Emoji (optional)')||'').trim());
-    if(!document.querySelector(`#f-cats [data-id="${k}"]`))el.insertAdjacentHTML('beforebegin',`<button type="button" class="chip" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${CATS[k]} ${esc(k)}</button>`);
+    const k=addCategory(n,'star');
+    if(!document.querySelector(`#f-cats [data-id="${k}"]`))el.insertAdjacentHTML('beforebegin',`<button type="button" class="chip" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${ic(CATS[k],16)}${esc(k)}</button>`);
     document.querySelector(`#f-cats [data-id="${k}"]`).click();
   }
   else if(a==='edit'){const t=S.tx.find(x=>x.id===id);tt=t.type;txSheet(t)}
@@ -536,15 +589,15 @@ document.addEventListener('click',e=>{
   else if(a==='smsimport')importInbox();
   else if(a==='addacc'){S.accounts.push({id:uid(),name:'Account '+(S.accounts.length+1),last4:'',open:0});save();render()}
   else if(a==='export'){const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download='paisa-backup.json';l.click()}
-  else if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>i.files[0].text().then(x=>{try{S=JSON.parse(x);save();render();toast('Imported')}catch(e){toast('Invalid file')}});i.click()}
+  else if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>i.files[0].text().then(x=>{try{S=JSON.parse(x);normalize();save();render();toast('Imported')}catch(e){toast('Invalid file')}});i.click()}
   else if(a==='demo'){demo();render();toast('Demo data loaded')}
-  else if(a==='reset'){if(confirm('Erase all data?')){S=defaults();save();render()}}
+  else if(a==='reset'){if(confirm('Erase all data?')){S=defaults();normalize();save();render()}}
 });
 document.addEventListener('input',e=>{
   if(e.target.id==='q'){q=e.target.value;$('#txlist').innerHTML=txListHTML()}
   else if(e.target.id==='f-note'&&!catTouched&&$('#f-kind').value==='expense'){
     const g=guessCat(e.target.value);
-    if(g!=='Other'){$('#f-cat').value=g;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===g));$('#smart').innerHTML=`<div class="hint">🏷️ Smart category: ${CATS[g]} ${g}. Tap another chip to change.</div>`}
+    if(g!=='Other'){$('#f-cat').value=g;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===g));$('#smart').innerHTML=`<div class="hint">Smart category: ${g}. Tap another chip to change.</div>`}
   }
 });
 document.addEventListener('change',e=>{
