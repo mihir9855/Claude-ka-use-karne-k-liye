@@ -1,5 +1,5 @@
 // Arthaly service worker: lets the app open offline once it has been loaded.
-const CACHE = 'arthaly-v16';
+const CACHE = 'arthaly-v17';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'pdfjs/pdf.min.js', 'pdfjs/pdf.worker.min.js'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

@@ -1233,7 +1233,7 @@ function khata(){
     const pl=pool(),noSrc=S.tx.some(t=>(t.kind==='other'&&!t.source)||(t.pool&&t.kind==='expense'&&!t.poolSrc));
     const card=(id,name)=>{const st=srcStats(id);const n=S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(t.pool&&t.kind==='expense'&&(t.poolSrc||'')===id)).length;
       return `<div class="card row sp" style="margin-bottom:10px" data-a="source" data-id="${esc(id)}"><div class="row"><div class="dot" style="color:var(--credit)">${ic('wallet',19)}</div><div><b>${esc(name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'} · earned ${inr(st.inc)}</div></div></div><div style="text-align:right"><b class="num ${st.left<0?'debit':'credit'}">${inr(st.left)}</b><div class="small mute">left to use</div></div></div>`};
-    body=`<div class="card"><div class="small mute">All other income · pool left</div><div class="big ${pl.left<0?'debit':''}">${inr(pl.left)}</div><div class="row sp small mute"><span>Earned ${inr(pl.inc)}</span><span>Used ${inr(pl.used)}</span></div></div>
+    body=`<div class="card" style="cursor:pointer" data-a="allother"><div class="small mute">All other income · pool left · tap to see and edit entries</div><div class="big ${pl.left<0?'debit':''}">${inr(pl.left)}</div><div class="row sp small mute"><span>Earned ${inr(pl.inc)}</span><span>Used ${inr(pl.used)}</span></div></div>
     ${(()=>{const d=S.sources.map((x,i)=>({k:x.name,v:srcStats(x.id).inc,c:['#14b8a6','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#84cc16'][i%6]})).filter(x=>x.v>0);return d.length?`<div class="card" style="margin-top:12px"><div class="ctitle"><b>Earned by source</b></div>${miniDonut(d)}</div>`:''})()}
     <h2>Income sources</h2>
     ${S.sources.map(x=>card(x.id,x.name)).join('')}${noSrc?card('','General'):''}
@@ -1494,7 +1494,15 @@ document.addEventListener('click',e=>{
   else if(a==='addsource'){askText('Income source name','','e.g. a client or project').then(n=>{if(n&&n.trim()){S.sources.push({id:uid(),name:n.trim()});save();render()}})}
   else if(a==='source')sourceSheet(id);
   else if(a==='srcadd'){closeSheet();txSheet(null,{type:'credit',kind:'other',source:id})}
-  else if(a==='srcren'){const x=S.sources.find(y=>y.id===id);askText('Rename source',x.name).then(n=>{if(n&&n.trim()){x.name=n.trim();save();closeSheet();render()}})}
+  else if(a==='srcren'){
+    const x=S.sources.find(y=>y.id===id);
+    if(x)askText('Edit source name',x.name).then(n=>{if(n&&n.trim()){x.name=n.trim();save();closeSheet();render()}});
+    else askText('Name for the entries without a source','','e.g. a client or project').then(n=>{if(n&&n.trim()){const nid=uid();S.sources.push({id:nid,name:n.trim()});S.tx.forEach(t=>{if(t.kind==='other'&&!t.source)t.source=nid;if(t.pool&&t.kind==='expense'&&!t.poolSrc)t.poolSrc=nid});save();closeSheet();render()}});
+  }
+  else if(a==='allother'){
+    const l=S.tx.filter(t=>t.kind==='other').sort((a,b)=>b.date.localeCompare(a.date));
+    openSheet(`<div class="row sp"><h1>All other income</h1><button class="icon-btn" data-a="close">✕</button></div><div class="small mute" style="margin:8px 0">Tap an entry to edit or delete it.</div><div class="card" style="padding:4px 16px">${l.length?l.map(txRow).join(''):'<div class="empty">No entries yet</div>'}</div>`);
+  }
   else if(a==='srcdel'){
     if(S.tx.some(t=>t.source===id||t.poolSrc===id)){toast('Has entries. Edit or delete them first.');return}
     S.sources=S.sources.filter(y=>y.id!==id);save();closeSheet();render()}
@@ -1586,8 +1594,8 @@ function sourceSheet(id){
   openSheet(`<div class="row sp"><h1>${esc(name)}</h1><button class="icon-btn" data-a="close">✕</button></div>
    <div class="card" style="margin-top:14px"><div class="big ${st.left<0?'debit':'credit'}">${inr(st.left)}</div><div class="small mute">left to use</div><div class="row sp small mute" style="margin-top:6px"><span>Earned ${inr(st.inc)}</span><span>Used ${inr(st.used)}</span></div></div>
    <button class="btn" data-a="srcadd" data-id="${esc(id)}">+ Add income to ${esc(name)}</button>
-   ${id?`<button class="btn ghost" data-a="srcren" data-id="${esc(id)}">Rename</button><button class="btn red" data-a="srcdel" data-id="${esc(id)}">Delete source</button>`:''}
-   <h2>History</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries yet</div>'}</div>`);
+   <button class="btn ghost" data-a="srcren" data-id="${esc(id)}">${id?'Edit name':'Give this a name'}</button>${id?`<button class="btn red" data-a="srcdel" data-id="${esc(id)}">Delete source</button>`:''}
+   <h2>History</h2><div class="small mute" style="margin:-4px 0 8px">Tap an entry to edit or delete it.</div><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries yet</div>'}</div>`);
 }
 /* the account now knows its last 4 digits: every other SMS from the same digits goes to it too */
 function learnAcc(accId,h4){
