@@ -359,6 +359,7 @@ function addFromSms(text,fallbackIso){
       else{S.seen.push(key);bad.push('card payment');continue}
     }
     const t={id:uid(),date:p.date,type:p.type,amt:p.amt,acc:a?a.id:'',to,kind,cat,note:p.note,party:'',pool:false,src:'sms'};
+    if(!a&&p.last4)t.hint4=p.last4;      // remembered so assigning one SMS can teach the account its last 4 digits
     S.tx.push(t);S.seen.push(key);out.push({t,last4:p.last4,matched:!!a});
   }
   if(S.seen.length>2000)S.seen=S.seen.slice(-2000);
@@ -1049,7 +1050,7 @@ function txRow(t){
   const a=acc(t.acc),p=person(t.party);
   const tag=t.kind==='pass'?esc(p?p.name:'party'):t.kind==='other'?esc(srcName(t.source||'')+' · '+(t.cat==='Other'?'Other income':t.cat)):t.kind==='income'?esc(t.cat==='Other'?'Income':t.cat):esc(t.cat);
   return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8')+'26':t.kind==='pass'?'var(--brand-soft)':(ICATCOL[t.cat]||'#94a3b8')+'26'};color:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8'):t.kind==='pass'?'var(--brand)':(ICATCOL[t.cat]||'var(--brand)')}">${t.kind==='pass'?ic('swap',19):t.kind==='expense'?ic(CATS[t.cat]||'receipt',19):ic(ICATS[t.cat]||'wallet',19)}</div>
-  <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">Unassigned</span>'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}${t.pool?' · from '+esc(srcName(t.poolSrc||'')):''}</div></div>
+  <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">⚠ Pick account'+(t.hint4?' (••'+t.hint4+')':'')+'</span>'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}${t.pool?' · from '+esc(srcName(t.poolSrc||'')):''}</div></div>
   <b class="num ${t.type}">${t.type==='credit'?'+':'−'}${inr(t.amt)}</b></div>`;
 }
 function accTile(a,i){
@@ -1446,7 +1447,7 @@ document.addEventListener('click',e=>{
     if(kind==='pass'&&!$('#f-party').value){toast('Add a person first: Ledger → People → Add person');return}
     if(kind==='transfer'&&(!$('#f-acc').value||!$('#f-to').value||$('#f-acc').value===$('#f-to').value)){toast('Pick two different accounts');return}
     const t={id:id||uid(),date:$('#f-date').value,type:kind==='transfer'?'debit':tt,to:kind==='transfer'?$('#f-to').value:'',amt,acc:$('#f-acc').value,kind,cat:kind==='pass'?'Other':$('#f-cat').value,source:kind==='other'?$('#f-source').value:'',poolSrc:(kind==='expense'&&$('#f-pool').checked)?$('#f-poolsrc').value:'',note:$('#f-note').value.trim(),party:kind==='pass'?$('#f-party').value:'',pool:kind==='expense'&&$('#f-pool').checked,src:'manual'};
-    const i=S.tx.findIndex(x=>x.id===id);if(i>=0){const o=S.tx[i];t.src=o.src;if(o.emiId){t.emiId=o.emiId;t.emiNo=o.emiNo}if(o.prepaid)t.prepaid=true;S.tx[i]=t}else{if(emiPick&&t.cat==='EMI'){t.emiId=emiPick.id;t.emiNo=emiPick.no;t.src='emi'}S.tx.push(t)}
+    const i=S.tx.findIndex(x=>x.id===id);if(i>=0){const o=S.tx[i];t.src=o.src;if(o.hint4){if(t.acc)learnAcc(t.acc,o.hint4);else t.hint4=o.hint4}if(o.emiId){t.emiId=o.emiId;t.emiNo=o.emiNo}if(o.prepaid)t.prepaid=true;S.tx[i]=t}else{if(emiPick&&t.cat==='EMI'){t.emiId=emiPick.id;t.emiNo=emiPick.no;t.src='emi'}S.tx.push(t)}
     save();closeSheet();render();
     let msg='Saved',ms;
     if(t.kind==='expense'&&t.type==='debit'&&S.budgets[t.cat]>0){
@@ -1528,7 +1529,7 @@ document.addEventListener('click',e=>{
   else if(a==='addperson'){askText('Add person / party','','Name').then(n=>{if(n&&n.trim()){S.people.push({id:uid(),name:n.trim()});save();render()}})}
   else if(a==='person'){personSheet(id)}
   else if(a==='unassigned')unassignedSheet();
-  else if(a==='assignall'){const to=$('#ua-acc').value;let n=0;S.tx.forEach(t=>{if(!t.acc){t.acc=to;n++}});save();closeSheet();render();toast(`${n} transaction${n>1?'s':''} assigned`)}
+  else if(a==='assignall'){const to=$('#ua-acc').value;let n=0;const hs=new Set(S.tx.filter(t=>!t.acc&&t.hint4).map(t=>t.hint4));if(hs.size===1)learnAcc(to,[...hs][0]);S.tx.forEach(t=>{if(!t.acc){t.acc=to;delete t.hint4;n++}});save();closeSheet();render();toast(`${n} transaction${n>1?'s':''} assigned`)}
   else if(a==='padir'){paDir=id;document.querySelectorAll('#pa-seg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#pa-acc-l').textContent=id==='debit'?'Paid from which account':'Received in which account'}
   else if(a==='personadd'){
     const amt=parseFloat($('#pa-amt').value);if(!(amt>0)){toast('Enter an amount');return}
@@ -1587,6 +1588,13 @@ function sourceSheet(id){
    <button class="btn" data-a="srcadd" data-id="${esc(id)}">+ Add income to ${esc(name)}</button>
    ${id?`<button class="btn ghost" data-a="srcren" data-id="${esc(id)}">Rename</button><button class="btn red" data-a="srcdel" data-id="${esc(id)}">Delete source</button>`:''}
    <h2>History</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries yet</div>'}</div>`);
+}
+/* the account now knows its last 4 digits: every other SMS from the same digits goes to it too */
+function learnAcc(accId,h4){
+  const a=acc(accId);if(!a||!h4)return 0;let n=0;
+  if(!a.last4)a.last4=h4;
+  if(a.last4===h4)S.tx.forEach(t=>{if(!t.acc&&t.hint4===h4){t.acc=accId;delete t.hint4;n++}});
+  return n;
 }
 function unassignedSheet(){
   const list=S.tx.filter(t=>!t.acc).sort((a,b)=>b.date.localeCompare(a.date));
