@@ -556,7 +556,41 @@ async function pdfRows(buf){
     });
   }
   window.__pdfLines=lines.map(l=>l.items.map(i=>i.s).join(' '));
-  return linesToRows(lines);
+  const main=linesToRows(lines);
+  return main.length?main:blocksToRows(lines);
+}
+/* fallback for layouts where the date, narration and amounts sit on different lines:
+   every line that starts with a date opens a block; amounts are read from the whole block */
+function blocksToRows(lines){
+  const DATE=/^(?:\d{1,2}[\/\-. ](?:\d{1,2}|[A-Za-z]{3})[\/\-. ]\d{2,4}|\d{4}-\d{1,2}-\d{1,2})$/;
+  const JUNK=/page \d|opening balance|b\/f|brought forward|closing balance|statement summary|generated/i;
+  const blocks=[];let cur=null,dx=null,cx=null;
+  for(const ln of lines){
+    const txt=ln.items.map(i=>i.s).join(' ');
+    if(/debit|withdrawal/i.test(txt)&&/credit|deposit/i.test(txt)){
+      const d=ln.items.find(i=>/debit|withdrawal|^dr$/i.test(i.s)),c=ln.items.find(i=>/credit|deposit|^cr$/i.test(i.s));
+      if(d&&c){dx=d.x;cx=c.x;continue}
+    }
+    let date=null,used=0;
+    for(let st=0;st<=2&&!date;st++)for(let k=1;k<=3&&!date;k++){const t=ln.items.slice(st,st+k).map(i=>i.s).join(' ');if(DATE.test(t)){date=parseAnyDate(t);if(date)used=st+k}}
+    if(date&&!(cur&&!cur.items.some(i=>AMT_TOKEN.test(i.s))&&cur.date===date)){cur={date,items:[],texts:[]};blocks.push(cur);ln.items.slice(used).forEach(i=>cur.items.push(i));continue}
+    if(date){ln.items.slice(used).forEach(i=>cur.items.push(i));continue}
+    if(cur&&!JUNK.test(txt))ln.items.forEach(i=>cur.items.push(i));
+  }
+  const rows=[];let prevBal=null;
+  for(const b of blocks){
+    const amts=b.items.filter(i=>AMT_TOKEN.test(i.s));if(!amts.length)continue;
+    let txn=amts[0],bal=null;if(amts.length>=2){bal=amts[amts.length-1];txn=amts[amts.length-2]}
+    const amt=Math.abs(numOf(txn.s));if(!(amt>0))continue;
+    let type=null;const suf=txn.s.match(/(dr|cr)\.?$/i);if(suf)type=suf[1].toLowerCase()==='cr'?'credit':'debit';
+    if(!type&&dx!=null&&cx!=null)type=Math.abs(txn.x-dx)<=Math.abs(txn.x-cx)?'debit':'credit';
+    if(bal&&prevBal!=null){const delta=numOf(bal.s)-prevBal;if(Math.abs(Math.abs(delta)-amt)<0.02)type=delta>0?'credit':'debit'}
+    if(bal)prevBal=numOf(bal.s);
+    const desc=b.items.filter(i=>!AMT_TOKEN.test(i.s)&&!DATE.test(i.s)).map(i=>i.s).join(' ').replace(/\s+/g,' ').trim();
+    type=type||(/salary|credit|received|deposit|refund|interest|\bcr\b/i.test(desc)?'credit':'debit');
+    rows.push({date:b.date,type,amt:Math.round(amt*100)/100,desc,note:shortNote(desc)});
+  }
+  return rows;
 }
 function linesToRows(lines){
   const rows=[];let dx=null,cx=null,prevBal=null,pending=[];
@@ -1071,7 +1105,7 @@ function home(){
     ${emiUpcomingHtml()}
     <div class="card" style="margin-top:12px"><div class="ctitle"><b>Where it went</b><span class="small mute">${mlabel(month)}</span></div>${miniDonut(cd)}</div>`})()}
   ${npairs?`<div class="card small" style="margin-top:10px;cursor:pointer;background:var(--brand-soft)" data-a="pairs">${npairs} possible internal transfer${npairs>1?'s':''} found. Tap to review and merge.</div>`:''}
-  ${un?`<div class="card small" style="margin-top:10px;background:var(--brand-soft)">⚠️ ${un} transaction${un>1?'s':''} not matched to an account. Tap one to assign it.</div>`:''}
+  ${un?`<div class="card small" style="margin-top:10px;background:var(--brand-soft);cursor:pointer" data-a="unassigned">⚠️ ${un} transaction${un>1?'s':''} not matched to an account. <b>Tap here to assign.</b></div>`:''}
   <h2>Accounts</h2>
   <div class="hscroll">${S.accounts.map(accTile).join('')}</div>
   ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inrH(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inrH(pl.inc)}<br>Used ${inrH(pl.used)}</div></div>`:''}
@@ -1500,6 +1534,14 @@ document.addEventListener('click',e=>{
   else if(a==='notiftest'){if(!S.notify)return toast('Turn notifications on first');note.send('Arthaly','Notifications are working.',99)}
   else if(a==='addperson'){askText('Add person / party','','Name').then(n=>{if(n&&n.trim()){S.people.push({id:uid(),name:n.trim()});save();render()}})}
   else if(a==='person'){personSheet(id)}
+  else if(a==='unassigned')unassignedSheet();
+  else if(a==='assignall'){const to=$('#ua-acc').value;let n=0;S.tx.forEach(t=>{if(!t.acc){t.acc=to;n++}});save();closeSheet();render();toast(`${n} transaction${n>1?'s':''} assigned`)}
+  else if(a==='padir'){paDir=id;document.querySelectorAll('#pa-seg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#pa-acc-l').textContent=id==='debit'?'Paid from which account':'Received in which account'}
+  else if(a==='personadd'){
+    const amt=parseFloat($('#pa-amt').value);if(!(amt>0)){toast('Enter an amount');return}
+    S.tx.push({id:uid(),date:$('#pa-date').value||todayISO(),type:paDir,amt,acc:$('#pa-acc').value,to:'',kind:'pass',cat:'Other',note:$('#pa-note').value.trim(),party:id,pool:false});
+    save();render();personSheet(id);toast('Entry added');
+  }
   else if(a==='smson')enableSms();
   else if(a==='smsimport')importInbox();
   else if(a==='addacc'){S.accounts.push({id:uid(),name:id==='cash'?'Cash':id==='card'?'Credit card':'Account '+(S.accounts.length+1),type:id||'bank',last4:'',open:0,limit:0});save();render()}
@@ -1553,11 +1595,30 @@ function sourceSheet(id){
    ${id?`<button class="btn ghost" data-a="srcren" data-id="${esc(id)}">Rename</button><button class="btn red" data-a="srcdel" data-id="${esc(id)}">Delete source</button>`:''}
    <h2>History</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries yet</div>'}</div>`);
 }
+function unassignedSheet(){
+  const list=S.tx.filter(t=>!t.acc).sort((a,b)=>b.date.localeCompare(a.date));
+  if(!list.length){closeSheet();render();return}
+  openSheet(`<div class="row sp"><h1>Not matched to an account</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <div class="card" style="margin-top:14px"><b>${list.length} transaction${list.length>1?'s':''}</b><div class="small mute" style="margin:4px 0 8px">Pick the account they belong to and assign all at once, or tap a row to fix one by one.</div>
+  <select id="ua-acc">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),S.accounts[0].id)}</select>
+  <button class="btn" data-a="assignall">Assign all ${list.length} to this account</button></div>
+  <h2>Transactions</h2><div class="card" style="padding:4px 16px;max-height:45vh;overflow:auto">${list.map(txRow).join('')}</div>`);
+}
+let paDir='debit';
 function personSheet(id){
   const p=person(id),list=S.tx.filter(t=>t.kind==='pass'&&t.party===id).sort((a,b)=>b.date.localeCompare(a.date)),b=personBal(id);
   openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><button class="icon-btn" data-a="close">✕</button></div>
    <div class="card" style="margin-top:14px"><div class="big ${b>0?'debit':'credit'}">${inr(Math.abs(b))}</div><div class="small mute">${b>0?'owes you':b<0?'you owe':'all settled'}</div></div>
-   <h2>History</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries. Add a transaction with type “Party / pass-through”.</div>'}</div>`);
+   <h2>Add entry</h2><div class="card">
+   <div class="seg" id="pa-seg"><button data-a="padir" data-id="debit" class="on">I gave / paid them</button><button data-a="padir" data-id="credit">They gave / paid me</button></div>
+   <label>Amount (₹)</label><input id="pa-amt" inputmode="decimal" placeholder="₹ 0">
+   <label id="pa-acc-l">Paid from which account</label><select id="pa-acc">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),S.accounts[0]?S.accounts[0].id:'')}</select>
+   <label>Date</label><input id="pa-date" type="date" value="${todayISO()}">
+   <label>Note</label><input id="pa-note" placeholder="optional">
+   <button class="btn" data-a="personadd" data-id="${p.id}">Save entry</button>
+   <div class="small mute">This only changes this person's balance and the account. It is not counted as income or spending, so your graphs and budgets stay as they are.</div></div>
+   <h2>History</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries yet.</div>'}</div>`);
+  paDir='debit';refreshDates();
 }
 
 /* ---------- demo data ---------- */
