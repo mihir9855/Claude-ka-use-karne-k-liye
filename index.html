@@ -1103,7 +1103,7 @@ function home(){
   <h2>Accounts</h2>
   <div class="hscroll">${S.accounts.map(accTile).join('')}</div>
   ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inrH(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inrH(pl.inc)}<br>Used ${inrH(pl.used)}</div></div>`:''}
-  <h2>${accFilter?'Transactions · '+esc(acc(accFilter).name):'Transactions'}</h2>
+  <h2 class="row sp"><span>${accFilter?'Transactions · '+esc(acc(accFilter).name):'Transactions'}</span>${accFilter?`<button class="chip on" data-a="filter" data-id="${accFilter}" style="font-size:12px">Show all accounts ✕</button>`:''}</h2>
   <input id="q" class="search" placeholder="Search note, category, person or amount" value="${esc(q)}">
   <div class="card" style="padding:4px 16px;margin-top:10px" id="txlist">${txListHTML()}</div>`;
 }
