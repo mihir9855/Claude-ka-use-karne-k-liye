@@ -186,6 +186,7 @@ nav button span{display:flex;justify-content:center}
 @keyframes iglow{0%{filter:drop-shadow(0 0 0 rgba(224,170,90,.7))}60%{filter:drop-shadow(0 0 28px rgba(224,170,90,.8))}100%{filter:drop-shadow(0 0 0 rgba(224,170,90,0))}}
 @keyframes itxt{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){#intro *{animation-duration:.01s!important;animation-delay:0s!important}}
+.txscroll{max-height:min(720px,78vh);overflow-y:auto;overscroll-behavior:auto;-webkit-overflow-scrolling:touch}
 .sec{background:var(--card);border-radius:18px;box-shadow:var(--shadow);margin:0 0 10px;overflow:hidden}
 .sec>summary{list-style:none;cursor:pointer;padding:15px 16px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
 .sec>summary::-webkit-details-marker{display:none}
@@ -1111,7 +1112,7 @@ function home(){
   ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inrH(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inrH(pl.inc)}<br>Used ${inrH(pl.used)}</div></div>`:''}
   <h2 class="row sp"><span>${accFilter?'Transactions · '+esc(acc(accFilter).name):'Transactions'}</span>${accFilter?`<button class="chip on" data-a="filter" data-id="${accFilter}" style="font-size:12px">Show all accounts ✕</button>`:''}</h2>
   <input id="q" class="search" placeholder="Search note, category, person or amount" value="${esc(q)}">
-  <div class="card" style="padding:4px 16px;margin-top:10px" id="txlist">${txListHTML()}</div>`;
+  <div class="card txscroll" style="padding:4px 16px;margin-top:10px" id="txlist">${txListHTML()}</div>`;
 }
 /* ---------- BUDGET ---------- */
 function budgetView(){
