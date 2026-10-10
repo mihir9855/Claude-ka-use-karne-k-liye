@@ -269,7 +269,7 @@ if(mqDark)mqDark.addEventListener('change',()=>{if(S.appearance==='auto')applyTh
 function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
   if(!S.accounts.length)S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
-  S.emis=S.emis||[];S.salary=S.salary||0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
+  S.emis=S.emis||[];S.salary=0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
   S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[];S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
@@ -1267,7 +1267,6 @@ function accounts(){
    <button class="btn ${S.notify?'ghost':''}" data-a="notifon">${S.notify?'Notifications on (tap to turn off)':'Turn on notifications'}</button><button class="btn ghost" data-a="notiftest" style="margin-top:8px">Send test notification</button></div>`)+
   sec('look','Appearance',`<div class="card" style="padding:4px 16px">${[['auto','Auto','Follow my phone'],['light','Light',''],['dark','Dark','']].map(([k,l,h])=>`<div class="opt" data-a="appear" data-id="${k}"><div class="grow"><b>${l}</b>${h?`<div class="small mute">${h}</div>`:''}</div><span class="rad ${S.appearance===k?'on':''}"></span></div>`).join('')}</div>`)+
   sec('me','Profile &amp; backup',`<div class="card">   <label>Your name (shown on the home screen)</label><input data-f="yourname" value="${esc(S.name)}">
-   <label>Monthly salary (₹)</label><input data-f="salary" value="${S.salary||''}" inputmode="numeric">
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button></div>${['black','sage','cocoa'].includes(S.theme)?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}<label class="custom ${((S.accents||{})[S.theme])==='custom'?'on':''}" style="margin:0" title="Pick any colour"><input type="color" id="accentpick" value="${S.customHex||'#0f766e'}"></label></div>`}`);
 }
 
