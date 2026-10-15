@@ -186,6 +186,10 @@ nav button span{display:flex;justify-content:center}
 [data-theme] #intro b{color:var(--ink)}[data-theme] #intro small{color:var(--mute)}
 [data-theme] .sec{border:1px solid var(--line);box-shadow:none;border-radius:12px}
 [data-theme] .search{border-radius:10px}
+.pq{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.pq button{border:2px solid transparent;border-radius:10px;padding:13px 8px;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.pq .g{background:rgba(229,72,77,.12);color:var(--debit)}.pq .r{background:var(--brand-soft);color:var(--brand)}
+.pq button.on{border-color:currentColor}
 .icon-btn.del{color:var(--debit)}
 input[data-calc]{cursor:pointer;caret-color:transparent}
 .toast.ut{display:flex;align-items:center;gap:14px;padding:9px 10px 9px 16px}
@@ -309,6 +313,7 @@ const ICONS={
  plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',
  swap:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',
  list:'<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
+ doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',
  trash:'<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/>',
  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
@@ -1432,7 +1437,7 @@ function lc2(series,labels,o={}){
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg></div>${leg}`;
 }
 /* grouped bars: groups=[{l,a,b,ta,tb}] a=income (green) b=spend (red) */
-function flowBars(groups){
+function flowBars(groups,names){names=names||['Income','Spent'];
   const W=320,H=170,L=38,R=8,T=12,B=24,mx=Math.max(...groups.flatMap(g=>[g.a,g.b]),1)*1.1,Y=v=>T+(1-v/mx)*(H-T-B),gw=(W-L-R)/groups.length,bw=Math.min(18,gw*.34);
   let g='';
   [0,mx/2,mx].forEach(t=>{g+=`<line x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" stroke="var(--line)" stroke-width=".8"/><text x="${L-6}" y="${(Y(t)+3).toFixed(1)}" text-anchor="end">${kfmt(t)}</text>`});
@@ -1442,7 +1447,7 @@ function flowBars(groups){
     g+=`<rect class="g" style="--i:${i*2+1}" x="${(cx+1.5).toFixed(1)}" y="${y2.toFixed(1)}" width="${bw}" height="${Math.max(0,b0-y2).toFixed(1)}" rx="4" fill="var(--debit)" opacity=".85" data-tip="${esc(m.tb)}"/>`;
     g+=`<text x="${cx.toFixed(1)}" y="${H-7}" text-anchor="middle">${m.l}</text>`;
   });
-  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg></div><div class="lgd"><span><i style="background:var(--credit)"></i>Income</span><span><i style="background:var(--debit)"></i>Spent</span></div>`;
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg></div><div class="lgd"><span><i style="background:var(--credit)"></i>${names[0]}</span><span><i style="background:var(--debit)"></i>${names[1]}</span></div>`;
 }
 let sliceSel=-1;
 function donut(data){
@@ -1529,6 +1534,26 @@ function statsExtra(st){
   if(cards.length)out+=`<h2>Credit card use</h2><div class="card">${hbars(cards.map(a=>{const due=Math.max(0,-accBal(a.id))+emiBlocked(a.id);return{label:esc(a.name),v:due,max:a.limit,color:due/a.limit>.5?'var(--debit)':'var(--brand)',right:Math.round(due/a.limit*100)+'% of '+inr(a.limit)}}))}<div class="small mute">Keeping this under 30% is good for your credit score.</div></div>`;
   return out;
 }
+function ledgerSummary(){
+  const pass=S.tx.filter(t=>t.kind==='pass');
+  if(!pass.length)return '<div class="card empty">No ledger entries yet.<br>Open a person and add what you gave or received.</div>';
+  const sum=(l,ty)=>l.filter(t=>t.type===ty).reduce((x,t)=>x+t.amt,0),given=sum(pass,'debit'),rec=sum(pass,'credit'),net=given-rec;
+  const cm=month,pm=shiftMonth(month,-1),inM=m=>pass.filter(t=>t.date.startsWith(m)),g1=sum(inM(cm),'debit'),r1=sum(inM(cm),'credit'),g0=sum(inM(pm),'debit');
+  const gr=[],run=[],lab=[];for(let i=5;i>=0;i--){const m=shiftMonth(month,-i),l=inM(m),g=sum(l,'debit'),r=sum(l,'credit');
+    gr.push({l:mlabel(m).slice(0,3),a:r,b:g,ta:mlabel(m)+' received · '+inr(r),tb:mlabel(m)+' given · '+inr(g)});
+    run.push(pass.filter(t=>t.date.slice(0,7)<=m).reduce((x,t)=>x+(t.type==='debit'?t.amt:-t.amt),0));lab.push(mlabel(m).slice(0,3))}
+  const bals=S.people.map(p=>({p,b:personBal(p.id)})).filter(x=>x.b!==0).sort((x,y)=>Math.abs(y.b)-Math.abs(x.b));
+  const mx=bals.length?Math.abs(bals[0].b):1;
+  const tops=pass.slice().sort((x,y)=>y.amt-x.amt).slice(0,5);
+  return `<div class="card ins-hero"><div class="small mute">${net>0?'People owe you':net<0?'You owe people':'All settled'}</div><div class="big num ${net>0?'debit':net<0?'credit':''}">${inrH(Math.abs(net))}</div>
+   <div class="grid2" style="margin-top:12px"><div class="mini"><span class="small mute">Given</span><b class="num debit">${inrH(given)}</b></div><div class="mini"><span class="small mute">Received</span><b class="num credit">${inrH(rec)}</b></div></div>
+   <div class="small mute" style="margin-top:10px">${mlabel(month)}: given ${inrH(g1)}, received ${inrH(r1)}${g0>0?` · given ${g1>=g0?'up':'down'} ${Math.abs(Math.round((g1-g0)/g0*100))}% vs last month`:''}</div></div>
+  <h2>Given vs received</h2><div class="card">${flowBars(gr,['Received','Given'])}</div>
+  <h2>Outstanding over time</h2><div class="card">${lc2([{vals:run,color:'var(--brand)',area:true,peak:false,tips:run.map((v,i)=>lab[i]+' · '+inr(v))}],lab,{h:150})}<div class="small mute" style="margin-top:6px">Above the line: people owe you. Below: you owe them.</div></div>
+  ${bals.length?`<h2>Who owes whom</h2><div class="card"><div class="crows">${bals.map(x=>`<div class="crow" data-a="person" data-id="${x.p.id}" style="cursor:pointer"><span class="cic" style="background:var(--brand-soft);color:var(--brand)">${ic('user',16)}</span><div class="grow"><div class="row sp"><b>${esc(x.p.name)}</b><span class="num"><b class="${x.b>0?'debit':'credit'}">${inrH(Math.abs(x.b))}</b> <span class="mute small">${x.b>0?'owes you':'you owe'}</span></span></div><div class="ctr"><i style="width:${Math.max(3,Math.abs(x.b)/mx*100)}%;background:${x.b>0?'var(--debit)':'var(--credit)'}"></i></div></div></div>`).join('')}</div></div>`:''}
+  <h2>Biggest entries</h2><div class="card" style="padding:4px 16px">${tops.map(txRow).join('')}</div>
+  <p class="small mute">These entries are separate from your income and spending, so the main Insights and Budget never count them.</p>`;
+}
 function khata(){
   let body='';
   if(seg==='people'){
@@ -1538,7 +1563,7 @@ function khata(){
       return `<div class="card row sp" style="margin-bottom:10px" data-a="person" data-id="${p.id}"><div class="row"><div class="dot" style="color:var(--brand)">${ic('user',19)}</div><div><b>${esc(p.name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'}</div></div></div><div style="text-align:right"><b class="num ${b>0?'debit':b<0?'credit':''}">${inr(Math.abs(b))}</b><div class="small mute">${b>0?'owes you':b<0?'you owe':'settled'}</div></div></div>`}).join('')
       +`<button class="btn ghost" data-a="addperson">+ Add person / party</button>
       <p class="small mute">Money you send from your account for someone (e.g. a business UPI) is a <b>debit</b> on that person; when they pay it back it is a <b>credit</b>. These never count as your income or spending.</p>`;
-  }else if(seg==='emi'){body=emiBody()}else{
+  }else if(seg==='emi'){body=emiBody()}else if(seg==='summary'){body=ledgerSummary()}else{
     const pl=pool(),noSrc=S.tx.some(t=>(t.kind==='other'&&!t.source)||(t.pool&&t.kind==='expense'&&!t.poolSrc));
     const card=(id,name)=>{const st=srcStats(id);const n=S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(t.pool&&t.kind==='expense'&&(t.poolSrc||'')===id)).length;
       return `<div class="card row sp" style="margin-bottom:10px" data-a="source" data-id="${esc(id)}"><div class="row"><div class="dot" style="color:var(--credit)">${ic('wallet',19)}</div><div><b>${esc(name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'} · earned ${inr(st.inc)}</div></div></div><div style="text-align:right"><b class="num ${st.left<0?'debit':'credit'}">${inr(st.left)}</b><div class="small mute">left to use</div></div></div>`};
@@ -1549,7 +1574,7 @@ function khata(){
     <button class="btn ghost" data-a="addsource">+ Add income source</button>
     <p class="small mute">Make one source per client or kind of side income. Add income to it with type <b>Other income</b>. When you spend from it, tick “Paid from other-income pool” on that expense and pick the source.</p>`;
   }
-  return `<h1>Ledger</h1><div class="seg" style="margin:14px 0"><button data-a="seg" data-id="people" class="${seg==='people'?'on':''}">People</button><button data-a="seg" data-id="other" class="${seg==='other'?'on':''}">Other income</button><button data-a="seg" data-id="emi" class="${seg==='emi'?'on':''}">EMI</button></div>${body}`;
+  return `<h1>Ledger</h1><div class="seg" style="margin:14px 0"><button data-a="seg" data-id="people" class="${seg==='people'?'on':''}">People</button><button data-a="seg" data-id="other" class="${seg==='other'?'on':''}">Other income</button><button data-a="seg" data-id="emi" class="${seg==='emi'?'on':''}">EMI</button><button data-a="seg" data-id="summary" class="${seg==='summary'?'on':''}">Summary</button></div>${body}`;
 }
 let openSec=new Set(['acc']);
 function accounts(){
@@ -1979,7 +2004,14 @@ document.addEventListener('click',e=>{
   else if(a==='unassigned')unassignedSheet();
   else if(a==='assignall'){const to=$('#ua-acc').value;let n=0;const hs=new Set(S.tx.filter(t=>!t.acc&&t.hint4).map(t=>t.hint4));if(hs.size===1)learnAcc(to,[...hs][0]);S.tx.forEach(t=>{if(!t.acc){t.acc=to;delete t.hint4;n++}});save();closeSheet();render();toast(`${n} transaction${n>1?'s':''} assigned`)}
   else if(a==='padir'){paDir=id;document.querySelectorAll('#pa-seg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#pa-acc-l').textContent=id==='debit'?'Paid from which account':'Received in which account'}
-  else if(a==='personpdf'){const r=personStatement(id,$('#ps-per').value);sharePdf(r.name,r.pdf)}
+  else if(a==='personpdf'){const r=personStatement(id,el.dataset.per||'all');sharePdf(r.name,r.pdf)}
+  else if(a==='pdfmenu')pdfMenu(id)
+  else if(a==='pform'){
+    const f=$('#pform'),nm=person($('[data-a=personadd]').dataset.id).name;
+    if(!f.hidden&&paDir===id){f.hidden=true;document.querySelectorAll('.pq button').forEach(b=>b.classList.remove('on'));return}
+    paDir=id;f.hidden=false;document.querySelectorAll('.pq button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
+    $('#pf-title').textContent=id==='debit'?'Given to '+nm:'Received from '+nm;$('#pa-acc-l').textContent=id==='debit'?'Paid from which account':'Received in which account';f.scrollIntoView({block:'center',behavior:'smooth'});
+  }
   else if(a==='persondel'){
     const p=person(id);if(!p)return;const gone=S.tx.filter(t=>t.kind==='pass'&&t.party===id),n=gone.length;
     askConfirm(n?`Delete ${p.name} and ${n} entr${n===1?'y':'ies'}? Your income and spending graphs will not change. Account balances will, because these entries moved money in and out of your accounts.`:`Delete ${p.name}?`,'Delete',true).then(ok=>{if(!ok)return;
@@ -2081,22 +2113,29 @@ function unassignedSheet(){
 }
 let paDir='debit';
 function personSheet(id){
-  const p=person(id),list=S.tx.filter(t=>t.kind==='pass'&&t.party===id).sort((a,b)=>b.date.localeCompare(a.date)),b=personBal(id);
-  openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><div class="row" style="gap:8px">${delBtn('persondel',p.id,'Delete person')}<button class="icon-btn" data-a="close">✕</button></div></div>
-   <div class="card" style="margin-top:14px"><div class="big ${b>0?'debit':'credit'}">${inr(Math.abs(b))}</div><div class="small mute">${b>0?'owes you':b<0?'you owe':'all settled'}</div></div>
-   <h2>Add entry</h2><div class="card">
-   <div class="seg" id="pa-seg"><button data-a="padir" data-id="debit" class="on">I gave / paid them</button><button data-a="padir" data-id="credit">They gave / paid me</button></div>
+  const p=person(id),idx=new Map(S.tx.map((t,i)=>[t,i])),list=S.tx.filter(t=>t.kind==='pass'&&t.party===id).sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0)||idx.get(b)-idx.get(a)),b=personBal(id);
+  const given=list.filter(t=>t.type==='debit').reduce((x,t)=>x+t.amt,0),rec=list.filter(t=>t.type==='credit').reduce((x,t)=>x+t.amt,0);
+  let line='';
+  if(list.length>=2){const asc=list.slice().reverse();let run=0;const vals=asc.map(t=>run+=t.type==='debit'?t.amt:-t.amt),lab=asc.map((t,i)=>i===0||i===asc.length-1?new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'');
+    line=`<h2>Balance over time</h2><div class="card">${lc2([{vals,color:'var(--brand)',area:true,peak:false,tips:asc.map((t,i)=>new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' · '+inr(vals[i]))}],lab,{h:150})}</div>`}
+  openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><div class="row" style="gap:8px"><button class="icon-btn" data-a="pdfmenu" data-id="${p.id}" aria-label="Statement PDF" title="Statement PDF">${ic('doc',18)}</button>${delBtn('persondel',p.id,'Delete person')}<button class="icon-btn" data-a="close">✕</button></div></div>
+   <div class="card" style="margin-top:14px"><div class="small mute">${b>0?'Owes you':b<0?'You owe':'All settled'}</div><div class="big num ${b>0?'debit':b<0?'credit':''}">${inr(Math.abs(b))}</div>
+   <div class="grid2" style="margin-top:12px"><div class="mini"><span class="small mute">Given</span><b class="num debit">${inr(given)}</b></div><div class="mini"><span class="small mute">Received</span><b class="num credit">${inr(rec)}</b></div></div></div>
+   <div class="pq"><button class="g" data-a="pform" data-id="debit">↗ Given</button><button class="r" data-a="pform" data-id="credit">↙ Received</button></div>
+   <div class="card" id="pform" hidden style="margin-top:12px"><b id="pf-title">Given</b>
    <label>Amount (₹)</label><input id="pa-amt" readonly data-calc inputmode="decimal" placeholder="₹ 0">
-   <label id="pa-acc-l">Paid from which account</label><select id="pa-acc">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),S.accounts[0]?S.accounts[0].id:'')}</select>
+   <label id="pa-acc-l">From which account</label><select id="pa-acc">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),S.accounts[0]?S.accounts[0].id:'')}</select>
    <label>Date</label><input id="pa-date" type="date" value="${todayISO()}">
-   <label>Note</label><input id="pa-note" placeholder="optional">
-   <button class="btn" data-a="personadd" data-id="${p.id}">Save entry</button>
-   <div class="small mute">This only changes this person's balance and the account. It is not counted as income or spending, so your graphs and budgets stay as they are.</div></div>
-   <h2>Statement (PDF)</h2><div class="card"><div class="small mute">A bank-style statement of this person: every debit, credit and the running balance.</div>
-   <select id="ps-per" style="margin-top:8px"><option value="all">All time</option><option value="m">This month</option><option value="3">Last 3 months</option><option value="y">This year</option></select>
-   <button class="btn" data-a="personpdf" data-id="${p.id}">Download statement PDF</button></div>
+   <label>Note</label><input id="pa-note">
+   <button class="btn" data-a="personadd" data-id="${p.id}">Save</button></div>
+   ${line}
    <h2>History</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries yet.</div>'}</div>`);
   paDir='debit';refreshDates();
+}
+function pdfMenu(id){
+  const p=person(id);
+  openSheet(`<div class="row sp"><h1>Statement PDF</h1><button class="icon-btn" data-a="close">✕</button></div><div class="small mute" style="margin:8px 0 4px">${esc(p.name)} · every given, received and the running balance</div>
+  ${[['all','All time'],['m','This month'],['3','Last 3 months'],['y','This year']].map(([k,l])=>`<button class="btn ghost" data-a="personpdf" data-id="${id}" data-per="${k}">${l}</button>`).join('')}`);
 }
 
 /* ---------- demo data ---------- */
