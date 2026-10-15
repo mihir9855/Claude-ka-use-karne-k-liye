@@ -1203,10 +1203,8 @@ function pace(mk,st){
 
 /* ---------- views ---------- */
 function monthBar(){
-  const other=month!==new Date().toISOString().slice(0,7);
-  /* the current month is not written out; a label only shows while you look at another month */
-  return other?`<button class="mpill" data-a="mpick" aria-label="Choose month">${mlabel(month)}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>`
-    :`<button class="icon-btn" data-a="mpick" aria-label="Choose month" title="Choose month">${ic('cal',18)}</button>`}
+  /* nothing is shown for the current month; a small label appears only while you look at another month */
+  return month===new Date().toISOString().slice(0,7)?'':`<button class="mpill" data-a="mpick" aria-label="Choose month">${mlabel(month)}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>`}
 let mpYear=0;
 function monthSheet(){
   const cur=new Date().toISOString().slice(0,7),mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1283,7 +1281,7 @@ function home(){
   const total=S.accounts.filter(x=>accType(x)!=='card').reduce((a,x)=>a+accBal(x.id),0);
   const cardDue=-S.accounts.filter(x=>accType(x)==='card').reduce((a,x)=>a+accBal(x.id),0);
   const cashBal=S.accounts.filter(x=>accType(x)==='cash').reduce((a,x)=>a+accBal(x.id),0);
-  return `<div class="row sp"><div><h1>Arthaly</h1><div class="small mute">${S.name?'Hello, '+esc(S.name):'Welcome'}</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="eye" title="Hide or show amounts">${ic(S.hide?'eyeoff':'eye',18)}</button><button class="icon-btn" data-a="nav" data-id="accounts" title="Settings">${ic('gear',18)}</button></div></div>
+  return `<div class="row sp"><div><h1>Arthaly</h1><div class="small mute">${S.name?'Hello, '+esc(S.name):'Welcome'}</div></div><div class="row">${monthBar()}</div></div>
   <div class="qa">
     <button style="background:#7c5cff" data-a="qa" data-id="exp"><span>${ic('minus',22)}</span>Expense</button>
     <button style="background:#16a34a" data-a="qa" data-id="inc"><span>${ic('plus',22)}</span>Income</button>
@@ -1709,7 +1707,16 @@ function render(){
   $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new" aria-label="Add"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
 }
 let tt='debit';
+function menuSheet(){
+  openSheet(`<div class="row sp"><h1>Menu</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <div class="card" style="padding:4px 16px;margin-top:14px">
+   <div class="opt" data-a="menuset"><span class="ic" style="color:var(--brand)">${ic('gear',22)}</span><div class="grow"><b>Settings</b><div class="small mute">Accounts, SMS, backup, appearance</div></div><span class="mute">›</span></div>
+   <div class="opt" data-a="mpick"><span class="ic" style="color:var(--brand)">${ic('cal',22)}</span><div class="grow"><b>Choose month</b><div class="small mute">${mlabel(month)}</div></div><span class="mute">›</span></div>
+   <div class="opt" data-a="menueye"><span class="ic" style="color:var(--brand)">${ic(S.hide?'eye':'eyeoff',22)}</span><div class="grow"><b>${S.hide?'Show amounts':'Hide amounts'}</b><div class="small mute">Hide your balances on screen</div></div></div>
+  </div>`);
+}
 document.addEventListener('click',e=>{
+  if(e.target.closest&&e.target.closest('#app h1')&&['home','budget','stats'].includes(view)&&!sheetIsOpen()&&!dlgIsOpen()){menuSheet();return}
   const el=e.target.closest('[data-a]');if(!el)return;
   if(el.dataset.a==='dlgcancel'&&e.target.closest('[data-stop]'))return;
   if(el.dataset.a==='close'&&e.target.closest('[data-stop]')&&!e.target.closest('button[data-a=close]'))return;
@@ -1719,6 +1726,8 @@ document.addEventListener('click',e=>{
   else if(a==='dlgok')dlgClose($('#dlg-in').value);
   else if(a==='dlgcancel')dlgClose(null);
   else if(a==='nav')navTo(id)
+  else if(a==='menuset'){closeSheet();navTo('accounts')}
+  else if(a==='menueye'){S.hide=!S.hide;save();closeSheet();render()}
   else if(a==='mpick'){mpYear=+month.slice(0,4);monthSheet()}
   else if(a==='myear'){mpYear+=parseInt(id,10);monthSheet()}
   else if(a==='mset'){month=id;closeSheet();render()}
