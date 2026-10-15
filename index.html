@@ -1496,6 +1496,7 @@ function stats(){
   </div>
   <h2>This month vs last month</h2>${paceCard}
   <h2>By category</h2><div class="card">${donut(data)}</div>
+  ${S.tx.some(t=>t.kind==='other'||t.pool)?`<h2>Other income</h2>${otherBlock()}`:''}
   <h2>Spending calendar</h2><div class="card">${heatCal(st)}</div>
   <h2>Income vs spending</h2><div class="card">${flowBars(ms)}</div>
   ${tops.length?`<h2>Biggest spends this month</h2><div class="card" style="padding:4px 16px">${tops.map(t=>`<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${(CATCOL[t.cat]||'#94a3b8')}1f;color:${CATCOL[t.cat]||'#94a3b8'}">${ic(CATS[t.cat]||'receipt',19)}</div><div class="grow"><div class="t">${esc(t.note||cname(t.cat))}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})} · ${esc(cname(t.cat))}</div></div><b class="num debit">−${inr(t.amt)}</b></div>`).join('')}</div>`:''}
@@ -1534,6 +1535,15 @@ function statsExtra(st){
   if(cards.length)out+=`<h2>Credit card use</h2><div class="card">${hbars(cards.map(a=>{const due=Math.max(0,-accBal(a.id))+emiBlocked(a.id);return{label:esc(a.name),v:due,max:a.limit,color:due/a.limit>.5?'var(--debit)':'var(--brand)',right:Math.round(due/a.limit*100)+'% of '+inr(a.limit)}}))}<div class="small mute">Keeping this under 30% is good for your credit score.</div></div>`;
   return out;
 }
+function otherBlock(){
+  const mk=k=>({inn:S.tx.filter(t=>t.kind==='other'&&t.date.startsWith(k)).reduce((x,t)=>x+(t.type==='credit'?t.amt:-t.amt),0),out:S.tx.filter(t=>t.pool&&t.kind==='expense'&&t.date.startsWith(k)).reduce((x,t)=>x+(t.type==='debit'?t.amt:-t.amt),0)});
+  const m=mk(month),pl=pool(),g=[];
+  for(let i=5;i>=0;i--){const k=shiftMonth(month,-i),x=mk(k);g.push({l:mlabel(k).slice(0,3),a:x.inn,b:x.out,ta:mlabel(k)+' money in · '+inr(x.inn),tb:mlabel(k)+' money out · '+inr(x.out)})}
+  return `<div class="card"><div class="small mute">Other income · ${mlabel(month)}</div>
+   <div class="grid2" style="margin-top:10px"><div class="mini"><span class="small mute">Money in</span><b class="num credit">${inrH(m.inn)}</b></div><div class="mini"><span class="small mute">Money out</span><b class="num debit">${inrH(m.out)}</b></div></div>
+   <div class="row sp" style="margin-top:10px"><span class="small mute">Left to use (all time)</span><b class="num ${pl.left<0?'debit':'credit'}">${inrH(pl.left)}</b></div>
+   <div style="margin-top:8px">${flowBars(g,['Money in','Money out'])}</div></div>`;
+}
 function ledgerSummary(){
   const pass=S.tx.filter(t=>t.kind==='pass');
   if(!pass.length)return '<div class="card empty">No ledger entries yet.<br>Open a person and add what you gave or received.</div>';
@@ -1549,32 +1559,30 @@ function ledgerSummary(){
    <div class="grid2" style="margin-top:12px"><div class="mini"><span class="small mute">Given</span><b class="num debit">${inrH(given)}</b></div><div class="mini"><span class="small mute">Received</span><b class="num credit">${inrH(rec)}</b></div></div>
    <div class="small mute" style="margin-top:10px">${mlabel(month)}: given ${inrH(g1)}, received ${inrH(r1)}${g0>0?` · given ${g1>=g0?'up':'down'} ${Math.abs(Math.round((g1-g0)/g0*100))}% vs last month`:''}</div></div>
   <h2>Given vs received</h2><div class="card">${flowBars(gr,['Received','Given'])}</div>
-  <h2>Outstanding over time</h2><div class="card">${lc2([{vals:run,color:'var(--brand)',area:true,peak:false,tips:run.map((v,i)=>lab[i]+' · '+inr(v))}],lab,{h:150})}<div class="small mute" style="margin-top:6px">Above the line: people owe you. Below: you owe them.</div></div>
-  ${bals.length?`<h2>Who owes whom</h2><div class="card"><div class="crows">${bals.map(x=>`<div class="crow" data-a="person" data-id="${x.p.id}" style="cursor:pointer"><span class="cic" style="background:var(--brand-soft);color:var(--brand)">${ic('user',16)}</span><div class="grow"><div class="row sp"><b>${esc(x.p.name)}</b><span class="num"><b class="${x.b>0?'debit':'credit'}">${inrH(Math.abs(x.b))}</b> <span class="mute small">${x.b>0?'owes you':'you owe'}</span></span></div><div class="ctr"><i style="width:${Math.max(3,Math.abs(x.b)/mx*100)}%;background:${x.b>0?'var(--debit)':'var(--credit)'}"></i></div></div></div>`).join('')}</div></div>`:''}
-  <h2>Biggest entries</h2><div class="card" style="padding:4px 16px">${tops.map(txRow).join('')}</div>
-  <p class="small mute">These entries are separate from your income and spending, so the main Insights and Budget never count them.</p>`;
+  <h2>Outstanding over time</h2><div class="card">${lc2([{vals:run,color:'var(--brand)',area:true,peak:false,tips:run.map((v,i)=>lab[i]+' · '+inr(v))}],lab,{h:150})}<div class="small mute" style="margin-top:6px">Above the line: people owe you. Below: you owe them.</div></div>`;
 }
 function khata(){
   let body='';
   if(seg==='people'){
     const bals=S.people.map(p=>({p,b:personBal(p.id)})).filter(x=>x.b!==0);
     const chartP=bals.length?`<div class="card" style="margin-bottom:12px"><div class="ctitle"><b>Who owes whom</b></div>${hbars(bals.map(x=>({label:esc(x.p.name),v:Math.abs(x.b),max:Math.max(...bals.map(y=>Math.abs(y.b))),color:x.b>0?'var(--debit)':'var(--credit)',right:(x.b>0?'owes you ':'you owe ')+inr(Math.abs(x.b))})))}<div class="small mute">Red: money to get back. Green: money you owe.</div></div>`:'';
-    body=chartP+S.people.map(p=>{const b=personBal(p.id);const n=S.tx.filter(t=>t.kind==='pass'&&t.party===p.id).length;
+    body=(S.tx.some(t=>t.kind==='pass')?ledgerSummary():'')+'<h2>People</h2>'+S.people.map(p=>{const b=personBal(p.id);const n=S.tx.filter(t=>t.kind==='pass'&&t.party===p.id).length;
       return `<div class="card row sp" style="margin-bottom:10px" data-a="person" data-id="${p.id}"><div class="row"><div class="dot" style="color:var(--brand)">${ic('user',19)}</div><div><b>${esc(p.name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'}</div></div></div><div style="text-align:right"><b class="num ${b>0?'debit':b<0?'credit':''}">${inr(Math.abs(b))}</b><div class="small mute">${b>0?'owes you':b<0?'you owe':'settled'}</div></div></div>`}).join('')
       +`<button class="btn ghost" data-a="addperson">+ Add person / party</button>
       <p class="small mute">Money you send from your account for someone (e.g. a business UPI) is a <b>debit</b> on that person; when they pay it back it is a <b>credit</b>. These never count as your income or spending.</p>`;
-  }else if(seg==='emi'){body=emiBody()}else if(seg==='summary'){body=ledgerSummary()}else{
+  }else if(seg==='emi'){body=emiBody()}else{
     const pl=pool(),noSrc=S.tx.some(t=>(t.kind==='other'&&!t.source)||(t.pool&&t.kind==='expense'&&!t.poolSrc));
     const card=(id,name)=>{const st=srcStats(id);const n=S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(t.pool&&t.kind==='expense'&&(t.poolSrc||'')===id)).length;
       return `<div class="card row sp" style="margin-bottom:10px" data-a="source" data-id="${esc(id)}"><div class="row"><div class="dot" style="color:var(--credit)">${ic('wallet',19)}</div><div><b>${esc(name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'} · earned ${inr(st.inc)}</div></div></div><div style="text-align:right"><b class="num ${st.left<0?'debit':'credit'}">${inr(st.left)}</b><div class="small mute">left to use</div></div></div>`};
-    body=`<div class="card" style="cursor:pointer" data-a="allother"><div class="small mute">All other income · pool left · tap to see and edit entries</div><div class="big ${pl.left<0?'debit':''}">${inr(pl.left)}</div><div class="row sp small mute"><span>Earned ${inr(pl.inc)}</span><span>Used ${inr(pl.used)}</span></div></div>
+    body=`${otherBlock()}
+    <div class="card row sp" style="margin-top:12px;cursor:pointer" data-a="allother"><b>All other-income entries</b><span class="mute">›</span></div>
     ${(()=>{const d=S.sources.map((x,i)=>({k:x.name,v:srcStats(x.id).inc,c:['#14b8a6','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#84cc16'][i%6]})).filter(x=>x.v>0);return d.length?`<div class="card" style="margin-top:12px"><div class="ctitle"><b>Earned by source</b></div>${miniDonut(d)}</div>`:''})()}
     <h2>Income sources</h2>
     ${S.sources.map(x=>card(x.id,x.name)).join('')}${noSrc?card('','General'):''}
     <button class="btn ghost" data-a="addsource">+ Add income source</button>
     <p class="small mute">Make one source per client or kind of side income. Add income to it with type <b>Other income</b>. When you spend from it, tick “Paid from other-income pool” on that expense and pick the source.</p>`;
   }
-  return `<h1>Ledger</h1><div class="seg" style="margin:14px 0"><button data-a="seg" data-id="people" class="${seg==='people'?'on':''}">People</button><button data-a="seg" data-id="other" class="${seg==='other'?'on':''}">Other income</button><button data-a="seg" data-id="emi" class="${seg==='emi'?'on':''}">EMI</button><button data-a="seg" data-id="summary" class="${seg==='summary'?'on':''}">Summary</button></div>${body}`;
+  return `<h1>Ledger</h1><div class="seg" style="margin:14px 0"><button data-a="seg" data-id="people" class="${seg==='people'?'on':''}">People</button><button data-a="seg" data-id="other" class="${seg==='other'?'on':''}">Other income</button><button data-a="seg" data-id="emi" class="${seg==='emi'?'on':''}">EMI</button></div>${body}`;
 }
 let openSec=new Set(['acc']);
 function accounts(){
