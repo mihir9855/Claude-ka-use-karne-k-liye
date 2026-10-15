@@ -1140,8 +1140,6 @@ function home(){
     <div class="card" style="margin-top:12px"><div class="ctitle"><b>Where it went</b><span class="small mute">${mlabel(month)}</span></div>${miniDonut(cd)}</div>`})()}
   ${npairs?`<div class="card small" style="margin-top:10px;cursor:pointer;background:var(--brand-soft)" data-a="pairs">${npairs} possible internal transfer${npairs>1?'s':''} found. Tap to review and merge.</div>`:''}
   ${un?`<div class="card small" style="margin-top:10px;background:var(--brand-soft);cursor:pointer" data-a="unassigned">⚠️ ${un} transaction${un>1?'s':''} not matched to an account. <b>Tap here to assign.</b></div>`:''}
-  <h2>Accounts</h2>
-  <div class="hscroll">${S.accounts.map(accTile).join('')}</div>
   ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inrH(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inrH(pl.inc)}<br>Used ${inrH(pl.used)}</div></div>`:''}`;
 }
 /* ---------- BUDGET ---------- */
