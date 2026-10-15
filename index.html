@@ -186,6 +186,17 @@ nav button span{display:flex;justify-content:center}
 [data-theme] #intro b{color:var(--ink)}[data-theme] #intro small{color:var(--mute)}
 [data-theme] .sec{border:1px solid var(--line);box-shadow:none;border-radius:12px}
 [data-theme] .search{border-radius:10px}
+.acard{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px;background:var(--card)}
+.atile{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;color:#fff}
+.atile .an{font-size:12px;opacity:.9}.atile .ab{font-size:21px;font-weight:800;margin-top:2px}
+.adel{width:38px;height:38px;border-radius:10px;border:0;background:rgba(255,255,255,.2);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0;flex:none}
+.adots{display:flex;gap:7px;padding:14px 16px 2px;overflow-x:auto;scrollbar-width:none;align-items:center}.adots::-webkit-scrollbar{display:none}
+.ad{width:23px;height:23px;min-width:23px;border-radius:50%;border:0;margin:0;padding:0;cursor:pointer;position:relative;display:grid;place-items:center;flex:none;font:inherit}
+.ad.on{outline:2px solid var(--ink);outline-offset:2px}
+.ad.cust{background:var(--field);border:1.5px dashed var(--mute);overflow:hidden}.ad.cust b{color:var(--mute);font-size:16px;line-height:1;font-weight:600}.ad.cust.on b{color:#fff}
+.ad.cust input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0;margin:0}
+.ad.rst{background:var(--field);color:var(--mute);font-size:15px;border:1px solid var(--line)}
+.abody{padding:2px 16px 16px}
 .mpill{display:inline-flex;align-items:center;gap:7px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .mgrid button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:13px 0;font:inherit;font-weight:600;cursor:pointer}
@@ -263,7 +274,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 .sec>summary::-webkit-details-marker{display:none}
 .sec>summary::after{content:'›';font-size:22px;color:var(--mute);transform:rotate(90deg);transition:transform .2s}
 .sec[open]>summary::after{transform:rotate(-90deg)}
-.secbody{padding:0 14px 14px}.secbody>.card{box-shadow:none;padding-left:2px;padding-right:2px;background:transparent}
+.secbody{padding:0 14px 14px}
 </style>
 </head>
 <body>
@@ -284,6 +295,7 @@ const ICONS={
  plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',
  swap:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',
  list:'<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
+ trash:'<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/>',
  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
  msg:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
@@ -1529,15 +1541,14 @@ function khata(){
 let openSec=new Set(['acc']);
 function accounts(){
   const sec=(id,t,body)=>`<details class="sec" data-sec="${id}" ${openSec.has(id)?'open':''}><summary>${t}</summary><div class="secbody">${body}</div></details>`;
-  const cards=S.accounts.map((a,i)=>{const ty=accType(a),bal=accBal(a.id);return `<div class="card" style="margin-bottom:10px"><div class="row sp"><b style="color:${COLORS[i%6]}">● ${esc(a.name)}</b><b class="num ${ty==='card'&&bal<0?'debit':''}">${ty==='card'?(bal<0?'Due '+inr(-bal):inr(bal)):inr(bal)}</b></div>
+  const cards=S.accounts.map((a,i)=>{const ty=accType(a),bal=accBal(a.id),col=a.color?mute(a.color):['#1f9a57','#2f8b9c','#5b82bf'][i%3],isCust=a.color&&!ACC_COL.includes(a.color.toLowerCase());return `<div class="acard">
+   <div class="atile" style="background:${col}"><div><div class="an">${esc(a.name)}${a.last4?' ••'+esc(a.last4):''} · ${ty==='card'?'Credit card':ty==='cash'?'Cash':'Bank'}</div><div class="ab num">${ty==='card'?(bal<0?'Due '+inr(-bal):inr(bal)):inr(bal)}</div></div><button class="adel" data-a="delacc" data-id="${a.id}" aria-label="Delete account" title="Delete account">${ic('trash',19)}</button></div>
+   <div class="adots">${ACC_COL.map(c=>`<button type="button" class="ad ${(a.color||'').toLowerCase()===c?'on':''}" data-a="acccolor" data-id="${a.id}" data-c="${c}" style="background:${mute(c)}" aria-label="Colour"></button>`).join('')}<label class="ad cust ${isCust?'on':''}" title="Any colour" style="${isCust?'background:'+mute(a.color):''}"><b>+</b><input type="color" data-f="color" data-id="${a.id}" value="${a.color||'#7a1f3d'}"></label>${a.color?`<button type="button" class="ad rst" data-a="acccolor" data-id="${a.id}" data-c="" aria-label="Default colour" title="Default colour">↺</button>`:''}</div>
+   <div class="abody">
    <div class="grid2"><div><label>Name</label><input data-f="name" data-id="${a.id}" value="${esc(a.name)}"></div><div><label>Type</label><select data-f="type" data-id="${a.id}"><option value="bank" ${ty==='bank'?'selected':''}>Bank account</option><option value="cash" ${ty==='cash'?'selected':''}>Cash</option><option value="card" ${ty==='card'?'selected':''}>Credit card</option></select></div></div>
-   <label>Tile colour</label>
-   <div class="cprev" style="background:${a.color?mute(a.color):['#1f9a57','#2f8b9c','#5b82bf'][i%3]}"><span>${esc(a.name)}${a.last4?' ••'+esc(a.last4):''}</span><span>${a.color?'Your colour':'Default'}</span></div>
-   <div class="cpick">${ACC_COL.map(c=>`<button type="button" class="cs ${(a.color||'').toLowerCase()===c?'on':''}" data-a="acccolor" data-id="${a.id}" data-c="${c}" style="background:${mute(c)}" aria-label="Colour"></button>`).join('')}<label class="cs cust ${a.color&&!ACC_COL.includes(a.color.toLowerCase())?'on':''}" title="Pick any colour" style="${a.color&&!ACC_COL.includes(a.color.toLowerCase())?'background:'+mute(a.color):''}"><b>+</b><input type="color" data-f="color" data-id="${a.id}" value="${a.color||'#7a1f3d'}"></label></div>
-   ${a.color?`<button type="button" class="chip" data-a="acccolor" data-id="${a.id}" data-c="" style="font-size:12px;margin-top:6px">Reset to default</button>`:''}
    <div class="grid2">${ty==='cash'?'':`<div><label>Last 4 digits</label><input data-f="last4" data-id="${a.id}" value="${esc(a.last4)}" maxlength="4" inputmode="numeric"></div>`}
    <div><label>${ty==='card'?'Opening due (₹)':ty==='cash'?'Cash in hand (₹)':'Opening balance (₹)'}</label><input data-f="${ty==='card'?'opendue':'open'}" data-id="${a.id}" value="${ty==='card'?-a.open||0:a.open}" inputmode="decimal"></div>
-   ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal"></div>`:''}</div>${ty==='card'?`<div class="small mute" style="margin-top:10px">Used ${inr(Math.max(0,-bal))} · EMI blocked ${inr(Math.round(emiBlocked(a.id)))}${a.limit?` · <b style="color:var(--ink)">Available ${inr(Math.round(a.limit+bal-emiBlocked(a.id)))}</b>`:''}</div>`:''}${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (PDF or CSV)</button>`}<button class="btn red" data-a="delacc" data-id="${a.id}" style="margin-top:6px">Delete this account</button></div>`}).join('');
+   ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal"></div>`:''}</div>${ty==='card'?`<div class="small mute" style="margin-top:10px">Used ${inr(Math.max(0,-bal))} · EMI blocked ${inr(Math.round(emiBlocked(a.id)))}${a.limit?` · <b style="color:var(--ink)">Available ${inr(Math.round(a.limit+bal-emiBlocked(a.id)))}</b>`:''}</div>`:''}${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (PDF or CSV)</button>`}</div></div>`}).join('');
   const smsb=(sms()&&smsCap?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
    <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+(sms()&&!smsCap?`<h2>Bank SMS</h2><div class="card"><div class="small mute">This version does not read your SMS by itself (Google Play Protect blocks apps that do). To add a bank SMS quickly: open your Messages app, long-press the SMS, tap <b>Share</b> and choose <b>Arthaly</b>. It is added right away. You can also paste SMS with the + button, or import a bank statement PDF/CSV.</div></div>`:'');
   return `<h1>Settings</h1>`+
