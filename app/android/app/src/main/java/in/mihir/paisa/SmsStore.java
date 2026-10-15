@@ -11,9 +11,9 @@ final class SmsStore {
     private static final String PREFS = "paisa_sms";
     private static final String KEY = "pending";
     private static final int MAX_PENDING = 500;
-    private static final Pattern AMOUNT = Pattern.compile("(rs\\.?|inr|₹)\\s*[\\d,]+", Pattern.CASE_INSENSITIVE);
+    private static final Pattern AMOUNT = Pattern.compile("((rs\\.?|inr|₹)\\s*[:.]?\\s*[\\d,]+|(amt|amount)\\s*(of)?\\s*[:.]?\\s*[\\d,]+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern MOVEMENT = Pattern.compile(
-        "\\b(debited|credited|spent|withdrawn|received|deposited|paid|sent|purchase|refund|deducted)\\b",
+        "\\b(debited|credited|debit|credit|spent|withdrawn|withdrawal|received|deposited|paid|payment|sent|purchase|refund|deducted|transferred|transfer|txn|transaction|upi|imps|neft|rtgs|autopay|mandate|dr|cr)\\b",
         Pattern.CASE_INSENSITIVE);
 
     private SmsStore() {}

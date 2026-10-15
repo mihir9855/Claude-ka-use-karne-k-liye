@@ -48,8 +48,8 @@ h1{font-size:20px;margin:0}h2{font-size:13px;margin:22px 0 10px;color:var(--mute
 .dot{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:17px;background:var(--brand-soft);flex:none}
 .tx .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:5}
-nav .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 64px 1fr 1fr;align-items:center}
-nav button{border:0;background:none;color:var(--mute);padding:6px 0;font:inherit;font-size:11px;cursor:pointer}
+nav .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr 58px 1fr 1fr;align-items:center}
+nav button{border:0;background:none;color:var(--mute);padding:6px 0;font:inherit;font-size:10.5px;min-width:0;cursor:pointer}
 nav button span{display:block;font-size:19px;line-height:1.2}nav button.on{color:var(--brand);font-weight:600}
 .fab{width:54px;height:54px;border-radius:50%;background:var(--brand)!important;color:#fff!important;font-size:28px!important;margin:-26px auto 0;box-shadow:0 6px 16px color-mix(in srgb,var(--brand) 45%,transparent);display:grid;place-items:center;padding:0!important}
 .seg{display:flex;background:var(--line);border-radius:12px;padding:3px;gap:3px}
@@ -212,6 +212,7 @@ const ICONS={
  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 14c2.9 0 4.8 1.9 4.8 4.5"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',
  swap:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',
+ msg:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
  message:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
  sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
  palette:'<path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="14.5" cy="7.5" r="1"/>',
@@ -269,7 +270,7 @@ if(mqDark)mqDark.addEventListener('change',()=>{if(S.appearance==='auto')applyTh
 function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
   if(!S.accounts.length)S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
-  S.emis=S.emis||[];S.salary=0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
+  S.emis=S.emis||[];S.smsPending=S.smsPending||[];S.salary=0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
   S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[];S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
@@ -355,7 +356,7 @@ function addFromSms(text,fallbackIso){
     const key=chunk.replace(/\s+/g,' ');
     if(S.seen.includes(key)){bad.push('duplicate');continue}
     const p=parseSms(chunk,fallbackIso);
-    if(!p){bad.push('unreadable');continue}
+    if(!p){bad.push('unreadable');const am=smsAmount(chunk);if(am&&!S.smsPending.some(x=>x.text===key)){S.smsPending.push({id:uid(),text:key.slice(0,400),amt:am,date:fallbackIso||isoDay(Date.now()),key});if(S.smsPending.length>200)S.smsPending.shift()}continue}
     const a=p.last4&&S.accounts.find(a=>a.last4&&a.last4===p.last4);
     const low=p.raw.toLowerCase(),isCard=a&&accType(a)==='card';
     let kind=p.kind,to='',cat=p.cat;
@@ -365,7 +366,7 @@ function addFromSms(text,fallbackIso){
       if(/refund|reversal/.test(low)){kind='expense';cat='Shopping'}
       else{S.seen.push(key);bad.push('card payment');continue}
     }
-    const t={id:uid(),date:p.date,type:p.type,amt:p.amt,acc:a?a.id:'',to,kind,cat,note:p.note,party:'',pool:false,src:'sms'};
+    const t={id:uid(),date:p.date,type:p.type,amt:p.amt,acc:a?a.id:'',to,kind,cat,note:p.note,party:'',pool:false,src:'sms',raw:key.slice(0,400)};
     if(!a&&p.last4)t.hint4=p.last4;      // remembered so assigning one SMS can teach the account its last 4 digits
     S.tx.push(t);S.seen.push(key);out.push({t,last4:p.last4,matched:!!a});
   }
@@ -388,10 +389,13 @@ async function enableSms(){
   if(r.sms!=='granted')return toast('Permission denied. Allow SMS in app settings.');
   toast('SMS capture is on');render();
 }
-async function importInbox(){
+async function importInbox(days){
   const p=sms();if(!p)return;
-  try{const r=await p.readInbox({days:30});const n=ingest(r.messages);if(!n)toast('Nothing new to import')}
-  catch(e){toast('Enable SMS capture first')}
+  try{const before=S.smsPending.length,r=await p.readInbox({days:days||30}),n=ingest(r.messages),np=S.smsPending.length-before;
+    if(!n&&!np)toast(r.messages.length?'Nothing new. All of them were already added.':'No money SMS found in the last '+(days||30)+' days');
+    else if(np>0){toast(`${n} added · ${np} need your help`);render()}
+    if(view==='sms')render()}
+  catch(e){toast('Enable SMS capture first (Settings → Bank SMS)')}
 }
 let smsCap=false;
 if(sms()){
@@ -1331,13 +1335,37 @@ window.addEventListener('popstate',e=>{
   document.addEventListener('wheel',e=>{const h=e.target.closest('.hscroll');if(!h||Math.abs(e.deltaY)<=Math.abs(e.deltaX)||h.scrollWidth<=h.clientWidth)return;h.scrollLeft+=e.deltaY;e.preventDefault()},{passive:false});
 })();
 document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.classList&&d.classList.contains('sec')){d.open?openSec.add(d.dataset.sec):openSec.delete(d.dataset.sec)}},true);
+/* ---------- SMS tab: every SMS-derived entry in one place, tap to fix ---------- */
+const needsReview=t=>!t.acc||(t.kind==='expense'&&t.cat==='Other');
+function smsView(){
+  const all=S.tx.filter(t=>t.src==='sms').sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  const rev=all.filter(needsReview).length;
+  const list=all.filter(t=>smsFilter==='review'?needsReview(t):smsFilter==='dr'?t.type==='debit':smsFilter==='cr'?t.type==='credit':true);
+  const out=list.filter(t=>t.type==='debit').reduce((a,t)=>a+t.amt,0),inn=list.filter(t=>t.type==='credit').reduce((a,t)=>a+t.amt,0);
+  const FL=[['all','All '+all.length],['review','Needs review '+rev],['dr','Debit'],['cr','Credit']];
+  const pend=S.smsPending.map(p=>`<div class="card" style="margin-bottom:10px"><div class="small" style="word-break:break-word">${esc(p.text.slice(0,220))}</div>
+    <div class="row sp" style="margin-top:8px"><b class="num">${inr(p.amt)}</b><span class="small mute">${new Date(p.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span></div>
+    <div class="row" style="gap:8px;margin-top:8px"><button class="btn" data-a="pendas" data-id="${p.id}" data-d="debit" style="margin:0;flex:1">Money out</button><button class="btn ghost" data-a="pendas" data-id="${p.id}" data-d="credit" style="margin:0;flex:1">Money in</button><button class="btn ghost" data-a="pendx" data-id="${p.id}" style="margin:0">Skip</button></div></div>`).join('');
+  const row=t=>{const a=acc(t.acc),dr=t.type==='debit',p=person(t.party);
+    const what=t.kind==='pass'?esc(p?p.name:'party'):t.kind==='transfer'?'Transfer':t.kind==='expense'?esc(cname(t.cat)):esc(t.cat==='Other'?'Income':t.cat);
+    return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${dr?'rgba(209,73,91,.14)':'rgba(26,159,107,.14)'};color:${dr?'var(--debit)':'var(--credit)'};font-weight:800;font-size:13px">${dr?'Dr':'Cr'}</div>
+    <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})} · ${what} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">⚠ Pick account'+(t.hint4?' (••'+t.hint4+')':'')+'</span>'}${t.kind==='expense'&&t.cat==='Other'?' · <span class="debit">set category</span>':''}</div></div>
+    <b class="num ${t.type}">${dr?'−':'+'}${inr(t.amt)}</b></div>`};
+  return `<h1>SMS</h1><p class="small mute">Every bank SMS Arthaly read. Tap one to change debit/credit, account, category or amount; graphs and balances update at once.</p>
+  <div class="card"><div class="grid2"><div class="stat"><span class="small mute">Money out</span><b class="num debit">${inrH(out)}</b></div><div class="stat"><span class="small mute">Money in</span><b class="num credit">${inrH(inn)}</b></div></div>
+  <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn ghost" data-a="smspaste" style="margin:0;flex:1">+ Paste SMS</button>${sms()?`<button class="btn ghost" data-a="smsscan" data-id="30" style="margin:0;flex:1">Scan 30 days</button><button class="btn ghost" data-a="smsscan" data-id="90" style="margin:0;flex:1">90 days</button><button class="btn ghost" data-a="smsscan" data-id="180" style="margin:0;flex:1">180 days</button>`:''}</div>
+  ${sms()&&!smsCap?'<div class="small mute" style="margin-top:8px">This build cannot read the inbox. Use Share → Arthaly, or Paste SMS.</div>':''}</div>
+  ${S.smsPending.length?`<h2>Could not understand (${S.smsPending.length})</h2>${pend}`:''}
+  <div class="seg" style="margin:12px 0">${FL.map(([k,l])=>`<button data-a="smsflt" data-id="${k}" class="${smsFilter===k?'on':''}">${l}</button>`).join('')}</div>
+  <div class="card" style="padding:4px 16px">${list.length?list.map(row).join(''):'<div class="empty">'+(all.length?'Nothing here.':'No SMS yet.<br>Scan your inbox, share a bank SMS to Arthaly, or paste one.')+'</div>'}</div>`;
+}
 function toast(m,ms){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),ms||2800)}
 const opts=(arr,sel,f=x=>x)=>arr.map(([v,l])=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`).join('');
 function chipsHTML(kind,sel){
   if(kind==='expense')return Object.keys(CATS).map(k=>`<button type="button" class="chip ${k===sel?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${ic(CATS[k],16)}${esc(cname(k))}</button>`).join('')+`<button type="button" class="chip" id="newcat" data-a="newcat">＋ New</button>`;
   return Object.keys(ICATS).map(k=>`<button type="button" class="chip ${k===sel?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${ICATCOL[k]}">${ic(ICATS[k],16)}${esc(k)}</button>`).join('');
 }
-let emiPick=null;
+let emiPick=null,smsResolve=null,smsFilter='all';
 function emiSuggest(){
   const el=$('#smart');if(!el||$('#f-kind').value!=='expense'||$('#f-cat').value!=='EMI')return;
   const L=S.emis.map(p=>({p,s:emiState(p)})).filter(x=>!x.s.done);
@@ -1345,13 +1373,14 @@ function emiSuggest(){
   el.innerHTML=`<div class="small mute" style="margin:8px 0 4px">Your EMIs, tap to fill</div><div class="chips2">${L.map(({p,s})=>`<button type="button" class="chip" data-a="emipick" data-id="${p.id}">${esc(p.name)} · ${inrH(p.monthly)} · ${new Date(s.next+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}</button>`).join('')}</div>`;
 }
 function txSheet(t,preset){
-  emiPick=null;
+  emiPick=null;smsResolve=(preset&&preset.resolve)||null;
   const isNew=!t;t=t||{id:'',type:'debit',amt:'',acc:S.accounts[0].id,kind:'expense',cat:'Other',note:'',date:new Date().toISOString().slice(0,10),party:'',pool:false};
   if(isNew&&preset)Object.assign(t,preset);
   if(isNew&&t.cat==='Other'&&(!preset||!preset.cat)&&t.kind!=='expense'&&t.kind!=='pass')t.cat=t.kind==='other'?'Freelance':'Salary';
   tt=t.type;editId=t.id;catTouched=!isNew||!!(preset&&preset.cat);
   const chips=chipsHTML(t.kind,t.cat);
   openSheet(`<div class="row sp"><h1>${isNew?'Add':'Edit'} transaction</h1><button class="icon-btn" data-a="close">✕</button></div>
+  ${t.raw?`<div class="card small" style="margin-top:12px;word-break:break-word"><b>Original SMS</b><div class="mute" style="margin-top:4px">${esc(t.raw)}</div></div>`:''}
   ${isNew?`<div class="seg" style="margin-top:14px" id="tabseg"><button class="on" data-a="tab" data-id="m">Manual</button><button data-a="tab" data-id="s">Paste SMS</button><button data-a="tab" data-id="st">Statement</button></div>`:''}
   <div id="tab-m"><div class="seg" style="margin-top:14px" id="typeseg"><button data-a="type" data-id="debit" class="${t.type==='debit'?'on':''}">Debit (out)</button><button data-a="type" data-id="credit" class="${t.type==='credit'?'on':''}">Credit (in)</button></div>
   <label>Amount (₹)</label><input class="amt-in" id="f-amt" inputmode="decimal" value="${t.amt}" placeholder="₹ 0">
@@ -1389,8 +1418,8 @@ function syncKind(){
 /* ---------- render & events ---------- */
 function render(){
   applyEmis();
-  $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView}[view]();
-  const nav=[['home','home','Home'],['budget','target','Budget'],['add','+',''],['stats','chart','Insights'],['people','users','Ledger']];
+  $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView,sms:smsView}[view]();
+  const nav=[['home','home','Home'],['budget','target','Budget'],['sms','msg','SMS'],['add','+',''],['stats','chart','Insights'],['people','users','Ledger']];
   $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new" aria-label="Add"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
 }
 let tt='debit';
@@ -1456,7 +1485,7 @@ document.addEventListener('click',e=>{
     if(kind==='pass'&&!$('#f-party').value){toast('Add a person first: Ledger → People → Add person');return}
     if(kind==='transfer'&&(!$('#f-acc').value||!$('#f-to').value||$('#f-acc').value===$('#f-to').value)){toast('Pick two different accounts');return}
     const t={id:id||uid(),date:$('#f-date').value,type:kind==='transfer'?'debit':tt,to:kind==='transfer'?$('#f-to').value:'',amt,acc:$('#f-acc').value,kind,cat:kind==='pass'?'Other':$('#f-cat').value,source:kind==='other'?$('#f-source').value:'',poolSrc:(kind==='expense'&&$('#f-pool').checked)?$('#f-poolsrc').value:'',note:$('#f-note').value.trim(),party:kind==='pass'?$('#f-party').value:'',pool:kind==='expense'&&$('#f-pool').checked,src:'manual'};
-    const i=S.tx.findIndex(x=>x.id===id);if(i>=0){const o=S.tx[i];t.src=o.src;if(o.hint4){if(t.acc)learnAcc(t.acc,o.hint4);else t.hint4=o.hint4}if(o.emiId){t.emiId=o.emiId;t.emiNo=o.emiNo}if(o.prepaid)t.prepaid=true;S.tx[i]=t}else{if(emiPick&&t.cat==='EMI'){t.emiId=emiPick.id;t.emiNo=emiPick.no;t.src='emi'}S.tx.push(t)}
+    const i=S.tx.findIndex(x=>x.id===id);if(i>=0){const o=S.tx[i];t.src=o.src;if(o.hint4){if(t.acc)learnAcc(t.acc,o.hint4);else t.hint4=o.hint4}if(o.emiId){t.emiId=o.emiId;t.emiNo=o.emiNo}if(o.prepaid)t.prepaid=true;if(o.raw)t.raw=o.raw;S.tx[i]=t}else{if(emiPick&&t.cat==='EMI'){t.emiId=emiPick.id;t.emiNo=emiPick.no;t.src='emi'}if(smsResolve){const r=smsResolve;smsResolve=null;S.smsPending=S.smsPending.filter(x=>x.id!==r.id);S.seen.push(r.key);t.raw=r.text;t.src='sms'}S.tx.push(t)}
     save();closeSheet();render();
     let msg='Saved',ms;
     if(t.kind==='expense'&&t.type==='debit'&&S.budgets[t.cat]>0){
@@ -1554,7 +1583,12 @@ document.addEventListener('click',e=>{
     save();render();personSheet(id);toast('Entry added');
   }
   else if(a==='smson')enableSms();
-  else if(a==='smsimport')importInbox();
+  else if(a==='smsflt'){smsFilter=id;render()}
+  else if(a==='smspaste')txSheet(null,{tab:'s'});
+  else if(a==='smsscan')importInbox(parseInt(id,10)||30);
+  else if(a==='pendx'){S.smsPending=S.smsPending.filter(x=>x.id!==id);save();render()}
+  else if(a==='pendas'){const pd=S.smsPending.find(x=>x.id===id);if(pd){const cr=el.dataset.d==='credit';txSheet(null,{type:cr?'credit':'debit',kind:cr?'income':'expense',amt:pd.amt,note:pd.text.slice(0,60),date:pd.date,resolve:pd})}}
+  else if(a==='smsimport')importInbox(30);
   else if(a==='addacc'){S.accounts.push({id:uid(),name:id==='cash'?'Cash':id==='card'?'Credit card':'Account '+(S.accounts.length+1),type:id||'bank',last4:'',open:0,limit:0});save();render()}
   else if(a==='export')exportBackup();
   else if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>i.files[0].text().then(x=>{try{S=JSON.parse(x);normalize();save();render();toast('Imported')}catch(e){toast('Invalid file')}});i.click()}
