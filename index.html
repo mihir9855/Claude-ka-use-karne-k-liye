@@ -48,7 +48,7 @@ h1{font-size:20px;margin:0}h2{font-size:13px;margin:22px 0 10px;color:var(--mute
 .dot{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:17px;background:var(--brand-soft);flex:none}
 .tx .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:5}
-nav .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr 58px 1fr 1fr;align-items:center}
+nav .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr 54px 1fr 1fr 1fr;align-items:center}
 nav button{border:0;background:none;color:var(--mute);padding:6px 0;font:inherit;font-size:10.5px;min-width:0;cursor:pointer}
 nav button span{display:block;font-size:19px;line-height:1.2}nav button.on{color:var(--brand);font-weight:600}
 .fab{width:54px;height:54px;border-radius:50%;background:var(--brand)!important;color:#fff!important;font-size:28px!important;margin:-26px auto 0;box-shadow:0 6px 16px color-mix(in srgb,var(--brand) 45%,transparent);display:grid;place-items:center;padding:0!important}
@@ -212,6 +212,7 @@ const ICONS={
  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 14c2.9 0 4.8 1.9 4.8 4.5"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',
  swap:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',
+ list:'<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
  msg:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
  message:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
  sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
@@ -1074,10 +1075,34 @@ function accTile(a,i){
   const bg=ty==='cash'?'linear-gradient(135deg,#15803d,#4ade80)':`linear-gradient(135deg,${COLORS[i%6]},${COLORS[i%6]}bb)`;
   return `<div class="acc" style="background:${bg}" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${ty==='cash'?' · in hand':a.last4?' ••'+a.last4:''}${sel}</small><b class="num">${inrH(bal)}</b>${io}</div>`;
 }
+let txMonth='all',txKind='all',txLimit=100;
+function txFiltered(){
+  const ql=q.trim().toLowerCase(),idx=new Map(S.tx.map((t,i)=>[t,i]));
+  return S.tx.filter(t=>(txMonth==='all'||t.date.startsWith(txMonth))&&(!accFilter||t.acc===accFilter||t.to===accFilter)&&(txKind==='all'||(txKind==='dr'?t.type==='debit':t.type==='credit'))&&(!ql||[t.note,t.cat,(person(t.party)||{}).name,String(t.amt)].join(' ').toLowerCase().includes(ql)))
+    .sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0)||idx.get(b)-idx.get(a));
+}
+function txSummary(){
+  const l=txFiltered().filter(t=>t.kind!=='transfer'&&t.kind!=='pass'),o=l.filter(t=>t.type==='debit').reduce((a,t)=>a+t.amt,0),i=l.filter(t=>t.type==='credit').reduce((a,t)=>a+t.amt,0);
+  return `<span>${txFiltered().length} entries</span><span><b class="debit">−${inrH(o)}</b> · <b class="credit">+${inrH(i)}</b></span>`;
+}
 function txListHTML(){
-  const ql=q.trim().toLowerCase();
-  const list=S.tx.filter(t=>t.date.startsWith(month)&&(!accFilter||t.acc===accFilter||t.to===accFilter)&&(!ql||[t.note,t.cat,(person(t.party)||{}).name,String(t.amt)].join(' ').toLowerCase().includes(ql))).sort((a,b)=>b.date.localeCompare(a.date));
-  return list.length?list.map(txRow).join(''):'<div class="empty">'+(ql?'No match.':'Nothing yet.<br>Tap + to add, or paste a bank SMS.')+'</div>';
+  const list=txFiltered();
+  if(!list.length)return '<div class="empty">'+(q.trim()?'No match.':'Nothing here.<br>Tap + to add, or paste a bank SMS.')+'</div>';
+  let out='',last='';
+  list.slice(0,txLimit).forEach(t=>{const m=t.date.slice(0,7);if(m!==last){last=m;out+=`<div class="small mute" style="padding:12px 0 2px;font-weight:700">${mlabel(m)}</div>`}out+=txRow(t)});
+  if(list.length>txLimit)out+=`<button class="btn ghost" data-a="txmore">Show more (${list.length-txLimit} left)</button>`;
+  return out;
+}
+function txView(){
+  const months=[...new Set(S.tx.map(t=>t.date.slice(0,7)))].sort().reverse();
+  const KF=[['all','All'],['dr','Debit'],['cr','Credit']];
+  return `<h1>Transactions</h1>
+  <input id="q" class="search" placeholder="Search note, category, person or amount" value="${esc(q)}">
+  <div class="grid2" style="margin-top:10px"><select id="tx-month"><option value="all" ${txMonth==='all'?'selected':''}>All time</option>${months.map(m=>`<option value="${m}" ${txMonth===m?'selected':''}>${mlabel(m)}</option>`).join('')}</select>
+  <select id="tx-acc"><option value="">All accounts</option>${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),accFilter)}</select></div>
+  <div class="seg" style="margin:10px 0">${KF.map(([k,l])=>`<button data-a="txkind" data-id="${k}" class="${txKind===k?'on':''}">${l}</button>`).join('')}</div>
+  <div class="row sp small mute" id="txsum" style="margin:4px 2px 8px">${txSummary()}</div>
+  <div class="card" style="padding:4px 16px" id="txlist">${txListHTML()}</div>`;
 }
 function home(){
   const st=mstats(month),tb=totalBudget(),left=tb-st.exp,pct=tb?Math.min(100,st.exp/tb*100):0;
@@ -1113,10 +1138,7 @@ function home(){
   ${un?`<div class="card small" style="margin-top:10px;background:var(--brand-soft);cursor:pointer" data-a="unassigned">⚠️ ${un} transaction${un>1?'s':''} not matched to an account. <b>Tap here to assign.</b></div>`:''}
   <h2>Accounts</h2>
   <div class="hscroll">${S.accounts.map(accTile).join('')}</div>
-  ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inrH(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inrH(pl.inc)}<br>Used ${inrH(pl.used)}</div></div>`:''}
-  <h2 class="row sp"><span>${accFilter?'Transactions · '+esc(acc(accFilter).name):'Transactions'}</span>${accFilter?`<button class="chip on" data-a="filter" data-id="${accFilter}" style="font-size:12px">Show all accounts ✕</button>`:''}</h2>
-  <input id="q" class="search" placeholder="Search note, category, person or amount" value="${esc(q)}">
-  <div class="card txscroll" style="padding:4px 16px;margin-top:10px" id="txlist">${txListHTML()}</div>`;
+  ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inrH(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inrH(pl.inc)}<br>Used ${inrH(pl.used)}</div></div>`:''}`;
 }
 /* ---------- BUDGET ---------- */
 function budgetView(){
@@ -1419,8 +1441,8 @@ function syncKind(){
 /* ---------- render & events ---------- */
 function render(){
   applyEmis();
-  $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView,sms:smsView}[view]();
-  const nav=[['home','home','Home'],['budget','target','Budget'],['sms','msg','SMS'],['add','+',''],['stats','chart','Insights'],['people','users','Ledger']];
+  $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView,sms:smsView,txns:txView}[view]();
+  const nav=[['home','home','Home'],['txns','list','History'],['sms','msg','SMS'],['add','+',''],['budget','target','Budget'],['stats','chart','Insights'],['people','users','Ledger']];
   $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new" aria-label="Add"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
 }
 let tt='debit';
@@ -1436,7 +1458,9 @@ document.addEventListener('click',e=>{
   else if(a==='nav')navTo(id)
   else if(a==='mprev'){month=shiftMonth(month,-1);render()}
   else if(a==='mnext'){month=shiftMonth(month,1);render()}
-  else if(a==='filter'){accFilter=accFilter===id?'':id;render()}
+  else if(a==='filter'){accFilter=accFilter===id?'':id;view='txns';scrollTo(0,0);render()}
+  else if(a==='txmore'){txLimit+=100;$('#txlist').innerHTML=txListHTML()}
+  else if(a==='txkind'){txKind=id;txLimit=100;render()}
   else if(a==='seg'){seg=id;render()}
   else if(a==='range'){homeRange=id;render()}
   else if(a==='new'){txSheet()}
@@ -1603,7 +1627,9 @@ document.addEventListener('input',e=>{if(e.target.type==='date')refreshDates();
     if(am>0&&mo>0)$('#e-mon').value=Math.round(am/mo);
   }
   if(e.target.id==='f-amt')updateBHint();
-  if(e.target.id==='q'){q=e.target.value;$('#txlist').innerHTML=txListHTML()}
+  if(e.target.id==='q'){q=e.target.value;txLimit=100;$('#txlist').innerHTML=txListHTML();$('#txsum').innerHTML=txSummary()}
+  if(e.target.id==='tx-month'){txMonth=e.target.value;txLimit=100;render()}
+  if(e.target.id==='tx-acc'){accFilter=e.target.value;txLimit=100;render()}
   else if(e.target.id==='f-note'&&!catTouched&&$('#f-kind').value==='expense'){
     const g=guessCat(e.target.value);
     if(g!=='Other'){$('#f-cat').value=g;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===g));$('#smart').innerHTML=`<div class="hint">Smart category: ${g}. Tap another chip to change.</div>`}
