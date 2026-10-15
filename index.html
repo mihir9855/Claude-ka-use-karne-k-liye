@@ -377,7 +377,9 @@ function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
   if(!S.accounts.length)S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
   S.emis=S.emis||[];S.smsPending=S.smsPending||[];S.salary=0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
-  S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[];S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
+  S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[];
+  if(!S.sources.length)S.sources.push({id:'src_other',name:'Other income'});
+  {const d=S.sources[0].id;S.tx.forEach(t=>{if(t.kind==='other'&&!t.source)t.source=d;if(t.pool&&t.kind==='expense'&&!t.poolSrc)t.poolSrc=d})}S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
   Object.entries(S.icons).forEach(([k,v])=>{if(CATS[k])CATS[k]=v});
@@ -1136,14 +1138,14 @@ const accMonth=(id,mk)=>{let i=0,o=0;S.tx.filter(t=>t.date.startsWith(mk)&&!t.pr
 const inLedger=t=>!!t.party&&(t.kind==='pass'||!!t.fromParty);
 const ledType=t=>t.kind==='pass'?t.type:'credit';
 const personBal=id=>S.tx.filter(t=>inLedger(t)&&t.party===id).reduce((s,t)=>s+(ledType(t)==='debit'?t.amt:-t.amt),0); // + = owes you
-const srcName=id=>(S.sources.find(x=>x.id===id)||{name:'General'}).name;
+const srcName=id=>(S.sources.find(x=>x.id===id)||{name:'Other income'}).name;
 const srcStats=id=>{
   const sid=id||'';const own=t=>(t.source||'')===sid,ps=t=>(t.poolSrc||'')===sid;
   const inc=S.tx.filter(t=>t.kind==='other'&&own(t)).reduce((s,t)=>s+(t.type==='credit'?t.amt:-t.amt),0);
   const used=S.tx.filter(t=>t.pool&&t.kind==='expense'&&ps(t)).reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0);
   return{inc,used,left:inc-used};
 };
-const srcOptions=sel=>S.sources.map(x=>`<option value="${esc(x.id)}" ${x.id===sel?'selected':''}>${esc(x.name)}</option>`).join('')+`<option value="" ${sel===''?'selected':''}>General (no source)</option><option value="__new">＋ New income source…</option>`;
+const srcOptions=sel=>S.sources.map(x=>`<option value="${esc(x.id)}" ${x.id===sel?'selected':''}>${esc(x.name)}</option>`).join('')+`<option value="__new">＋ New income source…</option>`;
 const pool=()=>{const inc=S.tx.filter(t=>t.kind==='other').reduce((s,t)=>s+(t.type==='credit'?t.amt:-t.amt),0);const used=S.tx.filter(t=>t.pool&&t.kind==='expense').reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0);return{inc,used,left:inc-used}};
 
 /* ---------- charts (inline SVG) ---------- */
@@ -1168,11 +1170,11 @@ function lineChart(vals,labels,o={}){
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%"><line x1="6" x2="${W-6}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)" stroke-dasharray="3 3"/><path d="${area}" fill="var(--brand)" opacity=".12"/><path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round"/>${dots}</svg></div>`;
 }
 const hbars=items=>`<div>${items.map(it=>`<div class="hb"><div class="hl">${it.label}</div><div class="htr"><i style="width:${Math.max(1,Math.min(100,it.v/it.max*100))}%;background:${it.color||'var(--brand)'}"></i>${it.mark!=null&&it.mark>0?`<u style="left:${Math.min(99,it.mark/it.max*100)}%"></u>`:''}</div><b class="num">${it.right}</b></div>`).join('')}</div>`;
-function miniDonut(data){
+function miniDonut(data,lbl){lbl=lbl||'Spent';
   const tot=data.reduce((s,d)=>s+d.v,0);if(!tot)return '<div class="empty">No spending yet</div>';
   let off=0;const R=15.9155,top=data.slice(0,5),mx=top[0].v;
   const segs=data.map(d=>{const p=d.v/tot*100;const e=`<circle class="sg" r="${R}" cx="21" cy="21" fill="none" stroke="${d.c}" stroke-width="4.2" stroke-dasharray="${Math.max(p-1,.1)} ${100-p+1}" stroke-dashoffset="${-off}" data-tip="${esc(cname(d.k)+' · '+inr(d.v)+' ('+Math.round(p)+'%)')}"/>`;off+=p;return e}).join('');
-  return `<div class="row" style="gap:16px;align-items:center"><div class="chart" style="flex:none"><svg viewBox="0 0 42 42" width="118" height="118"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="4.2"/>${segs}</g><text x="21" y="19.6" text-anchor="middle" style="font-size:3px">Spent</text><text x="21" y="25" text-anchor="middle" style="font-size:5.2px;font-weight:800;fill:var(--ink)">${inr(tot)}</text></svg></div>
+  return `<div class="row" style="gap:16px;align-items:center"><div class="chart" style="flex:none"><svg viewBox="0 0 42 42" width="118" height="118"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="4.2"/>${segs}</g><text x="21" y="19.6" text-anchor="middle" style="font-size:3px">${lbl}</text><text x="21" y="25" text-anchor="middle" style="font-size:5.2px;font-weight:800;fill:var(--ink)">${inr(tot)}</text></svg></div>
   <div class="grow" style="display:grid;gap:9px">${top.map(d=>`<div><div class="row sp small"><span class="row" style="gap:6px"><i style="width:8px;height:8px;border-radius:2px;background:${d.c};display:inline-block"></i>${esc(cname(d.k))}</span><b class="num">${Math.round(d.v/tot*100)}%</b></div><div class="ctr" style="margin-top:4px"><i style="width:${Math.max(3,d.v/mx*100)}%;background:${d.c}"></i></div></div>`).join('')}</div></div>`;
 }
 document.addEventListener('pointerdown',showTip);document.addEventListener('pointermove',showTip);
@@ -1574,9 +1576,9 @@ function khata(){
       return `<div class="card row sp" style="margin-bottom:10px" data-a="source" data-id="${esc(id)}"><div class="row"><div class="dot" style="color:var(--credit)">${ic('wallet',19)}</div><div><b>${esc(name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'} · earned ${inr(st.inc)}</div></div></div><div style="text-align:right"><b class="num ${st.left<0?'debit':'credit'}">${inr(st.left)}</b><div class="small mute">left to use</div></div></div>`};
     body=`${otherBlock()}
     <div class="card row sp" style="margin-top:12px;cursor:pointer" data-a="allother"><b>All other-income entries</b><span class="mute">›</span></div>
-    ${(()=>{const d=S.sources.map((x,i)=>({k:x.name,v:srcStats(x.id).inc,c:['#14b8a6','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#84cc16'][i%6]})).filter(x=>x.v>0);return d.length?`<div class="card" style="margin-top:12px"><div class="ctitle"><b>Earned by source</b></div>${miniDonut(d)}</div>`:''})()}
+    ${(()=>{const d=S.sources.map((x,i)=>({k:x.name,v:srcStats(x.id).inc,c:['#14b8a6','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#84cc16'][i%6]})).filter(x=>x.v>0);return d.length?`<div class="card" style="margin-top:12px"><div class="ctitle"><b>Earned by source</b></div>${miniDonut(d,'Earned')}</div>`:''})()}
     <h2>Income sources</h2>
-    ${S.sources.map(x=>card(x.id,x.name)).join('')}${noSrc?card('','General'):''}
+    ${S.sources.map(x=>card(x.id,x.name)).join('')}
     <button class="btn ghost" data-a="addsource">+ Add income source</button>
     <p class="small mute">Make one source per client or kind of side income. Add income to it with type <b>Other income</b>. When you spend from it, tick “Paid from other-income pool” on that expense and pick the source.</p>`;
   }
@@ -1799,17 +1801,17 @@ function txSheet(t,preset){
   openSheet(`<div class="row sp"><h1>${isNew?'Add':'Edit'} transaction</h1><div class="row" style="gap:8px">${isNew?'':delBtn('deltx',t.id,'Delete transaction')}<button class="icon-btn" data-a="close">✕</button></div></div>
   ${t.raw?`<div class="card small" style="margin-top:12px;word-break:break-word"><b>Original SMS</b><div class="mute" style="margin-top:4px">${esc(t.raw)}</div></div>`:''}
   ${isNew?`<div class="seg" style="margin-top:14px" id="tabseg"><button class="on" data-a="tab" data-id="m">Manual</button><button data-a="tab" data-id="st">Statement</button></div>`:''}
-  <div id="tab-m">${t.kind==='pass'?'':`<div class="seg" style="margin-top:14px" id="modeseg"><button data-a="txmode" data-id="e" class="${t.kind==='expense'?'on':''}">Expense</button><button data-a="txmode" data-id="i" class="${t.kind==='income'||t.kind==='other'?'on':''}">Income</button><button data-a="txmode" data-id="x" class="${t.kind==='transfer'?'on':''}">Transfer</button></div><div class="seg" id="incseg" style="margin-top:8px" ${t.kind==='income'||t.kind==='other'?'':'hidden'}><button data-a="incsub" data-id="income" class="${t.kind==='other'?'':'on'}">Salary &amp; regular</button><button data-a="incsub" data-id="other" class="${t.kind==='other'?'on':''}">Other income</button></div>`}<div class="seg" style="margin-top:14px;${t.kind==='pass'?'':'display:none'}" id="typeseg"><button data-a="type" data-id="debit" class="${t.type==='debit'?'on':''}">Debit (out)</button><button data-a="type" data-id="credit" class="${t.type==='credit'?'on':''}">Credit (in)</button></div>
+  <div id="tab-m"><div class="seg" style="margin-top:14px" id="modeseg"><button data-a="txmode" data-id="e" class="${t.kind==='expense'?'on':''}">Expense</button><button data-a="txmode" data-id="i" class="${t.kind==='income'||t.kind==='other'?'on':''}">Income</button><button data-a="txmode" data-id="x" class="${t.kind==='transfer'?'on':''}">Transfer</button><button data-a="txmode" data-id="p" class="${t.kind==='pass'?'on':''}">Person</button></div><div class="seg" id="incseg" style="margin-top:8px" ${t.kind==='income'||t.kind==='other'?'':'hidden'}><button data-a="incsub" data-id="income" class="${t.kind==='other'?'':'on'}">Salary &amp; regular</button><button data-a="incsub" data-id="other" class="${t.kind==='other'?'on':''}">Side income</button></div><div class="seg" style="margin-top:14px;${t.kind==='pass'?'':'display:none'}" id="typeseg"><button data-a="type" data-id="debit" class="${t.type==='debit'?'on':''}">I gave</button><button data-a="type" data-id="credit" class="${t.type==='credit'?'on':''}">I received</button></div>
   <label>Amount (₹)</label><input class="amt-in" id="f-amt" readonly data-calc inputmode="decimal" value="${t.amt}" placeholder="₹ 0">
   <label id="acc-label">Account</label><select id="f-acc"><option value="">Unassigned</option>${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.acc)}</select>
   <div id="w-to" hidden><label>To account (card bill: pick the credit card · ATM: pick Cash)</label><select id="f-to">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.to||'')}</select></div>
-  <div style="${t.kind==='pass'?'':'display:none'}"><label>Type</label><select id="f-kind">${opts(kindsFor(tt),t.kind)}</select></div>
+  <div style="display:none"><label>Type</label><select id="f-kind">${opts(kindsFor(tt),t.kind)}</select></div>
   <div id="w-cat"><label id="cat-label">Category</label><input type="hidden" id="f-cat" value="${esc(t.cat)}"><div class="chips2" id="f-cats">${chips}</div><div id="smart"></div><div id="bhint"></div>
   <div id="w-pool"><label>Paid from</label><div class="seg" id="poolseg"><button type="button" data-a="poolmode" data-id="0" class="${t.fromParty?'':t.pool?'':'on'}">My account</button><button type="button" data-a="poolmode" data-id="1" class="${t.pool&&!t.fromParty?'on':''}">Other income</button><button type="button" data-a="poolmode" data-id="2" class="${t.fromParty?'on':''}">Person</button></div><input type="checkbox" id="f-pool" hidden ${t.pool&&!t.fromParty?'checked':''}><input type="hidden" id="f-via" value="${t.fromParty?esc(t.party):''}"></div>
-  <div id="w-poolsrc" hidden><label>Which income</label><div class="chips2" id="pool-chips"></div><select id="f-poolsrc" hidden>${srcOptions(t.poolSrc||'')}</select></div>
+  <div id="w-poolsrc" hidden><label>Which income</label><div class="chips2" id="pool-chips"></div><select id="f-poolsrc" hidden>${srcOptions(t.poolSrc||(S.sources[0]?S.sources[0].id:''))}</select></div>
   <div id="w-viaparty" hidden><label>Whose money</label><div class="chips2" id="party-chips"></div><div class="small mute" style="margin-top:6px">Counts as your expense, and you owe this person that amount.</div></div></div>
-  <div id="w-source"><label>Income source</label><select id="f-source">${srcOptions(t.source===undefined?(isNew&&S.sources[0]?S.sources[0].id:''):t.source)}</select></div>
-  <div id="w-party"><label>Person / party</label><select id="f-party">${opts(S.people.map(p=>[p.id,p.name]),t.party)}</select></div>
+  <div id="w-source"><label>Income source</label><select id="f-source">${srcOptions(t.source||(S.sources[0]?S.sources[0].id:''))}</select></div>
+  <div id="w-party"><label>Which person</label><select id="f-party">${opts(S.people.map(p=>[p.id,p.name]),t.party)}<option value="__np">＋ New person…</option></select></div>
   <label>Note</label><input id="f-note" value="${esc(t.note)}" placeholder="e.g. DMart groceries">
   <label>Date</label><input id="f-date" type="date" value="${t.date}">
   <button class="btn" data-a="savetx" data-id="${t.id}">Save</button></div>
@@ -1825,7 +1827,7 @@ function partyChips(){
   $('#party-chips').innerHTML=S.people.map(p=>`<button type="button" class="chip ${cur===p.id?'on':''}" data-a="viaparty" data-id="${esc(p.id)}">${esc(p.name)}</button>`).join('')+'<button type="button" class="chip" data-a="viaparty" data-id="__new">+ New person</button>';
 }
 function poolChips(){
-  const sel=$('#f-poolsrc'),cur=sel.value,items=[...S.sources.map(x=>[x.id,x.name]),['','General']];
+  const sel=$('#f-poolsrc'),cur=sel.value,items=S.sources.map(x=>[x.id,x.name]);
   $('#pool-chips').innerHTML=items.map(([id,n])=>`<button type="button" class="chip ${cur===id?'on':''}" data-a="poolsrc" data-id="${esc(id)}">${esc(n)}</button>`).join('')+'<button type="button" class="chip" data-a="poolsrc" data-id="__new">+ New</button>';
 }
 function syncKind(){
@@ -1907,8 +1909,10 @@ document.addEventListener('click',e=>{
   else if(a==='tab'){document.querySelectorAll('#tabseg button').forEach(b=>b.classList.toggle('on',b===el));$('#tab-m').hidden=id!=='m';$('#tab-st').hidden=id!=='st'}
   else if(a==='txmode'){
     const k=$('#f-kind');tt=id==='i'?'credit':'debit';
-    const kind=id==='e'?'expense':id==='x'?'transfer':(document.querySelector('#incseg .on')&&document.querySelector('#incseg .on').dataset.id==='other'?'other':'income');
+    if(id==='p'){const on=document.querySelector('#typeseg .on');tt=on?on.dataset.id:'debit'}
+    const kind=id==='e'?'expense':id==='x'?'transfer':id==='p'?'pass':(document.querySelector('#incseg .on')&&document.querySelector('#incseg .on').dataset.id==='other'?'other':'income');
     k.innerHTML=opts(kindsFor(tt),kind);k.value=kind;
+    $('#typeseg').style.display=id==='p'?'':'none';
     if(!catTouched)$('#f-cat').value=kind==='expense'?'Other':kind==='other'?'Freelance':'Salary';
     document.querySelectorAll('#modeseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
     $('#incseg').hidden=id!=='i';syncKind();
@@ -2099,6 +2103,10 @@ document.addEventListener('input',e=>{if(e.target.type==='date')refreshDates();
 });
 document.addEventListener('change',e=>{
   if(e.target.id==='f-date')updateBHint();
+  if(e.target.id==='f-party'&&e.target.value==='__np'){
+    const sel=e.target;sel.value=S.people[0]?S.people[0].id:'';
+    askText('Person name','','e.g. Papa').then(n=>{if(n&&n.trim()){const nid=uid();S.people.push({id:nid,name:n.trim()});save();sel.innerHTML=opts(S.people.map(p=>[p.id,p.name]),nid)+'<option value="__np">＋ New person…</option>';sel.value=nid}});
+  }
   if(e.target.id==='f-pool')$('#w-poolsrc').hidden=!e.target.checked;
   if((e.target.id==='f-source'||e.target.id==='f-poolsrc')&&e.target.value==='__new'){
     const sel=e.target;
