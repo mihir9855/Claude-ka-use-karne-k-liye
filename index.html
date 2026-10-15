@@ -1980,6 +1980,13 @@ document.addEventListener('click',e=>{
   else if(a==='assignall'){const to=$('#ua-acc').value;let n=0;const hs=new Set(S.tx.filter(t=>!t.acc&&t.hint4).map(t=>t.hint4));if(hs.size===1)learnAcc(to,[...hs][0]);S.tx.forEach(t=>{if(!t.acc){t.acc=to;delete t.hint4;n++}});save();closeSheet();render();toast(`${n} transaction${n>1?'s':''} assigned`)}
   else if(a==='padir'){paDir=id;document.querySelectorAll('#pa-seg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#pa-acc-l').textContent=id==='debit'?'Paid from which account':'Received in which account'}
   else if(a==='personpdf'){const r=personStatement(id,$('#ps-per').value);sharePdf(r.name,r.pdf)}
+  else if(a==='persondel'){
+    const p=person(id);if(!p)return;const gone=S.tx.filter(t=>t.kind==='pass'&&t.party===id),n=gone.length;
+    askConfirm(n?`Delete ${p.name} and ${n} entr${n===1?'y':'ies'}? Your income and spending graphs will not change. Account balances will, because these entries moved money in and out of your accounts.`:`Delete ${p.name}?`,'Delete',true).then(ok=>{if(!ok)return;
+      const i=S.people.findIndex(x=>x.id===id),removed=S.people.splice(i,1)[0];
+      S.tx=S.tx.filter(t=>!(t.kind==='pass'&&t.party===id));save();closeSheet();render();
+      undoToast(p.name+' deleted',()=>{S.people.splice(Math.min(i,S.people.length),0,removed);gone.forEach(t=>S.tx.push(t));save();render()})})
+  }
   else if(a==='personadd'){
     const amt=parseFloat($('#pa-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     S.tx.push({id:uid(),date:$('#pa-date').value||todayISO(),type:paDir,amt,acc:$('#pa-acc').value,to:'',kind:'pass',cat:'Other',note:$('#pa-note').value.trim(),party:id,pool:false});
@@ -2075,7 +2082,7 @@ function unassignedSheet(){
 let paDir='debit';
 function personSheet(id){
   const p=person(id),list=S.tx.filter(t=>t.kind==='pass'&&t.party===id).sort((a,b)=>b.date.localeCompare(a.date)),b=personBal(id);
-  openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><button class="icon-btn" data-a="close">✕</button></div>
+  openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><div class="row" style="gap:8px">${delBtn('persondel',p.id,'Delete person')}<button class="icon-btn" data-a="close">✕</button></div></div>
    <div class="card" style="margin-top:14px"><div class="big ${b>0?'debit':'credit'}">${inr(Math.abs(b))}</div><div class="small mute">${b>0?'owes you':b<0?'you owe':'all settled'}</div></div>
    <h2>Add entry</h2><div class="card">
    <div class="seg" id="pa-seg"><button data-a="padir" data-id="debit" class="on">I gave / paid them</button><button data-a="padir" data-id="credit">They gave / paid me</button></div>
