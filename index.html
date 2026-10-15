@@ -185,6 +185,14 @@ nav button span{display:flex;justify-content:center}
 [data-theme] #intro b{color:var(--ink)}[data-theme] #intro small{color:var(--mute)}
 [data-theme] .sec{border:1px solid var(--line);box-shadow:none;border-radius:12px}
 [data-theme] .search{border-radius:10px}
+.sumrow{display:grid;grid-template-columns:repeat(3,1fr);padding:14px 0!important}
+.sumrow>div{padding:0 14px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:2px;min-width:0}
+.sumrow>div:first-child{border-left:0}.sumrow b{font-size:17px;white-space:nowrap}
+.crows{display:grid;gap:14px}.crow{display:flex;gap:12px;align-items:center}
+.cic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none}
+.ctr{height:5px;border-radius:3px;background:var(--line);margin-top:7px;overflow:hidden}.ctr i{display:block;height:100%;border-radius:3px}
+.stack{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px;margin:10px 0 6px;background:var(--line)}.stack i{display:block;height:100%}
+.dual{display:grid;gap:3px;margin-top:6px}.dual i{display:block;height:4px;border-radius:2px;min-width:2px}
 .cprev{display:flex;justify-content:space-between;align-items:center;border-radius:12px;padding:12px 14px;color:#fff;font-weight:700;font-size:14px;margin:4px 0 10px}
 .cprev span:last-child{font-weight:500;font-size:12px;opacity:.85}
 .cpick{display:flex;flex-wrap:wrap;gap:10px}
@@ -1077,6 +1085,7 @@ const pool=()=>{const inc=S.tx.filter(t=>t.kind==='other').reduce((s,t)=>s+(t.ty
 function barChart(vals,labels,o={}){
   const W=300,H=o.h||120,n=vals.length,pad=6,bw=(W-pad*2)/n,gap=Math.min(3,bw*.25);
   const max=Math.max(...vals,o.line||0,1)*1.1;let g='';
+  [.5,1].forEach(f=>{const y=(H-16-f*(max/1.1)/max*(H-24)).toFixed(1);if(y>2)g+=`<line x1="${pad}" x2="${W-pad}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width=".7"/>`});
   vals.forEach((v,i)=>{
     const h=v/max*(H-24),x=pad+i*bw+gap/2,w=bw-gap;
     g+=`<rect x="${x.toFixed(1)}" y="${(H-16-h).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(h,v>0?1.5:0).toFixed(1)}" rx="${Math.min(3,w/2).toFixed(1)}" fill="${o.colors?o.colors[i]:'var(--brand)'}" opacity="${o.hl==null||o.hl===i?1:.26}" data-tip="${esc(o.tips?o.tips[i]:labels[i]+' · '+inr(v))}"/>`;
@@ -1143,17 +1152,17 @@ function projection(mk,st){
 function donut(data){
   const tot=data.reduce((s,d)=>s+d.v,0);if(!tot)return '<div class="empty">No spending yet</div>';
   let off=0;const R=15.9155;
-  const segs=data.map(d=>{const p=d.v/tot*100;const s=`<circle r="${R}" cx="21" cy="21" fill="none" stroke="${d.c}" stroke-width="5.5" stroke-dasharray="${Math.max(p-.6,.1)} ${100-p+.6}" stroke-dashoffset="${-off}"/>`;off+=p;return s}).join('');
-  return `<div class="row" style="gap:16px"><svg viewBox="0 0 42 42" width="132" height="132"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="5.5"/>${segs}</g><text x="21" y="19.5" text-anchor="middle" style="font-size:3.2px">Spent</text><text x="21" y="25" text-anchor="middle" style="font-size:5.2px;font-weight:700;fill:var(--ink)">₹${compact(tot)}</text></svg>
-  <div class="grow small mute">Top: <b style="color:var(--ink)">${esc(cname(data[0].k))}</b><br>${Math.round(data[0].v/tot*100)}% of spending</div></div>
-  <div class="legend">${data.map(d=>`<div><i style="background:${d.c}"></i><span class="grow row" style="gap:6px"><span style="color:${d.c};display:inline-flex">${ic(CATS[d.k]||'receipt',16)}</span>${esc(cname(d.k))}</span><b class="num">${inr(d.v)}</b><span class="mute small" style="width:34px;text-align:right">${Math.round(d.v/tot*100)}%</span></div>`).join('')}</div>`;
+  const segs=data.map(d=>{const p=d.v/tot*100;const e=`<circle r="${R}" cx="21" cy="21" fill="none" stroke="${d.c}" stroke-width="4.2" stroke-dasharray="${Math.max(p-1,.1)} ${100-p+1}" stroke-dashoffset="${-off}"/>`;off+=p;return e}).join('');
+  const mx=data[0].v;
+  return `<div style="display:grid;place-items:center;padding:6px 0 14px"><svg viewBox="0 0 42 42" width="170" height="170"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="4.2"/>${segs}</g><text x="21" y="19.4" text-anchor="middle" style="font-size:2.9px">Total spent</text><text x="21" y="25.2" text-anchor="middle" style="font-size:5.6px;font-weight:800;fill:var(--ink)">${inr(tot)}</text></svg></div>
+  <div class="crows">${data.map(d=>`<div class="crow"><span class="cic" style="background:${d.c}1f;color:${d.c}">${ic(CATS[d.k]||'receipt',16)}</span><div class="grow"><div class="row sp"><b>${esc(cname(d.k))}</b><span class="num"><b>${inr(d.v)}</b> <span class="mute small">${Math.round(d.v/tot*100)}%</span></span></div><div class="ctr"><i style="width:${Math.max(2,d.v/mx*100)}%;background:${d.c}"></i></div></div></div>`).join('')}</div>`;
 }
 function bars(ms){
   const vals=ms.flatMap(m=>[m.inc+m.oth,m.exp]);const max=Math.max(...vals,1);const W=300,H=120,bw=14,gap=(W-ms.length*bw*2)/(ms.length+1);
   let x=gap,out='';
   ms.forEach(m=>{
     const h1=(m.inc+m.oth)/max*(H-22),h2=m.exp/max*(H-22);
-    out+=`<rect x="${x}" y="${H-14-h1}" width="${bw}" height="${h1}" rx="4" fill="var(--credit)"/><rect x="${x+bw+2}" y="${H-14-h2}" width="${bw}" height="${h2}" rx="4" fill="var(--debit)"/><text x="${x+bw}" y="${H-3}" text-anchor="middle">${m.l}</text>`;
+    out+=`<rect x="${x}" y="${H-14-h1}" width="${bw}" height="${h1}" rx="3" fill="var(--credit)"/><rect x="${x+bw+2}" y="${H-14-h2}" width="${bw}" height="${h2}" rx="3" fill="var(--debit)" opacity=".8"/><text x="${x+bw}" y="${H-3}" text-anchor="middle">${m.l}</text>`;
     x+=bw*2+gap;
   });
   return `<svg viewBox="0 0 ${W} ${H}" width="100%">${out}</svg><div class="row small mute" style="gap:14px"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--credit)"></i> Income</span><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--debit)"></i> Spent</span></div>`;
@@ -1325,7 +1334,7 @@ function dailyCard(st){
   const vals=Array.from({length:dim},(_,i)=>st.day[i+1]||0);
   const now=new Date(),upto=month===now.toISOString().slice(0,7)?now.getDate():dim;
   const avg=vals.slice(0,upto).reduce((a,b)=>a+b,0)/Math.max(1,upto),mx=Math.max(...vals),top=vals.indexOf(mx);
-  return `<h2>Daily spending</h2><div class="card">${barChart(vals,vals.map((_,i)=>(i===0||(i+1)%5===0)?String(i+1):''),{tips:vals.map((v,i)=>`${i+1} ${mlabel(month).slice(0,3)} · ${inr(v)}`),colors:vals.map(v=>v>avg*1.8&&v>0?'var(--warn)':'var(--brand)'),line:avg})}<div class="small mute">${mx>0?`Biggest day: ${top+1} ${mlabel(month).slice(0,3)} (${inr(mx)}). Amber bars are well above your average.`:'No spending this month yet.'}</div></div>`;
+  return `<h2>Daily spending</h2><div class="card">${barChart(vals,vals.map((_,i)=>(i===0||(i+1)%5===0)?String(i+1):''),{tips:vals.map((v,i)=>`${i+1} ${mlabel(month).slice(0,3)} · ${inr(v)}`),hl:month===now.toISOString().slice(0,7)?now.getDate()-1:top,line:avg})}<div class="small mute">${mx>0?`Biggest day: ${top+1} ${mlabel(month).slice(0,3)} (${inr(mx)}). Dashed line = your daily average; the bright bar is today.`:'No spending this month yet.'}</div></div>`;
 }
 function statsExtra(st){
   let out='';
@@ -1353,27 +1362,31 @@ function statsExtra(st){
   if(avg.some(v=>v>0)){const hi=avg.indexOf(Math.max(...avg));out+=`<h2>Which days you spend</h2><div class="card">${barChart(avg,days.map(d=>d[0]),{tips:avg.map((v,i)=>days[i]+' · avg '+inr(v)),hl:hi})}<div class="small mute">Average per day, last 90 days. You spend most on ${days[hi]}s.</div></div>`}
   // where money sits
   const sits=S.accounts.map((a,i)=>({k:a.name,v:accBal(a.id),c:COLORS[i%6],ty:accType(a)})).filter(x=>x.ty!=='card'&&x.v>0);
-  if(sits.length)out+=`<h2>Where your money sits</h2><div class="card">${miniDonut(sits)}</div>`;
+  if(sits.length){const tt=sits.reduce((x,y)=>x+y.v,0);out+=`<h2>Where your money sits</h2><div class="card"><div class="big num" style="font-size:24px">${inr(tt)}</div><div class="stack">${sits.map(x=>`<i style="width:${x.v/tt*100}%;background:${x.c}"></i>`).join('')}</div>${sits.map(x=>`<div class="row sp" style="padding:7px 0"><span class="row" style="gap:8px"><i style="width:10px;height:10px;border-radius:3px;background:${x.c}"></i>${esc(x.k)}</span><span class="num"><b>${inr(x.v)}</b> <span class="mute small">${Math.round(x.v/tt*100)}%</span></span></div>`).join('')}</div>`}
   // card utilisation
   const cards=S.accounts.filter(a=>accType(a)==='card'&&a.limit>0);
   if(cards.length)out+=`<h2>Credit card use</h2><div class="card">${hbars(cards.map(a=>{const due=Math.max(0,-accBal(a.id))+emiBlocked(a.id);return{label:esc(a.name),v:due,max:a.limit,color:due/a.limit>.5?'var(--debit)':'var(--brand)',right:Math.round(due/a.limit*100)+'% of '+inr(a.limit)}}))}<div class="small mute">Keeping this under 30% is good for your credit score.</div></div>`;
   return out;
 }
 function stats(){
-  const st=mstats(month);
+  const st=mstats(month),pm=mstats(shiftMonth(month,-1));
   const data=Object.entries(st.cat).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({k,v,c:CATCOL[k]||'#94a3b8'}));
   const ms=[];for(let i=5;i>=0;i--){const m=shiftMonth(month,-i);const s=mstats(m);ms.push({...s,l:mlabel(m).slice(0,3)})}
   const [y,mo]=month.split('-').map(Number),dim=new Date(y,mo,0).getDate(),now=new Date();
   const days=month===now.toISOString().slice(0,7)?now.getDate():dim;
-  const sav=st.inc+st.oth-st.exp;
+  const inc=st.inc+st.oth,sav=inc-st.exp,dl=(a,b,good)=>b>0?`<div class="small" style="color:${(a>b)===good?'var(--credit)':'var(--debit)'}">${a>b?'▲':'▼'} ${Math.abs(Math.round((a-b)/b*100))}% vs last</div>`:'<div class="small mute">&nbsp;</div>';
   return `<div class="row sp"><h1>Insights</h1>${monthBar()}</div>
-  <div class="grid2" style="margin-top:14px"><div class="stat"><span class="small mute">Avg / day</span><b class="num">${inr(Math.round(st.exp/days))}</b></div><div class="stat"><span class="small mute">Saved this month</span><b class="num ${sav<0?'debit':'credit'}">${inr(sav)}</b></div></div>
+  <div class="card sumrow" style="margin-top:14px">
+    <div><span class="small mute">Spent</span><b class="num debit">${inrH(st.exp)}</b>${dl(st.exp,pm.exp,false)}</div>
+    <div><span class="small mute">Income</span><b class="num credit">${inrH(inc)}</b>${dl(inc,pm.inc+pm.oth,true)}</div>
+    <div><span class="small mute">Saved</span><b class="num ${sav<0?'debit':'credit'}">${inrH(sav)}</b><div class="small mute">${inr(Math.round(st.exp/days))}/day</div></div>
+  </div>
   <h2>By category</h2><div class="card">${donut(data)}</div>
   <h2>Budget pace</h2><div class="card">${pace(month,st)}</div>
   ${dailyCard(st)}
-  <h2>Last 6 months</h2><div class="card">${bars(ms)}</div>
+  <h2>Income vs spending</h2><div class="card">${bars(ms)}</div>
   ${statsExtra(st)}
-  <h2>Per account (${mlabel(month)})</h2><div class="card">${S.accounts.map(a=>{const m=accMonth(a.id,month);return `<div class="row sp" style="padding:8px 0"><span>${esc(a.name)}</span><span class="small num"><span class="credit">↓ ${inr(m.i)}</span> &nbsp; <span class="debit">↑ ${inr(m.o)}</span></span></div>`}).join('')}</div>`;
+  <h2>Per account (${mlabel(month)})</h2><div class="card">${S.accounts.map((a,i)=>{const m=accMonth(a.id,month),mx=Math.max(m.i,m.o,1);return `<div style="padding:9px 0;${i?'border-top:1px solid var(--line)':''}"><div class="row sp"><b>${esc(a.name)}</b><span class="small num"><span class="credit">↓ ${inr(m.i)}</span> &nbsp; <span class="debit">↑ ${inr(m.o)}</span></span></div><div class="dual"><i style="width:${m.i/mx*100}%;background:var(--credit)"></i><i style="width:${m.o/mx*100}%;background:var(--debit)"></i></div></div>`}).join('')}</div>`;
 }
 function khata(){
   let body='';
