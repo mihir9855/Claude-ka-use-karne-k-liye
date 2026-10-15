@@ -185,6 +185,16 @@ nav button span{display:flex;justify-content:center}
 [data-theme] #intro b{color:var(--ink)}[data-theme] #intro small{color:var(--mute)}
 [data-theme] .sec{border:1px solid var(--line);box-shadow:none;border-radius:12px}
 [data-theme] .search{border-radius:10px}
+.cprev{display:flex;justify-content:space-between;align-items:center;border-radius:12px;padding:12px 14px;color:#fff;font-weight:700;font-size:14px;margin:4px 0 10px}
+.cprev span:last-child{font-weight:500;font-size:12px;opacity:.85}
+.cpick{display:flex;flex-wrap:wrap;gap:10px}
+.cs{width:36px;height:36px;border-radius:10px;border:2px solid transparent;padding:0;margin:0;cursor:pointer;position:relative;display:grid;place-items:center;flex:none}
+.cs.on{border-color:var(--ink)}
+.cs.on:not(.cust)::after{content:"✓";color:#fff;font-size:16px;font-weight:800}
+.cs.cust{background:var(--field);border:1.5px dashed var(--mute);overflow:hidden}
+.cs.cust b{color:var(--mute);font-size:20px;font-weight:600;line-height:1}
+.cs.cust.on{border:2px solid var(--ink)}.cs.cust.on b{color:#fff}
+.cs.cust input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0;margin:0}
 
 .dlg-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:30;display:flex;align-items:center;justify-content:center;padding:20px}
 .dlg{background:var(--card);color:var(--ink);border-radius:22px;padding:18px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
@@ -1392,7 +1402,10 @@ function accounts(){
   const sec=(id,t,body)=>`<details class="sec" data-sec="${id}" ${openSec.has(id)?'open':''}><summary>${t}</summary><div class="secbody">${body}</div></details>`;
   const cards=S.accounts.map((a,i)=>{const ty=accType(a),bal=accBal(a.id);return `<div class="card" style="margin-bottom:10px"><div class="row sp"><b style="color:${COLORS[i%6]}">● ${esc(a.name)}</b><b class="num ${ty==='card'&&bal<0?'debit':''}">${ty==='card'?(bal<0?'Due '+inr(-bal):inr(bal)):inr(bal)}</b></div>
    <div class="grid2"><div><label>Name</label><input data-f="name" data-id="${a.id}" value="${esc(a.name)}"></div><div><label>Type</label><select data-f="type" data-id="${a.id}"><option value="bank" ${ty==='bank'?'selected':''}>Bank account</option><option value="cash" ${ty==='cash'?'selected':''}>Cash</option><option value="card" ${ty==='card'?'selected':''}>Credit card</option></select></div></div>
-   <label>Tile colour</label><div class="swatches">${ACC_COL.map(c=>`<button data-a="acccolor" data-id="${a.id}" data-c="${c}" class="${(a.color||'').toLowerCase()===c?'on':''}" style="background:${mute(c)}"></button>`).join('')}<label class="custom ${a.color&&!ACC_COL.includes(a.color.toLowerCase())?'on':''}" style="margin:0" title="Pick any colour"><input type="color" data-f="color" data-id="${a.id}" value="${a.color||'#7a1f3d'}"></label><button class="chip" data-a="acccolor" data-id="${a.id}" data-c="" style="font-size:12px">Default</button></div>
+   <label>Tile colour</label>
+   <div class="cprev" style="background:${a.color?mute(a.color):['#1f9a57','#2f8b9c','#5b82bf'][i%3]}"><span>${esc(a.name)}${a.last4?' ••'+esc(a.last4):''}</span><span>${a.color?'Your colour':'Default'}</span></div>
+   <div class="cpick">${ACC_COL.map(c=>`<button type="button" class="cs ${(a.color||'').toLowerCase()===c?'on':''}" data-a="acccolor" data-id="${a.id}" data-c="${c}" style="background:${mute(c)}" aria-label="Colour"></button>`).join('')}<label class="cs cust ${a.color&&!ACC_COL.includes(a.color.toLowerCase())?'on':''}" title="Pick any colour" style="${a.color&&!ACC_COL.includes(a.color.toLowerCase())?'background:'+mute(a.color):''}"><b>+</b><input type="color" data-f="color" data-id="${a.id}" value="${a.color||'#7a1f3d'}"></label></div>
+   ${a.color?`<button type="button" class="chip" data-a="acccolor" data-id="${a.id}" data-c="" style="font-size:12px;margin-top:6px">Reset to default</button>`:''}
    <div class="grid2">${ty==='cash'?'':`<div><label>Last 4 digits</label><input data-f="last4" data-id="${a.id}" value="${esc(a.last4)}" maxlength="4" inputmode="numeric"></div>`}
    <div><label>${ty==='card'?'Opening due (₹)':ty==='cash'?'Cash in hand (₹)':'Opening balance (₹)'}</label><input data-f="${ty==='card'?'opendue':'open'}" data-id="${a.id}" value="${ty==='card'?-a.open||0:a.open}" inputmode="decimal"></div>
    ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal"></div>`:''}</div>${ty==='card'?`<div class="small mute" style="margin-top:10px">Used ${inr(Math.max(0,-bal))} · EMI blocked ${inr(Math.round(emiBlocked(a.id)))}${a.limit?` · <b style="color:var(--ink)">Available ${inr(Math.round(a.limit+bal-emiBlocked(a.id)))}</b>`:''}</div>`:''}${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (PDF or CSV)</button>`}<button class="btn red" data-a="delacc" data-id="${a.id}" style="margin-top:6px">Delete this account</button></div>`}).join('');
