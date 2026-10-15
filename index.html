@@ -867,6 +867,92 @@ function removeAccount(id,target){
   save();closeSheet();render();toast('Account deleted');
 }
 /* backup: Android share sheet inside the app, share/download in a browser */
+/* ---------- person statement as a PDF (tiny built-in PDF writer, Helvetica, ASCII only) ---------- */
+function pdfFile(pages){
+  const objs=[];const add=t=>{objs.push(t);return objs.length};
+  add('<< /Type /Catalog /Pages 2 0 R >>');
+  add('PAGES');
+  add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  const kids=[];
+  pages.forEach(c=>{
+    const cid=objs.length+2,pid=add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${cid} 0 R >>`);
+    add(`<< /Length ${c.length} >>\nstream\n${c}\nendstream`);kids.push(pid+' 0 R');
+  });
+  objs[1]=`<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${kids.length} >>`;
+  let out='%PDF-1.4\n',off=[];
+  objs.forEach((o,i)=>{off.push(out.length);out+=`${i+1} 0 obj\n${o}\nendobj\n`});
+  const x=out.length;
+  out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+off.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`;
+  return out;
+}
+const pdfTxt=t=>String(t==null?'':t).replace(/₹/g,'Rs.').replace(/[^\x20-\x7e]/g,'?').replace(/([\\()])/g,'\\$1');
+const pdfW=(t,sz)=>[...String(t)].reduce((a,c)=>a+(/[0-9]/.test(c)?.556:/[ ,.:]/.test(c)?.278:/[A-Z]/.test(c)?.67:.52),0)*sz;
+const money=n=>Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+function personStatement(pid,per){
+  const p=person(pid),now=new Date(),y=now.getFullYear(),mo=now.getMonth(),pad=n=>String(n).padStart(2,'0');
+  let from='',to='',label='All time';
+  if(per==='m'){from=y+'-'+pad(mo+1)+'-01';to=isoDay(new Date(y,mo+1,0).getTime());label='This month'}
+  else if(per==='3'){from=isoDay(new Date(y,mo-2,1).getTime());to=isoDay(new Date(y,mo+1,0).getTime());label='Last 3 months'}
+  else if(per==='y'){from=y+'-01-01';to=y+'-12-31';label='This year'}
+  const idx=new Map(S.tx.map((t,i)=>[t,i])),all=S.tx.filter(t=>t.kind==='pass'&&t.party===pid).sort((a,b)=>a.date.localeCompare(b.date)||(a.ts||0)-(b.ts||0)||idx.get(a)-idx.get(b));
+  const sg=t=>t.type==='debit'?t.amt:-t.amt;
+  let bal=all.filter(t=>from&&t.date<from).reduce((a,t)=>a+sg(t),0);
+  const open=bal,rows=all.filter(t=>(!from||t.date>=from)&&(!to||t.date<=to));
+  const dr=rows.filter(t=>t.type==='debit').reduce((a,t)=>a+t.amt,0),cr=rows.filter(t=>t.type==='credit').reduce((a,t)=>a+t.amt,0),close=open+dr-cr;
+  const fd=iso=>new Date(iso+'T00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const balTxt=b=>money(b)+(b>0?' Dr':b<0?' Cr':'');
+  const pages=[];let c='',yy=0,pn=0;
+  const T=(x,y,t,sz,b,right)=>{const w=right?pdfW(t,sz):0;c+=`BT /${b?'F2':'F1'} ${sz} Tf ${(x-w).toFixed(1)} ${y} Td (${pdfTxt(t)}) Tj ET\n`};
+  const L=(y,g)=>{c+=`${g||.82} G 0.5 w 40 ${y} m 555 ${y} l S\n`};
+  const head=()=>{pn++;c='';yy=800;
+    T(40,yy,'ARTHALY',9,1);T(555,yy,'Page '+pn,9,0,1);yy-=26;
+    T(40,yy,'Statement of account',18,1);yy-=22;
+    T(40,yy,p.name,13,1);yy-=16;
+    T(40,yy,'Period: '+(from?fd(from)+' to '+fd(to):'All time')+'    Generated: '+fd(todayISO()),9,0);yy-=22;
+    if(pn===1){
+      c+='0.95 g 40 '+(yy-46)+' 515 54 re f 0 g\n';
+      T(52,yy-8,'Total debit (you gave)',8,0);T(52,yy-26,'Rs. '+money(dr),12,1);
+      T(230,yy-8,'Total credit (they gave)',8,0);T(230,yy-26,'Rs. '+money(cr),12,1);
+      T(410,yy-8,close>0?p.name+' owes you':close<0?'You owe '+p.name:'All settled',8,0);T(410,yy-26,'Rs. '+money(close),12,1);
+      yy-=70;
+    }
+    c+='0.92 g 40 '+(yy-5)+' 515 18 re f 0 g\n';
+    T(46,yy,'Date',8.5,1);T(112,yy,'Details',8.5,1);T(375,yy,'Debit',8.5,1,1);T(450,yy,'Credit',8.5,1,1);T(551,yy,'Balance',8.5,1,1);yy-=18;
+  };
+  const foot=()=>{L(60);T(40,48,'Debit = money you gave or paid for them.  Credit = money they gave or paid you.  Balance Dr = they owe you, Cr = you owe them.',7,0);pages.push(c)};
+  head();
+  if(from&&open!==0){T(112,yy,'Opening balance',9,0);T(551,yy,balTxt(open),9,0,1);yy-=16;L(yy+11)}
+  rows.forEach(t=>{
+    if(yy<85){foot();head()}
+    bal+=sg(t);
+    const a=acc(t.acc),d=(t.note||'Entry')+(a?'  ('+a.name+')':'');
+    T(46,yy,fd(t.date),8.5,0);
+    let dd=d;while(dd.length>3&&pdfW(dd,8.5)>235)dd=dd.slice(0,-1);if(dd!==d)dd=dd.slice(0,-1)+'...';
+    T(112,yy,dd,8.5,0);
+    if(t.type==='debit')T(375,yy,money(t.amt),8.5,0,1);else T(450,yy,money(t.amt),8.5,0,1);
+    T(551,yy,balTxt(bal),8.5,0,1);yy-=16;L(yy+11,.9);
+  });
+  if(!rows.length){T(112,yy,'No entries in this period',9,0);yy-=16}
+  if(yy<90){foot();head()}
+  yy-=6;T(112,yy,'Closing balance',9,1);T(375,yy,money(dr),9,1,1);T(450,yy,money(cr),9,1,1);T(551,yy,balTxt(close),9,1,1);
+  foot();
+  return {pdf:pdfFile(pages),name:'Statement-'+p.name.replace(/[^A-Za-z0-9]+/g,'_')+'-'+todayISO()+'.pdf',n:rows.length};
+}
+async function sharePdf(name,str){
+  const p=sms();
+  if(p&&p.shareFile){
+    try{await p.shareFile({filename:name,content:str,mime:'application/pdf'});toast('Choose where to save or send it',4500);return}
+    catch(e){toast('Could not open the share sheet')}
+  }
+  const bytes=Uint8Array.from(str,ch=>ch.charCodeAt(0)&255);
+  try{
+    if(navigator.canShare&&navigator.share){const f=new File([bytes],name,{type:'application/pdf'});if(navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}
+  }catch(e){if(e&&e.name==='AbortError')return}
+  const b=new Blob([bytes],{type:'application/pdf'}),l=document.createElement('a');
+  l.href=URL.createObjectURL(b);l.download=name;document.body.appendChild(l);l.click();l.remove();
+  setTimeout(()=>URL.revokeObjectURL(l.href),4000);toast('Statement downloaded');
+}
 async function exportBackup(){
   const text=JSON.stringify(S,null,1),name='arthaly-backup-'+todayISO()+'.json',p=sms();
   if(p&&p.shareFile){
@@ -1611,6 +1697,7 @@ document.addEventListener('click',e=>{
   else if(a==='unassigned')unassignedSheet();
   else if(a==='assignall'){const to=$('#ua-acc').value;let n=0;const hs=new Set(S.tx.filter(t=>!t.acc&&t.hint4).map(t=>t.hint4));if(hs.size===1)learnAcc(to,[...hs][0]);S.tx.forEach(t=>{if(!t.acc){t.acc=to;delete t.hint4;n++}});save();closeSheet();render();toast(`${n} transaction${n>1?'s':''} assigned`)}
   else if(a==='padir'){paDir=id;document.querySelectorAll('#pa-seg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#pa-acc-l').textContent=id==='debit'?'Paid from which account':'Received in which account'}
+  else if(a==='personpdf'){const r=personStatement(id,$('#ps-per').value);sharePdf(r.name,r.pdf)}
   else if(a==='personadd'){
     const amt=parseFloat($('#pa-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     S.tx.push({id:uid(),date:$('#pa-date').value||todayISO(),type:paDir,amt,acc:$('#pa-acc').value,to:'',kind:'pass',cat:'Other',note:$('#pa-note').value.trim(),party:id,pool:false});
@@ -1705,6 +1792,9 @@ function personSheet(id){
    <label>Note</label><input id="pa-note" placeholder="optional">
    <button class="btn" data-a="personadd" data-id="${p.id}">Save entry</button>
    <div class="small mute">This only changes this person's balance and the account. It is not counted as income or spending, so your graphs and budgets stay as they are.</div></div>
+   <h2>Statement (PDF)</h2><div class="card"><div class="small mute">A bank-style statement of this person: every debit, credit and the running balance.</div>
+   <select id="ps-per" style="margin-top:8px"><option value="all">All time</option><option value="m">This month</option><option value="3">Last 3 months</option><option value="y">This year</option></select>
+   <button class="btn" data-a="personpdf" data-id="${p.id}">Download statement PDF</button></div>
    <h2>History</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries yet.</div>'}</div>`);
   paDir='debit';refreshDates();
 }
