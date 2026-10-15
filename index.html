@@ -208,13 +208,14 @@ input[data-calc]{cursor:pointer;caret-color:transparent}
 .atile{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;color:#fff}
 .atile .an{font-size:12px;opacity:.9}.atile .ab{font-size:21px;font-weight:800;margin-top:2px}
 .adel{width:38px;height:38px;border-radius:10px;border:0;background:rgba(255,255,255,.2);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0;flex:none}
-.adots{display:flex;gap:7px;padding:14px 16px 2px;overflow-x:auto;scrollbar-width:none;align-items:center}.adots::-webkit-scrollbar{display:none}
-.ad{width:23px;height:23px;min-width:23px;border-radius:50%;border:0;margin:0;padding:0;cursor:pointer;position:relative;display:grid;place-items:center;flex:none;font:inherit}
-.ad.on{outline:2px solid var(--ink);outline-offset:2px}
-.ad.cust{background:var(--field);border:1.5px dashed var(--mute);overflow:hidden}.ad.cust b{color:var(--mute);font-size:16px;line-height:1;font-weight:600}.ad.cust.on b{color:#fff}
+.adots{display:flex;gap:3px;padding:14px 16px 8px;align-items:center;flex-wrap:nowrap;justify-content:space-between}
+.ad{width:21px;height:21px;min-width:21px;border-radius:50%;border:0;margin:0;padding:0;cursor:pointer;position:relative;display:grid;place-items:center;flex:none;font:inherit}
+.ad.on{box-shadow:inset 0 0 0 2px rgba(255,255,255,.95)}
+.ad.on:not(.cust)::after{content:"✓";color:#fff;font-size:12px;font-weight:800;line-height:1}
+.ad.cust{background:var(--field);border:1.5px dashed var(--mute);overflow:hidden}.ad.cust b{color:var(--mute);font-size:15px;line-height:1;font-weight:600}.ad.cust.on b{color:#fff}
 .ad.cust input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0;margin:0}
-.ad.rst{background:var(--field);color:var(--mute);font-size:15px;border:1px solid var(--line)}
-.abody{padding:2px 16px 16px}
+.ad.rst{background:var(--field);color:var(--mute);font-size:13px;border:1px solid var(--line)}
+.abody{padding:4px 16px 16px}
 .mpill{display:inline-flex;align-items:center;gap:7px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .mgrid button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:13px 0;font:inherit;font-weight:600;cursor:pointer}
