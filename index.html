@@ -173,7 +173,14 @@ nav button span{display:flex;justify-content:center}
 [data-theme] .acc:nth-child(3n+1){background:#1f9a57!important}
 [data-theme] .acc:nth-child(3n+2){background:#2f8b9c!important}
 [data-theme] .acc:nth-child(3n){background:#5b82bf!important}
-[data-theme] .tile{border-radius:12px}
+[data-theme] .tile{border-radius:12px;background:var(--card)!important;color:var(--ink);border:1px solid var(--line);box-shadow:inset 0 3px 0 var(--c)}
+[data-theme] .tile .wm{color:var(--c);opacity:.1}
+[data-theme] .tile .pc{background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--c)}
+[data-theme] .tile .of{color:var(--mute);opacity:1}
+[data-theme] .tile .tb{background:var(--line)}[data-theme] .tile .tb i{background:var(--c)}
+[data-theme] .tile.nolim{opacity:1}[data-theme] .tile.nolim h3,[data-theme] .tile.nolim .amt{opacity:.9}
+[data-theme] .tile.over{outline:1.5px solid var(--debit);outline-offset:-1.5px}
+[data-theme] .tile.over .of b{color:var(--debit)}
 [data-theme] .tile .pc{border-radius:6px}
 [data-theme] .seg-bar,[data-theme] .seg-bar i{border-radius:4px}
 [data-theme] .alert{border-radius:10px}
@@ -1108,7 +1115,7 @@ const pool=()=>{const inc=S.tx.filter(t=>t.kind==='other').reduce((s,t)=>s+(t.ty
 function barChart(vals,labels,o={}){
   const W=300,H=o.h||120,n=vals.length,pad=6,bw=(W-pad*2)/n,gap=Math.min(3,bw*.25);
   const max=Math.max(...vals,o.line||0,1)*1.1;let g='';
-  [.5,1].forEach(f=>{const y=(H-16-f*(max/1.1)/max*(H-24)).toFixed(1);if(y>2)g+=`<line x1="${pad}" x2="${W-pad}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width=".7"/>`});
+  [.5,1].forEach(f=>{const y=(H-16-f*(max/1.1)/max*(H-24)).toFixed(1);if(y>2)g+=`<line x1="${pad}" x2="${W-pad}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width=".7"/><text x="${pad}" y="${(y-2.5)}">${kfmt(f*max/1.1)}</text>`});
   vals.forEach((v,i)=>{
     const h=v/max*(H-24),x=pad+i*bw+gap/2,w=bw-gap;
     g+=`<rect class="g" style="--i:${i}" x="${x.toFixed(1)}" y="${(H-16-h).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(h,v>0?1.5:0).toFixed(1)}" rx="${Math.min(3,w/2).toFixed(1)}" fill="${o.colors?o.colors[i]:'var(--brand)'}" opacity="${o.hl==null||o.hl===i?1:.26}" data-tip="${esc(o.tips?o.tips[i]:labels[i]+' · '+inr(v))}"/>`;
@@ -1128,11 +1135,10 @@ function lineChart(vals,labels,o={}){
 const hbars=items=>`<div>${items.map(it=>`<div class="hb"><div class="hl">${it.label}</div><div class="htr"><i style="width:${Math.max(1,Math.min(100,it.v/it.max*100))}%;background:${it.color||'var(--brand)'}"></i>${it.mark!=null&&it.mark>0?`<u style="left:${Math.min(99,it.mark/it.max*100)}%"></u>`:''}</div><b class="num">${it.right}</b></div>`).join('')}</div>`;
 function miniDonut(data){
   const tot=data.reduce((s,d)=>s+d.v,0);if(!tot)return '<div class="empty">No spending yet</div>';
-  let off=0;const R=15.9155;
-  const segs=data.map(d=>{const p=d.v/tot*100;const e=`<circle r="${R}" cx="21" cy="21" fill="none" stroke="${d.c}" stroke-width="6" stroke-dasharray="${Math.max(p-.8,.1)} ${100-p+.8}" stroke-dashoffset="${-off}" data-tip="${esc(cname(d.k)+' · '+inr(d.v)+' ('+Math.round(p)+'%)')}"/>`;off+=p;return e}).join('');
-  const top=data.slice(0,4);
-  return `<div class="row" style="gap:14px"><div class="chart" style="flex:none"><svg viewBox="0 0 42 42" width="112" height="112"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="6"/>${segs}</g><text x="21" y="22.4" text-anchor="middle" style="font-size:5.4px;font-weight:700;fill:var(--ink)">₹${compact(tot)}</text></svg></div>
-  <div class="grow legend" style="margin:0">${top.map(d=>`<div><i style="background:${d.c}"></i><span class="grow small">${esc(cname(d.k))}</span><b class="num small">${Math.round(d.v/tot*100)}%</b></div>`).join('')}</div></div>`;
+  let off=0;const R=15.9155,top=data.slice(0,5),mx=top[0].v;
+  const segs=data.map(d=>{const p=d.v/tot*100;const e=`<circle class="sg" r="${R}" cx="21" cy="21" fill="none" stroke="${d.c}" stroke-width="4.2" stroke-dasharray="${Math.max(p-1,.1)} ${100-p+1}" stroke-dashoffset="${-off}" data-tip="${esc(cname(d.k)+' · '+inr(d.v)+' ('+Math.round(p)+'%)')}"/>`;off+=p;return e}).join('');
+  return `<div class="row" style="gap:16px;align-items:center"><div class="chart" style="flex:none"><svg viewBox="0 0 42 42" width="118" height="118"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="4.2"/>${segs}</g><text x="21" y="19.6" text-anchor="middle" style="font-size:3px">Spent</text><text x="21" y="25" text-anchor="middle" style="font-size:5.2px;font-weight:800;fill:var(--ink)">${inr(tot)}</text></svg></div>
+  <div class="grow" style="display:grid;gap:9px">${top.map(d=>`<div><div class="row sp small"><span class="row" style="gap:6px"><i style="width:8px;height:8px;border-radius:2px;background:${d.c};display:inline-block"></i>${esc(cname(d.k))}</span><b class="num">${Math.round(d.v/tot*100)}%</b></div><div class="ctr" style="margin-top:4px"><i style="width:${Math.max(3,d.v/mx*100)}%;background:${d.c}"></i></div></div>`).join('')}</div></div>`;
 }
 document.addEventListener('pointerdown',showTip);document.addEventListener('pointermove',showTip);
 function showTip(e){
@@ -1183,15 +1189,15 @@ function bars(ms){
   return `<svg viewBox="0 0 ${W} ${H}" width="100%">${out}</svg><div class="row small mute" style="gap:14px"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--credit)"></i> Income</span><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--debit)"></i> Spent</span></div>`;
 }
 function pace(mk,st){
-  const [y,mo]=mk.split('-').map(Number);const dim=new Date(y,mo,0).getDate();
-  const now=new Date();const upto=mk===now.toISOString().slice(0,7)?now.getDate():dim;
-  let c=0;const pts=[];for(let d=1;d<=upto;d++){c+=st.day[d]||0;pts.push([d,c])}
-  const proj=projection(mk,st),max=Math.max(totalBudget(),c,proj||0,1)*1.05;const W=300,H=110,X=d=>(d-1)/(dim-1)*(W-10)+5,Y=v=>H-14-v/max*(H-24);
-  const line=pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
-  const area=line+` L${X(upto)} ${H-14} L${X(1)} ${H-14} Z`;
-  window.__pace={pts,dim,W,X:null,upto};
-  return `<div style="position:relative"><div id="tip"></div><svg class="pace" viewBox="0 0 ${W} ${H}" width="100%" style="touch-action:pan-y"><line id="cur" x1="0" x2="0" y1="6" y2="${H-14}" stroke="var(--ink)" stroke-dasharray="2 2" opacity="0"/>${totalBudget()>0?`<line x1="5" x2="${W-5}" y1="${Y(totalBudget())}" y2="${Y(totalBudget())}" stroke="var(--warn)" stroke-dasharray="4 3"/><text x="${W-5}" y="${Y(totalBudget())-4}" text-anchor="end">Budget ${inr(totalBudget())}</text>`:''}
-  <path d="${area}" fill="var(--brand)" opacity=".12"/>${proj&&upto<dim?`<line x1="${X(upto)}" y1="${Y(c)}" x2="${X(dim)}" y2="${Y(proj)}" stroke="${totalBudget()>0&&proj>totalBudget()?'var(--debit)':'var(--credit)'}" stroke-width="2" stroke-dasharray="5 4"/>`:''}<path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round"/><text x="5" y="${H-2}">1</text><text x="${W-5}" y="${H-2}" text-anchor="end">${dim}</text></svg></div>`;
+  const [y,mo]=mk.split('-').map(Number),dim=new Date(y,mo,0).getDate(),now=new Date();
+  const upto=mk===now.toISOString().slice(0,7)?now.getDate():dim,tb=totalBudget(),proj=projection(mk,st);
+  let c=0;const sp=[];for(let d=1;d<=dim;d++){if(d<=upto){c+=st.day[d]||0;sp.push(c)}else sp.push(null)}
+  const m3=mlabel(mk).slice(0,3),ser=[{vals:sp,color:'var(--brand)',area:true,tips:sp.map((v,i)=>v==null?'':`${m3} ${i+1} · ${inr(v)} so far`)}];
+  const leg=[['Spent','var(--brand)']];
+  if(tb>0){ser.unshift({vals:Array(dim).fill(tb),color:'var(--warn)',dashed:true});leg.push(['Budget '+inr(tb),'var(--warn)'])}
+  if(proj&&upto<dim){const pv=Array(dim).fill(null);pv[upto-1]=c;pv[dim-1]=Math.round(proj);ser.push({vals:pv,color:tb>0&&proj>tb?'var(--debit)':'var(--credit)',dashed:true});leg.push(['Projected','var(--mute)'])}
+  const lab=Array.from({length:dim},(_,i)=>(i===0||(i+1)%5===0)?String(i+1):'');
+  return lc2(ser,lab,{h:180,legend:leg});
 }
 
 /* ---------- views ---------- */
