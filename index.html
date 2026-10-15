@@ -186,6 +186,7 @@ nav button span{display:flex;justify-content:center}
 [data-theme] #intro b{color:var(--ink)}[data-theme] #intro small{color:var(--mute)}
 [data-theme] .sec{border:1px solid var(--line);box-shadow:none;border-radius:12px}
 [data-theme] .search{border-radius:10px}
+.icon-btn.del{color:var(--debit)}
 input[data-calc]{cursor:pointer;caret-color:transparent}
 .toast.ut{display:flex;align-items:center;gap:14px;padding:9px 10px 9px 16px}
 .toast.ut button{border:0;background:rgba(127,127,127,.28);color:inherit;font:inherit;font-weight:700;border-radius:8px;padding:6px 12px;cursor:pointer}
@@ -339,6 +340,7 @@ const ICONS={
  star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'
 };
 const ICON_PICK=['cart','food','coffee','fuel','car','train','home','bulb','phone','bag','gift','film','book','heart','medical','card','wallet','trend','swap','receipt','user','star'];
+const delBtn=(act,id,label)=>`<button class="icon-btn del" data-a="${act}" data-id="${esc(id)}" aria-label="${label}" title="${label}">${ic('trash',18)}</button>`;
 const ic=(k,sz=20)=>ICONS[k]?`<svg class="ic" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`:`<span style="font-size:${sz-2}px;line-height:1">${esc(k||'')}</span>`;
 const CATS={Card:'card',EMI:'card',Food:'food',Groceries:'cart',Fuel:'fuel',Rent:'home',Shopping:'bag',Bills:'bulb',Medical:'medical',Travel:'train',Investment:'trend',Transfer:'swap',Other:'receipt'};
 const CATCOL={Card:'#e11d48',EMI:'#0ea5e9',Food:'#d97706',Groceries:'#16a34a',Fuel:'#0369a1',Rent:'#7c3aed',Shopping:'#be185d',Bills:'#0891b2',Medical:'#dc2626',Travel:'#4f46e5',Investment:'#0f766e',Transfer:'#64748b',Other:'#94a3b8'};
@@ -1100,7 +1102,7 @@ function emiDetail(id){
     const dt=addMonthsISO(p.first,k),paid=p.closed?k<s.paid:emiIdxPaid(p,k,today),due=!paid&&dt<=today;
     rows.push(`<div class="attn"><div class="grow"><b>EMI ${k+1}</b><div class="small mute">${new Date(dt+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}</div></div><span class="num">${inr(p.monthly)}</span><span class="pill" style="${paid?'':due?'background:rgba(240,138,36,.18);color:#f08a24':'background:var(--line);color:var(--mute)'}">${paid?'Paid':due?'Due':'Upcoming'}</span></div>`);
   }
-  openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><button class="icon-btn" data-a="close">✕</button></div>
+  openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><div class="row" style="gap:8px">${delBtn('emidel',p.id,'Delete EMI')}<button class="icon-btn" data-a="close">✕</button></div></div>
   <div class="card" style="margin-top:14px"><div class="small mute">${esc(a?a.name:'card')} · ${p.months} months · ${inr(p.monthly)}/month</div>
   <div class="big num">${s.paid} <span class="mute" style="font-size:16px">of ${p.months} paid</span></div>
   <div class="bar" style="margin:8px 0"><i style="width:${Math.round(s.paid/p.months*100)}%"></i></div>
@@ -1108,8 +1110,7 @@ function emiDetail(id){
   <div class="row sp small mute" style="margin-top:6px"><span>Blocked in card limit</span><span>${inr(Math.round(s.blocked))}</span></div></div>
   <h2>Schedule</h2><div class="card" style="padding:4px 16px;max-height:36vh;overflow:auto">${rows.join('')}</div>
   <button class="btn" data-a="emiedit" data-id="${p.id}">Edit this EMI</button>
-  ${s.done?'':`<button class="btn ghost" data-a="emiclose" data-id="${p.id}">Closed early (foreclosed)</button>`}
-  <button class="btn red" data-a="emidel" data-id="${p.id}">Delete this EMI</button>`);
+  ${s.done?'':`<button class="btn ghost" data-a="emiclose" data-id="${p.id}">Closed early (foreclosed)</button>`}`);
 }
 /* ---------- stats ---------- */
 function mstats(mk){
@@ -1369,13 +1370,12 @@ function budgetView(){
 function catSheet(k){
   const st=mstats(month),used=st.cat[k]||0,lim=S.budgets[k]||0,c=CATCOL[k]||'#94a3b8';
   const list=S.tx.filter(t=>t.kind==='expense'&&t.cat===k&&t.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date));
-  openSheet(`<div class="row sp"><h1 class="row" style="gap:8px"><span style="color:${c};display:inline-flex">${ic(CATS[k]||'receipt',24)}</span>${esc(cname(k))}</h1><button class="icon-btn" data-a="close">✕</button></div>
+  openSheet(`<div class="row sp"><h1 class="row" style="gap:8px"><span style="color:${c};display:inline-flex">${ic(CATS[k]||'receipt',24)}</span>${esc(cname(k))}</h1><div class="row" style="gap:8px">${lim?delBtn('rmlim',k,'Remove budget'):''}<button class="icon-btn" data-a="close">✕</button></div></div>
   <div class="card" style="margin-top:14px;background:${c};color:#fff"><div class="small" style="opacity:.85">${mlabel(month)} · used</div><div class="big num" style="color:#fff">${inr(used)}</div>
   ${lim?`<div style="height:8px;background:rgba(255,255,255,.3);border-radius:9px;margin-top:8px;overflow:hidden"><i style="width:${Math.min(100,used/lim*100)}%;display:block;height:100%;background:#fff;border-radius:9px"></i></div><div class="small" style="margin-top:6px">${used>lim?'₹'+Math.round(used-lim).toLocaleString('en-IN')+' over':inr(lim-used)+' left'} · limit ${inr(lim)}</div>`:'<div class="small">No limit set</div>'}</div>
   <label>Monthly limit (₹)</label><input id="f-lim" readonly data-calc inputmode="numeric" value="${lim||''}" placeholder="0 = no limit">
   <button class="btn" data-a="savelim" data-id="${esc(k)}">Save limit</button>
   <button class="btn ghost" data-a="addin" data-id="${esc(k)}">+ Add ${esc(cname(k))} expense</button>
-  ${lim?`<button class="btn red" data-a="rmlim" data-id="${esc(k)}">Remove budget</button>`:''}
   <h2>Icon</h2><div class="picker">${ICON_PICK.map(i=>`<button type="button" data-a="seticon" data-id="${esc(k)}|${i}" class="${CATS[k]===i?'on':''}">${ic(i,22)}</button>`).join('')}</div>
   <h2>This month</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No spending yet</div>'}</div>`);
 }
@@ -1766,7 +1766,7 @@ function txSheet(t,preset){
   if(isNew&&t.cat==='Other'&&(!preset||!preset.cat)&&t.kind!=='expense'&&t.kind!=='pass')t.cat=t.kind==='other'?'Freelance':'Salary';
   tt=t.type;editId=t.id;catTouched=!isNew||!!(preset&&preset.cat);
   const chips=chipsHTML(t.kind,t.cat);
-  openSheet(`<div class="row sp"><h1>${isNew?'Add':'Edit'} transaction</h1><button class="icon-btn" data-a="close">✕</button></div>
+  openSheet(`<div class="row sp"><h1>${isNew?'Add':'Edit'} transaction</h1><div class="row" style="gap:8px">${isNew?'':delBtn('deltx',t.id,'Delete transaction')}<button class="icon-btn" data-a="close">✕</button></div></div>
   ${t.raw?`<div class="card small" style="margin-top:12px;word-break:break-word"><b>Original SMS</b><div class="mute" style="margin-top:4px">${esc(t.raw)}</div></div>`:''}
   ${isNew?`<div class="seg" style="margin-top:14px" id="tabseg"><button class="on" data-a="tab" data-id="m">Manual</button><button data-a="tab" data-id="s">Paste SMS</button><button data-a="tab" data-id="st">Statement</button></div>`:''}
   <div id="tab-m"><div class="seg" style="margin-top:14px" id="typeseg"><button data-a="type" data-id="debit" class="${t.type==='debit'?'on':''}">Debit (out)</button><button data-a="type" data-id="credit" class="${t.type==='credit'?'on':''}">Credit (in)</button></div>
@@ -1781,7 +1781,7 @@ function txSheet(t,preset){
   <div id="w-party"><label>Person / party</label><select id="f-party">${opts(S.people.map(p=>[p.id,p.name]),t.party)}</select></div>
   <label>Note</label><input id="f-note" value="${esc(t.note)}" placeholder="e.g. DMart groceries">
   <label>Date</label><input id="f-date" type="date" value="${t.date}">
-  <button class="btn" data-a="savetx" data-id="${t.id}">Save</button>${isNew?'':`<button class="btn red" data-a="deltx" data-id="${t.id}">Delete</button>`}</div>
+  <button class="btn" data-a="savetx" data-id="${t.id}">Save</button></div>
   <div id="tab-s" hidden><label>Paste bank SMS (separate several with a blank line)</label><textarea id="f-sms" placeholder="Rs.4337.86 debited from A/c XX3370 on 29-09-26 to DMART. Avl bal Rs.5200"></textarea>
   <button class="btn" data-a="parse">Detect & add</button></div>
   <div id="tab-st" hidden><label>Import a bank statement (PDF or CSV) into</label><select id="st-acc">${opts(S.accounts.filter(a=>accType(a)!=='cash').map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),(S.accounts.find(a=>accType(a)==='bank')||{}).id)}</select>
@@ -2050,10 +2050,10 @@ document.addEventListener('change',e=>{
 function sourceSheet(id){
   const name=srcName(id),st=srcStats(id);
   const list=S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(t.pool&&t.kind==='expense'&&(t.poolSrc||'')===id)).sort((a,b)=>b.date.localeCompare(a.date));
-  openSheet(`<div class="row sp"><h1>${esc(name)}</h1><button class="icon-btn" data-a="close">✕</button></div>
+  openSheet(`<div class="row sp"><h1>${esc(name)}</h1><div class="row" style="gap:8px">${id?delBtn('srcdel',id,'Delete source'):''}<button class="icon-btn" data-a="close">✕</button></div></div>
    <div class="card" style="margin-top:14px"><div class="big ${st.left<0?'debit':'credit'}">${inr(st.left)}</div><div class="small mute">left to use</div><div class="row sp small mute" style="margin-top:6px"><span>Earned ${inr(st.inc)}</span><span>Used ${inr(st.used)}</span></div></div>
    <button class="btn" data-a="srcadd" data-id="${esc(id)}">+ Add income to ${esc(name)}</button>
-   <button class="btn ghost" data-a="srcren" data-id="${esc(id)}">${id?'Edit name':'Give this a name'}</button>${id?`<button class="btn red" data-a="srcdel" data-id="${esc(id)}">Delete source</button>`:''}
+   <button class="btn ghost" data-a="srcren" data-id="${esc(id)}">${id?'Edit name':'Give this a name'}</button>
    <h2>History</h2><div class="small mute" style="margin:-4px 0 8px">Tap an entry to edit or delete it.</div><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries yet</div>'}</div>`);
 }
 /* the account now knows its last 4 digits: every other SMS from the same digits goes to it too */
