@@ -186,6 +186,19 @@ nav button span{display:flex;justify-content:center}
 [data-theme] #intro b{color:var(--ink)}[data-theme] #intro small{color:var(--mute)}
 [data-theme] .sec{border:1px solid var(--line);box-shadow:none;border-radius:12px}
 [data-theme] .search{border-radius:10px}
+input[data-calc]{cursor:pointer;caret-color:transparent}
+.toast.ut{display:flex;align-items:center;gap:14px;padding:9px 10px 9px 16px}
+.toast.ut button{border:0;background:rgba(127,127,127,.28);color:inherit;font:inherit;font-weight:700;border-radius:8px;padding:6px 12px;cursor:pointer}
+.calc-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.calc{background:var(--bg);width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom))}
+.cdisp{text-align:right;padding:6px 6px 12px;min-height:84px;display:flex;flex-direction:column;justify-content:flex-end;word-break:break-all}
+.cexp{font-size:15px;color:var(--mute);min-height:20px}.cres{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.ckeys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.ckeys button{height:54px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:inherit;font-size:21px;font-weight:600;cursor:pointer}
+.ckeys button:active{filter:brightness(.94)}
+.ckeys .op{background:var(--brand-soft);color:var(--brand);border-color:transparent;font-size:24px}
+.ckeys .fn{color:var(--debit)}.ckeys .eq{background:var(--brand);color:var(--on-brand);border-color:transparent;font-size:24px}
+.calc .btn{margin-top:12px;width:100%}
 .acard{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px;background:var(--card)}
 .atile{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;color:#fff}
 .atile .an{font-size:12px;opacity:.9}.atile .ab{font-size:21px;font-weight:800;margin-top:2px}
@@ -1063,8 +1076,8 @@ function emiSheet(eid){
   openSheet(`<div class="row sp"><h1>${ep?'Edit EMI':'Add EMI'}</h1><button class="icon-btn" data-a="close">✕</button></div>
   <label>What did you buy?</label><input id="e-name" placeholder="e.g. Phone, Fridge" value="${V('name')}">
   <label>Credit card</label><select id="e-card">${opts(cards.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),ep?ep.card:cards[0].id)}</select>
-  <div class="grid2"><div><label>Purchase amount (₹)</label><input id="e-amt" inputmode="decimal" placeholder="blocks your limit" value="${V('amount')}"></div><div><label>Number of months</label><input id="e-mo" inputmode="numeric" placeholder="e.g. 12" value="${V('months')}"></div></div>
-  <label>Monthly EMI (₹)</label><input id="e-mon" inputmode="decimal" placeholder="amount + interest per month" value="${V('monthly')}">
+  <div class="grid2"><div><label>Purchase amount (₹)</label><input id="e-amt" readonly data-calc inputmode="decimal" placeholder="blocks your limit" value="${V('amount')}"></div><div><label>Number of months</label><input id="e-mo" inputmode="numeric" placeholder="e.g. 12" value="${V('months')}"></div></div>
+  <label>Monthly EMI (₹)</label><input id="e-mon" readonly data-calc inputmode="decimal" placeholder="amount + interest per month" value="${V('monthly')}">
   <label>First EMI date</label><input id="e-first" type="date" value="${V('first',todayISO())}">
   <label>EMIs already paid (till today)</label><input id="e-before" inputmode="numeric" value="${V('before','0')}">
   <div class="small mute" style="margin-top:6px">Enter the original first EMI date and how many are already paid. Those are counted as paid but not added again as expenses; only EMIs falling due after today are added automatically.</div>
@@ -1359,7 +1372,7 @@ function catSheet(k){
   openSheet(`<div class="row sp"><h1 class="row" style="gap:8px"><span style="color:${c};display:inline-flex">${ic(CATS[k]||'receipt',24)}</span>${esc(cname(k))}</h1><button class="icon-btn" data-a="close">✕</button></div>
   <div class="card" style="margin-top:14px;background:${c};color:#fff"><div class="small" style="opacity:.85">${mlabel(month)} · used</div><div class="big num" style="color:#fff">${inr(used)}</div>
   ${lim?`<div style="height:8px;background:rgba(255,255,255,.3);border-radius:9px;margin-top:8px;overflow:hidden"><i style="width:${Math.min(100,used/lim*100)}%;display:block;height:100%;background:#fff;border-radius:9px"></i></div><div class="small" style="margin-top:6px">${used>lim?'₹'+Math.round(used-lim).toLocaleString('en-IN')+' over':inr(lim-used)+' left'} · limit ${inr(lim)}</div>`:'<div class="small">No limit set</div>'}</div>
-  <label>Monthly limit (₹)</label><input id="f-lim" inputmode="numeric" value="${lim||''}" placeholder="0 = no limit">
+  <label>Monthly limit (₹)</label><input id="f-lim" readonly data-calc inputmode="numeric" value="${lim||''}" placeholder="0 = no limit">
   <button class="btn" data-a="savelim" data-id="${esc(k)}">Save limit</button>
   <button class="btn ghost" data-a="addin" data-id="${esc(k)}">+ Add ${esc(cname(k))} expense</button>
   ${lim?`<button class="btn red" data-a="rmlim" data-id="${esc(k)}">Remove budget</button>`:''}
@@ -1371,7 +1384,7 @@ function budgetSheet(){
   openSheet(`<div class="row sp"><h1>Add category budget</h1><button class="icon-btn" data-a="close">✕</button></div>
   <label>Category</label><select id="b-cat">${opts(free.map(k=>[k,cname(k)]),'')}<option value="__new">＋ New category…</option></select>
   <div id="b-new" hidden><label>New category name</label><input id="b-name" placeholder="e.g. Pet care"><label>Icon</label><div class="picker" id="b-icons">${ICON_PICK.map(i=>`<button type="button" data-a="pickicon" data-id="${i}" class="${i===newIcon?'on':''}">${ic(i,22)}</button>`).join('')}</div></div>
-  <label>Monthly limit (₹)</label><input id="b-lim" inputmode="numeric" placeholder="0">
+  <label>Monthly limit (₹)</label><input id="b-lim" readonly data-calc inputmode="numeric" placeholder="0">
   <button class="btn" data-a="savebudget">Add</button>`);
 }
 
@@ -1550,7 +1563,7 @@ function accounts(){
    <div><label>${ty==='card'?'Opening due (₹)':ty==='cash'?'Cash in hand (₹)':'Opening balance (₹)'}</label><input data-f="${ty==='card'?'opendue':'open'}" data-id="${a.id}" value="${ty==='card'?-a.open||0:a.open}" inputmode="decimal"></div>
    ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal"></div>`:''}</div>${ty==='card'?`<div class="small mute" style="margin-top:10px">Used ${inr(Math.max(0,-bal))} · EMI blocked ${inr(Math.round(emiBlocked(a.id)))}${a.limit?` · <b style="color:var(--ink)">Available ${inr(Math.round(a.limit+bal-emiBlocked(a.id)))}</b>`:''}</div>`:''}${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (PDF or CSV)</button>`}</div></div>`}).join('');
   const smsb=(sms()&&smsCap?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
-   <button class="btn" data-a="smson">Enable SMS capture</button><button class="btn ghost" data-a="smsimport" style="margin-top:8px">Import last 30 days from inbox</button></div>`:'')+(sms()&&!smsCap?`<h2>Bank SMS</h2><div class="card"><div class="small mute">This version does not read your SMS by itself (Google Play Protect blocks apps that do). To add a bank SMS quickly: open your Messages app, long-press the SMS, tap <b>Share</b> and choose <b>Arthaly</b>. It is added right away. You can also paste SMS with the + button, or import a bank statement PDF/CSV.</div></div>`:'');
+   <button class="btn" data-a="smson">Enable SMS capture</button></div>`:'')+(sms()&&!smsCap?`<h2>Bank SMS</h2><div class="card"><div class="small mute">This version does not read your SMS by itself (Google Play Protect blocks apps that do). To add a bank SMS quickly: open your Messages app, long-press the SMS, tap <b>Share</b> and choose <b>Arthaly</b>. It is added right away. You can also paste SMS with the + button, or import a bank statement PDF/CSV.</div></div>`:'');
   return `<h1>Settings</h1>`+
   sec('acc','Accounts',cards+`<div class="grid2" style="grid-template-columns:repeat(3,1fr)"><button class="btn ghost" data-a="addacc" data-id="bank" style="margin-top:0">+ Bank</button><button class="btn ghost" data-a="addacc" data-id="cash" style="margin-top:0">+ Cash</button><button class="btn ghost" data-a="addacc" data-id="card" style="margin-top:0">+ Card</button></div>`)+
   (smsb?sec('sms','Bank SMS &amp; statements',smsb):'')+
@@ -1608,6 +1621,7 @@ window.addEventListener('popstate',e=>{
   const st=e.state;
   if(st&&st.k==='guard')return;
   const rearm=()=>{try{history.pushState({k:'guard'},'')}catch(x){guarded=false}};
+  if(calcEl){closeCalc();rearm();return}
   if(dlgIsOpen()){const d=dlgDone;dlgDone=null;$('#dlg').innerHTML='';if(d)d(null);rearm();return}
   if(sheetIsOpen()){closeSheet();rearm();return}
   if(view!=='home'||accFilter){accFilter='';view='home';scrollTo(0,0);render();rearm();return}
@@ -1642,11 +1656,11 @@ function smsView(){
     <b class="num ${t.type}">${dr?'−':'+'}${inr(t.amt)}</b></div>`};
   return `<h1>SMS</h1><p class="small mute">Every bank SMS Arthaly read. Tap one to change debit/credit, account, category or amount; graphs and balances update at once.</p>
   <div class="card"><div class="grid2"><div class="stat"><span class="small mute">Money out</span><b class="num debit">${inrH(out)}</b></div><div class="stat"><span class="small mute">Money in</span><b class="num credit">${inrH(inn)}</b></div></div>
-  <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn ghost" data-a="smspaste" style="margin:0;flex:1">+ Paste SMS</button>${sms()?`<button class="btn ghost" data-a="smsscan" data-id="30" style="margin:0;flex:1">Scan 30 days</button><button class="btn ghost" data-a="smsscan" data-id="90" style="margin:0;flex:1">90 days</button><button class="btn ghost" data-a="smsscan" data-id="180" style="margin:0;flex:1">180 days</button>`:''}</div>
-  ${sms()&&!smsCap?'<div class="small mute" style="margin-top:8px">This build cannot read the inbox. Use Share → Arthaly, or Paste SMS.</div>':''}</div>
+  <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn ghost" data-a="smspaste" style="margin:0;flex:1">+ Paste SMS</button>${sms()?``:''}</div>
+  ${sms()&&!smsCap?'<div class="small mute" style="margin-top:8px">This build cannot read SMS by itself. Use Share → Arthaly, or Paste SMS.</div>':''}</div>
   ${S.smsPending.length?`<h2>Could not understand (${S.smsPending.length})</h2>${pend}`:''}
   <div class="seg" style="margin:12px 0">${FL.map(([k,l])=>`<button data-a="smsflt" data-id="${k}" class="${smsFilter===k?'on':''}">${l}</button>`).join('')}</div>
-  <div class="card" style="padding:4px 16px">${list.length?list.map(row).join(''):'<div class="empty">'+(all.length?'Nothing here.':'No SMS yet.<br>Scan your inbox, share a bank SMS to Arthaly, or paste one.')+'</div>'}</div>`;
+  <div class="card" style="padding:4px 16px">${list.length?list.map(row).join(''):'<div class="empty">'+(all.length?'Nothing here.':'No SMS yet.<br>New bank SMS appear here by themselves. You can also paste one.')+'</div>'}</div>`;
 }
 /* swipe left / right on Home, Budget or Insights to change the month */
 (function(){
@@ -1656,6 +1670,82 @@ function smsView(){
   document.addEventListener('touchend',e=>{if(!ok)return;ok=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
     if(Math.abs(dx)>90&&Math.abs(dy)<45&&Date.now()-st<650){month=shiftMonth(month,dx<0?1:-1);render();toast(mlabel(month),900)}},{passive:true});
 })();
+/* ---------- undo toast ---------- */
+let undoFn=null,undoTimer=null;
+function undoToast(msg,fn){
+  clearTimeout(undoTimer);document.querySelectorAll('.toast.ut').forEach(x=>x.remove());undoFn=fn;
+  const e=document.createElement('div');e.className='toast ut';e.innerHTML=`<span>${esc(msg)}</span><button data-a="undo">Undo</button>`;document.body.appendChild(e);
+  undoTimer=setTimeout(()=>{e.remove();undoFn=null},7000);
+}
+/* ---------- calculator for every amount box ---------- */
+let calcEl=null,calcTarget=null,calcExpr='';
+const CALC_OPS='+−×÷';
+function calcEval(str){
+  const tk=str.match(/\d+\.?\d*|\.\d+|[+−×÷%]/g);if(!tk)return NaN;
+  const out=[];let neg=false;                         // numbers are {v,p} (p = followed by %), operators are strings
+  for(const t of tk){
+    const last=out[out.length-1];
+    if(/^[\d.]/.test(t)){out.push({v:neg?-parseFloat(t):parseFloat(t),p:false});neg=false}
+    else if(t==='%'){if(!last||typeof last==='string')return NaN;last.p=true}
+    else if(t==='−'&&(out.length===0||typeof last==='string')){neg=!neg}
+    else if(CALC_OPS.includes(t)){if(!last||typeof last==='string')return NaN;out.push(t)}
+  }
+  if(typeof out[out.length-1]==='string')out.pop();
+  if(!out.length)return NaN;
+  const a=[out[0]];                                    // first pass: × and ÷ (x% means x/100 here)
+  const val=n=>n.p?n.v/100:n.v;
+  for(let i=1;i<out.length;i+=2){const op=out[i],n=out[i+1];
+    if(op==='×'||op==='÷'){const l=a[a.length-1],x=val(n);
+      if(op==='÷'&&x===0)return NaN;
+      a[a.length-1]={v:op==='×'?val(l)*x:val(l)/x,p:false}}
+    else a.push(op,n)}
+  let r=val(a[0]);                                     // second pass: + and − (a - b% takes b percent of a)
+  for(let i=1;i<a.length;i+=2){const n=a[i+1],x=n.p?r*n.v/100:n.v;r=a[i]==='+'?r+x:r-x}
+  return Math.round(r*100)/100;
+}
+const calcShow=n=>String(Math.round(n*100)/100);
+function calcRefresh(){
+  if(!calcEl)return;
+  const hasOp=/[+−×÷%]/.test(calcExpr.replace(/^−/,'')),v=calcEval(calcExpr);
+  $('#cexp').textContent=hasOp?calcExpr:'';
+  $('#cres').textContent=calcExpr===''?'0':(hasOp?(isNaN(v)?'…':calcShow(v)):calcExpr);
+  $('#cok').textContent=isNaN(v)&&calcExpr!==''?'Use amount':'Use ₹'+(calcExpr===''?'0':calcShow(isNaN(v)?0:v));
+}
+function openCalc(input){
+  if(calcEl)return;calcTarget=input;calcExpr=(input.value||'').trim();if(calcExpr==='0')calcExpr='';
+  calcEl=document.createElement('div');calcEl.className='calc-bg';calcEl.dataset.a='calcbg';
+  const K=[['C','C'],['⌫','⌫'],['%','%'],['÷','÷'],['7'],['8'],['9'],['×','×'],['4'],['5'],['6'],['−','−'],['1'],['2'],['3'],['+','+'],['00'],['0'],['.'],['=','=']];
+  calcEl.innerHTML=`<div class="calc" data-stop><div class="cdisp"><div class="cexp" id="cexp"></div><div class="cres num" id="cres">0</div></div>
+  <div class="ckeys">${K.map(([k,l])=>`<button type="button" data-a="ck" data-k="${k}" class="${'÷×−+%'.includes(k)?'op':k==='='?'eq':k==='C'||k==='⌫'?'fn':''}">${l||k}</button>`).join('')}</div>
+  <button type="button" class="btn" id="cok" data-a="calcok">Use amount</button></div>`;
+  document.body.appendChild(calcEl);calcRefresh();
+}
+function closeCalc(){if(calcEl){calcEl.remove();calcEl=null;calcTarget=null}}
+function calcKey(k){
+  const last=calcExpr.slice(-1);
+  if(k==='C')calcExpr='';
+  else if(k==='⌫')calcExpr=calcExpr.slice(0,-1);
+  else if(k==='='){const v=calcEval(calcExpr);if(!isNaN(v))calcExpr=calcShow(v)}
+  else if(CALC_OPS.includes(k)){
+    if(calcExpr===''){if(k==='−')calcExpr='−'}
+    else if(CALC_OPS.includes(last)||last==='−'&&calcExpr.length===1){calcExpr=calcExpr.slice(0,-1)+k}
+    else calcExpr+=k;
+  }
+  else if(k==='%'){if(/[\d)%]$/.test(calcExpr))calcExpr+='%'}
+  else if(k==='.'){const seg=calcExpr.split(/[+−×÷]/).pop();if(!seg.includes('.'))calcExpr+=(seg===''?'0.':'.')}
+  else{ // digits
+    const seg=calcExpr.split(/[+−×÷]/).pop();
+    if(seg==='0'&&k!=='00')calcExpr=calcExpr.slice(0,-1)+k;else if(seg==='0'&&k==='00'){}else if(seg===''&&k==='00')calcExpr+='0';else calcExpr+=k;
+  }
+  if(calcExpr.length>40)calcExpr=calcExpr.slice(0,40);
+  calcRefresh();
+}
+function calcDone(){
+  if(!calcTarget)return closeCalc();
+  const v=calcExpr===''?0:calcEval(calcExpr);if(isNaN(v)){toast('Check the calculation');return}
+  const t=calcTarget;t.value=v===0?'':calcShow(v);t.dispatchEvent(new Event('input',{bubbles:true}));closeCalc();
+}
+document.addEventListener('click',e=>{const i=e.target.closest&&e.target.closest('input[data-calc]');if(i&&!calcEl){e.preventDefault();i.blur();openCalc(i)}},true);
 function toast(m,ms){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),ms||2800)}
 const opts=(arr,sel,f=x=>x)=>arr.map(([v,l])=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`).join('');
 function chipsHTML(kind,sel){
@@ -1680,7 +1770,7 @@ function txSheet(t,preset){
   ${t.raw?`<div class="card small" style="margin-top:12px;word-break:break-word"><b>Original SMS</b><div class="mute" style="margin-top:4px">${esc(t.raw)}</div></div>`:''}
   ${isNew?`<div class="seg" style="margin-top:14px" id="tabseg"><button class="on" data-a="tab" data-id="m">Manual</button><button data-a="tab" data-id="s">Paste SMS</button><button data-a="tab" data-id="st">Statement</button></div>`:''}
   <div id="tab-m"><div class="seg" style="margin-top:14px" id="typeseg"><button data-a="type" data-id="debit" class="${t.type==='debit'?'on':''}">Debit (out)</button><button data-a="type" data-id="credit" class="${t.type==='credit'?'on':''}">Credit (in)</button></div>
-  <label>Amount (₹)</label><input class="amt-in" id="f-amt" inputmode="decimal" value="${t.amt}" placeholder="₹ 0">
+  <label>Amount (₹)</label><input class="amt-in" id="f-amt" readonly data-calc inputmode="decimal" value="${t.amt}" placeholder="₹ 0">
   <label id="acc-label">Account</label><select id="f-acc"><option value="">Unassigned</option>${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.acc)}</select>
   <div id="w-to" hidden><label>To account (card bill: pick the credit card · ATM: pick Cash)</label><select id="f-to">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.to||'')}</select></div>
   <label>Type</label><select id="f-kind">${opts(kindsFor(tt),t.kind)}</select>
@@ -1757,7 +1847,7 @@ document.addEventListener('click',e=>{
   else if(a==='pickicon'){newIcon=id;document.querySelectorAll('#b-icons button').forEach(b=>b.classList.toggle('on',b.dataset.id===id))}
   else if(a==='seticon'){const [ck,ik]=id.split('|');S.icons[ck]=ik;CATS[ck]=ik;save();render();catSheet(ck)}
   else if(a==='savelim'){const v=parseFloat($('#f-lim').value)||0;if(v>0)S.budgets[id]=v;else delete S.budgets[id];save();closeSheet();render()}
-  else if(a==='rmlim'){delete S.budgets[id];save();closeSheet();render()}
+  else if(a==='rmlim'){const old=S.budgets[id];delete S.budgets[id];save();closeSheet();render();undoToast('Budget removed',()=>{S.budgets[id]=old;save();render()})}
   else if(a==='addin'){closeSheet();txSheet(null,{cat:id})}
   else if(a==='savebudget'){
     const sel=$('#b-cat').value,lim=parseFloat($('#b-lim').value);
@@ -1799,7 +1889,11 @@ document.addEventListener('click',e=>{
     }
     toast(msg,ms);checkBudgetNotify();
   }
-  else if(a==='deltx'){S.tx=S.tx.filter(x=>x.id!==id);save();closeSheet();render()}
+  else if(a==='deltx'){
+    const i=S.tx.findIndex(x=>x.id===id);if(i<0)return;const t=S.tx[i];
+    S.tx.splice(i,1);save();closeSheet();render();
+    undoToast('Transaction deleted',()=>{S.tx.splice(Math.min(i,S.tx.length),0,t);save();render()});
+  }
   else if(a==='parse'){
     const text=$('#f-sms').value,r=addFromSms(text);closeSheet();render();
     if(r.out.length){const f=r.out[0];toast(`Added ${r.out.length}: ${f.t.type==='debit'?'−':'+'}${inr(f.t.amt)}${f.matched?'':' (assign account)'}`)}
@@ -1832,7 +1926,11 @@ document.addEventListener('click',e=>{
   else if(a==='emi')emiDetail(id);
   else if(a==='emiedit')emiSheet(id);
   else if(a==='emiclose'){const p=S.emis.find(x=>x.id===id);if(p){p.closedPaid=emiState(p).paid;p.closed=true;save();closeSheet();render();toast('EMI marked as closed')}}
-  else if(a==='emidel'){askConfirm('Delete this EMI and the expenses it added?','Delete',true).then(ok=>{if(ok){S.emis=S.emis.filter(x=>x.id!==id);S.tx=S.tx.filter(t=>t.emiId!==id);save();closeSheet();render()}})}
+  else if(a==='emidel'){askConfirm('Delete this EMI and the expenses it added?','Delete',true).then(ok=>{if(ok){
+    const em=S.emis.find(x=>x.id===id),gone=S.tx.filter(t=>t.emiId===id);
+    S.emis=S.emis.filter(x=>x.id!==id);S.tx=S.tx.filter(t=>t.emiId!==id);save();closeSheet();render();
+    if(em)undoToast('EMI deleted',()=>{S.emis.push(em);gone.forEach(t=>S.tx.push(t));save();render()});
+  }})}
   else if(a==='addsource'){askText('Income source name','','e.g. a client or project').then(n=>{if(n&&n.trim()){S.sources.push({id:uid(),name:n.trim()});save();render()}})}
   else if(a==='source')sourceSheet(id);
   else if(a==='srcadd'){closeSheet();txSheet(null,{type:'credit',kind:'other',source:id})}
@@ -1894,6 +1992,10 @@ document.addEventListener('click',e=>{
     const c=document.querySelector('circle[data-sl="'+i+'"]'),t1=$('#dn1'),t2=$('#dn2');
     if(sliceSel<0){t1.textContent='Total spent';t2.textContent=t2.dataset.tot}else{t1.textContent=c.dataset.k;t2.textContent=c.dataset.v}
   }
+  else if(a==='undo'){if(undoFn){const f=undoFn;undoFn=null;f()}document.querySelectorAll('.toast.ut').forEach(x=>x.remove())}
+  else if(a==='ck')calcKey(el.dataset.k)
+  else if(a==='calcok')calcDone()
+  else if(a==='calcbg'){if(e.target===el)closeCalc()}
   else if(a==='smson')enableSms();
   else if(a==='smsflt'){smsFilter=id;render()}
   else if(a==='smspaste')txSheet(null,{tab:'s'});
@@ -1977,7 +2079,7 @@ function personSheet(id){
    <div class="card" style="margin-top:14px"><div class="big ${b>0?'debit':'credit'}">${inr(Math.abs(b))}</div><div class="small mute">${b>0?'owes you':b<0?'you owe':'all settled'}</div></div>
    <h2>Add entry</h2><div class="card">
    <div class="seg" id="pa-seg"><button data-a="padir" data-id="debit" class="on">I gave / paid them</button><button data-a="padir" data-id="credit">They gave / paid me</button></div>
-   <label>Amount (₹)</label><input id="pa-amt" inputmode="decimal" placeholder="₹ 0">
+   <label>Amount (₹)</label><input id="pa-amt" readonly data-calc inputmode="decimal" placeholder="₹ 0">
    <label id="pa-acc-l">Paid from which account</label><select id="pa-acc">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),S.accounts[0]?S.accounts[0].id:'')}</select>
    <label>Date</label><input id="pa-date" type="date" value="${todayISO()}">
    <label>Note</label><input id="pa-note" placeholder="optional">
