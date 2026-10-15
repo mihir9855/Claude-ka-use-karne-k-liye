@@ -350,13 +350,13 @@ function parseSms(raw,fallbackIso){
   return {type,amt,last4,note:party||'SMS',date:iso,cat:type==='debit'?guessCat(s):'Other',kind:type==='credit'?'income':'expense',raw:s};
 }
 const isoDay=ms=>{const d=new Date(ms);return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
-function addFromSms(text,fallbackIso){
+function addFromSms(text,fallbackIso,msgTs){
   const out=[],bad=[];
   for(const chunk of text.split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean)){
     const key=chunk.replace(/\s+/g,' ');
     if(S.seen.includes(key)){bad.push('duplicate');continue}
     const p=parseSms(chunk,fallbackIso);
-    if(!p){bad.push('unreadable');const am=smsAmount(chunk);if(am&&!S.smsPending.some(x=>x.text===key)){S.smsPending.push({id:uid(),text:key.slice(0,400),amt:am,date:fallbackIso||isoDay(Date.now()),key});if(S.smsPending.length>200)S.smsPending.shift()}continue}
+    if(!p){bad.push('unreadable');const am=smsAmount(chunk);if(am&&!S.smsPending.some(x=>x.text===key)){S.smsPending.push({id:uid(),text:key.slice(0,400),amt:am,date:fallbackIso||isoDay(Date.now()),ts:msgTs||Date.now(),key});if(S.smsPending.length>200)S.smsPending.shift()}continue}
     const a=p.last4&&S.accounts.find(a=>a.last4&&a.last4===p.last4);
     const low=p.raw.toLowerCase(),isCard=a&&accType(a)==='card';
     let kind=p.kind,to='',cat=p.cat;
@@ -366,7 +366,7 @@ function addFromSms(text,fallbackIso){
       if(/refund|reversal/.test(low)){kind='expense';cat='Shopping'}
       else{S.seen.push(key);bad.push('card payment');continue}
     }
-    const t={id:uid(),date:p.date,type:p.type,amt:p.amt,acc:a?a.id:'',to,kind,cat,note:p.note,party:'',pool:false,src:'sms',raw:key.slice(0,400)};
+    const t={id:uid(),date:p.date,type:p.type,amt:p.amt,acc:a?a.id:'',to,kind,cat,note:p.note,party:'',pool:false,src:'sms',raw:key.slice(0,400),ts:msgTs||Date.now()};
     if(!a&&p.last4)t.hint4=p.last4;      // remembered so assigning one SMS can teach the account its last 4 digits
     S.tx.push(t);S.seen.push(key);out.push({t,last4:p.last4,matched:!!a});
   }
@@ -378,7 +378,7 @@ function addFromSms(text,fallbackIso){
 const sms=()=>window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()?Capacitor.Plugins.PaisaSms:null;
 function ingest(msgs){
   let n=0,un=0;
-  for(const m of msgs){const r=addFromSms(m.body,isoDay(m.ts));n+=r.out.length;un+=r.out.filter(o=>!o.matched).length}
+  for(const m of msgs){const r=addFromSms(m.body,isoDay(m.ts),m.ts);n+=r.out.length;un+=r.out.filter(o=>!o.matched).length}
   if(n){render();toast(`${n} new from SMS${un?` · ${un} need an account`:''}`);checkBudgetNotify()}
   return n;
 }
@@ -1338,12 +1338,13 @@ document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.classList&&d.cla
 /* ---------- SMS tab: every SMS-derived entry in one place, tap to fix ---------- */
 const needsReview=t=>!t.acc||(t.kind==='expense'&&t.cat==='Other');
 function smsView(){
-  const all=S.tx.filter(t=>t.src==='sms').sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  const idx=new Map(S.tx.map((t,i)=>[t,i]));   // latest first: by date, then the time the SMS arrived, then the order it was added
+  const all=S.tx.filter(t=>t.src==='sms').sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0)||idx.get(b)-idx.get(a));
   const rev=all.filter(needsReview).length;
   const list=all.filter(t=>smsFilter==='review'?needsReview(t):smsFilter==='dr'?t.type==='debit':smsFilter==='cr'?t.type==='credit':true);
   const out=list.filter(t=>t.type==='debit').reduce((a,t)=>a+t.amt,0),inn=list.filter(t=>t.type==='credit').reduce((a,t)=>a+t.amt,0);
   const FL=[['all','All '+all.length],['review','Needs review '+rev],['dr','Debit'],['cr','Credit']];
-  const pend=S.smsPending.map(p=>`<div class="card" style="margin-bottom:10px"><div class="small" style="word-break:break-word">${esc(p.text.slice(0,220))}</div>
+  const pend=S.smsPending.slice().sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0)).map(p=>`<div class="card" style="margin-bottom:10px"><div class="small" style="word-break:break-word">${esc(p.text.slice(0,220))}</div>
     <div class="row sp" style="margin-top:8px"><b class="num">${inr(p.amt)}</b><span class="small mute">${new Date(p.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span></div>
     <div class="row" style="gap:8px;margin-top:8px"><button class="btn" data-a="pendas" data-id="${p.id}" data-d="debit" style="margin:0;flex:1">Money out</button><button class="btn ghost" data-a="pendas" data-id="${p.id}" data-d="credit" style="margin:0;flex:1">Money in</button><button class="btn ghost" data-a="pendx" data-id="${p.id}" style="margin:0">Skip</button></div></div>`).join('');
   const row=t=>{const a=acc(t.acc),dr=t.type==='debit',p=person(t.party);
@@ -1485,7 +1486,7 @@ document.addEventListener('click',e=>{
     if(kind==='pass'&&!$('#f-party').value){toast('Add a person first: Ledger → People → Add person');return}
     if(kind==='transfer'&&(!$('#f-acc').value||!$('#f-to').value||$('#f-acc').value===$('#f-to').value)){toast('Pick two different accounts');return}
     const t={id:id||uid(),date:$('#f-date').value,type:kind==='transfer'?'debit':tt,to:kind==='transfer'?$('#f-to').value:'',amt,acc:$('#f-acc').value,kind,cat:kind==='pass'?'Other':$('#f-cat').value,source:kind==='other'?$('#f-source').value:'',poolSrc:(kind==='expense'&&$('#f-pool').checked)?$('#f-poolsrc').value:'',note:$('#f-note').value.trim(),party:kind==='pass'?$('#f-party').value:'',pool:kind==='expense'&&$('#f-pool').checked,src:'manual'};
-    const i=S.tx.findIndex(x=>x.id===id);if(i>=0){const o=S.tx[i];t.src=o.src;if(o.hint4){if(t.acc)learnAcc(t.acc,o.hint4);else t.hint4=o.hint4}if(o.emiId){t.emiId=o.emiId;t.emiNo=o.emiNo}if(o.prepaid)t.prepaid=true;if(o.raw)t.raw=o.raw;S.tx[i]=t}else{if(emiPick&&t.cat==='EMI'){t.emiId=emiPick.id;t.emiNo=emiPick.no;t.src='emi'}if(smsResolve){const r=smsResolve;smsResolve=null;S.smsPending=S.smsPending.filter(x=>x.id!==r.id);S.seen.push(r.key);t.raw=r.text;t.src='sms'}S.tx.push(t)}
+    const i=S.tx.findIndex(x=>x.id===id);if(i>=0){const o=S.tx[i];t.src=o.src;if(o.hint4){if(t.acc)learnAcc(t.acc,o.hint4);else t.hint4=o.hint4}if(o.emiId){t.emiId=o.emiId;t.emiNo=o.emiNo}if(o.prepaid)t.prepaid=true;if(o.raw)t.raw=o.raw;if(o.ts)t.ts=o.ts;S.tx[i]=t}else{if(emiPick&&t.cat==='EMI'){t.emiId=emiPick.id;t.emiNo=emiPick.no;t.src='emi'}if(smsResolve){const r=smsResolve;smsResolve=null;S.smsPending=S.smsPending.filter(x=>x.id!==r.id);S.seen.push(r.key);t.raw=r.text;t.src='sms'}S.tx.push(t)}
     save();closeSheet();render();
     let msg='Saved',ms;
     if(t.kind==='expense'&&t.type==='debit'&&S.budgets[t.cat]>0){
