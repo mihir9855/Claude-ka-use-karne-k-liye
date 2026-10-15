@@ -1807,8 +1807,8 @@ function txSheet(t,preset){
   <div id="w-to" hidden><label>To account (card bill: pick the credit card · ATM: pick Cash)</label><select id="f-to">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.to||'')}</select></div>
   <label>Type</label><select id="f-kind">${opts(kindsFor(tt),t.kind)}</select>
   <div id="w-cat"><label id="cat-label">Category</label><input type="hidden" id="f-cat" value="${esc(t.cat)}"><div class="chips2" id="f-cats">${chips}</div><div id="smart"></div><div id="bhint"></div>
-  <label id="w-pool" style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f-pool" style="width:auto" ${t.pool?'checked':''}> Paid from other-income pool</label>
-  <div id="w-poolsrc" hidden><label>From which income source</label><select id="f-poolsrc">${srcOptions(t.poolSrc||'')}</select></div></div>
+  <div id="w-pool"><label>Paid from</label><div class="seg" id="poolseg"><button type="button" data-a="poolmode" data-id="0" class="${t.pool?'':'on'}">My account</button><button type="button" data-a="poolmode" data-id="1" class="${t.pool?'on':''}">Other income</button></div><input type="checkbox" id="f-pool" hidden ${t.pool?'checked':''}></div>
+  <div id="w-poolsrc" hidden><label>Which income</label><div class="chips2" id="pool-chips"></div><select id="f-poolsrc" hidden>${srcOptions(t.poolSrc||'')}</select></div></div>
   <div id="w-source"><label>Income source</label><select id="f-source">${srcOptions(t.source===undefined?(isNew&&S.sources[0]?S.sources[0].id:''):t.source)}</select></div>
   <div id="w-party"><label>Person / party</label><select id="f-party">${opts(S.people.map(p=>[p.id,p.name]),t.party)}</select></div>
   <label>Note</label><input id="f-note" value="${esc(t.note)}" placeholder="e.g. DMart groceries">
@@ -1820,12 +1820,16 @@ function txSheet(t,preset){
   syncKind();
   if(isNew)setTimeout(()=>{const a=$('#f-amt');a&&a.focus()},60);
 }
+function poolChips(){
+  const sel=$('#f-poolsrc'),cur=sel.value,items=[...S.sources.map(x=>[x.id,x.name]),['','General']];
+  $('#pool-chips').innerHTML=items.map(([id,n])=>`<button type="button" class="chip ${cur===id?'on':''}" data-a="poolsrc" data-id="${esc(id)}">${esc(n)}</button>`).join('')+'<button type="button" class="chip" data-a="poolsrc" data-id="__new">+ New</button>';
+}
 function syncKind(){
   const k=$('#f-kind');if(!k)return;const v=k.value;
   $('#w-cat').style.display=(v==='pass'||v==='transfer')?'none':'';$('#w-party').style.display=v==='pass'?'':'none';
   $('#w-to').hidden=v!=='transfer';$('#acc-label').textContent=v==='transfer'?'From account':'Account';
   $('#w-pool').style.display=v==='expense'?'':'none';$('#cat-label').textContent=v==='expense'?'Category':'Income type';
-  $('#w-source').style.display=v==='other'?'':'none';$('#w-poolsrc').hidden=!(v==='expense'&&$('#f-pool').checked);
+  $('#w-source').style.display=v==='other'?'':'none';$('#w-poolsrc').hidden=!(v==='expense'&&$('#f-pool').checked);if($('#pool-chips'))poolChips();
   const list=v==='expense'?CATS:ICATS,cur=$('#f-cat').value;
   if(!(cur in list))$('#f-cat').value=v==='expense'?'Other':v==='other'?'Freelance':'Salary';
   $('#f-cats').innerHTML=chipsHTML(v,$('#f-cat').value);$('#smart').innerHTML='';updateBHint();
@@ -2032,6 +2036,16 @@ document.addEventListener('click',e=>{
   else if(a==='ck')calcKey(el.dataset.k)
   else if(a==='calcok')calcDone()
   else if(a==='calcbg'){if(e.target===el)closeCalc()}
+  else if(a==='poolmode'){
+    const on=id==='1',cb=$('#f-pool');cb.checked=on;
+    document.querySelectorAll('#poolseg button').forEach(b=>b.classList.toggle('on',(b.dataset.id==='1')===on));
+    $('#w-poolsrc').hidden=!on;
+    if(on){const sel=$('#f-poolsrc');if(!sel.value&&S.sources[0])sel.value=S.sources[0].id;poolChips()}
+  }
+  else if(a==='poolsrc'){
+    if(id==='__new'){askText('Income source name','','e.g. a client or project').then(n=>{if(n&&n.trim()){const nid=uid();S.sources.push({id:nid,name:n.trim()});save();const sel=$('#f-poolsrc');if(sel){sel.innerHTML=srcOptions(nid);sel.value=nid}if($('#pool-chips'))poolChips()}})}
+    else{$('#f-poolsrc').value=id;poolChips()}
+  }
   else if(a==='smson')enableSms();
   else if(a==='smsflt'){smsFilter=id;render()}
   else if(a==='smsscan')importInbox(parseInt(id,10)||30);
