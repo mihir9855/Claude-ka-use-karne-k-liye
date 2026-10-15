@@ -185,6 +185,29 @@ nav button span{display:flex;justify-content:center}
 [data-theme] #intro b{color:var(--ink)}[data-theme] #intro small{color:var(--mute)}
 [data-theme] .sec{border:1px solid var(--line);box-shadow:none;border-radius:12px}
 [data-theme] .search{border-radius:10px}
+.ins-hero .big{font-size:34px}.mini{background:var(--field);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}.mini b{font-size:18px}
+.dchip{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap}
+.dchip.good{background:var(--brand-soft);color:var(--credit)}.dchip.bad{background:rgba(229,72,77,.12);color:var(--debit)}
+.lgd{display:flex;gap:14px;align-items:center;font-size:11px;color:var(--mute);margin-top:8px;flex-wrap:wrap}.lgd span{display:inline-flex;align-items:center;gap:6px}.lgd i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.hdow{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:5px;font-size:10px;color:var(--mute);text-align:center}
+.hgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.hc{display:block;aspect-ratio:1;border-radius:6px;background:var(--line);position:relative;font-style:normal}
+.hc u{text-decoration:none;position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-size:9.5px;color:var(--mute);font-weight:600}
+.hc.e{background:none}.hc.l1{background:color-mix(in srgb,var(--brand) 25%,var(--line))}.hc.l2{background:color-mix(in srgb,var(--brand) 50%,var(--line))}.hc.l3{background:color-mix(in srgb,var(--brand) 75%,var(--line))}.hc.l4{background:var(--brand)}
+.hc.l3 u,.hc.l4 u{color:#fff}.hc.today{outline:2px solid var(--ink);outline-offset:1px}
+.hl{display:inline-block;width:12px;height:12px;aspect-ratio:auto;border-radius:3px}
+@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes sweep{from{stroke-dasharray:0 100}}
+@keyframes popin{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+.chart rect.g{transform-box:fill-box;transform-origin:50% 100%;animation:grow .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*40ms)}
+.chart path.ln{stroke-dasharray:1;animation:draw 1.1s ease-out both}
+.chart path.ar{animation:fadein .9s .35s both}
+.chart circle.pt{transform-box:fill-box;transform-origin:center;animation:popin .4s 1s both}
+circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
+.crow{transition:opacity .2s}
+@media (prefers-reduced-motion:reduce){.chart rect.g,.chart path.ln,.chart path.ar,.chart circle.pt,circle.sg{animation:none}}
 .sumrow{display:grid;grid-template-columns:repeat(3,1fr);padding:14px 0!important}
 .sumrow>div{padding:0 14px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:2px;min-width:0}
 .sumrow>div:first-child{border-left:0}.sumrow b{font-size:17px;white-space:nowrap}
@@ -1088,7 +1111,7 @@ function barChart(vals,labels,o={}){
   [.5,1].forEach(f=>{const y=(H-16-f*(max/1.1)/max*(H-24)).toFixed(1);if(y>2)g+=`<line x1="${pad}" x2="${W-pad}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width=".7"/>`});
   vals.forEach((v,i)=>{
     const h=v/max*(H-24),x=pad+i*bw+gap/2,w=bw-gap;
-    g+=`<rect x="${x.toFixed(1)}" y="${(H-16-h).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(h,v>0?1.5:0).toFixed(1)}" rx="${Math.min(3,w/2).toFixed(1)}" fill="${o.colors?o.colors[i]:'var(--brand)'}" opacity="${o.hl==null||o.hl===i?1:.26}" data-tip="${esc(o.tips?o.tips[i]:labels[i]+' · '+inr(v))}"/>`;
+    g+=`<rect class="g" style="--i:${i}" x="${x.toFixed(1)}" y="${(H-16-h).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(h,v>0?1.5:0).toFixed(1)}" rx="${Math.min(3,w/2).toFixed(1)}" fill="${o.colors?o.colors[i]:'var(--brand)'}" opacity="${o.hl==null||o.hl===i?1:.26}" data-tip="${esc(o.tips?o.tips[i]:labels[i]+' · '+inr(v))}"/>`;
     if(labels[i]!=='')g+=`<text x="${(x+w/2).toFixed(1)}" y="${H-4}" text-anchor="middle">${labels[i]}</text>`;
   });
   if(o.line){const y=H-16-o.line/max*(H-24);g+=`<line x1="${pad}" x2="${W-pad}" y1="${y}" y2="${y}" stroke="var(--warn)" stroke-dasharray="4 3"/><text x="${W-pad}" y="${y-3}" text-anchor="end">${o.lineLabel||'avg'} ${inr(Math.round(o.line))}</text>`}
@@ -1148,14 +1171,6 @@ function projection(mk,st){
   const [y,mo]=mk.split('-').map(Number),dim=new Date(y,mo,0).getDate(),now=new Date();
   if(mk!==now.toISOString().slice(0,7))return null;
   const day=now.getDate();return st.exp/day*dim;
-}
-function donut(data){
-  const tot=data.reduce((s,d)=>s+d.v,0);if(!tot)return '<div class="empty">No spending yet</div>';
-  let off=0;const R=15.9155;
-  const segs=data.map(d=>{const p=d.v/tot*100;const e=`<circle r="${R}" cx="21" cy="21" fill="none" stroke="${d.c}" stroke-width="4.2" stroke-dasharray="${Math.max(p-1,.1)} ${100-p+1}" stroke-dashoffset="${-off}"/>`;off+=p;return e}).join('');
-  const mx=data[0].v;
-  return `<div style="display:grid;place-items:center;padding:6px 0 14px"><svg viewBox="0 0 42 42" width="170" height="170"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="4.2"/>${segs}</g><text x="21" y="19.4" text-anchor="middle" style="font-size:2.9px">Total spent</text><text x="21" y="25.2" text-anchor="middle" style="font-size:5.6px;font-weight:800;fill:var(--ink)">${inr(tot)}</text></svg></div>
-  <div class="crows">${data.map(d=>`<div class="crow"><span class="cic" style="background:${d.c}1f;color:${d.c}">${ic(CATS[d.k]||'receipt',16)}</span><div class="grow"><div class="row sp"><b>${esc(cname(d.k))}</b><span class="num"><b>${inr(d.v)}</b> <span class="mute small">${Math.round(d.v/tot*100)}%</span></span></div><div class="ctr"><i style="width:${Math.max(2,d.v/mx*100)}%;background:${d.c}"></i></div></div></div>`).join('')}</div>`;
 }
 function bars(ms){
   const vals=ms.flatMap(m=>[m.inc+m.oth,m.exp]);const max=Math.max(...vals,1);const W=300,H=120,bw=14,gap=(W-ms.length*bw*2)/(ms.length+1);
@@ -1336,11 +1351,113 @@ function dailyCard(st){
   const avg=vals.slice(0,upto).reduce((a,b)=>a+b,0)/Math.max(1,upto),mx=Math.max(...vals),top=vals.indexOf(mx);
   return `<h2>Daily spending</h2><div class="card">${barChart(vals,vals.map((_,i)=>(i===0||(i+1)%5===0)?String(i+1):''),{tips:vals.map((v,i)=>`${i+1} ${mlabel(month).slice(0,3)} · ${inr(v)}`),hl:month===now.toISOString().slice(0,7)?now.getDate()-1:top,line:avg})}<div class="small mute">${mx>0?`Biggest day: ${top+1} ${mlabel(month).slice(0,3)} (${inr(mx)}). Dashed line = your daily average; the bright bar is today.`:'No spending this month yet.'}</div></div>`;
 }
+/* ---------- graphics kit: smooth lines, animated bars, interactive donut, spending calendar ---------- */
+const kfmt=n=>{const a=Math.abs(n),s=n<0?'-':'';return a>=1e7?s+(a/1e7).toFixed(1).replace(/\.0$/,'')+'Cr':a>=1e5?s+(a/1e5).toFixed(1).replace(/\.0$/,'')+'L':a>=1e3?s+(a/1e3).toFixed(a>=1e4?0:1).replace(/\.0$/,'')+'k':s+Math.round(a)};
+function smoothPath(p,lo,hi){
+  if(p.length<2)return p.length?`M${p[0][0]} ${p[0][1]}`:'';
+  const cl=y=>Math.max(lo,Math.min(hi,y));let d=`M${p[0][0].toFixed(1)} ${p[0][1].toFixed(1)}`;
+  for(let i=0;i<p.length-1;i++){
+    const p0=p[i-1]||p[i],p1=p[i],p2=p[i+1],p3=p[i+2]||p2;
+    d+=` C${(p1[0]+(p2[0]-p0[0])/6).toFixed(1)} ${cl(p1[1]+(p2[1]-p0[1])/6).toFixed(1)} ${(p2[0]-(p3[0]-p1[0])/6).toFixed(1)} ${cl(p2[1]-(p3[1]-p1[1])/6).toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+/* series: [{vals:[...|null], color, dashed, area, tips:[...]}] */
+function lc2(series,labels,o={}){
+  const W=320,H=o.h||170,L=38,R=12,T=12,B=24,n=Math.max(...series.map(s=>s.vals.length));
+  const all=series.flatMap(s=>s.vals.filter(v=>v!=null));
+  let mx=Math.max(...all,0),mn=Math.min(...all,0);if(mx===mn)mx=mn+1;mx*=1.1;if(mn<0)mn*=1.1;
+  const X=i=>L+(n>1?i/(n-1):.5)*(W-L-R),Y=v=>T+(1-(v-mn)/(mx-mn))*(H-T-B),base=Y(Math.max(mn,Math.min(0,mx)));
+  let g='';
+  [mn<0?mn:0,(mn<0?mn:0)+(mx-(mn<0?mn:0))/2,mx].forEach(t=>{g+=`<line x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" stroke="var(--line)" stroke-width=".8"/><text x="${L-6}" y="${(Y(t)+3).toFixed(1)}" text-anchor="end">${kfmt(t)}</text>`});
+  if(mn<0)g+=`<line x1="${L}" x2="${W-R}" y1="${base.toFixed(1)}" y2="${base.toFixed(1)}" stroke="var(--mute)" stroke-width=".8" stroke-dasharray="3 3"/>`;
+  labels.forEach((l,i)=>{if(l!==''&&l!=null)g+=`<text x="${X(i).toFixed(1)}" y="${H-7}" text-anchor="middle">${l}</text>`});
+  series.forEach(s=>{
+    const pts=[];s.vals.forEach((v,i)=>{if(v!=null)pts.push([X(i),Y(v),i,v])});
+    if(!pts.length)return;
+    const d=smoothPath(pts,T,H-B);
+    if(s.area)g+=`<path class="ar" d="${d} L${pts[pts.length-1][0].toFixed(1)} ${base.toFixed(1)} L${pts[0][0].toFixed(1)} ${base.toFixed(1)} Z" fill="${s.color}" fill-opacity=".14"/>`;
+    g+=s.dashed?`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="1.8" stroke-dasharray="4 4" stroke-linecap="round"/>`
+               :`<path class="ln" pathLength="1" d="${d}" fill="none" stroke="${s.color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+    pts.forEach(p=>{if(s.tips&&s.tips[p[2]])g+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="9" fill="transparent" data-tip="${esc(s.tips[p[2]])}"/>`});
+    const last=pts[pts.length-1];
+    if(!s.dashed)g+=`<circle class="pt" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="4.5" fill="var(--card)" stroke="${s.color}" stroke-width="2.4"/>`;
+    if(s.peak){const pk=pts.reduce((a,b)=>b[3]>a[3]?b:a);g+=`<circle class="pt" cx="${pk[0].toFixed(1)}" cy="${pk[1].toFixed(1)}" r="3.4" fill="${s.color}"/>`}
+  });
+  const leg=o.legend?`<div class="lgd">${o.legend.map(x=>`<span><i style="background:${x[1]}"></i>${x[0]}</span>`).join('')}</div>`:'';
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg></div>${leg}`;
+}
+/* grouped bars: groups=[{l,a,b,ta,tb}] a=income (green) b=spend (red) */
+function flowBars(groups){
+  const W=320,H=170,L=38,R=8,T=12,B=24,mx=Math.max(...groups.flatMap(g=>[g.a,g.b]),1)*1.1,Y=v=>T+(1-v/mx)*(H-T-B),gw=(W-L-R)/groups.length,bw=Math.min(18,gw*.34);
+  let g='';
+  [0,mx/2,mx].forEach(t=>{g+=`<line x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" stroke="var(--line)" stroke-width=".8"/><text x="${L-6}" y="${(Y(t)+3).toFixed(1)}" text-anchor="end">${kfmt(t)}</text>`});
+  groups.forEach((m,i)=>{
+    const cx=L+gw*i+gw/2,y1=Y(m.a),y2=Y(m.b),b0=Y(0);
+    g+=`<rect class="g" style="--i:${i*2}" x="${(cx-bw-1.5).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw}" height="${Math.max(0,b0-y1).toFixed(1)}" rx="4" fill="var(--credit)" data-tip="${esc(m.ta)}"/>`;
+    g+=`<rect class="g" style="--i:${i*2+1}" x="${(cx+1.5).toFixed(1)}" y="${y2.toFixed(1)}" width="${bw}" height="${Math.max(0,b0-y2).toFixed(1)}" rx="4" fill="var(--debit)" opacity=".85" data-tip="${esc(m.tb)}"/>`;
+    g+=`<text x="${cx.toFixed(1)}" y="${H-7}" text-anchor="middle">${m.l}</text>`;
+  });
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg></div><div class="lgd"><span><i style="background:var(--credit)"></i>Income</span><span><i style="background:var(--debit)"></i>Spent</span></div>`;
+}
+let sliceSel=-1;
+function donut(data){
+  sliceSel=-1;
+  const tot=data.reduce((s,d)=>s+d.v,0);if(!tot)return '<div class="empty">No spending yet</div>';
+  let off=0;const R=15.9155,mx=data[0].v;
+  const segs=data.map((d,i)=>{const p=d.v/tot*100;const e=`<circle class="sg" data-a="slice" data-id="${i}" data-sl="${i}" data-k="${esc(cname(d.k))}" data-v="${inr(d.v)}" r="${R}" cx="21" cy="21" fill="none" stroke="${d.c}" stroke-width="4.4" stroke-dasharray="${Math.max(p-1,.1)} ${100-p+1}" stroke-dashoffset="${-off}" style="cursor:pointer"/>`;off+=p;return e}).join('');
+  return `<div style="display:grid;place-items:center;padding:4px 0 16px"><svg viewBox="0 0 42 42" width="190" height="190"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="4.4"/>${segs}</g><text id="dn1" x="21" y="19.2" text-anchor="middle" style="font-size:2.8px">Total spent</text><text id="dn2" x="21" y="25" text-anchor="middle" style="font-size:5.4px;font-weight:800;fill:var(--ink)" data-tot="${inr(tot)}">${inr(tot)}</text></svg><div class="small mute" style="margin-top:-2px">Tap a slice or a row to focus</div></div>
+  <div class="crows">${data.map((d,i)=>`<div class="crow" data-a="slice" data-id="${i}" data-sl="${i}" style="cursor:pointer"><span class="cic" style="background:${d.c}1f;color:${d.c}">${ic(CATS[d.k]||'receipt',16)}</span><div class="grow"><div class="row sp"><b>${esc(cname(d.k))}</b><span class="num"><b>${inr(d.v)}</b> <span class="mute small">${Math.round(d.v/tot*100)}%</span></span></div><div class="ctr"><i style="width:${Math.max(2,d.v/mx*100)}%;background:${d.c}"></i></div></div></div>`).join('')}</div>`;
+}
+/* spending calendar: one cell per day, darker = more spent */
+function heatCal(st){
+  const [y,mo]=month.split('-').map(Number),dim=new Date(y,mo,0).getDate(),off=(new Date(y,mo-1,1).getDay()+6)%7,mx=Math.max(...Array.from({length:dim},(_,i)=>st.day[i+1]||0),1);
+  const todayD=month===new Date().toISOString().slice(0,7)?new Date().getDate():0;
+  let cells='';for(let i=0;i<off;i++)cells+='<i class="hc e"></i>';
+  for(let d=1;d<=dim;d++){const v=st.day[d]||0,lv=v<=0?0:Math.min(4,Math.ceil(v/mx*4));
+    cells+=`<i class="hc l${lv}${d===todayD?' today':''}" data-tip="${esc(d+' '+mlabel(month).slice(0,3)+' · '+(v>0?inr(v):'no spend'))}"><u>${d}</u></i>`}
+  return `<div class="chart"><div class="hdow">${'MTWTFSS'.split('').map(c=>`<span>${c}</span>`).join('')}</div><div class="hgrid">${cells}</div></div><div class="lgd" style="justify-content:flex-end"><span class="mute">Less</span><span class="hl hc l0"></span><span class="hl hc l1"></span><span class="hl hc l2"></span><span class="hl hc l3"></span><span class="hl hc l4"></span><span class="mute">More</span></div>`;
+}
+function ringGauge(pct,label){
+  const p=Math.max(0,Math.min(100,pct)),R=15.9155;
+  return `<svg viewBox="0 0 42 42" width="84" height="84"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="4"/><circle class="sg" r="${R}" cx="21" cy="21" fill="none" stroke="var(--brand)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${p} ${100-p}"/></g><text x="21" y="22.2" text-anchor="middle" style="font-size:7px;font-weight:800;fill:var(--ink)">${Math.round(pct)}%</text><text x="21" y="28" text-anchor="middle" style="font-size:3.3px">${label}</text></svg>`;
+}
+function stats(){
+  const st=mstats(month),pm=mstats(shiftMonth(month,-1));
+  const data=Object.entries(st.cat).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({k,v,c:CATCOL[k]||'#94a3b8'}));
+  const [y,mo]=month.split('-').map(Number),dim=new Date(y,mo,0).getDate(),now=new Date();
+  const isCur=month===now.toISOString().slice(0,7),upto=isCur?now.getDate():dim;
+  const inc=st.inc+st.oth,sav=inc-st.exp,rate=inc>0?sav/inc*100:0;
+  const pinc=pm.inc+pm.oth;
+  const chip=(a,b,good)=>b>0?`<span class="dchip ${(a>b)===good?'good':'bad'}">${a>b?'▲':'▼'} ${Math.abs(Math.round((a-b)/b*100))}% vs last month</span>`:'';
+  // cumulative spend: this month vs last month
+  const pdim=new Date(y,mo-1,0).getDate(),ths=[],lst=[];let c1=0,c2=0;
+  for(let d=1;d<=dim;d++){c1+=st.day[d]||0;ths.push(d<=upto?c1:null);c2+=d<=pdim?(pm.day[d]||0):0;lst.push(d<=pdim?c2:null)}
+  const pm3=mlabel(shiftMonth(month,-1)).slice(0,3),tm3=mlabel(month).slice(0,3);
+  const lab=Array.from({length:dim},(_,i)=>(i===0||(i+1)%5===0)?String(i+1):'');
+  const paceCard=`<div class="card">${lc2([{vals:lst,color:'var(--mute)',dashed:true,tips:lst.map((v,i)=>v==null?'':`${pm3} ${i+1} · ${inr(v)} so far`)},{vals:ths,color:'var(--brand)',area:true,peak:false,tips:ths.map((v,i)=>v==null?'':`${tm3} ${i+1} · ${inr(v)} so far`)}],lab,{legend:[[mlabel(month),'var(--brand)'],[mlabel(shiftMonth(month,-1)),'var(--mute)']]})}<div class="small mute" style="margin-top:6px">Running total of spending. If the green line stays under the grey one, you are spending less than last month.</div></div>`;
+  // 6-month cash flow
+  const ms=[];for(let i=5;i>=0;i--){const m=shiftMonth(month,-i),s=mstats(m);ms.push({l:mlabel(m).slice(0,3),a:s.inc+s.oth,b:s.exp,ta:mlabel(m)+' income · '+inr(s.inc+s.oth),tb:mlabel(m)+' spent · '+inr(s.exp)})}
+  const tops=S.tx.filter(t=>t.kind==='expense'&&t.type==='debit'&&t.date.startsWith(month)).sort((a,b)=>b.amt-a.amt).slice(0,5);
+  return `<div class="row sp"><h1>Insights</h1>${monthBar()}</div>
+  <div class="card ins-hero" style="margin-top:14px">
+    <div class="row sp" style="align-items:flex-start"><div><div class="small mute">Spent in ${mlabel(month)}</div><div class="big num">${inrH(st.exp)}</div>${chip(st.exp,pm.exp,false)}</div>${inc>0?`<div style="text-align:center">${ringGauge(rate,'saved')}</div>`:''}</div>
+    <div class="grid2" style="margin-top:14px"><div class="mini"><span class="small mute">Income</span><b class="num credit">${inrH(inc)}</b></div><div class="mini"><span class="small mute">Saved</span><b class="num ${sav<0?'debit':'credit'}">${inrH(sav)}</b></div></div>
+    <div class="small mute" style="margin-top:10px">About ${inr(Math.round(st.exp/Math.max(1,upto)))} a day${inc>0&&pinc>0?` · income ${inc>=pinc?'up':'down'} ${Math.abs(Math.round((inc-pinc)/pinc*100))}% vs last month`:''}</div>
+  </div>
+  <h2>This month vs last month</h2>${paceCard}
+  <h2>By category</h2><div class="card">${donut(data)}</div>
+  <h2>Spending calendar</h2><div class="card">${heatCal(st)}</div>
+  <h2>Income vs spending</h2><div class="card">${flowBars(ms)}</div>
+  ${tops.length?`<h2>Biggest spends this month</h2><div class="card" style="padding:4px 16px">${tops.map(t=>`<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${(CATCOL[t.cat]||'#94a3b8')}1f;color:${CATCOL[t.cat]||'#94a3b8'}">${ic(CATS[t.cat]||'receipt',19)}</div><div class="grow"><div class="t">${esc(t.note||cname(t.cat))}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})} · ${esc(cname(t.cat))}</div></div><b class="num debit">−${inr(t.amt)}</b></div>`).join('')}</div>`:''}
+  ${statsExtra(st)}
+  <h2>Per account (${mlabel(month)})</h2><div class="card">${S.accounts.map((a,i)=>{const m=accMonth(a.id,month),mx=Math.max(m.i,m.o,1);return `<div style="padding:9px 0;${i?'border-top:1px solid var(--line)':''}"><div class="row sp"><b>${esc(a.name)}</b><span class="small num"><span class="credit">↓ ${inr(m.i)}</span> &nbsp; <span class="debit">↑ ${inr(m.o)}</span></span></div><div class="dual"><i style="width:${m.i/mx*100}%;background:var(--credit)"></i><i style="width:${m.o/mx*100}%;background:var(--debit)"></i></div></div>`}).join('')}</div>`;
+}
 function statsExtra(st){
   let out='';
   // savings trend
   const ms=[];for(let i=5;i>=0;i--){const m=shiftMonth(month,-i),x=mstats(m);ms.push({l:mlabel(m).slice(0,3),v:x.inc+x.oth-x.exp})}
-  out+=`<h2>Saved each month</h2><div class="card">${lineChart(ms.map(x=>x.v),ms.map(x=>x.l))}<div class="small mute">Income minus spending. Below the line means you spent more than you earned.</div></div>`;
+  out+=`<h2>Saved each month</h2><div class="card">${lc2([{vals:ms.map(x=>x.v),color:'var(--brand)',area:true,peak:true,tips:ms.map(x=>x.l+' · '+inr(x.v))}],ms.map(x=>x.l))}<div class="small mute">Income minus spending. Below the dashed line means you spent more than you earned.</div></div>`;
   // biggest spends + vs last month, in one chart: paired bars per category
   const lm=mstats(shiftMonth(month,-1));
   const keys=[...new Set([...Object.keys(st.cat),...Object.keys(lm.cat)])].filter(k=>(st.cat[k]||0)>0||(lm.cat[k]||0)>0);
@@ -1367,26 +1484,6 @@ function statsExtra(st){
   const cards=S.accounts.filter(a=>accType(a)==='card'&&a.limit>0);
   if(cards.length)out+=`<h2>Credit card use</h2><div class="card">${hbars(cards.map(a=>{const due=Math.max(0,-accBal(a.id))+emiBlocked(a.id);return{label:esc(a.name),v:due,max:a.limit,color:due/a.limit>.5?'var(--debit)':'var(--brand)',right:Math.round(due/a.limit*100)+'% of '+inr(a.limit)}}))}<div class="small mute">Keeping this under 30% is good for your credit score.</div></div>`;
   return out;
-}
-function stats(){
-  const st=mstats(month),pm=mstats(shiftMonth(month,-1));
-  const data=Object.entries(st.cat).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({k,v,c:CATCOL[k]||'#94a3b8'}));
-  const ms=[];for(let i=5;i>=0;i--){const m=shiftMonth(month,-i);const s=mstats(m);ms.push({...s,l:mlabel(m).slice(0,3)})}
-  const [y,mo]=month.split('-').map(Number),dim=new Date(y,mo,0).getDate(),now=new Date();
-  const days=month===now.toISOString().slice(0,7)?now.getDate():dim;
-  const inc=st.inc+st.oth,sav=inc-st.exp,dl=(a,b,good)=>b>0?`<div class="small" style="color:${(a>b)===good?'var(--credit)':'var(--debit)'}">${a>b?'▲':'▼'} ${Math.abs(Math.round((a-b)/b*100))}% vs last</div>`:'<div class="small mute">&nbsp;</div>';
-  return `<div class="row sp"><h1>Insights</h1>${monthBar()}</div>
-  <div class="card sumrow" style="margin-top:14px">
-    <div><span class="small mute">Spent</span><b class="num debit">${inrH(st.exp)}</b>${dl(st.exp,pm.exp,false)}</div>
-    <div><span class="small mute">Income</span><b class="num credit">${inrH(inc)}</b>${dl(inc,pm.inc+pm.oth,true)}</div>
-    <div><span class="small mute">Saved</span><b class="num ${sav<0?'debit':'credit'}">${inrH(sav)}</b><div class="small mute">${inr(Math.round(st.exp/days))}/day</div></div>
-  </div>
-  <h2>By category</h2><div class="card">${donut(data)}</div>
-  <h2>Budget pace</h2><div class="card">${pace(month,st)}</div>
-  ${dailyCard(st)}
-  <h2>Income vs spending</h2><div class="card">${bars(ms)}</div>
-  ${statsExtra(st)}
-  <h2>Per account (${mlabel(month)})</h2><div class="card">${S.accounts.map((a,i)=>{const m=accMonth(a.id,month),mx=Math.max(m.i,m.o,1);return `<div style="padding:9px 0;${i?'border-top:1px solid var(--line)':''}"><div class="row sp"><b>${esc(a.name)}</b><span class="small num"><span class="credit">↓ ${inr(m.i)}</span> &nbsp; <span class="debit">↑ ${inr(m.o)}</span></span></div><div class="dual"><i style="width:${m.i/mx*100}%;background:var(--credit)"></i><i style="width:${m.o/mx*100}%;background:var(--debit)"></i></div></div>`}).join('')}</div>`;
 }
 function khata(){
   let body='';
@@ -1748,6 +1845,13 @@ document.addEventListener('click',e=>{
     const amt=parseFloat($('#pa-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     S.tx.push({id:uid(),date:$('#pa-date').value||todayISO(),type:paDir,amt,acc:$('#pa-acc').value,to:'',kind:'pass',cat:'Other',note:$('#pa-note').value.trim(),party:id,pool:false});
     save();render();personSheet(id);toast('Entry added');
+  }
+  else if(a==='slice'){
+    const i=parseInt(id,10);sliceSel=sliceSel===i?-1:i;
+    document.querySelectorAll('circle[data-sl]').forEach(c=>c.style.opacity=sliceSel<0||+c.dataset.sl===sliceSel?1:.22);
+    document.querySelectorAll('.crow[data-sl]').forEach(r=>r.style.opacity=sliceSel<0||+r.dataset.sl===sliceSel?1:.35);
+    const c=document.querySelector('circle[data-sl="'+i+'"]'),t1=$('#dn1'),t2=$('#dn2');
+    if(sliceSel<0){t1.textContent='Total spent';t2.textContent=t2.dataset.tot}else{t1.textContent=c.dataset.k;t2.textContent=c.dataset.v}
   }
   else if(a==='smson')enableSms();
   else if(a==='smsflt'){smsFilter=id;render()}
