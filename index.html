@@ -40,8 +40,8 @@ h1{font-size:20px;margin:0}h2{font-size:13px;margin:22px 0 10px;color:var(--mute
 .hscroll{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;scroll-padding:0 16px;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x pan-y;cursor:grab}
 .hscroll.drag{cursor:grabbing;scroll-snap-type:none}.hscroll.drag *{pointer-events:none}
 .hscroll::-webkit-scrollbar{display:none}
-.acc{flex:0 0 78%;scroll-snap-align:start;border-radius:18px;padding:14px 16px;color:#fff;position:relative;overflow:hidden;cursor:pointer}
-.acc small{opacity:.85}.acc b{display:block;font-size:22px;margin:6px 0 8px}
+.acc{flex:0 0 66%;scroll-snap-align:start;border-radius:16px;padding:9px 13px;color:#fff;position:relative;overflow:hidden;cursor:pointer}
+.acc small{opacity:.85;font-size:11.5px}.acc b{display:block;font-size:19px;margin:2px 0 4px}
 .acc .io{display:flex;gap:14px;font-size:12px;opacity:.95}
 .tx{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .tx:last-child{border:0}
@@ -188,6 +188,7 @@ nav button span{display:flex;justify-content:center}
 @media (prefers-reduced-motion:reduce){#intro *{animation-duration:.01s!important;animation-delay:0s!important}}
 .txscroll{max-height:min(720px,78vh);overflow-y:auto;overscroll-behavior:auto;-webkit-overflow-scrolling:touch}
 .acc.sel{outline:3px solid var(--brand);outline-offset:2px}
+[data-theme] .acc.cc:nth-child(n){background:var(--cc)!important}
 .sec{background:var(--card);border-radius:18px;box-shadow:var(--shadow);margin:0 0 10px;overflow:hidden}
 .sec>summary{list-style:none;cursor:pointer;padding:15px 16px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
 .sec>summary::-webkit-details-marker{display:none}
@@ -1066,15 +1067,18 @@ function txRow(t){
   <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):'<span class="debit">⚠ Pick account'+(t.hint4?' (••'+t.hint4+')':'')+'</span>'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}${t.pool?' · from '+esc(srcName(t.poolSrc||'')):''}</div></div>
   <b class="num ${t.type}">${t.type==='credit'?'+':'−'}${inr(t.amt)}</b></div>`;
 }
+const shade=(hex,f)=>{const n=parseInt(hex.slice(1),16),c=k=>Math.max(0,Math.min(255,Math.round(((n>>k)&255)*(1+f))));return '#'+[16,8,0].map(k=>c(k).toString(16).padStart(2,'0')).join('')};
+const ACC_COL=['#7a1f3d','#97144d','#1d4ed8','#0f766e','#15803d','#d97706','#7c3aed','#be185d','#334155'];
+const accCC=a=>/^#[0-9a-f]{6}$/i.test(a.color||'')?` cc" style="--cc:linear-gradient(135deg,${a.color},${shade(a.color,-0.28)})`:'';
 function accTile(a,i){
   const m=accMonth(a.id,month),bal=accBal(a.id),ty=accType(a),sel=accFilter===a.id?' · filtered':'';
   const io=`<div class="io"><span>↓ ${inrH(m.i)}</span><span>↑ ${inrH(m.o)}</span></div>`;
   if(ty==='card'){
     const due=-bal,lim=a.limit||0,emi=emiBlocked(a.id),pct=lim?Math.min(100,Math.max(0,due+emi)/lim*100):0;
-    return `<div class="acc${accFilter===a.id?' sel':''}" style="background:linear-gradient(135deg,#1f2937,#4b5563)" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${a.last4?' ••'+a.last4:''} · credit card${sel}</small><b class="num">${due>=0?'Due '+inrH(due):'Credit '+inrH(-due)}</b>${lim?`<div class="bar" style="background:rgba(255,255,255,.25);height:6px;margin:0 0 8px"><i style="width:${pct}%;background:#fff"></i></div><div class="io"><span>Available ${inrH(lim-due-emi)}</span><span>Limit ${inrH(lim)}</span></div>`:io}${emi>0?`<div class="small" style="opacity:.85;margin-top:4px">EMI blocked ${inrH(Math.round(emi))}</div>`:''}</div>`;
+    return `<div class="acc${accFilter===a.id?' sel':''}${accCC(a)||'" style="background:linear-gradient(135deg,#1f2937,#4b5563)'}" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${a.last4?' ••'+a.last4:''} · credit card${sel}</small><b class="num">${due>=0?'Due '+inrH(due):'Credit '+inrH(-due)}</b>${lim?`<div class="bar" style="background:rgba(255,255,255,.25);height:6px;margin:0 0 8px"><i style="width:${pct}%;background:#fff"></i></div><div class="io"><span>Available ${inrH(lim-due-emi)}</span><span>Limit ${inrH(lim)}</span></div>`:io}${emi>0?`<div class="small" style="opacity:.85;margin-top:4px">EMI blocked ${inrH(Math.round(emi))}</div>`:''}</div>`;
   }
   const bg=ty==='cash'?'linear-gradient(135deg,#15803d,#4ade80)':`linear-gradient(135deg,${COLORS[i%6]},${COLORS[i%6]}bb)`;
-  return `<div class="acc${accFilter===a.id?' sel':''}" style="background:${bg}" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${ty==='cash'?' · in hand':a.last4?' ••'+a.last4:''}${sel}</small><b class="num">${inrH(bal)}</b>${io}</div>`;
+  return `<div class="acc${accFilter===a.id?' sel':''}${accCC(a)||'" style="background:'+bg}" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${ty==='cash'?' · in hand':a.last4?' ••'+a.last4:''}${sel}</small><b class="num">${inrH(bal)}</b>${io}</div>`;
 }
 let txMonth='all',txKind='all',txLimit=100;
 function txFiltered(){
@@ -1099,7 +1103,7 @@ function txView(){
   const KF=[['all','All'],['dr','Debit'],['cr','Credit']];
   const tot=S.accounts.filter(a=>accType(a)!=='card').reduce((x,a)=>x+accBal(a.id),0),sel=accFilter?acc(accFilter):null;
   return `<div class="row sp"><h1>Accounts</h1><button class="chip" data-a="manageacc">Manage</button></div>
-  <div class="card row sp" style="margin:10px 0;cursor:pointer;${sel?'':'outline:2px solid var(--brand)'}" data-a="${sel?'filter':'noop'}" data-id="${accFilter}"><div><div class="small mute">All accounts · bank + cash</div><div class="big num">${inrH(tot)}</div></div><span class="small mute">${sel?'Show all ✕':S.accounts.length+' accounts'}</span></div>
+  <div class="card row sp" style="margin:8px 0;padding:9px 14px;cursor:pointer;${sel?'':'outline:2px solid var(--brand)'}" data-a="${sel?'filter':'noop'}" data-id="${accFilter}"><div><div class="small mute">All accounts · bank + cash</div><div class="num" style="font-size:20px;font-weight:700">${inrH(tot)}</div></div><span class="small mute">${sel?'Show all ✕':S.accounts.length+' accounts'}</span></div>
   <div class="hscroll">${S.accounts.map(accTile).join('')}</div>
   <h2>${sel?'Transactions · '+esc(sel.name):'All transactions'}</h2>
   <input id="q" class="search" placeholder="Search note, category, person or amount" value="${esc(q)}">
@@ -1282,6 +1286,7 @@ function accounts(){
   const sec=(id,t,body)=>`<details class="sec" data-sec="${id}" ${openSec.has(id)?'open':''}><summary>${t}</summary><div class="secbody">${body}</div></details>`;
   const cards=S.accounts.map((a,i)=>{const ty=accType(a),bal=accBal(a.id);return `<div class="card" style="margin-bottom:10px"><div class="row sp"><b style="color:${COLORS[i%6]}">● ${esc(a.name)}</b><b class="num ${ty==='card'&&bal<0?'debit':''}">${ty==='card'?(bal<0?'Due '+inr(-bal):inr(bal)):inr(bal)}</b></div>
    <div class="grid2"><div><label>Name</label><input data-f="name" data-id="${a.id}" value="${esc(a.name)}"></div><div><label>Type</label><select data-f="type" data-id="${a.id}"><option value="bank" ${ty==='bank'?'selected':''}>Bank account</option><option value="cash" ${ty==='cash'?'selected':''}>Cash</option><option value="card" ${ty==='card'?'selected':''}>Credit card</option></select></div></div>
+   <label>Tile colour</label><div class="swatches">${ACC_COL.map(c=>`<button data-a="acccolor" data-id="${a.id}" data-c="${c}" class="${(a.color||'').toLowerCase()===c?'on':''}" style="background:${c}"></button>`).join('')}<label class="custom ${a.color&&!ACC_COL.includes(a.color.toLowerCase())?'on':''}" style="margin:0" title="Pick any colour"><input type="color" data-f="color" data-id="${a.id}" value="${a.color||'#7a1f3d'}"></label><button class="chip" data-a="acccolor" data-id="${a.id}" data-c="" style="font-size:12px">Default</button></div>
    <div class="grid2">${ty==='cash'?'':`<div><label>Last 4 digits</label><input data-f="last4" data-id="${a.id}" value="${esc(a.last4)}" maxlength="4" inputmode="numeric"></div>`}
    <div><label>${ty==='card'?'Opening due (₹)':ty==='cash'?'Cash in hand (₹)':'Opening balance (₹)'}</label><input data-f="${ty==='card'?'opendue':'open'}" data-id="${a.id}" value="${ty==='card'?-a.open||0:a.open}" inputmode="decimal"></div>
    ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal"></div>`:''}</div>${ty==='card'?`<div class="small mute" style="margin-top:10px">Used ${inr(Math.max(0,-bal))} · EMI blocked ${inr(Math.round(emiBlocked(a.id)))}${a.limit?` · <b style="color:var(--ink)">Available ${inr(Math.round(a.limit+bal-emiBlocked(a.id)))}</b>`:''}</div>`:''}${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (PDF or CSV)</button>`}<button class="btn red" data-a="delacc" data-id="${a.id}" style="margin-top:6px">Delete this account</button></div>`}).join('');
@@ -1461,6 +1466,7 @@ document.addEventListener('click',e=>{
   else if(a==='mprev'){month=shiftMonth(month,-1);render()}
   else if(a==='mnext'){month=shiftMonth(month,1);render()}
   else if(a==='filter'){accFilter=accFilter===id?'':id;view='txns';scrollTo(0,0);render()}
+  else if(a==='acccolor'){const x=acc(id);if(x){x.color=el.dataset.c||'';save();render()}}
   else if(a==='manageacc'){openSec.add('acc');view='accounts';scrollTo(0,0);render()}
   else if(a==='txmore'){txLimit+=100;$('#txlist').innerHTML=txListHTML()}
   else if(a==='txkind'){txKind=id;txLimit=100;render()}
