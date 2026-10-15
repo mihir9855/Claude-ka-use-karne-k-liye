@@ -187,6 +187,7 @@ nav button span{display:flex;justify-content:center}
 @keyframes itxt{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){#intro *{animation-duration:.01s!important;animation-delay:0s!important}}
 .txscroll{max-height:min(720px,78vh);overflow-y:auto;overscroll-behavior:auto;-webkit-overflow-scrolling:touch}
+.acc.sel{outline:3px solid var(--brand);outline-offset:2px}
 .sec{background:var(--card);border-radius:18px;box-shadow:var(--shadow);margin:0 0 10px;overflow:hidden}
 .sec>summary{list-style:none;cursor:pointer;padding:15px 16px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
 .sec>summary::-webkit-details-marker{display:none}
@@ -1070,10 +1071,10 @@ function accTile(a,i){
   const io=`<div class="io"><span>↓ ${inrH(m.i)}</span><span>↑ ${inrH(m.o)}</span></div>`;
   if(ty==='card'){
     const due=-bal,lim=a.limit||0,emi=emiBlocked(a.id),pct=lim?Math.min(100,Math.max(0,due+emi)/lim*100):0;
-    return `<div class="acc" style="background:linear-gradient(135deg,#1f2937,#4b5563)" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${a.last4?' ••'+a.last4:''} · credit card${sel}</small><b class="num">${due>=0?'Due '+inrH(due):'Credit '+inrH(-due)}</b>${lim?`<div class="bar" style="background:rgba(255,255,255,.25);height:6px;margin:0 0 8px"><i style="width:${pct}%;background:#fff"></i></div><div class="io"><span>Available ${inrH(lim-due-emi)}</span><span>Limit ${inrH(lim)}</span></div>`:io}${emi>0?`<div class="small" style="opacity:.85;margin-top:4px">EMI blocked ${inrH(Math.round(emi))}</div>`:''}</div>`;
+    return `<div class="acc${accFilter===a.id?' sel':''}" style="background:linear-gradient(135deg,#1f2937,#4b5563)" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${a.last4?' ••'+a.last4:''} · credit card${sel}</small><b class="num">${due>=0?'Due '+inrH(due):'Credit '+inrH(-due)}</b>${lim?`<div class="bar" style="background:rgba(255,255,255,.25);height:6px;margin:0 0 8px"><i style="width:${pct}%;background:#fff"></i></div><div class="io"><span>Available ${inrH(lim-due-emi)}</span><span>Limit ${inrH(lim)}</span></div>`:io}${emi>0?`<div class="small" style="opacity:.85;margin-top:4px">EMI blocked ${inrH(Math.round(emi))}</div>`:''}</div>`;
   }
   const bg=ty==='cash'?'linear-gradient(135deg,#15803d,#4ade80)':`linear-gradient(135deg,${COLORS[i%6]},${COLORS[i%6]}bb)`;
-  return `<div class="acc" style="background:${bg}" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${ty==='cash'?' · in hand':a.last4?' ••'+a.last4:''}${sel}</small><b class="num">${inrH(bal)}</b>${io}</div>`;
+  return `<div class="acc${accFilter===a.id?' sel':''}" style="background:${bg}" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${ty==='cash'?' · in hand':a.last4?' ••'+a.last4:''}${sel}</small><b class="num">${inrH(bal)}</b>${io}</div>`;
 }
 let txMonth='all',txKind='all',txLimit=100;
 function txFiltered(){
@@ -1096,10 +1097,13 @@ function txListHTML(){
 function txView(){
   const months=[...new Set(S.tx.map(t=>t.date.slice(0,7)))].sort().reverse();
   const KF=[['all','All'],['dr','Debit'],['cr','Credit']];
-  return `<h1>Transactions</h1>
+  const tot=S.accounts.filter(a=>accType(a)!=='card').reduce((x,a)=>x+accBal(a.id),0),sel=accFilter?acc(accFilter):null;
+  return `<div class="row sp"><h1>Accounts</h1><button class="chip" data-a="manageacc">Manage</button></div>
+  <div class="card row sp" style="margin:10px 0;cursor:pointer;${sel?'':'outline:2px solid var(--brand)'}" data-a="${sel?'filter':'noop'}" data-id="${accFilter}"><div><div class="small mute">All accounts · bank + cash</div><div class="big num">${inrH(tot)}</div></div><span class="small mute">${sel?'Show all ✕':S.accounts.length+' accounts'}</span></div>
+  <div class="hscroll">${S.accounts.map(accTile).join('')}</div>
+  <h2>${sel?'Transactions · '+esc(sel.name):'All transactions'}</h2>
   <input id="q" class="search" placeholder="Search note, category, person or amount" value="${esc(q)}">
-  <div class="grid2" style="margin-top:10px"><select id="tx-month"><option value="all" ${txMonth==='all'?'selected':''}>All time</option>${months.map(m=>`<option value="${m}" ${txMonth===m?'selected':''}>${mlabel(m)}</option>`).join('')}</select>
-  <select id="tx-acc"><option value="">All accounts</option>${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),accFilter)}</select></div>
+  <div style="margin-top:10px"><select id="tx-month"><option value="all" ${txMonth==='all'?'selected':''}>All time</option>${months.map(m=>`<option value="${m}" ${txMonth===m?'selected':''}>${mlabel(m)}</option>`).join('')}</select></div>
   <div class="seg" style="margin:10px 0">${KF.map(([k,l])=>`<button data-a="txkind" data-id="${k}" class="${txKind===k?'on':''}">${l}</button>`).join('')}</div>
   <div class="row sp small mute" id="txsum" style="margin:4px 2px 8px">${txSummary()}</div>
   <div class="card" style="padding:4px 16px" id="txlist">${txListHTML()}</div>`;
@@ -1442,7 +1446,7 @@ function syncKind(){
 function render(){
   applyEmis();
   $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView,sms:smsView,txns:txView}[view]();
-  const nav=[['home','home','Home'],['txns','list','History'],['sms','msg','SMS'],['add','+',''],['budget','target','Budget'],['stats','chart','Insights'],['people','users','Ledger']];
+  const nav=[['home','home','Home'],['txns','wallet','Accounts'],['sms','msg','SMS'],['add','+',''],['budget','target','Budget'],['stats','chart','Insights'],['people','users','Ledger']];
   $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new" aria-label="Add"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
 }
 let tt='debit';
@@ -1459,6 +1463,7 @@ document.addEventListener('click',e=>{
   else if(a==='mprev'){month=shiftMonth(month,-1);render()}
   else if(a==='mnext'){month=shiftMonth(month,1);render()}
   else if(a==='filter'){accFilter=accFilter===id?'':id;view='txns';scrollTo(0,0);render()}
+  else if(a==='manageacc'){openSec.add('acc');view='accounts';scrollTo(0,0);render()}
   else if(a==='txmore'){txLimit+=100;$('#txlist').innerHTML=txListHTML()}
   else if(a==='txkind'){txKind=id;txLimit=100;render()}
   else if(a==='seg'){seg=id;render()}
