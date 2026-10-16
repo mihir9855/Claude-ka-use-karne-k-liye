@@ -1778,10 +1778,7 @@ const needsReview=t=>(!t.acc&&!t.fromParty)||(t.kind==='expense'&&t.cat==='Other
 function smsView(){
   const idx=new Map(S.tx.map((t,i)=>[t,i]));   // latest first: by date, then the time the SMS arrived, then the order it was added
   const all=S.tx.filter(t=>t.src==='sms').sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0)||idx.get(b)-idx.get(a));
-  const rev=all.filter(needsReview).length;
-  const list=all.filter(t=>smsFilter==='review'?needsReview(t):smsFilter==='dr'?t.type==='debit':smsFilter==='cr'?t.type==='credit':true);
-  const out=list.filter(t=>t.type==='debit').reduce((a,t)=>a+t.amt,0),inn=list.filter(t=>t.type==='credit').reduce((a,t)=>a+t.amt,0);
-  const FL=[['all','All '+all.length],['review','Needs review '+rev],['dr','Debit'],['cr','Credit']];
+  const list=all.filter(needsReview);   // fixed ones live in the normal transaction list
   const pend=S.smsPending.slice().sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0)).map(p=>`<div class="card" style="margin-bottom:10px"><div class="small" style="word-break:break-word">${esc(p.text.slice(0,220))}</div>
     <div class="row sp" style="margin-top:8px"><b class="num">${inr(p.amt)}</b><span class="small mute">${new Date(p.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span></div>
     <div class="row" style="gap:8px;margin-top:8px"><button class="btn" data-a="pendas" data-id="${p.id}" data-d="debit" style="margin:0;flex:1">Money out</button><button class="btn ghost" data-a="pendas" data-id="${p.id}" data-d="credit" style="margin:0;flex:1">Money in</button><button class="btn ghost" data-a="pendx" data-id="${p.id}" style="margin:0">Skip</button></div></div>`).join('');
@@ -1790,12 +1787,11 @@ function smsView(){
     return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${dr?'rgba(209,73,91,.14)':'rgba(26,159,107,.14)'};color:${dr?'var(--debit)':'var(--credit)'};font-weight:800;font-size:13px">${dr?'Dr':'Cr'}</div>
     <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})} · ${what} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):t.fromParty?'<span class="mute">paid from '+esc(p?p.name:'person')+'</span>':'<span class="debit">⚠ Pick account'+(t.hint4?' (••'+t.hint4+')':'')+'</span>'}${t.kind==='expense'&&t.cat==='Other'?' · <span class="debit">set category</span>':''}</div></div>
     <b class="num ${t.type}">${dr?'−':'+'}${inr(t.amt)}</b></div>`};
-  return `<h1>SMS</h1><p class="small mute">Every bank SMS Arthaly read. Tap one to change debit/credit, account, category or amount; graphs and balances update at once.</p>
-  <div class="card"><div class="grid2"><div class="stat"><span class="small mute">Money out</span><b class="num debit">${inrH(out)}</b></div><div class="stat"><span class="small mute">Money in</span><b class="num credit">${inrH(inn)}</b></div></div>
-    ${sms()&&!smsCap?'<div class="small mute" style="margin-top:8px">This build cannot read SMS by itself. Use Share → Arthaly on a bank SMS.</div>':''}</div>
+  return `<h1>SMS</h1><p class="small mute">Only SMS that still need you. Pick the account and category and the entry moves to your transactions (still counted in money in / out).</p>
+  ${sms()&&!smsCap?'<div class="card small mute">This build cannot read SMS by itself. Use Share → Arthaly on a bank SMS.</div>':''}
   ${S.smsPending.length?`<h2>Could not understand (${S.smsPending.length})</h2>${pend}`:''}
-  <div class="seg" style="margin:12px 0">${FL.map(([k,l])=>`<button data-a="smsflt" data-id="${k}" class="${smsFilter===k?'on':''}">${l}</button>`).join('')}</div>
-  <div class="card" style="padding:4px 16px">${list.length?list.map(row).join(''):'<div class="empty">'+(all.length?'Nothing here.':'No SMS yet.<br>New bank SMS appear here by themselves.')+'</div>'}</div>`;
+  ${list.length?`<h2>Needs your action (${list.length})</h2>`:''}
+  <div class="card" style="padding:4px 16px;margin-top:12px">${list.length?list.map(row).join(''):'<div class="empty">All clear ✓<br>New bank SMS appear here until you fix them.</div>'}</div>`;
 }
 /* swipe left / right on Home, Budget or Insights to change the month */
 (function(){
