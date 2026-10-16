@@ -1652,16 +1652,25 @@ function ledgerSummary(){
   if(!pass.length)return '<div class="card empty">No ledger entries yet.<br>Open a person and add what you gave or received.</div>';
   const sum=(l,ty)=>l.filter(t=>ledType(t)===ty).reduce((x,t)=>x+t.amt,0),given=sum(pass,'debit'),rec=sum(pass,'credit'),net=given-rec;
   const cm=month,pm=shiftMonth(month,-1),inM=m=>pass.filter(t=>t.date.startsWith(m)),g1=sum(inM(cm),'debit'),r1=sum(inM(cm),'credit'),g0=sum(inM(pm),'debit');
-  const gr=[],run=[],lab=[];for(let i=5;i>=0;i--){const m=shiftMonth(month,-i),l=inM(m),g=sum(l,'debit'),r=sum(l,'credit');
-    gr.push({l:mlabel(m).slice(0,3),a:r,b:g,ta:mlabel(m)+' received · '+inr(r),tb:mlabel(m)+' given · '+inr(g)});
-    run.push(pass.filter(t=>t.date.slice(0,7)<=m).reduce((x,t)=>x+(ledType(t)==='debit'?t.amt:-t.amt),0));lab.push(mlabel(m).slice(0,3))}
+  const gr=[],run=[],lab=[];
+  const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const bk=[];   // buckets: {from,to(inclusive),short,full}
+  if(ledPer==='week'){const d0=new Date();d0.setHours(0,0,0,0);d0.setDate(d0.getDate()-((d0.getDay()+6)%7));
+    for(let i=7;i>=0;i--){const f=new Date(d0);f.setDate(f.getDate()-i*7);const e=new Date(f);e.setDate(e.getDate()+6);
+      const fs=f.toLocaleDateString('en-IN',{day:'numeric',month:'short'});bk.push({from:iso(f),to:iso(e),short:fs.split(' ')[0],full:'Week of '+fs})}}
+  else if(ledPer==='year'){const y=new Date().getFullYear();for(let i=3;i>=0;i--){const v=y-i;bk.push({from:v+'-01-01',to:v+'-12-31',short:String(v),full:String(v)})}}
+  else for(let i=5;i>=0;i--){const m=shiftMonth(month,-i);bk.push({from:m+'-01',to:m+'-31',short:mlabel(m).slice(0,3),full:mlabel(m)})}
+  bk.forEach(k=>{const l=pass.filter(t=>t.date>=k.from&&t.date<=k.to),g=sum(l,'debit'),r=sum(l,'credit');
+    gr.push({l:k.short,a:r,b:g,ta:k.full+' received · '+inr(r),tb:k.full+' given · '+inr(g)});
+    run.push(pass.filter(t=>t.date<=k.to).reduce((x,t)=>x+(ledType(t)==='debit'?t.amt:-t.amt),0));lab.push(k.short)});
+  const perSeg=`<div class="seg" style="margin:12px 0">${[['week','Week'],['month','Month'],['year','Year']].map(([k,l])=>`<button data-a="ledper" data-id="${k}" class="${ledPer===k?'on':''}">${l}</button>`).join('')}</div>`;
   const bals=S.people.map(p=>({p,b:personBal(p.id)})).filter(x=>x.b!==0).sort((x,y)=>Math.abs(y.b)-Math.abs(x.b));
   const mx=bals.length?Math.abs(bals[0].b):1;
   const tops=pass.slice().sort((x,y)=>y.amt-x.amt).slice(0,5);
   return `<div class="card ins-hero"><div class="small mute">${net>0?'People owe you':net<0?'You owe people':'All settled'}</div><div class="big num ${net>0?'debit':net<0?'credit':''}">${inrH(Math.abs(net))}</div>
    <div class="grid2" style="margin-top:12px"><div class="mini"><span class="small mute">Given</span><b class="num debit">${inrH(given)}</b></div><div class="mini"><span class="small mute">Received</span><b class="num credit">${inrH(rec)}</b></div></div>
    <div class="small mute" style="margin-top:10px">${mlabel(month)}: given ${inrH(g1)}, received ${inrH(r1)}${g0>0?` · given ${g1>=g0?'up':'down'} ${Math.abs(Math.round((g1-g0)/g0*100))}% vs last month`:''}</div></div>
-  <h2>Given vs received</h2><div class="card">${flowBars(gr,['Received','Given'])}</div>
+  <h2>Given vs received</h2>${perSeg}<div class="card">${flowBars(gr,['Received','Given'])}</div>
   <h2>Outstanding over time</h2><div class="card">${lc2([{vals:run,color:'var(--brand)',area:true,peak:false,tips:run.map((v,i)=>lab[i]+' · '+inr(v))}],lab,{h:150})}<div class="small mute" style="margin-top:6px">Above the line: people owe you. Below: you owe them.</div></div>`;
 }
 function khata(){
@@ -1883,7 +1892,7 @@ function chipsHTML(kind,sel){
   if(kind==='expense')return Object.keys(CATS).map(k=>`<button type="button" class="chip ${k===sel?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${CATCOL[k]}">${ic(CATS[k],16)}${esc(cname(k))}</button>`).join('')+`<button type="button" class="chip" id="newcat" data-a="newcat">＋ New</button>`;
   return Object.keys(ICATS).map(k=>`<button type="button" class="chip ${k===sel?'on':''}" data-a="cat" data-id="${esc(k)}" style="--c:${ICATCOL[k]}">${ic(ICATS[k],16)}${esc(k)}</button>`).join('');
 }
-let emiPick=null,smsResolve=null,smsFilter='all';
+let emiPick=null,smsResolve=null,smsFilter='all',ledPer='month';
 function emiSuggest(){
   const el=$('#smart');if(!el||$('#f-kind').value!=='expense'||$('#f-cat').value!=='EMI')return;
   const L=S.emis.map(p=>({p,s:emiState(p)})).filter(x=>!x.s.done);
@@ -2173,6 +2182,7 @@ document.addEventListener('click',e=>{
   }
   else if(a==='smson')enableSms();
   else if(a==='smsflt'){smsFilter=id;render()}
+  else if(a==='ledper'){ledPer=id;render()}
   else if(a==='smsscan')importInbox(parseInt(id,10)||30);
   else if(a==='pendx'){S.smsPending=S.smsPending.filter(x=>x.id!==id);save();render()}
   else if(a==='pendas'){const pd=S.smsPending.find(x=>x.id===id);if(pd){const cr=el.dataset.d==='credit';txSheet(null,{type:cr?'credit':'debit',kind:cr?'income':'expense',amt:pd.amt,note:pd.text.slice(0,60),date:pd.date,resolve:pd})}}
