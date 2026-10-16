@@ -995,8 +995,102 @@ function pdfFile(pages){
 const pdfTxt=t=>String(t==null?'':t).replace(/₹/g,'Rs.').replace(/[^\x20-\x7e]/g,'?').replace(/([\\()])/g,'\\$1');
 const pdfW=(t,sz)=>[...String(t)].reduce((a,c)=>a+(/[0-9]/.test(c)?.556:/[ ,.:]/.test(c)?.278:/[A-Z]/.test(c)?.67:.52),0)*sz;
 const money=n=>Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+/* ---------- "Visual" statement: overview page with who owes whom, progress, chart, month-by-month, then the full table ---------- */
+function visualStatement(d){
+  const {p,rows,open,dr,cr,close,period,from,fd,A,AT,AD,status}=d;
+  const RED=[.86,.27,.3],EM=[.12,.6,.34],GR=[.42,.45,.5],K=[.07,.09,.16],WH=[1,1,1],LG=[.93,.94,.95],CARD=[.965,.97,.975];
+  const pages=[];let c='',pn=0,yy=0;
+  const col=a=>a.join(' ');
+  const T=(x,y,t,sz,b,right,clr)=>{const w=right?pdfW(t,sz):0;c+=`${col(clr||K)} rg BT /${b?'F2':'F1'} ${sz} Tf ${(x-w).toFixed(1)} ${y.toFixed(1)} Td (${pdfTxt(t)}) Tj ET\n`};
+  const TC=(cx,y,t,sz,b,clr)=>T(cx+pdfW(t,sz)/2,y,t,sz,b,true,clr);
+  const R=(x,y,w,h,f)=>{c+=`${col(f)} rg ${x.toFixed(1)} ${y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)} re f\n`};
+  const Ln=(x1,y1,x2,y2,wd,s,dash)=>{c+=`${dash?'[3 3] 0 d ':''}${col(s)} RG ${wd} w ${x1.toFixed(1)} ${y1.toFixed(1)} m ${x2.toFixed(1)} ${y2.toFixed(1)} l S${dash?' [] 0 d':''}\n`};
+  const circle=(cx,cy,r,f)=>{const k=.5523*r;c+=`${col(f)} rg ${(cx+r).toFixed(1)} ${cy.toFixed(1)} m ${(cx+r).toFixed(1)} ${(cy+k).toFixed(1)} ${(cx+k).toFixed(1)} ${(cy+r).toFixed(1)} ${cx.toFixed(1)} ${(cy+r).toFixed(1)} c ${(cx-k).toFixed(1)} ${(cy+r).toFixed(1)} ${(cx-r).toFixed(1)} ${(cy+k).toFixed(1)} ${(cx-r).toFixed(1)} ${cy.toFixed(1)} c ${(cx-r).toFixed(1)} ${(cy-k).toFixed(1)} ${(cx-k).toFixed(1)} ${(cy-r).toFixed(1)} ${cx.toFixed(1)} ${(cy-r).toFixed(1)} c ${(cx+k).toFixed(1)} ${(cy-r).toFixed(1)} ${(cx+r).toFixed(1)} ${(cy-k).toFixed(1)} ${(cx+r).toFixed(1)} ${cy.toFixed(1)} c h f\n`};
+  const pcurve=(pts,lo,hi)=>{ // smooth PDF path through points (y is up)
+    const cl=y=>Math.max(lo,Math.min(hi,y));let s=`${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)} m `;
+    for(let i=0;i<pts.length-1;i++){const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+      s+=`${(p1[0]+(p2[0]-p0[0])/6).toFixed(1)} ${cl(p1[1]+(p2[1]-p0[1])/6).toFixed(1)} ${(p2[0]-(p3[0]-p1[0])/6).toFixed(1)} ${cl(p2[1]-(p3[1]-p1[1])/6).toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)} c `}
+    return s};
+  const kf=n=>{const a=Math.abs(n),s=n<0?'-':'';return a>=1e5?s+(a/1e5).toFixed(1)+'L':a>=1e3?s+(a/1e3).toFixed(1)+'k':s+Math.round(a)};
+  const L0=36,R0=559,W=R0-L0,owes=close>0,youOwe=close<0;
+  const bigClr=owes?RED:youOwe?EM:GR;
+  const headline=owes?p.name+' owes you':youOwe?'You owe '+p.name:'All settled';
+  const todo=owes?p.name+' needs to pay you':youOwe?'You need to pay '+p.name:'Nothing pending. All settled.';
+  /* ---- page 1: overview ---- */
+  pn=1;c='';
+  R(0,762,595,80,A);circle(36+22,802,22,AT);
+  const ini=(p.name.trim()[0]||'?').toUpperCase().replace(/[^A-Z0-9]/,'?');TC(58,795,ini,20,1,AD);
+  T(94,812,'ARTHALY  -  ACCOUNT STATEMENT',7.5,1,0,AT);T(94,790,p.name,19,1,0,WH);T(94,773,period,9,0,0,AT);
+  T(559,812,'GENERATED',7,0,1,AT);T(559,799,fd(todayISO()),10,1,1,WH);
+  // headline card
+  yy=742;R(L0,yy-112,W,112,CARD);R(L0,yy-112,4,112,bigClr);
+  T(L0+20,yy-24,headline,11,0,0,GR);T(L0+20,yy-62,'Rs. '+money(Math.abs(close)),30,1,0,bigClr);
+  T(L0+20,yy-86,close===0?'Every entry is cleared.':owes?'This is still to come back to you.':'This is still to be paid by you.',8.5,0,0,GR);
+  const giv=dr+Math.max(0,open),pct=giv>0?Math.max(0,Math.min(100,Math.round(cr/giv*100))):(cr>0?100:0);
+  const bx=330,bw=R0-bx-18;T(bx,yy-24,close>0?'RETURNED SO FAR':close<0?'MORE RECEIVED THAN GIVEN':'SETTLED',7.5,1,0,GR);
+  T(bx,yy-52,(close===0&&giv===0?'-':(youOwe?'100':String(pct)))+'%',24,1,0,EM);
+  R(bx,yy-72,bw,10,LG);if(pct>0||youOwe)R(bx,yy-72,Math.max(4,bw*(youOwe?1:pct/100)),10,EM);
+  T(bx,yy-90,'Gave Rs. '+money(dr),8,0,0,RED);T(bx+bw,yy-90,'Got Rs. '+money(cr),8,0,1,EM);
+  // stat boxes
+  yy=614;const sw=(W-20)/3,last=rows.length?rows[rows.length-1].t.date:null;
+  [['YOU GAVE','Rs. '+money(dr),RED],['YOU RECEIVED','Rs. '+money(cr),EM],['ENTRIES',String(rows.length),K]].forEach((k,i)=>{const x=L0+i*(sw+10);R(x,yy-46,sw,50,CARD);T(x+12,yy-10,k[0],7,1,0,GR);T(x+12,yy-33,k[1],15,1,0,k[2]);if(i===2&&last)T(x+sw-10,yy-33,'last '+fd(last),7.5,0,1,GR)});
+  // balance chart
+  yy=548;T(L0,yy,'BALANCE OVER TIME',8,1,0,AD);Ln(L0,yy-6,R0,yy-6,.8,A);
+  const cx0=L0+36,cx1=R0-8,cy0=yy-150,cy1=yy-22;       // chart box
+  if(rows.length>=2){
+    const vals=rows.map(r=>r.bal);let mx=Math.max(...vals,0),mn=Math.min(...vals,0);if(mx===mn)mx=mn+1;const pad=(mx-mn)*.08;mx+=pad;if(mn<0)mn-=pad;
+    const X=i=>cx0+(rows.length>1?i/(rows.length-1):.5)*(cx1-cx0),Y=v=>cy0+(v-mn)/(mx-mn)*(cy1-cy0);
+    [mn<0?mn:0,(mn<0?mn:0)+(mx-(mn<0?mn:0))/2,mx].forEach(t=>{Ln(cx0,Y(t),cx1,Y(t),.5,[.88,.9,.92]);T(cx0-6,Y(t)-2.5,kf(t),7,0,1,GR)});
+    if(mn<0)Ln(cx0,Y(0),cx1,Y(0),.8,GR,true);
+    const pts=vals.map((v,i)=>[X(i),Y(v)]),base=Y(Math.max(mn,Math.min(0,mx)));
+    c+=`${col(AT)} rg ${pcurve(pts,cy0,cy1)}${cx1.toFixed(1)} ${base.toFixed(1)} l ${cx0.toFixed(1)} ${base.toFixed(1)} l h f\n`;
+    c+=`${col(A)} RG 2 w 1 J 1 j ${pcurve(pts,cy0,cy1)}S\n`;
+    const lp=pts[pts.length-1];circle(lp[0],lp[1],4,WH);circle(lp[0],lp[1],2.6,A);
+    T(cx0,cy0-14,fd(rows[0].t.date),7.5,0,0,GR);T(cx1,cy0-14,fd(rows[rows.length-1].t.date),7.5,0,1,GR);
+    T(lp[0]-6,lp[1]+8,'Rs. '+money(Math.abs(vals[vals.length-1])),8,1,1,bigClr);
+  }else T(cx0,(cy0+cy1)/2,'Add more entries to see the trend.',9,0,0,GR);
+  // month by month
+  yy=cy0-44;T(L0,yy,'MONTH BY MONTH',8,1,0,AD);Ln(L0,yy-6,R0,yy-6,.8,A);
+  const mm={};rows.forEach(r=>{const k=r.t.date.slice(0,7);(mm[k]=mm[k]||{g:0,r:0});mm[k].g+=r.debit;mm[k].r+=r.credit});
+  const ks=Object.keys(mm).sort().slice(-6),mxm=Math.max(...ks.map(k=>Math.max(mm[k].g,mm[k].r)),1);
+  yy-=22;T(L0+4,yy,'MONTH',7,1,0,GR);T(190,yy,'GAVE',7,1,0,GR);T(375,yy,'RECEIVED',7,1,0,GR);T(R0-2,yy,'NET',7,1,1,GR);yy-=20;
+  ks.forEach((k,i)=>{const m=mm[k],net=m.g-m.r,lab=new Date(k+'-01T00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+    if(i%2===0)R(L0,yy-12,W,22,CARD);T(L0+4,yy-3,lab,8.5,1);
+    R(190,yy-1,Math.max(m.g?2:0,m.g/mxm*70),5,RED);T(190,yy-10,'Rs. '+money(m.g),7,0,0,GR);
+    R(375,yy-1,Math.max(m.r?2:0,m.r/mxm*70),5,EM);T(375,yy-10,'Rs. '+money(m.r),7,0,0,GR);
+    T(R0-2,yy-3,(net>0?'+':net<0?'-':'')+money(Math.abs(net)),8.5,1,1,net>0?RED:net<0?EM:GR);yy-=22});
+  if(!ks.length)T(L0+4,yy-4,'No entries in this period.',9,0,0,GR);
+  // what is left
+  const by=118;R(L0,by-20,W,88,A);T(L0+20,by+42,todo,11,0,0,AT);T(L0+20,by+8,'Rs. '+money(Math.abs(close)),28,1,0,WH);
+  T(R0-20,by+42,'GAVE',7,1,1,AT);T(R0-20,by+28,'Rs. '+money(dr),10,1,1,WH);T(R0-20,by+10,'RECEIVED',7,1,1,AT);T(R0-20,by-4,'Rs. '+money(cr),10,1,1,WH);
+  if(from&&open!==0)T(L0+20,by-12,'Includes Rs. '+money(Math.abs(open))+' '+(open>0?'owed':'owing')+' before this period',7.5,0,0,AT);
+  T(R0,32,'Generated by Arthaly   |   page 1 of %%T%%',7,0,1,GR);Ln(L0,52,R0,52,.6,[.85,.88,.9]);
+  pages.push(c);
+  /* ---- transaction pages ---- */
+  const CD=[36,104,296,376,456,559],RH=20;
+  const head=()=>{pn++;c='';R(0,806,595,36,A);T(36,820,'ARTHALY',8.5,1,0,WH);T(559,820,p.name+'  -  transactions  -  page '+pn,8.5,0,1,WH);yy=772;
+    R(L0,yy-5,W,20,AT);T(CD[0]+7,yy,'DATE',7.5,1,0,AD);T(CD[1]+4,yy,'DETAILS',7.5,1,0,AD);T(CD[3]-7,yy,'YOU GAVE',7.5,1,1,AD);T(CD[4]-7,yy,'YOU GOT',7.5,1,1,AD);T(CD[5]-7,yy,'STILL OWED',7.5,1,1,AD);yy-=RH};
+  const foot=()=>{Ln(L0,52,R0,52,.6,[.85,.88,.9]);T(R0,32,'Generated by Arthaly   |   page '+pn+' of %%T%%',7,0,1,GR);pages.push(c)};
+  head();
+  const owedTxt=b=>b===0?'Settled':money(Math.abs(b))+(b>0?'  owes you':'  you owe');
+  if(from&&open!==0){T(CD[1]+4,yy,'Opening balance',8.5,0,0,GR);T(CD[5]-7,yy,owedTxt(open),8,1,1,open>0?RED:EM);yy-=RH}
+  rows.forEach((r,i)=>{
+    if(yy<76){foot();head()}
+    if(i%2===0)R(L0,yy-5,W,RH,[.975,.98,.98]);
+    T(CD[0]+7,yy,fd(r.t.date),8.3,0);T(CD[1]+4,yy,cut2(r.txt,8.3,CD[2]-CD[1]-12),8.3,0);
+    if(r.debit)T(CD[3]-7,yy,money(r.debit),8.3,1,1,RED);
+    if(r.credit)T(CD[4]-7,yy,money(r.credit),8.3,1,1,EM);
+    T(CD[5]-7,yy,owedTxt(r.bal),8,1,1,r.bal>0?RED:r.bal<0?EM:GR);yy-=RH});
+  if(!rows.length){T(CD[1]+4,yy,'No entries in this period',9,0,0,GR);yy-=RH}
+  if(yy<90){foot();head()}
+  Ln(L0,yy+RH-5,R0,yy+RH-5,1.4,A);R(L0,yy-5,W,20,AT);T(CD[1]+4,yy,'Total',9,1);T(CD[3]-7,yy,money(dr),9,1,1,RED);T(CD[4]-7,yy,money(cr),9,1,1,EM);T(CD[5]-7,yy,owedTxt(close),8.5,1,1,bigClr);
+  foot();
+  const total=String(pages.length);
+  return pages.map(x=>x.replace(/%%N%%/g,'1').replace(/%%T%%/g,total));
+}
+const cut2=(t,sz,wd)=>{let d=t;while(d.length>3&&pdfW(d,sz)>wd)d=d.slice(0,-1);return d===t?d:d.slice(0,-1)+'...'};
 function personStatement(pid,per,style){
-  style=style||S.pdfStyle||'modern';const ACCS={green:[.12,.6,.34],navy:[.1,.22,.45],maroon:[.55,.12,.25],purple:[.42,.28,.75],charcoal:[.2,.23,.28]};const A=ACCS[S.pdfColor]||ACCS.green,AT=A.map(v=>v+(1-v)*.89),AD=A.map(v=>v*.8);
+  style=style||S.pdfStyle||'visual';const ACCS={green:[.12,.6,.34],navy:[.1,.22,.45],maroon:[.55,.12,.25],purple:[.42,.28,.75],charcoal:[.2,.23,.28]};const A=ACCS[S.pdfColor]||ACCS.green,AT=A.map(v=>v+(1-v)*.89),AD=A.map(v=>v*.8);
   const p=person(pid),now=new Date(),y=now.getFullYear(),mo=now.getMonth(),pad=n=>String(n).padStart(2,'0');
   let from='',to='';
   if(per==='m'){from=y+'-'+pad(mo+1)+'-01';to=isoDay(new Date(y,mo+1,0).getTime())}
@@ -1009,6 +1103,7 @@ function personStatement(pid,per,style){
   const dr=rows.reduce((a,r)=>a+r.debit,0),cr=rows.reduce((a,r)=>a+r.credit,0),close=open+dr-cr;
   const fd=iso=>new Date(iso+'T00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const balTxt=b=>money(b)+(b>0?' Dr':b<0?' Cr':''),period=from?fd(from)+' to '+fd(to):'All time',status=close>0?p.name+' owes you':close<0?'You owe '+p.name:'All settled';
+  if(style==='visual')return {pdf:pdfFile(visualStatement({p,rows,open,dr,cr,close,period,from,fd,A,AT,AD,status})),name:'Statement-'+p.name.replace(/[^A-Za-z0-9]+/g,'_')+'-'+todayISO()+'.pdf',n:rows.length};
   const G=[.2,.2,.2],GR=[.42,.45,.5],EM=[.12,.6,.34],RED=[.86,.27,.3],WH=[1,1,1],K=[.07,.09,.16];
   const minimal=style==='minimal',modern=style!=='classic';
   const pages=[];let c='',yy=0,pn=0;
@@ -2208,9 +2303,9 @@ function personSheet(id){
   paDir='debit';refreshDates();
 }
 function pdfMenu(id){
-  const p=person(id),st=S.pdfStyle||'modern',co=S.pdfColor||'green',CC={green:'#1f9a57',navy:'#1a3873',maroon:'#8c1f40',purple:'#6b47bf',charcoal:'#333b47'};
+  const p=person(id),st=S.pdfStyle||'visual',co=S.pdfColor||'green',CC={green:'#1f9a57',navy:'#1a3873',maroon:'#8c1f40',purple:'#6b47bf',charcoal:'#333b47'};
   openSheet(`<div class="row sp"><h1>Statement PDF</h1><button class="icon-btn" data-a="close">✕</button></div><div class="small mute" style="margin:8px 0 4px">${esc(p.name)}</div>
-  <label>Design</label><div class="seg" id="pdfstyle"><button data-a="pdfstyle" data-id="modern" class="${st==='modern'?'on':''}">Modern</button><button data-a="pdfstyle" data-id="minimal" class="${st==='minimal'?'on':''}">Minimal</button><button data-a="pdfstyle" data-id="classic" class="${st==='classic'?'on':''}">Classic</button></div>
+  <label>Design</label><div class="seg" id="pdfstyle"><button data-a="pdfstyle" data-id="visual" class="${st==='visual'?'on':''}">Visual</button><button data-a="pdfstyle" data-id="modern" class="${st==='modern'?'on':''}">Modern</button><button data-a="pdfstyle" data-id="minimal" class="${st==='minimal'?'on':''}">Minimal</button><button data-a="pdfstyle" data-id="classic" class="${st==='classic'?'on':''}">Classic</button></div>
   <div id="pdfcol" style="${st==='classic'?'display:none':''}"><label>Colour</label><div class="cpick">${Object.entries(CC).map(([k,c])=>`<button type="button" class="cs ${co===k?'on':''}" data-a="pdfcolor" data-id="${k}" style="background:${c}" aria-label="${k}"></button>`).join('')}</div></div>
   <label>Period</label>
   ${[['all','All time'],['m','This month'],['3','Last 3 months'],['y','This year']].map(([k,l])=>`<button class="btn ghost" data-a="personpdf" data-id="${id}" data-per="${k}">${l}</button>`).join('')}`);
