@@ -1759,20 +1759,29 @@ function navTo(id){
    we handle it in the app (close dialog -> close sheet -> go Home -> "press back again" -> exit) and re-add the guard. */
 let guarded=false;
 function addGuard(){
-  if(guarded)return;
+  if(guarded||(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()))return;
   try{history.replaceState({k:'root'},'');history.pushState({k:'guard'},'');guarded=true}catch(e){}
 }
 ['pointerdown','touchstart','keydown'].forEach(ev=>addEventListener(ev,addGuard,{capture:true,passive:true}));
+/* One place decides what Back does. Returns true when the app used the press; false means "let the app exit". */
+let exitArmed=false;
+function handleBack(){
+  if(calcEl){closeCalc();return true}
+  if(dlgIsOpen()){const d=dlgDone;dlgDone=null;$('#dlg').innerHTML='';if(d)d(null);return true}
+  if(sheetIsOpen()){closeSheet();return true}
+  if(view!=='home'||accFilter){accFilter='';view='home';scrollTo(0,0);render();return true}
+  if(exitArmed)return false;
+  exitArmed=true;toast('Press back again to exit',1800);setTimeout(()=>{exitArmed=false},2000);return true;
+}
+window.__arthalyBack=()=>handleBack()?1:0;   // called by the Android shell on the system Back key
+const NATIVE=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
 window.addEventListener('popstate',e=>{
-  if(!guarded)return;
+  if(!guarded||NATIVE)return;
   const st=e.state;
   if(st&&st.k==='guard')return;
   const rearm=()=>{try{history.pushState({k:'guard'},'')}catch(x){guarded=false}};
-  if(calcEl){closeCalc();rearm();return}
-  if(dlgIsOpen()){const d=dlgDone;dlgDone=null;$('#dlg').innerHTML='';if(d)d(null);rearm();return}
-  if(sheetIsOpen()){closeSheet();rearm();return}
-  if(view!=='home'||accFilter){accFilter='';view='home';scrollTo(0,0);render();rearm();return}
-  guarded=false;toast('Press back again to exit',1800);setTimeout(addGuard,2000);   // a second back now leaves the app
+  if(handleBack()){rearm();return}
+  guarded=false;   // a second back now leaves the app
 });
 /* accounts strip: drag with the mouse, wheel scrolls sideways (touch screens already swipe) */
 (function(){
