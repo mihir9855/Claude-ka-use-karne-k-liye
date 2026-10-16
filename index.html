@@ -996,7 +996,7 @@ const pdfTxt=t=>String(t==null?'':t).replace(/₹/g,'Rs.').replace(/[^\x20-\x7e]
 const pdfW=(t,sz)=>[...String(t)].reduce((a,c)=>a+(/[0-9]/.test(c)?.556:/[ ,.:]/.test(c)?.278:/[A-Z]/.test(c)?.67:.52),0)*sz;
 const money=n=>Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function personStatement(pid,per,style){
-  style=style||S.pdfStyle||'modern';
+  style=style||S.pdfStyle||'modern';const ACCS={green:[.12,.6,.34],navy:[.1,.22,.45],maroon:[.55,.12,.25],purple:[.42,.28,.75],charcoal:[.2,.23,.28]};const A=ACCS[S.pdfColor]||ACCS.green,AT=A.map(v=>v+(1-v)*.89),AD=A.map(v=>v*.8);
   const p=person(pid),now=new Date(),y=now.getFullYear(),mo=now.getMonth(),pad=n=>String(n).padStart(2,'0');
   let from='',to='';
   if(per==='m'){from=y+'-'+pad(mo+1)+'-01';to=isoDay(new Date(y,mo+1,0).getTime())}
@@ -1010,7 +1010,7 @@ function personStatement(pid,per,style){
   const fd=iso=>new Date(iso+'T00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const balTxt=b=>money(b)+(b>0?' Dr':b<0?' Cr':''),period=from?fd(from)+' to '+fd(to):'All time',status=close>0?p.name+' owes you':close<0?'You owe '+p.name:'All settled';
   const G=[.2,.2,.2],GR=[.42,.45,.5],EM=[.12,.6,.34],RED=[.86,.27,.3],WH=[1,1,1],K=[.07,.09,.16];
-  const modern=style!=='classic';
+  const minimal=style==='minimal',modern=style!=='classic';
   const pages=[];let c='',yy=0,pn=0;
   const col=a=>a.join(' ');
   const T=(x,y,t,sz,b,right,clr)=>{const w=right?pdfW(t,sz):0;c+=`${col(clr||K)} rg BT /${b?'F2':'F1'} ${sz} Tf ${(x-w).toFixed(1)} ${y.toFixed(1)} Td (${pdfTxt(t)}) Tj ET\n`};
@@ -1021,19 +1021,27 @@ function personStatement(pid,per,style){
   const cut=(t,sz,wd)=>{let d=t;while(d.length>3&&pdfW(d,sz)>wd)d=d.slice(0,-1);return d===t?d:d.slice(0,-1)+'...'};
   const RH=modern?19:21;
   const colHead=()=>{
-    if(modern){R(L0,yy-5,R0-L0,20,[.90,.96,.93]);const g=[.07,.4,.22];T(CD[0]+7,yy,'DATE',7.5,1,0,g);T(CD[1]+4,yy,'DETAILS',7.5,1,0,g);T(CD[3]-7,yy,'DEBIT',7.5,1,1,g);T(CD[4]-7,yy,'CREDIT',7.5,1,1,g);T(CD[5]-7,yy,'BALANCE',7.5,1,1,g)}
+    if(minimal){const g=A;T(CD[0]+2,yy,'DATE',7.5,1,0,g);T(CD[1]+4,yy,'DETAILS',7.5,1,0,g);T(CD[3]-4,yy,'DEBIT',7.5,1,1,g);T(CD[4]-4,yy,'CREDIT',7.5,1,1,g);T(CD[5]-2,yy,'BALANCE',7.5,1,1,g);Ln(L0,yy-7,R0,yy-7,1.2,A)}
+    else if(modern){R(L0,yy-5,R0-L0,20,AT);const g=AD;T(CD[0]+7,yy,'DATE',7.5,1,0,g);T(CD[1]+4,yy,'DETAILS',7.5,1,0,g);T(CD[3]-7,yy,'DEBIT',7.5,1,1,g);T(CD[4]-7,yy,'CREDIT',7.5,1,1,g);T(CD[5]-7,yy,'BALANCE',7.5,1,1,g)}
     else{R(L0,yy-6,R0-L0,22,G);T(CD[0]+6,yy,'Date',8.5,1,0,WH);T(CD[1]+6,yy,'Details',8.5,1,0,WH);T(CD[3]-6,yy,'Debit',8.5,1,1,WH);T(CD[4]-6,yy,'Credit',8.5,1,1,WH);T(CD[5]-6,yy,'Balance',8.5,1,1,WH)}
     yy-=modern?19:22;
   };
   const head=()=>{pn++;c='';
     if(modern){
-      if(pn===1){
-        R(0,752,595,90,EM);T(36,818,'ARTHALY',8.5,1,0,[.85,.96,.9]);T(36,790,'Statement of account',21,1,0,WH);T(36,768,p.name,12,0,0,WH);
-        T(559,818,'PERIOD',7.5,0,1,[.85,.96,.9]);T(559,805,period,10,1,1,WH);T(559,784,'GENERATED',7.5,0,1,[.85,.96,.9]);T(559,771,fd(todayISO()),10,1,1,WH);
-        yy=722;const w=(R0-L0-20)/3,cards=[['Total debit  (you gave)','Rs. '+money(dr),RED],['Total credit  (they gave)','Rs. '+money(cr),EM],[status,'Rs. '+money(close),close<0?EM:close>0?RED:GR]];
-        cards.forEach((k,i)=>{const x=L0+i*(w+10);R(x,yy-48,w,58,[.965,.97,.97]);R(x,yy-48,3,58,k[2]);T(x+14,yy-6,k[0],7.5,0,0,GR);T(x+14,yy-30,k[1],15,1,0,k[2])});
+      const tl=[['Total debit  (you gave)','Rs. '+money(dr),RED],['Total credit  (they gave)','Rs. '+money(cr),EM],[status,'Rs. '+money(close),close<0?EM:close>0?RED:GR]];
+      if(minimal){
+        if(pn===1){
+          T(36,806,'ARTHALY',9,1,0,A);T(559,806,fd(todayISO()),8.5,0,1,GR);T(36,776,'Statement of account',24,1);T(36,754,p.name,12,0,0,GR);T(559,754,period,10,1,1,K);Ln(L0,742,R0,742,2,A);
+          yy=722;const w=(R0-L0)/3;tl.forEach((k,i)=>{const x=L0+i*w;if(i)Ln(x-8,yy+8,x-8,yy-38,.5,[.82,.84,.86]);T(x+(i?4:0),yy,k[0],7.5,0,0,GR);T(x+(i?4:0),yy-24,k[1],15,1,0,k[2])});
+          yy-=70;
+        }else{T(36,810,'ARTHALY',8.5,1,0,A);T(559,810,p.name+'  -  page '+pn,8.5,0,1,GR);Ln(L0,800,R0,800,1.2,A);yy=772}
+      }else if(pn===1){
+        R(0,752,595,90,A);T(36,818,'ARTHALY',8.5,1,0,AT);T(36,790,'Statement of account',21,1,0,WH);T(36,768,p.name,12,0,0,WH);
+        T(559,818,'PERIOD',7.5,0,1,AT);T(559,805,period,10,1,1,WH);T(559,784,'GENERATED',7.5,0,1,AT);T(559,771,fd(todayISO()),10,1,1,WH);
+        yy=722;const w=(R0-L0-20)/3;
+        tl.forEach((k,i)=>{const x=L0+i*(w+10);R(x,yy-48,w,58,[.965,.97,.97]);R(x,yy-48,3,58,k[2]);T(x+14,yy-6,k[0],7.5,0,0,GR);T(x+14,yy-30,k[1],15,1,0,k[2])});
         yy-=84;
-      }else{R(0,806,595,36,EM);T(36,820,'ARTHALY',8.5,1,0,WH);T(559,820,'Statement - '+p.name+' - page '+pn,8.5,0,1,WH);yy=772}
+      }else{R(0,806,595,36,A);T(36,820,'ARTHALY',8.5,1,0,WH);T(559,820,'Statement - '+p.name+' - page '+pn,8.5,0,1,WH);yy=772}
     }else{
       if(pn===1){
         T(36,806,'ARTHALY',9,1,0,GR);T(559,806,'Page %%N%% of %%T%%',8,0,1,GR);T(36,780,'STATEMENT OF ACCOUNT',17,1);Ln(L0,768,R0,768,1.6,G);
@@ -1047,15 +1055,14 @@ function personStatement(pid,per,style){
     colHead();
   };
   const foot=()=>{
-    if(modern){Ln(L0,58,R0,58,.6,[.85,.88,.9]);T(L0,45,'Debit = money you gave or paid for them.   Credit = money they gave or paid you.   Dr = they owe you, Cr = you owe them.',6.8,0,0,GR);T(R0,32,'Generated by Arthaly   |   page '+pn+' of %%T%%',7,0,1,GR);T(L0,32,'This is a personal record, not a bank document.',7,0,0,GR)}
-    else{Ln(L0,58,R0,58,.8,G);T(L0,45,'Debit = money you gave or paid for them.  Credit = money they gave or paid you.  Balance Dr = they owe you, Cr = you owe them.',6.8,0,0,GR);T(L0,32,'Personal statement generated by Arthaly. Not a bank document.',7,0,0,GR)}
+    Ln(L0,52,R0,52,.6,[.85,.88,.9]);T(R0,38,'Generated by Arthaly   |   page '+pn+' of %%T%%',7,0,1,GR);
     pages.push(c)};
-  const rowLines=b=>{if(!modern){const top=b+RH-6,bot=b-6,g=[.78,.78,.78];for(let i=0;i<6;i++)Ln(CD[i],top,CD[i],bot,.4,g);Ln(L0,bot,R0,bot,.4,g)}};
+  const rowLines=b=>{if(minimal){Ln(L0,b-6,R0,b-6,.4,[.86,.88,.9])}else if(!modern){const top=b+RH-6,bot=b-6,g=[.78,.78,.78];for(let i=0;i<6;i++)Ln(CD[i],top,CD[i],bot,.4,g);Ln(L0,bot,R0,bot,.4,g)}};
   head();
   if(from&&open!==0){T(CD[1]+(modern?4:6),yy,'Opening balance',8.5,0,0,GR);T(CD[5]-(modern?7:6),yy,balTxt(open),8.5,1,1);rowLines(yy);yy-=RH}
   rows.forEach((r,i)=>{
     if(yy<86){foot();head()}
-    if(modern&&i%2===0)R(L0,yy-5,R0-L0,RH,[.975,.98,.98]);
+    if(modern&&!minimal&&i%2===0)R(L0,yy-5,R0-L0,RH,[.975,.98,.98]);
     T(CD[0]+(modern?7:6),yy,fd(r.t.date),8.3,0);
     T(CD[1]+(modern?4:6),yy,cut(r.txt,8.3,CD[2]-CD[1]-(modern?10:12)),8.3,0);
     if(r.debit)T(CD[3]-(modern?7:6),yy,money(r.debit),8.3,0,1,modern?RED:K);
@@ -1065,11 +1072,12 @@ function personStatement(pid,per,style){
   });
   if(!rows.length){T(CD[1]+6,yy,'No entries in this period',9,0,0,GR);rowLines(yy);yy-=RH}
   if(yy<96){foot();head()}
-  if(modern){Ln(L0,yy+RH-5,R0,yy+RH-5,1.4,EM);R(L0,yy-5,R0-L0,20,[.90,.96,.93])}else{Ln(L0,yy+RH-6,R0,yy+RH-6,1.6,G);Ln(L0,yy+RH-9,R0,yy+RH-9,.5,G);R(L0,yy-6,R0-L0,22,[.93,.93,.93]);Bx(L0,yy-6,R0-L0,22,.8,G)}
+  if(minimal){Ln(L0,yy+RH-5,R0,yy+RH-5,1.6,A)}
+  else if(modern){Ln(L0,yy+RH-5,R0,yy+RH-5,1.4,A);R(L0,yy-5,R0-L0,20,AT)}else{Ln(L0,yy+RH-6,R0,yy+RH-6,1.6,G);Ln(L0,yy+RH-9,R0,yy+RH-9,.5,G);R(L0,yy-6,R0-L0,22,[.93,.93,.93]);Bx(L0,yy-6,R0-L0,22,.8,G)}
   T(CD[1]+(modern?4:6),yy,'Closing balance',9,1);T(CD[3]-(modern?7:6),yy,money(dr),9,1,1,modern?RED:K);T(CD[4]-(modern?7:6),yy,money(cr),9,1,1,modern?EM:K);T(CD[5]-(modern?7:6),yy,balTxt(close),9,1,1);
   foot();
   const total=String(pages.length),done=pages.map(x=>x.replace(/%%N%%/g,'1').replace(/%%T%%/g,total));
-  return {pdf:pdfFile(done),name:'Statement-'+p.name.replace(/[^A-Za-z0-9]+/g,'_')+'-'+style+'-'+todayISO()+'.pdf',n:rows.length};
+  return {pdf:pdfFile(done),name:'Statement-'+p.name.replace(/[^A-Za-z0-9]+/g,'_')+'-'+todayISO()+'.pdf',n:rows.length};
 }
 async function sharePdf(name,str){
   const p=sms();
@@ -2052,7 +2060,8 @@ document.addEventListener('click',e=>{
   else if(a==='padir'){paDir=id;document.querySelectorAll('#pa-seg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#pa-acc-l').textContent=id==='debit'?'Paid from which account':'Received in which account'}
   else if(a==='personpdf'){const r=personStatement(id,el.dataset.per||'all');sharePdf(r.name,r.pdf)}
   else if(a==='pdfmenu')pdfMenu(id)
-  else if(a==='pdfstyle'){S.pdfStyle=id;save();document.querySelectorAll('#pdfstyle button').forEach(b=>b.classList.toggle('on',b.dataset.id===id))}
+  else if(a==='pdfstyle'){S.pdfStyle=id;save();document.querySelectorAll('#pdfstyle button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#pdfcol').style.display=id==='classic'?'none':''}
+  else if(a==='pdfcolor'){S.pdfColor=id;save();document.querySelectorAll('#pdfcol .cs').forEach(b=>b.classList.toggle('on',b.dataset.id===id))}
   else if(a==='pform'){
     const f=$('#pform'),nm=person($('[data-a=personadd]').dataset.id).name;
     if(!f.hidden&&paDir===id){f.hidden=true;document.querySelectorAll('.pq button').forEach(b=>b.classList.remove('on'));return}
@@ -2199,10 +2208,10 @@ function personSheet(id){
   paDir='debit';refreshDates();
 }
 function pdfMenu(id){
-  const p=person(id),st=S.pdfStyle||'modern';
-  openSheet(`<div class="row sp"><h1>Statement PDF</h1><button class="icon-btn" data-a="close">✕</button></div><div class="small mute" style="margin:8px 0 4px">${esc(p.name)} · every given, received and the running balance</div>
-  <label>Design</label><div class="seg" id="pdfstyle"><button data-a="pdfstyle" data-id="modern" class="${st==='modern'?'on':''}">Modern</button><button data-a="pdfstyle" data-id="classic" class="${st==='classic'?'on':''}">Classic</button></div>
-  <div class="small mute" style="margin-top:6px">Modern: green header, summary cards, coloured amounts. Classic: black and white bank-style table with grid lines.</div>
+  const p=person(id),st=S.pdfStyle||'modern',co=S.pdfColor||'green',CC={green:'#1f9a57',navy:'#1a3873',maroon:'#8c1f40',purple:'#6b47bf',charcoal:'#333b47'};
+  openSheet(`<div class="row sp"><h1>Statement PDF</h1><button class="icon-btn" data-a="close">✕</button></div><div class="small mute" style="margin:8px 0 4px">${esc(p.name)}</div>
+  <label>Design</label><div class="seg" id="pdfstyle"><button data-a="pdfstyle" data-id="modern" class="${st==='modern'?'on':''}">Modern</button><button data-a="pdfstyle" data-id="minimal" class="${st==='minimal'?'on':''}">Minimal</button><button data-a="pdfstyle" data-id="classic" class="${st==='classic'?'on':''}">Classic</button></div>
+  <div id="pdfcol" style="${st==='classic'?'display:none':''}"><label>Colour</label><div class="cpick">${Object.entries(CC).map(([k,c])=>`<button type="button" class="cs ${co===k?'on':''}" data-a="pdfcolor" data-id="${k}" style="background:${c}" aria-label="${k}"></button>`).join('')}</div></div>
   <label>Period</label>
   ${[['all','All time'],['m','This month'],['3','Last 3 months'],['y','This year']].map(([k,l])=>`<button class="btn ghost" data-a="personpdf" data-id="${id}" data-per="${k}">${l}</button>`).join('')}`);
 }
