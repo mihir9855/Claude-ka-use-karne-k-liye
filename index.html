@@ -1448,7 +1448,7 @@ function accTile(a,i){
   const bg=ty==='cash'?'#5d8a63':COLORS[i%6];
   return `<div class="acc${accFilter===a.id?' sel':''}${accCC(a)||'" style="background:'+bg}" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${ty==='cash'?' · in hand':a.last4?' ••'+a.last4:''}${sel}</small><b class="num">${inrH(bal)}</b>${io}</div>`;
 }
-let txMonth='all',txKind='all',txLimit=100;
+let txMonth='all',txKind='all',txLimit=25;
 function txFiltered(){
   const ql=q.trim().toLowerCase(),idx=new Map(S.tx.map((t,i)=>[t,i]));
   return S.tx.filter(t=>(txMonth==='all'||t.date.startsWith(txMonth))&&(!accFilter||t.acc===accFilter||t.to===accFilter)&&(txKind==='all'||(txKind==='dr'?t.type==='debit':t.type==='credit'))&&(!ql||[t.note,t.cat,(person(t.party)||{}).name,String(t.amt)].join(' ').toLowerCase().includes(ql)))
@@ -1463,7 +1463,7 @@ function txListHTML(){
   if(!list.length)return '<div class="empty">'+(q.trim()?'No match.':'Nothing here.<br>Tap + to add one.')+'</div>';
   let out='',last='';
   list.slice(0,txLimit).forEach(t=>{const m=t.date.slice(0,7);if(m!==last){last=m;out+=`<div class="small mute" style="padding:12px 0 2px;font-weight:700">${mlabel(m)}</div>`}out+=txRow(t)});
-  if(list.length>txLimit)out+=`<button class="btn ghost" data-a="txmore">Show more (${list.length-txLimit} left)</button>`;
+  if(list.length>txLimit)out+=`<div class="row" style="gap:8px;margin:10px 0"><button class="btn ghost" data-a="txmore" style="margin:0;flex:1">Show 25 more (${list.length-txLimit} left)</button><button class="btn ghost" data-a="txall" style="margin:0">All</button></div>`;
   return out;
 }
 function txView(){
@@ -2058,8 +2058,9 @@ document.addEventListener('click',e=>{
   else if(a==='filter'){accFilter=accFilter===id?'':id;view='txns';scrollTo(0,0);render()}
   else if(a==='acccolor'){const x=acc(id);if(x){x.color=el.dataset.c||'';save();render()}}
   else if(a==='manageacc'){openSec.add('acc');view='accounts';scrollTo(0,0);render()}
-  else if(a==='txmore'){txLimit+=100;$('#txlist').innerHTML=txListHTML()}
-  else if(a==='txkind'){txKind=id;txLimit=100;render()}
+  else if(a==='txall'){txLimit=1e9;$('#txlist').innerHTML=txListHTML()}
+  else if(a==='txmore'){txLimit+=25;$('#txlist').innerHTML=txListHTML()}
+  else if(a==='txkind'){txKind=id;txLimit=25;render()}
   else if(a==='seg'){seg=id;render()}
   else if(a==='range'){homeRange=id;render()}
   else if(a==='new'){txSheet()}
@@ -2286,9 +2287,9 @@ document.addEventListener('input',e=>{if(e.target.type==='date')refreshDates();
     if(am>0&&mo>0)$('#e-mon').value=Math.round(am/mo);
   }
   if(e.target.id==='f-amt')updateBHint();
-  if(e.target.id==='q'){q=e.target.value;txLimit=100;$('#txlist').innerHTML=txListHTML();$('#txsum').innerHTML=txSummary()}
-  if(e.target.id==='tx-month'){txMonth=e.target.value;txLimit=100;render()}
-  if(e.target.id==='tx-acc'){accFilter=e.target.value;txLimit=100;render()}
+  if(e.target.id==='q'){q=e.target.value;txLimit=25;$('#txlist').innerHTML=txListHTML();$('#txsum').innerHTML=txSummary()}
+  if(e.target.id==='tx-month'){txMonth=e.target.value;txLimit=25;render()}
+  if(e.target.id==='tx-acc'){accFilter=e.target.value;txLimit=25;render()}
   else if(e.target.id==='f-note'&&!catTouched&&$('#f-kind').value==='expense'){
     const g=guessCat(e.target.value);
     if(g!=='Other'){$('#f-cat').value=g;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===g));$('#smart').innerHTML=`<div class="hint">Smart category: ${g}. Tap another chip to change.</div>`}
