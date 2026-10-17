@@ -267,6 +267,8 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 .dlg{background:var(--card);color:var(--ink);border-radius:22px;padding:18px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
 .btn.danger{background:var(--debit)!important;color:#fff!important}
 
+#lock{position:fixed;inset:0;z-index:10000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
+#lock.on{display:flex}#lock .lk{width:72px;height:72px;border-radius:20px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
 #intro{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#6a402d,#2b170f);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;transition:opacity .45s ease,transform .45s ease}
 #intro.out{opacity:0;transform:scale(1.04)}
 #intro img{width:120px;height:120px;transform:scale(0) rotate(-200deg);animation:ilogo .9s .1s cubic-bezier(.3,1.4,.5,1) forwards,iglow 1.2s 1s ease-out}
@@ -302,6 +304,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 <nav><div class="in" id="nav"></div></nav>
 <div id="layer"></div>
 <div id="dlg"></div>
+<div id="lock"><div class="lk"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><b style="font-size:20px">Arthaly is locked</b><div class="small mute">Use your fingerprint or phone screen lock</div><button class="btn" data-a="unlock" style="margin:6px 0 0;width:auto;padding:12px 28px">Unlock</button></div>
 <script>
 /* ---------- storage ---------- */
 const KEY='arthaly.v1'; // fresh storage: nothing from earlier test versions is carried over
@@ -1717,6 +1720,7 @@ function accounts(){
   sec('xfer','Internal transfers',`<div class="card"><div class="small mute">Finds the same amount going out of one account and into another, and merges the pair into one transfer so it is not counted as spending.</div><button class="btn ghost" data-a="pairs">Find possible transfers${findPairs().length?' ('+findPairs().length+')':''}</button></div>`)+
   sec('noti','Notifications',`<div class="card"><div class="small mute">Alerts at 80% and over budget, and a notice for each bank SMS captured.</div>
    <button class="btn ${S.notify?'ghost':''}" data-a="notifon">${S.notify?'Notifications on (tap to turn off)':'Turn on notifications'}</button><button class="btn ghost" data-a="notiftest" style="margin-top:8px">Send test notification</button></div>`)+
+  (lockOK()?sec('lock','App lock',`<div class="card"><div class="small mute">Ask for your fingerprint (or phone screen lock) when the app opens and when you come back after a few seconds away.</div><button class="btn ${S.lock?'ghost':''}" data-a="applock">${S.lock?'App lock is ON (tap to turn off)':'Turn on app lock'}</button></div>`):'')+
   sec('look','Appearance',`<div class="card" style="padding:4px 16px">${[['auto','Auto','Follow my phone'],['light','Light',''],['dark','Dark','']].map(([k,l,h])=>`<div class="opt" data-a="appear" data-id="${k}"><div class="grow"><b>${l}</b>${h?`<div class="small mute">${h}</div>`:''}</div><span class="rad ${S.appearance===k?'on':''}"></span></div>`).join('')}</div>`)+
   sec('me','Profile &amp; backup',`<div class="card">   <label>Your name (shown on the home screen)</label><input data-f="yourname" value="${esc(S.name)}">
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button></div>${['black','sage','cocoa'].includes(S.theme)?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}<label class="custom ${((S.accents||{})[S.theme])==='custom'?'on':''}" style="margin:0" title="Pick any colour"><input type="color" id="accentpick" value="${S.customHex||'#0f766e'}"></label></div>`}`);
@@ -2129,6 +2133,8 @@ document.addEventListener('click',e=>{
     if(!(amt>0)){toast(buf>0?'Enter an amount':'No buffer left');return}
     S.budgets[id]=(S.budgets[id]||0)+amt;save();closeSheet();render();toast(`Added ${inr(amt)} from buffer to ${cname(id)}`);
   }
+  else if(a==='unlock')lockTry();
+  else if(a==='applock')lockToggle();
   else if(a==='notifon'){
     (async()=>{
       if(S.notify){S.notify=false;save();note.sync();render();return}
@@ -2344,6 +2350,27 @@ document.addEventListener('pointermove',e=>{
   const tip=$('#tip');tip.style.display='block';tip.textContent=`Day ${d} · ${inr(pt[1])} so far`;
   tip.style.left=Math.min(r.width-120,Math.max(0,x/P.W*r.width-50))+'px';tip.style.top='-6px';
 });
+/* ---------- App lock (Android app: fingerprint / face / screen lock) ---------- */
+const lockOK=()=>!!(sms()&&sms().authenticate);
+let lockBusy=false,hiddenAt=0;
+function lockShow(){if(!(S.lock&&lockOK()))return;$('#lock').classList.add('on');lockTry()}
+function lockTry(){
+  if(lockBusy)return;lockBusy=true;
+  sms().authenticate({title:'Unlock Arthaly'}).then(r=>{if(r&&r.ok)$('#lock').classList.remove('on')}).catch(()=>{}).finally(()=>{lockBusy=false});
+}
+async function lockToggle(){
+  if(!lockOK()){toast('App lock works in the Android app',2200);return}
+  if(S.lock){const r=await sms().authenticate({title:'Turn off app lock'}).catch(()=>null);if(r&&r.ok){S.lock=false;save();render();toast('App lock off')}return}
+  const av=await sms().lockAvailable().catch(()=>({ok:false}));
+  if(!av.ok){toast('First set a fingerprint or screen lock in your phone settings',3200);return}
+  const r=await sms().authenticate({title:'Turn on app lock'}).catch(()=>null);
+  if(r&&r.ok){S.lock=true;save();render();toast('App lock on')}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){hiddenAt=Date.now();return}
+  if(S.lock&&lockOK()&&hiddenAt&&Date.now()-hiddenAt>15000)lockShow();
+});
+lockShow();
 render();
 {const i=document.getElementById('intro');if(i){setTimeout(()=>i.classList.add('out'),2300);setTimeout(()=>i.remove(),2800)}}
 drainSms();

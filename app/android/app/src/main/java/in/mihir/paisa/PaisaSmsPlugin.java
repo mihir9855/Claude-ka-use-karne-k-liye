@@ -6,7 +6,11 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.fragment.app.FragmentActivity;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +56,40 @@ public class PaisaSmsPlugin extends Plugin {
         JSObject out = new JSObject();
         out.put("sms", sms);
         call.resolve(out);
+    }
+
+    private static final int AUTHS = BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.BIOMETRIC_WEAK | BiometricManager.Authenticators.DEVICE_CREDENTIAL;
+
+    /** App lock: can this phone verify the user (fingerprint / face / screen lock)? */
+    @PluginMethod
+    public void lockAvailable(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("ok", BiometricManager.from(getContext()).canAuthenticate(AUTHS) == BiometricManager.BIOMETRIC_SUCCESS);
+        call.resolve(r);
+    }
+
+    /** App lock: show the system fingerprint prompt (screen PIN/pattern as fallback). */
+    @PluginMethod
+    public void authenticate(final PluginCall call) {
+        final FragmentActivity act = (FragmentActivity) getActivity();
+        final String title = call.getString("title", "Unlock Arthaly");
+        act.runOnUiThread(() -> {
+            try {
+                BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+                    .setTitle(title).setAllowedAuthenticators(AUTHS).build();
+                BiometricPrompt bp = new BiometricPrompt(act, ContextCompat.getMainExecutor(act), new BiometricPrompt.AuthenticationCallback() {
+                    @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
+                        JSObject r = new JSObject(); r.put("ok", true); call.resolve(r);
+                    }
+                    @Override public void onAuthenticationError(int code, CharSequence msg) {
+                        JSObject r = new JSObject(); r.put("ok", false); r.put("error", String.valueOf(msg)); call.resolve(r);
+                    }
+                });
+                bp.authenticate(info);
+            } catch (Exception e) {
+                JSObject r = new JSObject(); r.put("ok", false); r.put("error", String.valueOf(e.getMessage())); call.resolve(r);
+            }
+        });
     }
 
     /** Backup export: the web view cannot download files, so write it to cache and open the Android share sheet. */
