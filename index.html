@@ -310,7 +310,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 66 · 17 Oct 2026';
+const APP_VER='version 1.4 · build 67 · 17 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -1321,15 +1321,15 @@ const pool=()=>{const inc=S.tx.filter(t=>t.kind==='other').reduce((s,t)=>s+(t.ty
 
 /* ---------- charts (inline SVG) ---------- */
 function barChart(vals,labels,o={}){
-  const W=300,H=o.h||120,n=vals.length,pad=6,bw=(W-pad*2)/n,gap=Math.min(3,bw*.25);
+  const W=300,H=o.h||120,n=vals.length,pad=6,L=30,bw=(W-L-pad)/n,gap=Math.min(3,bw*.25);   // L: left gutter for the axis labels, so bars never sit on the text
   const max=Math.max(...vals,o.line||0,1)*1.1;let g='';
-  [.5,1].forEach(f=>{const y=(H-16-f*(max/1.1)/max*(H-24)).toFixed(1);if(y>2&&Math.max(...vals)>0)g+=`<line x1="${pad}" x2="${W-pad}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width=".7"/><text x="${pad}" y="${(y-2.5)}">${kfmt(f*max/1.1)}</text>`});
+  [.5,1].forEach(f=>{const y=(H-16-f*(max/1.1)/max*(H-24)).toFixed(1);if(y>2&&Math.max(...vals)>0)g+=`<line x1="${L}" x2="${W-pad}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width=".7"/><text x="${L-5}" y="${(+y+3).toFixed(1)}" text-anchor="end">${kfmt(f*max/1.1)}</text>`});
   vals.forEach((v,i)=>{
-    const h=v/max*(H-24),x=pad+i*bw+gap/2,w=bw-gap;
-    g+=`<rect class="g" style="--i:${i}" x="${x.toFixed(1)}" y="${(H-16-h).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(h,v>0?1.5:0).toFixed(1)}" rx="${Math.min(3,w/2).toFixed(1)}" fill="${o.colors?o.colors[i]:'var(--brand)'}" opacity="${o.hl==null||o.hl===i?1:.26}" data-tip="${esc(o.tips?o.tips[i]:labels[i]+' · '+inr(v))}"/>`;
+    const h=v/max*(H-24),x=L+i*bw+gap/2,w=bw-gap;
+    g+=`<rect class="g" style="--i:${i}" x="${x.toFixed(1)}" y="${(H-16-h).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(h,v>0?1.5:0).toFixed(1)}" rx="${Math.min(3,w/2).toFixed(1)}" fill="${o.colors?o.colors[i]:'var(--brand)'}" opacity="${o.hl==null||o.hl===i?1:.45}" data-tip="${esc(o.tips?o.tips[i]:labels[i]+' · '+inr(v))}"/>`;
     if(labels[i]!=='')g+=`<text x="${(x+w/2).toFixed(1)}" y="${H-4}" text-anchor="middle">${labels[i]}</text>`;
   });
-  if(o.line){const y=H-16-o.line/max*(H-24);g+=`<line x1="${pad}" x2="${W-pad}" y1="${y}" y2="${y}" stroke="var(--warn)" stroke-dasharray="4 3"/><text x="${W-pad}" y="${y-3}" text-anchor="end">${o.lineLabel||'avg'} ${inr(Math.round(o.line))}</text>`}
+  if(o.line){const y=H-16-o.line/max*(H-24);g+=`<line x1="${L}" x2="${W-pad}" y1="${y}" y2="${y}" stroke="var(--warn)" stroke-dasharray="4 3"/><text x="${W-pad}" y="${y-3}" text-anchor="end">${o.lineLabel||'avg'} ${inr(Math.round(o.line))}</text>`}
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%">${g}</svg></div>`;
 }
 function lineChart(vals,labels,o={}){
