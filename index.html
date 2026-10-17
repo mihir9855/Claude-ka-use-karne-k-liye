@@ -498,7 +498,7 @@ function ingest(msgs){
   if(n){render();toast(`${n} new from SMS${un?` · ${un} need an account`:''}`);checkBudgetNotify()}
   return n;
 }
-const APP_VER='version 1.3 · build 64 · 17 Oct 2026';
+const APP_VER='version 1.3 · build 65 · 17 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 async function drainSms(){const p=sms();if(!SMS_ON||!p)return;try{const r=await p.drain();if(r.messages.length)ingest(r.messages)}catch(e){}}
 async function enableSms(){
@@ -2249,6 +2249,10 @@ document.addEventListener('click',e=>{
   else if(a==='unassigned')unassignedSheet();
   else if(a==='uahide'){S.uaHidden=S.tx.filter(t=>!t.acc&&!t.fromParty).length;save();closeSheet();render();toast('Reminder hidden. It comes back only if new unmatched entries appear.',3500)}
   else if(a==='uadel'){const gone=S.tx.filter(t=>!t.acc&&!t.fromParty);askConfirm(`Delete these ${gone.length} entries? They are removed from every total.`,'Delete',true).then(ok=>{if(!ok)return;S.tx=S.tx.filter(t=>!(!t.acc&&!t.fromParty));save();closeSheet();render();undoToast(gone.length+' entries deleted',()=>{S.tx.push(...gone);save();render()})})}
+  else if(a==='assigngrp'){const to=$('#ua-'+(id||'none')).value;if(!to){toast('Choose an account');return}let n=0;
+    S.tx.forEach(t=>{if(!t.acc&&!t.fromParty&&(t.hint4||'')===id){t.acc=to;delete t.hint4;n++}});
+    if(id){const ac=acc(to);if(ac&&!ac.last4)ac.last4=id;try{learnAcc(to,id)}catch(e){}}
+    save();render();toast(n+' assigned to '+acc(to).name);unassignedSheet()}
   else if(a==='assignall'){const to=$('#ua-acc').value;let n=0;const hs=new Set(S.tx.filter(t=>!t.acc&&t.hint4).map(t=>t.hint4));if(hs.size===1)learnAcc(to,[...hs][0]);S.tx.forEach(t=>{if(!t.acc&&!t.fromParty){t.acc=to;delete t.hint4;n++}});save();closeSheet();render();toast(`${n} transaction${n>1?'s':''} assigned`)}
   else if(a==='padir'){paDir=id;document.querySelectorAll('#pa-seg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#pa-acc-l').textContent=id==='debit'?'Paid from which account':'Received in which account'}
   else if(a==='accpdf'){const r=accountStatement(id,el.dataset.per||'all');sharePdf(r.name,r.pdf)}
@@ -2376,12 +2380,18 @@ function learnAcc(accId,h4){
 function unassignedSheet(){
   const list=S.tx.filter(t=>!t.acc&&!t.fromParty).sort((a,b)=>b.date.localeCompare(a.date));
   if(!list.length){closeSheet();render();return}
+  const groups={};list.forEach(t=>{const k=t.hint4||'';(groups[k]=groups[k]||[]).push(t)});
+  const keys=Object.keys(groups).sort((x,y)=>(x===''?1:0)-(y===''?1:0)||groups[y].length-groups[x].length);
+  const accOpts=sel=>`<option value="">Choose account…</option>`+S.accounts.map(a=>`<option value="${a.id}" ${a.id===sel?'selected':''}>${esc(a.name)}${a.last4?' ••'+esc(a.last4):''}</option>`).join('');
+  const grp=k=>{const g=groups[k],m=k&&S.accounts.find(a=>a.last4===k),out=g.filter(t=>t.type==='debit').reduce((x,t)=>x+t.amt,0),inn=g.filter(t=>t.type==='credit').reduce((x,t)=>x+t.amt,0);
+    return `<div class="card" style="margin-top:12px"><div class="row sp"><b>${k?'Card / A/c ending ••'+esc(k):'No account number in SMS'}</b><span class="small mute">${g.length} entr${g.length>1?'ies':'y'}</span></div>
+    <div class="small mute" style="margin:4px 0 8px">${out?'Out '+inr(out):''}${out&&inn?' · ':''}${inn?'In '+inr(inn):''} · ${new Date(g[g.length-1].date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} to ${new Date(g[0].date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+    <div class="row" style="gap:8px"><select id="ua-${k||'none'}" style="flex:1;min-width:0">${accOpts(m?m.id:'')}</select><button class="btn" data-a="assigngrp" data-id="${k}" style="margin:0;width:auto;padding:12px 18px">Assign</button></div>
+    <details style="margin-top:6px"><summary class="small mute" style="cursor:pointer">See entries</summary><div style="max-height:40vh;overflow:auto">${g.map(txRow).join('')}</div></details></div>`};
   openSheet(`<div class="row sp"><h1>Not matched to an account</h1><button class="icon-btn" data-a="close">✕</button></div>
-  <div class="card" style="margin-top:14px"><b>${list.length} transaction${list.length>1?'s':''}</b><div class="small mute" style="margin:4px 0 8px">Pick the account they belong to and assign all at once, or tap a row to fix one by one.</div>
-  <select id="ua-acc">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),S.accounts[0].id)}</select>
-  <button class="btn" data-a="assignall">Assign all ${list.length} to this account</button>
-  <div class="row" style="gap:8px;margin-top:8px"><button class="btn ghost" data-a="uahide" style="margin:0;flex:1">Hide this reminder</button><button class="btn ghost" data-a="uadel" style="margin:0;flex:1;color:var(--debit)">Delete all ${list.length}</button></div></div>
-  <h2>Transactions</h2><div class="card" style="padding:4px 16px;max-height:45vh;overflow:auto">${list.map(txRow).join('')}</div>`);
+  <div class="small mute" style="margin-top:6px">Grouped by the last 4 digits in the bank SMS, so each group goes to its own account. Tap an entry to fix it alone.</div>
+  ${keys.map(grp).join('')}
+  <div class="row" style="gap:8px;margin-top:14px"><button class="btn ghost" data-a="uahide" style="margin:0;flex:1">Hide this reminder</button><button class="btn ghost" data-a="uadel" style="margin:0;flex:1;color:var(--debit)">Delete all ${list.length}</button></div>`);
 }
 let paDir='debit';
 function personSheet(id){
