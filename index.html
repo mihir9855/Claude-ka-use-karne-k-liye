@@ -310,7 +310,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 68 · 17 Oct 2026';
+const APP_VER='version 1.4 · build 70 · 17 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -1465,7 +1465,7 @@ function txListHTML(){
   if(!list.length)return '<div class="empty">'+(q.trim()?'No match.':'Nothing here.<br>Tap + to add one.')+'</div>';
   let out='',last='';
   list.slice(0,txLimit).forEach(t=>{const m=t.date.slice(0,7);if(m!==last){last=m;out+=`<div class="small mute" style="padding:12px 0 2px;font-weight:700">${mlabel(m)}</div>`}out+=txRow(t)});
-  if(list.length>txLimit)out+=`<div class="row" style="gap:8px;margin:10px 0"><button class="btn ghost" data-a="txmore" style="margin:0;flex:1">Show 15 more (${list.length-txLimit} left)</button><button class="btn ghost" data-a="txall" style="margin:0">All</button></div>`;
+  if(list.length>txLimit)out+=`<div style="display:grid;grid-template-columns:1fr 92px;gap:8px;margin:10px 0"><button class="btn ghost" data-a="txmore" style="margin:0">Show 15 more · ${list.length-txLimit} left</button><button class="btn ghost" data-a="txall" style="margin:0">Show all</button></div>`;
   return out;
 }
 function txView(){
@@ -1967,7 +1967,7 @@ function smsView(){
   const list=all.filter(needsReview);   // fixed ones live in the normal transaction list
   const pend=S.smsPending.slice().sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0)).map(p=>`<div class="card" style="margin-bottom:10px"><div class="small" style="word-break:break-word">${esc(p.text.slice(0,220))}</div>
     <div class="row sp" style="margin-top:8px"><b class="num">${inr(p.amt)}</b><span class="small mute">${new Date(p.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span></div>
-    <div class="row" style="gap:8px;margin-top:8px"><button class="btn" data-a="pendas" data-id="${p.id}" data-d="debit" style="margin:0;flex:1">Money out</button><button class="btn ghost" data-a="pendas" data-id="${p.id}" data-d="credit" style="margin:0;flex:1">Money in</button><button class="btn ghost" data-a="pendx" data-id="${p.id}" style="margin:0">Skip</button></div></div>`).join('');
+    <div class="row" style="gap:8px;margin-top:8px"><button class="btn" data-a="pendas" data-id="${p.id}" data-d="debit" style="margin:0;flex:1">Money out</button><button class="btn ghost" data-a="pendas" data-id="${p.id}" data-d="credit" style="margin:0;flex:1">Money in</button><button class="btn ghost" data-a="pendx" data-id="${p.id}" style="margin:0;width:auto;flex:none;padding:13px 16px">Skip</button></div></div>`).join('');
   const row=t=>{const a=acc(t.acc),dr=t.type==='debit',p=person(t.party);
     const what=t.kind==='pass'?esc(p?p.name:'party'):t.kind==='transfer'?'Transfer':t.kind==='expense'?esc(cname(t.cat)):esc(t.cat==='Other'?'Income':t.cat);
     return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${dr?'rgba(209,73,91,.14)':'rgba(26,159,107,.14)'};color:${dr?'var(--debit)':'var(--credit)'};font-weight:800;font-size:13px">${dr?'Dr':'Cr'}</div>
