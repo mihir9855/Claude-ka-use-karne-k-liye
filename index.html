@@ -267,6 +267,9 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 .dlg{background:var(--card);color:var(--ink);border-radius:22px;padding:18px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
 .btn.danger{background:var(--debit)!important;color:#fff!important}
 
+.dk{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.dk .card{margin:0;padding:12px 14px}.dk b{display:block;font-size:19px;margin-top:2px}
+.dnw{display:flex;gap:8px;margin-top:12px}.dnw div{flex:1;background:var(--field);border-radius:10px;padding:8px 10px}.dnw b{display:block;font-size:14px;margin-top:2px}
+.dl{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer}.dl:last-child{border-bottom:0}.dl i{width:10px;height:10px;border-radius:3px;flex:none}.dl .grow{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #lock{position:fixed;inset:0;z-index:10000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
 #lock.on{display:flex}#lock .lk{width:72px;height:72px;border-radius:20px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
 #intro{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#6a402d,#2b170f);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;transition:opacity .45s ease,transform .45s ease}
@@ -313,6 +316,7 @@ const ICONS={
  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
  chart:'<path d="M5 20V11M12 20V4M19 20v-6"/>',
+ grid:'<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 14c2.9 0 4.8 1.9 4.8 4.5"/>',
  plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',
  swap:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',
@@ -1507,6 +1511,38 @@ function home(){
   ${un?`<div class="card small" style="margin-top:10px;background:var(--brand-soft);cursor:pointer" data-a="unassigned">⚠️ ${un} transaction${un>1?'s':''} not matched to an account. <b>Tap here to assign.</b></div>`:''}
   ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inrH(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inrH(pl.inc)}<br>Used ${inrH(pl.used)}</div></div>`:''}`;
 }
+/* ---------- DASHBOARD: everything at a glance ---------- */
+function dashView(){
+  const st=mstats(month),pm=mstats(shiftMonth(month,-1)),inc=st.inc+st.oth,sav=inc-st.exp,tb=totalBudget();
+  const bank=S.accounts.filter(a=>accType(a)==='bank').reduce((x,a)=>x+accBal(a.id),0);
+  const cash=S.accounts.filter(a=>accType(a)==='cash').reduce((x,a)=>x+accBal(a.id),0);
+  const due=-S.accounts.filter(a=>accType(a)==='card').reduce((x,a)=>x+accBal(a.id),0);
+  const net=bank+cash-Math.max(0,due);
+  const pct=(a,b)=>b>0?`<span class="small ${a>b?'debit':'credit'}">${a>b?'▲':'▼'} ${Math.abs(Math.round((a-b)/b*100))}%</span>`:'';
+  const pctI=(a,b)=>b>0?`<span class="small ${a>=b?'credit':'debit'}">${a>=b?'▲':'▼'} ${Math.abs(Math.round((a-b)/b*100))}%</span>`:'';
+  const ms=[];for(let i=5;i>=0;i--){const m=shiftMonth(month,-i),x=mstats(m);ms.push({l:mlabel(m).slice(0,3),a:x.inc+x.oth,b:x.exp,ta:mlabel(m)+' income · '+inr(x.inc+x.oth),tb:mlabel(m)+' spent · '+inr(x.exp)})}
+  const cats=Object.entries(st.cat).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]),top=cats.slice(0,5),cmax=top.length?top[0][1]:1;
+  const ppl=S.people.map(p=>({p,b:personBal(p.id)})).filter(x=>x.b!==0).sort((a,b)=>Math.abs(b.b)-Math.abs(a.b));
+  const owed=ppl.filter(x=>x.b>0).reduce((a,x)=>a+x.b,0),owe=-ppl.filter(x=>x.b<0).reduce((a,x)=>a+x.b,0);
+  const idx=new Map(S.tx.map((t,i)=>[t,i])),recent=S.tx.slice().sort((a,b)=>b.date.localeCompare(a.date)||idx.get(b)-idx.get(a)).slice(0,5);
+  const accRows=S.accounts.map(a=>{const ty=accType(a),b=accBal(a.id);return `<div class="dl" data-a="filter" data-id="${a.id}"><i style="background:${a.color?mute(a.color):ty==='cash'?'#5d8a63':ty==='card'?'#59616b':'var(--brand)'}"></i><div class="grow"><b style="font-size:14px">${esc(a.name)}</b> <span class="small mute">${ty==='card'?'card':ty==='cash'?'cash':a.last4?'••'+esc(a.last4):'bank'}</span></div><b class="num ${ty==='card'&&b<0?'debit':''}">${ty==='card'?(b<0?'Due '+inrH(-b):inrH(b)):inrH(b)}</b></div>`}).join('');
+  return `<div class="row sp"><div><h1>Dashboard</h1><div class="small mute">${mlabel(month)}</div></div>${monthBar()}</div>
+  <div class="card ins-hero" style="margin-top:12px"><div class="small mute">Net worth (bank + cash − card due)</div><div class="big num">${inrH(net)}</div>
+    <div class="dnw"><div><span class="small mute">Bank</span><b class="num">${inrH(bank)}</b></div><div><span class="small mute">Cash</span><b class="num">${inrH(cash)}</b></div><div><span class="small mute">Card due</span><b class="num ${due>0?'debit':''}">${inrH(Math.max(0,due))}</b></div></div></div>
+  <div class="dk">
+    <div class="card"><span class="small mute">Income</span><b class="num credit">${inrH(inc)}</b>${pctI(inc,pm.inc+pm.oth)}</div>
+    <div class="card"><span class="small mute">Spent</span><b class="num debit">${inrH(st.exp)}</b>${pct(st.exp,pm.exp)}</div>
+    <div class="card"><span class="small mute">Saved</span><b class="num ${sav<0?'debit':''}">${inrH(sav)}</b><span class="small mute">${inc>0?Math.round(sav/inc*100)+'% of income':'no income yet'}</span></div>
+    <div class="card" data-a="nav" data-id="budget" style="cursor:pointer"><span class="small mute">Budget left</span><b class="num ${tb&&tb-st.exp<0?'debit':''}">${tb?inrH(tb-st.exp):'—'}</b><span class="small mute">${tb?Math.round(st.exp/tb*100)+'% used':'not set'}</span></div>
+  </div>
+  <h2>Income vs spent · 6 months</h2><div class="card">${flowBars(ms,['Income','Spent'])}</div>
+  <h2>Top spending · ${mlabel(month)}</h2><div class="card">${top.length?top.map(([k,v])=>`<div style="margin:4px 0 12px"><div class="row sp small"><span>${esc(cname(k))}</span><b class="num">${inrH(v)} <span class="mute" style="font-weight:400">· ${st.exp?Math.round(v/st.exp*100):0}%</span></b></div><div class="bar" style="margin-top:5px;height:8px"><i style="width:${Math.max(2,v/cmax*100)}%;background:${CATCOL[k]||'#94a3b8'}"></i></div></div>`).join(''):'<div class="empty">No spending this month.</div>'}</div>
+  <h2>Accounts</h2><div class="card" style="padding:2px 16px">${accRows||'<div class="empty">No accounts.</div>'}</div>
+  <h2>People</h2><div class="card" style="cursor:pointer" data-a="nav" data-id="people"><div class="grid2"><div><span class="small mute">They owe you</span><b class="num debit" style="display:block;font-size:18px">${inrH(owed)}</b></div><div><span class="small mute">You owe</span><b class="num credit" style="display:block;font-size:18px">${inrH(owe)}</b></div></div>
+    ${ppl.slice(0,3).map(x=>`<div class="row sp small" style="margin-top:8px"><span>${esc(x.p.name)}</span><b class="num ${x.b>0?'debit':'credit'}">${x.b>0?'owes you ':'you owe '}${inrH(Math.abs(x.b))}</b></div>`).join('')}</div>
+  ${emiUpcomingHtml()}
+  <h2>Recent</h2><div class="card" style="padding:4px 16px">${recent.length?recent.map(txRow).join(''):'<div class="empty">No entries yet.</div>'}</div>`;
+}
 /* ---------- BUDGET ---------- */
 function budgetView(){
   const st=mstats(month),tb=totalBudget(),used=st.exp,left=tb-used,pct=tb?used/tb*100:0;
@@ -2034,8 +2070,8 @@ function syncKind(){
 /* ---------- render & events ---------- */
 function render(){
   applyEmis();
-  $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView,sms:smsView,txns:txView}[view]();
-  const nav=[['home','home','Home'],['txns','wallet','Accounts'],...(SMS_ON?[['sms','msg','SMS']]:[]),['add','+',''],['budget','target','Budget'],['stats','chart','Insights'],['people','users','Ledger']];
+  $('#app').innerHTML={home,dash:dashView,stats,people:khata,accounts,budget:budgetView,sms:smsView,txns:txView}[view]();
+  const nav=[['home','home','Home'],['txns','wallet','Accounts'],...(SMS_ON?[['sms','msg','SMS']]:[['dash','grid','Overview']]),['add','+',''],['budget','target','Budget'],['stats','chart','Insights'],['people','users','Ledger']];
   $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new" aria-label="Add"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
 }
 let tt='debit';
