@@ -123,7 +123,7 @@ nav button span{display:flex;justify-content:center}
 .gtip{position:absolute;background:#14201d;color:#fff;font-size:11px;padding:3px 8px;border-radius:8px;pointer-events:none;white-space:nowrap;z-index:3}
 .pb{margin:12px 0}
 .hb{display:grid;grid-template-columns:86px 1fr auto;gap:8px;align-items:center;margin:9px 0;font-size:12px}
-.hl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .hl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;width:auto;height:auto;border-radius:0}
 .htr{position:relative;height:10px;background:var(--line);border-radius:9px;overflow:hidden}
 .htr i{display:block;height:100%;border-radius:9px}
 .htr u{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.75}
@@ -310,7 +310,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 67 · 17 Oct 2026';
+const APP_VER='version 1.4 · build 68 · 17 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -1493,18 +1493,16 @@ function home(){
   const cardDue=-S.accounts.filter(x=>accType(x)==='card').reduce((a,x)=>a+accBal(x.id),0);
   const cashBal=S.accounts.filter(x=>accType(x)==='cash').reduce((a,x)=>a+accBal(x.id),0);
   return `<div class="row sp"><div><h1>Arthaly</h1><div class="small mute">${S.name?'Hello, '+esc(S.name):'Welcome'}</div></div><div class="row">${monthBar()}<button class="icon-btn" data-a="eye" title="Hide or show amounts">${ic(S.hide?'eyeoff':'eye',18)}</button></div></div>
-  ${tb>0?`  <div class="card" style="margin-top:12px" data-a="nav" data-id="budget">
-    <div class="row sp"><div><div class="small mute">Left to spend this month</div><div class="big ${left<0?'debit':''} num">${inrH(left)}</div></div><span class="pill">Budget ›</span></div>
-    <div class="bar" style="margin:10px 0 6px"><i style="width:${pct}%;background:${pct>90?'var(--debit)':pct>70?'var(--warn)':'var(--brand)'}"></i></div>
-    <div class="row sp small mute"><span>Spent ${inrH(st.exp)}</span><span>of ${inrH(tb)}</span></div>
-    ${dlH&&left>0?`<div class="small mute" style="margin-top:6px">Safe to spend ${inrH(Math.round(left/dlH))}/day for ${dlH} more days</div>`:''}
+  ${tb>0?`  <div class="card" style="margin-top:12px;cursor:pointer" data-a="nav" data-id="budget">
+    <div class="row sp" style="margin-bottom:6px"><b>Budget jar · ${mlabel(month)}</b><span class="pill">Budget ›</span></div>
+    ${jarViz(st.exp,tb,dlH)}
   </div>`:`<div class="card" style="margin-top:12px;cursor:pointer" data-a="nav" data-id="budget"><div class="row sp"><div><b>Set your monthly budget</b><div class="small mute" style="margin-top:4px">Add a limit for each category to see how much is left to spend.</div></div><span class="pill">Budget ›</span></div></div>`}
   ${al.length?`<div class="alert ${al.some(x=>x.pct>100)?'':'soft'}" style="cursor:pointer" data-a="nav" data-id="budget"><b>Budget alert:</b> ${al.slice(0,3).map(x=>esc(cname(x.k))+(x.pct>100?' over by '+inr(x.used-x.lim):x.pct>=100?' at limit':' '+Math.round(x.pct)+'%')).join(' · ')}${al.length>3?' · +'+(al.length-3)+' more':''}</div>`:''}
   ${(()=>{const RG=[['w','Week'],['m','Month'],['y','Year']],T={'w':'This week (Mon to Sun)','m':'This month (from the 1st)','y':'This year (from January)'};
     const l7=spendSeries(homeRange),tot7=l7.reduce((a,b)=>a+b.v,0),cd=catData(st);
-    return `<div class="card" style="margin-top:12px"><div class="ctitle"><b>${T[homeRange]}</b><span class="small mute">${inrH(tot7)} spent</span></div><div class="seg" style="margin:8px 0">${RG.map(x=>`<button data-a="range" data-id="${x[0]}" class="${homeRange===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>${barChart(l7.map(x=>x.v),l7.map(x=>x.l),{tips:l7.map(x=>x.tip),hl:homeRange==='w'?(new Date().getDay()+6)%7:homeRange==='m'?new Date().getDate()-1:new Date().getMonth()})}</div>
+    return `<div class="card" style="margin-top:12px"><div class="ctitle"><b>${T[homeRange]}</b><span class="small mute">${inrH(tot7)} spent</span></div><div class="seg" style="margin:8px 0">${RG.map(x=>`<button data-a="range" data-id="${x[0]}" class="${homeRange===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>${homeRange==='m'?spiralViz(l7,month===new Date().toISOString().slice(0,7)?new Date().getDate()-1:null):barChart(l7.map(x=>x.v),l7.map(x=>x.l),{tips:l7.map(x=>x.tip),hl:homeRange==='w'?(new Date().getDay()+6)%7:homeRange==='m'?new Date().getDate()-1:new Date().getMonth()})}</div>
     ${emiUpcomingHtml()}
-    <div class="card" style="margin-top:12px"><div class="ctitle"><b>Where it went</b><span class="small mute">${mlabel(month)}</span></div>${miniDonut(cd)}</div>`})()}
+    <div class="card" style="margin-top:12px"><div class="ctitle"><b>Where it went</b><span class="small mute">${mlabel(month)}</span></div>${treemapViz(cd)}</div>`})()}
   ${npairs?`<div class="card small" style="margin-top:10px;cursor:pointer;background:var(--brand-soft)" data-a="pairs">${npairs} possible internal transfer${npairs>1?'s':''} found. Tap to review and merge.</div>`:''}
   ${un&&un>(S.uaHidden||0)?`<div class="card small" style="margin-top:10px;background:var(--brand-soft);cursor:pointer" data-a="unassigned">⚠️ ${un} transaction${un>1?'s':''} not matched to an account. <b>Tap here to assign.</b></div>`:''}
   ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inrH(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inrH(pl.inc)}<br>Used ${inrH(pl.used)}</div></div>`:''}`;
@@ -1547,6 +1545,62 @@ function ownSave(id){
   try{localStorage.setItem(OTHER_KEY(),JSON.stringify(o))}catch(e){}
   save();closeSheet();render();toast('Added to both books');
 }
+/* ---------- picture charts: money jar, spiral month, treemap, radar ---------- */
+function jarViz(spent,lim,daysLeft){
+  const left=lim-spent,f=Math.max(0,Math.min(1,left/lim)),jx=6,jy=14,jw=86,jh=112,ly=jy+jh*(1-f),over=left<0;
+  const wave=f>0&&f<1?`M${jx} ${ly} Q${jx+21} ${ly-6} ${jx+43} ${ly} T${jx+86} ${ly} V${jy+jh} H${jx}Z`:`M${jx} ${ly} H${jx+jw} V${jy+jh} H${jx}Z`;
+  const svg=`<svg viewBox="0 0 98 132" width="98" height="132" style="flex:none"><defs><clipPath id="jarc"><rect x="${jx}" y="${jy}" width="${jw}" height="${jh}" rx="18"/></clipPath></defs>
+   <rect x="${jx+22}" y="${jy-9}" width="${jw-44}" height="10" rx="3" fill="var(--line)"/>
+   <g clip-path="url(#jarc)"><rect x="${jx}" y="${jy}" width="${jw}" height="${jh}" fill="var(--field)"/>${f>0?`<path class="jarw" d="${wave}" fill="${f<.15?'var(--warn)':'var(--brand)'}" opacity=".9"/>`:''}</g>
+   <rect x="${jx}" y="${jy}" width="${jw}" height="${jh}" rx="18" fill="none" stroke="${over?'var(--debit)':'var(--mute)'}" stroke-opacity="${over?1:.45}" stroke-width="2"/>
+   <text x="${jx+43}" y="${f>.3?Math.min(jy+jh-12,ly+26):jy+jh/2}" text-anchor="middle" style="font-size:15px;font-weight:800;fill:${f>.3?'#fff':'var(--ink)'}">${over?'0':Math.round(f*100)}%</text></svg>`;
+  return `<div class="row" style="gap:16px;align-items:center">${svg}<div style="min-width:0">
+   <div class="small mute">${over?'Over budget by':'Left to spend'}</div><div class="big num ${over?'debit':''}" style="font-size:26px">${inrH(Math.abs(left))}</div>
+   <div class="small mute">of ${inrH(lim)} budget</div>
+   <div style="margin-top:8px;font-weight:700" class="num">${inrH(spent)} spent</div>
+   ${daysLeft&&!over?`<div class="small mute">${daysLeft} days to go · ≈ ${inrH(Math.round(left/daysLeft))}/day safe</div>`:''}</div></div>`;
+}
+function spiralViz(series,today){
+  const n=series.length,mx=Math.max(...series.map(x=>x.v),1),cx=150,cy=104,tot=series.reduce((a,x)=>a+Math.max(0,x.v),0);
+  const P=i=>{const a=-Math.PI/2+i*(2*Math.PI*2.6/n),r=24+i*(70/n);return [cx+r*Math.cos(a),cy+r*Math.sin(a)]};
+  let path='';for(let j=0;j<=(n-1)*8;j++){const [x,y]=P(j/8);path+=(j?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)}   // smooth curve through the day points
+  let g=`<path d="${path}" fill="none" stroke="var(--line)" stroke-width="2" stroke-linejoin="round"/>`;
+  series.forEach((d,i)=>{const [x,y]=P(i),fut=today!=null&&i>today,v=Math.max(0,d.v),r=v?3+Math.sqrt(v/mx)*9:2.2;
+    g+=`<circle class="g" style="--i:${i}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${fut?'var(--line)':'var(--brand)'}" opacity="${fut?1:i===today?1:v?.55:.35}" ${i===today?'stroke="var(--card)" stroke-width="2"':''} data-tip="${esc(d.tip)}"/>`;
+    if(i===0||i===n-1||i===today){const [lx,ly]=P(i);g+=`<text x="${(lx+(r+4)).toFixed(1)}" y="${(ly+3).toFixed(1)}" style="font-weight:700;fill:var(--ink)">${i+1}</text>`}});
+  g+=`<text x="${cx}" y="${cy-2}" text-anchor="middle" style="font-size:9px">spent</text><text x="${cx}" y="${cy+11}" text-anchor="middle" style="font-size:12px;font-weight:800;fill:var(--ink)">${kfmt(tot)}</text>`;
+  return `<div class="chart"><svg viewBox="0 0 300 208" width="100%">${g}</svg></div>`;
+}
+/* squarified treemap */
+function treemapViz(data){
+  const tot=data.reduce((s,d)=>s+d.v,0);if(!tot)return '<div class="empty">No spending yet</div>';
+  let items=data.slice(0,7);if(data.length>7){const rest=data.slice(7).reduce((s,d)=>s+d.v,0);items.push({k:'_others',v:rest,c:'#94a3b8'})}
+  const W=300,H=180,out=[];
+  const worst=(row,w)=>{const s=row.reduce((a,r)=>a+r.a,0),mx=Math.max(...row.map(r=>r.a)),mn=Math.min(...row.map(r=>r.a));return Math.max(w*w*mx/(s*s),(s*s)/(w*w*mn))};
+  let rect={x:0,y:0,w:W,h:H};const scale=W*H/tot;let rest=items.map(d=>({...d,a:d.v*scale}));
+  while(rest.length){const side=Math.min(rect.w,rect.h);let row=[rest[0]],i=1;
+    while(i<rest.length&&worst(row.concat(rest[i]),side)<=worst(row,side)){row.push(rest[i]);i++}
+    const s=row.reduce((a,r)=>a+r.a,0);
+    if(rect.w>=rect.h){const cw=s/rect.h;let y=rect.y;row.forEach(r=>{const h=r.a/cw;out.push({...r,x:rect.x,y,w:cw,h});y+=h});rect={x:rect.x+cw,y:rect.y,w:rect.w-cw,h:rect.h}}
+    else{const rh=s/rect.w;let x=rect.x;row.forEach(r=>{const w=r.a/rh;out.push({...r,x,y:rect.y,w,h:rh});x+=w});rect={x:rect.x,y:rect.y+rh,w:rect.w,h:rect.h-rh}}
+    rest=rest.slice(i)}
+  const g=out.map((r,i)=>{const nm=r.k==='_others'?'Others':cname(r.k),pc=Math.round(r.v/tot*100),w=r.w-3,h=r.h-3;
+    const name=w>46&&h>22?`<text x="${(r.x+8).toFixed(1)}" y="${(r.y+17).toFixed(1)}" style="fill:#fff;font-weight:700;font-size:${w>110&&h>60?13:10.5}px">${esc(nm.length*6.2>w-10?nm.slice(0,Math.max(3,Math.floor((w-10)/6.2)))+'…':nm)}</text>`:'';
+    const amt=w>46&&h>40?`<text x="${(r.x+8).toFixed(1)}" y="${(r.y+31).toFixed(1)}" style="fill:#fff;opacity:.9;font-size:10px">${w>100?inrH(r.v)+' · ':''}${pc}%</text>`:'';
+    return `<rect class="g" style="--i:${i}" x="${r.x.toFixed(1)}" y="${r.y.toFixed(1)}" width="${Math.max(0,w).toFixed(1)}" height="${Math.max(0,h).toFixed(1)}" rx="7" fill="${r.c}" data-tip="${esc(nm+' · '+inr(r.v)+' ('+pc+'%)')}"/>${name}${amt}`}).join('');
+  return `<div class="chart"><svg viewBox="0 0 ${W-3} ${H-3}" width="100%">${g}</svg></div>`;
+}
+function radarViz(items){
+  const n=items.length,cx=150,cy=104,R=66;
+  const pt=(i,f)=>{const a=-Math.PI/2+i*2*Math.PI/n;return [cx+R*f*Math.cos(a),cy+R*f*Math.sin(a)]},pts=f=>items.map((_,i)=>pt(i,f).map(v=>v.toFixed(1)).join(',')).join(' ');
+  let g=[.5,1].map(f=>`<polygon points="${pts(f)}" fill="none" stroke="var(--line)"/>`).join('');
+  items.forEach((it,i)=>{const [x,y]=pt(i,1),[lx,ly]=pt(i,1.42),ov=it.used>it.lim;g+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)"/><text x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" text-anchor="middle" style="${ov?'fill:var(--debit);font-weight:700':''}">${esc(cname(it.k).slice(0,11))}</text>`});
+  g+=`<polygon points="${pts(1)}" fill="var(--warn)" fill-opacity=".07" stroke="var(--warn)" stroke-dasharray="4 3"/>`;
+  const f=it=>Math.min(1.1,it.used/it.lim);
+  g+=`<polygon points="${items.map((it,i)=>pt(i,f(it)).map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="var(--brand)" fill-opacity=".22" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round"/>`;
+  items.forEach((it,i)=>{const [x,y]=pt(i,f(it));g+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${it.used>it.lim?'var(--debit)':'var(--brand)'}"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="12" fill="transparent" data-tip="${esc(cname(it.k)+' · '+inr(it.used)+' of '+inr(it.lim)+' ('+Math.round(it.used/it.lim*100)+'%)')}"/>`});
+  return `<div class="chart"><svg viewBox="0 0 300 208" width="100%">${g}</svg></div><div class="lgd"><span><i style="background:var(--brand)"></i>Spent</span><span><i style="background:var(--warn)"></i>Budget limit</span></div>`;
+}
 /* ---------- BUDGET ---------- */
 function budgetView(){
   const st=mstats(month),tb=totalBudget(),used=st.exp,left=tb-used,pct=tb?used/tb*100:0;
@@ -1576,6 +1630,8 @@ function budgetView(){
   ${(()=>{const al=alertsFor(month);const bl=bufferLeft(month),bt=Math.max(0,S.salary-tb);
     return (al.length?`<h2>Needs attention</h2><div class="card" style="padding:4px 16px">${al.map(x=>`<div class="attn"><div class="grow"><b>${esc(cname(x.k))}</b><div class="small mute">${inr(x.used)} of ${inr(x.lim)} · ${x.pct>100?'over by '+inr(x.used-x.lim):x.pct>=100?'at limit':Math.round(x.pct)+'% used'}</div></div><button class="chip on" data-a="fix" data-id="${esc(x.k)}">Fix</button></div>`).join('')}</div>`:'')
     +(S.salary>0&&tb>0?`<div class="card row sp" style="margin-top:12px"><div><div class="small mute">Buffer (salary ${inr(S.salary)} − budget ${inr(tb)})</div><b class="num ${bl<0?'debit':''}" style="font-size:18px">${inr(Math.max(0,bl))} left</b></div><div class="small mute" style="text-align:right">of ${inr(bt)}<br>overspend eats it first</div></div>`:'')})()}
+  ${(()=>{const its=Object.keys(S.budgets).filter(k=>S.budgets[k]>0).map(k=>({k,used:st.cat[k]||0,lim:S.budgets[k]}));
+    return its.length>=3?`<h2>Budget web</h2><div class="card">${radarViz(its.slice(0,8))}<div class="small mute" style="margin-top:6px">Dotted line = each category's limit. A point outside it is over budget.</div></div>`:''})()}
   ${(()=>{const pr=projection(month,st);
     return !(tb>0||st.exp>0)?'':`<h2>Month pace</h2><div class="card">${pace(month,st)}${pr!=null&&tb?`<div class="small" style="margin-top:6px;color:${pr>tb?'var(--debit)':'var(--credit)'}">At this pace you will spend about <b>${inr(Math.round(pr))}</b> by month end: ${pr>tb?inr(Math.round(pr-tb))+' over':inr(Math.round(tb-pr))+' under'} budget.</div>`:''}</div>`})()}
   <h2>Categories</h2>
