@@ -494,7 +494,8 @@ function ingest(msgs){
   if(n){render();toast(`${n} new from SMS${un?` · ${un} need an account`:''}`);checkBudgetNotify()}
   return n;
 }
-async function drainSms(){const p=sms();if(!p)return;try{const r=await p.drain();if(r.messages.length)ingest(r.messages)}catch(e){}}
+const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
+async function drainSms(){const p=sms();if(!SMS_ON||!p)return;try{const r=await p.drain();if(r.messages.length)ingest(r.messages)}catch(e){}}
 async function enableSms(){
   const p=sms();if(!p)return toast('Only in the Android app');
   const r=await p.requestPermissions();
@@ -511,10 +512,10 @@ async function importInbox(days){
 }
 let smsCap=false;
 if(sms()){
-  if(sms().capabilities)sms().capabilities().then(c=>{smsCap=!!c.sms;if(view==='accounts')render()}).catch(()=>{});
-  sms().addListener('smsReceived',drainSms);
+  if(SMS_ON&&sms().capabilities)sms().capabilities().then(c=>{smsCap=!!c.sms;if(view==='accounts')render()}).catch(()=>{});
+  if(SMS_ON)sms().addListener('smsReceived',drainSms);
   setTimeout(()=>note.sync(),0);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)drainSms()});
+  if(SMS_ON)document.addEventListener('visibilitychange',()=>{if(!document.hidden)drainSms()});
 }
 
 /* ---------- notifications ---------- */
@@ -1776,8 +1777,8 @@ function accounts(){
    <div class="grid2">${ty==='cash'?'':`<div><label>Last 4 digits</label><input data-f="last4" data-id="${a.id}" value="${esc(a.last4)}" maxlength="4" inputmode="numeric"></div>`}
    <div><label>${ty==='card'?'Opening due (₹)':ty==='cash'?'Cash in hand (₹)':'Opening balance (₹)'}</label><input data-f="${ty==='card'?'opendue':'open'}" data-id="${a.id}" value="${ty==='card'?-a.open||0:a.open}" inputmode="decimal"></div>
    ${ty==='card'?`<div><label>Credit limit (₹)</label><input data-f="limit" data-id="${a.id}" value="${a.limit||''}" inputmode="decimal"></div>`:''}</div>${ty==='card'?`<div class="small mute" style="margin-top:10px">Used ${inr(Math.max(0,-bal))} · EMI blocked ${inr(Math.round(emiBlocked(a.id)))}${a.limit?` · <b style="color:var(--ink)">Available ${inr(Math.round(a.limit+bal-emiBlocked(a.id)))}</b>`:''}</div>`:''}${ty==='cash'?'':`<button class="btn ghost" data-a="stmt" data-id="${a.id}" style="margin-top:10px">Import bank statement (PDF or CSV)</button>`}</div></div>`}).join('');
-  const smsb=(sms()&&smsCap?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
-   <button class="btn" data-a="smson">Enable SMS capture</button></div>`:'')+(sms()&&!smsCap?`<h2>Bank SMS</h2><div class="card"><div class="small mute">This version does not read your SMS by itself (Google Play Protect blocks apps that do). To add a bank SMS quickly: open your Messages app, long-press the SMS, tap <b>Share</b> and choose <b>Arthaly</b>. It is added right away. You can also import a bank statement PDF/CSV.</div></div>`:'');
+  const smsb=(!SMS_ON?'':sms()&&smsCap?`<h2>Automatic SMS</h2><div class="card"><div class="small mute">New bank SMS (debit/credit) are added automatically, even when the app is closed. Only money messages are read; OTPs and chats are ignored. Nothing leaves your phone.</div>
+   <button class="btn" data-a="smson">Enable SMS capture</button></div>`:'')+(SMS_ON&&sms()&&!smsCap?`<h2>Bank SMS</h2><div class="card"><div class="small mute">This version does not read your SMS by itself (Google Play Protect blocks apps that do). To add a bank SMS quickly: open your Messages app, long-press the SMS, tap <b>Share</b> and choose <b>Arthaly</b>. It is added right away. You can also import a bank statement PDF/CSV.</div></div>`:'');
   return `<h1>Settings</h1>`+
   sec('acc','Accounts',cards+`<div class="grid2" style="grid-template-columns:repeat(3,1fr)"><button class="btn ghost" data-a="addacc" data-id="bank" style="margin-top:0">+ Bank</button><button class="btn ghost" data-a="addacc" data-id="cash" style="margin-top:0">+ Cash</button><button class="btn ghost" data-a="addacc" data-id="card" style="margin-top:0">+ Card</button></div>`)+
   (smsb?sec('sms','Bank SMS &amp; statements',smsb):'')+
@@ -2033,7 +2034,7 @@ function syncKind(){
 function render(){
   applyEmis();
   $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView,sms:smsView,txns:txView}[view]();
-  const nav=[['home','home','Home'],['txns','wallet','Accounts'],['sms','msg','SMS'],['add','+',''],['budget','target','Budget'],['stats','chart','Insights'],['people','users','Ledger']];
+  const nav=[['home','home','Home'],['txns','wallet','Accounts'],...(SMS_ON?[['sms','msg','SMS']]:[]),['add','+',''],['budget','target','Budget'],['stats','chart','Insights'],['people','users','Ledger']];
   $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new" aria-label="Add"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
 }
 let tt='debit';
@@ -2443,7 +2444,7 @@ drainSms();
 /* text shared to the installed web app (e.g. a bank SMS: Share -> Arthaly) arrives as ?text=... */
 (function(){
   const q=new URLSearchParams(location.search),sh=q.get('text')||q.get('title')||q.get('url');
-  if(!sh)return;
+  if(!sh||!SMS_ON)return;
   hrep({k:'view',v:'home'},location.pathname);
   const r=addFromSms(sh);
   if(r.out.length){render();toast(`Added ${r.out.length}: ${r.out[0].t.type==='debit'?'−':'+'}${inr(r.out[0].t.amt)}${r.out[0].matched?'':' (assign account)'}`)}
