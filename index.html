@@ -494,6 +494,7 @@ function ingest(msgs){
   if(n){render();toast(`${n} new from SMS${un?` · ${un} need an account`:''}`);checkBudgetNotify()}
   return n;
 }
+const APP_VER='version 1.2 · build 50 · 17 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 async function drainSms(){const p=sms();if(!SMS_ON||!p)return;try{const r=await p.drain();if(r.messages.length)ingest(r.messages)}catch(e){}}
 async function enableSms(){
@@ -1788,7 +1789,8 @@ function accounts(){
   sec('lock','App lock',`<div class="card"><div class="small mute">${lockOK()?'Ask for your fingerprint (or phone screen lock) when the app opens and when you come back after a few seconds away.':'Ask for a PIN when the app opens and when you come back after a few seconds away. (Fingerprint works only in the Android app.)'}</div><button class="btn ${lockOn()?'ghost':''}" data-a="applock">${lockOn()?'App lock is ON (tap to turn off)':lockOK()?'Turn on app lock':'Set a PIN'}</button></div>`)+
   sec('look','Appearance',`<div class="card" style="padding:4px 16px">${[['auto','Auto','Follow my phone'],['light','Light',''],['dark','Dark','']].map(([k,l,h])=>`<div class="opt" data-a="appear" data-id="${k}"><div class="grow"><b>${l}</b>${h?`<div class="small mute">${h}</div>`:''}</div><span class="rad ${S.appearance===k?'on':''}"></span></div>`).join('')}</div>`)+
   sec('me','Profile &amp; backup',`<div class="card">   <label>Your name (shown on the home screen)</label><input data-f="yourname" value="${esc(S.name)}">
-   <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button></div>${['black','sage','cocoa'].includes(S.theme)?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}<label class="custom ${((S.accents||{})[S.theme])==='custom'?'on':''}" style="margin:0" title="Pick any colour"><input type="color" id="accentpick" value="${S.customHex||'#0f766e'}"></label></div>`}`);
+   <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button></div>${['black','sage','cocoa'].includes(S.theme)?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}<label class="custom ${((S.accents||{})[S.theme])==='custom'?'on':''}" style="margin:0" title="Pick any colour"><input type="color" id="accentpick" value="${S.customHex||'#0f766e'}"></label></div>`}`)+
+  `<div class="small mute" style="text-align:center;margin:18px 0 6px;line-height:1.6">Arthaly · ${APP_VER}<br>${lockOK()?'Android shell: new (lock + back fix)':sms()?'Android shell: OLD (rebuild the app)':'Running in browser'}</div>`;
 }
 
 /* ---------- sheet ---------- */
