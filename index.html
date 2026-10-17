@@ -498,7 +498,7 @@ function ingest(msgs){
   if(n){render();toast(`${n} new from SMS${un?` · ${un} need an account`:''}`);checkBudgetNotify()}
   return n;
 }
-const APP_VER='version 1.3 · build 62 · 17 Oct 2026';
+const APP_VER='version 1.3 · build 63 · 17 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 async function drainSms(){const p=sms();if(!SMS_ON||!p)return;try{const r=await p.drain();if(r.messages.length)ingest(r.messages)}catch(e){}}
 async function enableSms(){
@@ -1217,36 +1217,21 @@ function accPdfMenu(id){
   <label>Period</label>
   ${[['all','All time'],['m','This month'],['3','Last 3 months'],['y','This year']].map(([k,l])=>`<button class="btn ghost" data-a="accpdf" data-id="${id}" data-per="${k}">${l}</button>`).join('')}`);
 }
-async function sharePdf(name,str){
-  const p=sms();
-  if(p&&p.shareFile){
-    try{await p.shareFile({filename:name,content:str,mime:'application/pdf'});toast('Choose where to save or send it',4500);return}
-    catch(e){toast('Could not open the share sheet')}
+/* Files the app makes (statement PDFs, backups) are saved straight into Download/Arthaly on the phone, no share sheet.
+   Android app: a native call writes the file there. Browser: a normal download (the browser decides the folder). */
+async function saveOut(name,str,mime,label){
+  const bin=mime==='application/pdf',p=sms(),b64=btoa(bin?str:unescape(encodeURIComponent(str)));   // PDF text is already bytes; JSON goes out as UTF-8
+  if(p&&p.saveFile){
+    try{const r=await p.saveFile({filename:name,base64:b64,mime});toast(label+' saved in '+(r&&r.path||'Download/Arthaly'),4500);return}
+    catch(e){toast('Could not save: '+((e&&e.message)||'error'),4000);return}
   }
-  const bytes=Uint8Array.from(str,ch=>ch.charCodeAt(0)&255);
-  try{
-    if(navigator.canShare&&navigator.share){const f=new File([bytes],name,{type:'application/pdf'});if(navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}
-  }catch(e){if(e&&e.name==='AbortError')return}
-  const b=new Blob([bytes],{type:'application/pdf'}),l=document.createElement('a');
-  l.href=URL.createObjectURL(b);l.download=name;document.body.appendChild(l);l.click();l.remove();
-  setTimeout(()=>URL.revokeObjectURL(l.href),4000);toast('Statement downloaded');
+  const bytes=Uint8Array.from(atob(b64),ch=>ch.charCodeAt(0));
+  const bl=new Blob([bytes],{type:mime}),l=document.createElement('a');
+  l.href=URL.createObjectURL(bl);l.download=name;document.body.appendChild(l);l.click();l.remove();
+  setTimeout(()=>URL.revokeObjectURL(l.href),4000);toast(label+' saved in Downloads',3500);
 }
-async function exportBackup(){
-  const text=JSON.stringify(S,null,1),name='arthaly-backup-'+todayISO()+'.json',p=sms();
-  if(p&&p.shareFile){
-    try{await p.shareFile({filename:name,content:text,mime:'application/json'});toast('Choose where to save it (Drive, Files, WhatsApp...)',4500);return}
-    catch(e){toast('Could not open the share sheet')}
-  }
-  try{
-    if(navigator.canShare&&navigator.share){
-      const f=new File([text],name,{type:'application/json'});
-      if(navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Arthaly backup'});return}
-    }
-  }catch(e){if(e&&e.name==='AbortError')return}
-  const b=new Blob([text],{type:'application/json'}),l=document.createElement('a');
-  l.href=URL.createObjectURL(b);l.download=name;document.body.appendChild(l);l.click();l.remove();
-  setTimeout(()=>URL.revokeObjectURL(l.href),4000);toast('Backup downloaded');
-}
+function sharePdf(name,str){return saveOut(name,str,'application/pdf','PDF')}
+function exportBackup(){return saveOut('arthaly-backup-'+todayISO()+'.json',JSON.stringify(S,null,1),'application/json','Backup')}
 let emiMonTouched=false;
 function emiSheet(eid){
   const ep=eid?S.emis.find(x=>x.id===eid):null,cards=S.accounts.filter(a=>accType(a)==='card');

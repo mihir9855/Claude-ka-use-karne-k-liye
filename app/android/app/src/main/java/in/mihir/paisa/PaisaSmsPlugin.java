@@ -1,6 +1,15 @@
 package in.mihir.paisa;
 
 import android.Manifest;
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Base64;
+import java.io.OutputStream;
+import com.getcapacitor.PermissionState;
+import com.getcapacitor.annotation.PermissionCallback;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -27,7 +36,8 @@ import org.json.JSONArray;
     name = "PaisaSms",
     permissions = {
         @Permission(alias = "sms", strings = { Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS }),
-        @Permission(alias = "notif", strings = { Manifest.permission.POST_NOTIFICATIONS })
+        @Permission(alias = "notif", strings = { Manifest.permission.POST_NOTIFICATIONS }),
+        @Permission(alias = "storage", strings = { Manifest.permission.WRITE_EXTERNAL_STORAGE })
     }
 )
 public class PaisaSmsPlugin extends Plugin {
@@ -90,6 +100,54 @@ public class PaisaSmsPlugin extends Plugin {
                 JSObject r = new JSObject(); r.put("ok", false); r.put("error", String.valueOf(e.getMessage())); call.resolve(r);
             }
         });
+    }
+
+    /** Saves a file straight into Download/Arthaly (PDF statements, backups) - no share sheet. */
+    @PluginMethod
+    public void saveFile(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && getPermissionState("storage") != PermissionState.GRANTED) {
+            requestPermissionForAlias("storage", call, "storagePermsDone");
+            return;
+        }
+        doSave(call);
+    }
+
+    @PermissionCallback
+    private void storagePermsDone(PluginCall call) {
+        if (getPermissionState("storage") == PermissionState.GRANTED) doSave(call);
+        else call.reject("Storage permission was not given");
+    }
+
+    private void doSave(PluginCall call) {
+        String name = call.getString("filename", "arthaly-file").replaceAll("[^A-Za-z0-9._-]", "_");
+        String mime = call.getString("mime", "application/octet-stream");
+        byte[] data;
+        try { data = Base64.decode(call.getString("base64", ""), Base64.DEFAULT); }
+        catch (Exception e) { call.reject("Bad file data"); return; }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentResolver cr = getContext().getContentResolver();
+                ContentValues v = new ContentValues();
+                v.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+                v.put(MediaStore.MediaColumns.MIME_TYPE, mime);
+                v.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Arthaly");
+                Uri uri = cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
+                if (uri == null) { call.reject("Could not create the file"); return; }
+                try (OutputStream out = cr.openOutputStream(uri)) { out.write(data); }
+            } else {
+                File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Arthaly");
+                if (!dir.exists()) dir.mkdirs();
+                File f = new File(dir, name);
+                int n = 1;
+                while (f.exists()) { int dot = name.lastIndexOf('.'); f = new File(dir, (dot > 0 ? name.substring(0, dot) : name) + "-" + (n++) + (dot > 0 ? name.substring(dot) : "")); }
+                try (FileOutputStream out = new FileOutputStream(f)) { out.write(data); }
+            }
+            JSObject r = new JSObject();
+            r.put("path", "Download/Arthaly/" + name);
+            call.resolve(r);
+        } catch (Exception e) {
+            call.reject("Could not save: " + e.getMessage());
+        }
     }
 
     /** Backup export: the web view cannot download files, so write it to cache and open the Android share sheet. */
