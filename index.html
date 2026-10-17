@@ -498,7 +498,7 @@ function ingest(msgs){
   if(n){render();toast(`${n} new from SMS${un?` · ${un} need an account`:''}`);checkBudgetNotify()}
   return n;
 }
-const APP_VER='version 1.3 · build 60 · 17 Oct 2026';
+const APP_VER='version 1.3 · build 61 · 17 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 async function drainSms(){const p=sms();if(!SMS_ON||!p)return;try{const r=await p.drain();if(r.messages.length)ingest(r.messages)}catch(e){}}
 async function enableSms(){
@@ -2078,6 +2078,8 @@ function render(){
   applyEmis();
   $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView,sms:smsView,txns:txView}[view]();
   const nav=[['home','home','Home'],['txns','wallet','Accounts'],...(SMS_ON?[['sms','msg','SMS']]:[]),['add','+',''],['budget','target','Budget'],['stats','chart','Insights'],['people','users','Ledger']];
+  {const L=nav.findIndex(x=>x[0]==='add'),R=nav.length-L-1;   // one column per tab, evenly spaced across the bar
+   $('#nav').style.gridTemplateColumns=`repeat(${L},1fr) 54px repeat(${R},1fr)`}
   $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new" aria-label="Add"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
 }
 let tt='debit';
