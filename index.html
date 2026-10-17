@@ -304,7 +304,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 <nav><div class="in" id="nav"></div></nav>
 <div id="layer"></div>
 <div id="dlg"></div>
-<div id="lock"><div class="lk"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><b style="font-size:20px">Arthaly is locked</b><div class="small mute">Use your fingerprint or phone screen lock</div><button class="btn" data-a="unlock" style="margin:6px 0 0;width:auto;padding:12px 28px">Unlock</button></div>
+<div id="lock"><div class="lk"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><b style="font-size:20px">Arthaly is locked</b><div class="small mute">Use your fingerprint or phone screen lock</div><input id="lock-pin" type="password" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" style="display:none;text-align:center;font-size:22px;letter-spacing:8px;max-width:200px"><div class="small debit" id="lock-err" style="min-height:16px"></div><button class="btn" data-a="unlock" style="margin:0;width:auto;padding:12px 28px">Unlock</button></div>
 <script>
 /* ---------- storage ---------- */
 const KEY='arthaly.v1'; // fresh storage: nothing from earlier test versions is carried over
@@ -1785,7 +1785,7 @@ function accounts(){
   sec('xfer','Internal transfers',`<div class="card"><div class="small mute">Finds the same amount going out of one account and into another, and merges the pair into one transfer so it is not counted as spending.</div><button class="btn ghost" data-a="pairs">Find possible transfers${findPairs().length?' ('+findPairs().length+')':''}</button></div>`)+
   sec('noti','Notifications',`<div class="card"><div class="small mute">Alerts at 80% and over budget, and a notice for each bank SMS captured.</div>
    <button class="btn ${S.notify?'ghost':''}" data-a="notifon">${S.notify?'Notifications on (tap to turn off)':'Turn on notifications'}</button><button class="btn ghost" data-a="notiftest" style="margin-top:8px">Send test notification</button></div>`)+
-  (lockOK()?sec('lock','App lock',`<div class="card"><div class="small mute">Ask for your fingerprint (or phone screen lock) when the app opens and when you come back after a few seconds away.</div><button class="btn ${S.lock?'ghost':''}" data-a="applock">${S.lock?'App lock is ON (tap to turn off)':'Turn on app lock'}</button></div>`):'')+
+  sec('lock','App lock',`<div class="card"><div class="small mute">${lockOK()?'Ask for your fingerprint (or phone screen lock) when the app opens and when you come back after a few seconds away.':'Ask for a PIN when the app opens and when you come back after a few seconds away. (Fingerprint works only in the Android app.)'}</div><button class="btn ${lockOn()?'ghost':''}" data-a="applock">${lockOn()?'App lock is ON (tap to turn off)':lockOK()?'Turn on app lock':'Set a PIN'}</button></div>`)+
   sec('look','Appearance',`<div class="card" style="padding:4px 16px">${[['auto','Auto','Follow my phone'],['light','Light',''],['dark','Dark','']].map(([k,l,h])=>`<div class="opt" data-a="appear" data-id="${k}"><div class="grow"><b>${l}</b>${h?`<div class="small mute">${h}</div>`:''}</div><span class="rad ${S.appearance===k?'on':''}"></span></div>`).join('')}</div>`)+
   sec('me','Profile &amp; backup',`<div class="card">   <label>Your name (shown on the home screen)</label><input data-f="yourname" value="${esc(S.name)}">
    <button class="btn ghost" data-a="export">Export backup (JSON)</button><button class="btn ghost" data-a="import" style="margin-top:8px">Import backup</button></div>${['black','sage','cocoa'].includes(S.theme)?'':`<label>Accent colour</label><div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`<button data-a="accent" data-id="${k}" title="${a[0]}" class="${((S.accents||{})[S.theme]||(S.theme==='neon'?'violet':'teal'))===k?'on':''}" style="background:${a[1]}"></button>`).join('')}<label class="custom ${((S.accents||{})[S.theme])==='custom'?'on':''}" style="margin:0" title="Pick any colour"><input type="color" id="accentpick" value="${S.customHex||'#0f766e'}"></label></div>`}`);
@@ -2420,13 +2420,24 @@ document.addEventListener('pointermove',e=>{
 /* ---------- App lock (Android app: fingerprint / face / screen lock) ---------- */
 const lockOK=()=>!!(sms()&&sms().authenticate);
 let lockBusy=false,hiddenAt=0;
-function lockShow(){if(!(S.lock&&lockOK()))return;$('#lock').classList.add('on');lockTry()}
+const pinHash=p=>{let h=5381;for(const c of 'arthaly|'+p)h=(h*33^c.charCodeAt(0))>>>0;return String(h)};   // casual lock, not bank-grade
+const lockOn=()=>lockOK()?!!S.lock:!!S.pin;
+function lockShow(){if(!lockOn())return;$('#lock').classList.add('on');const pi=$('#lock-pin');if(!lockOK()){pi.style.display='';pi.value='';$('#lock-err').textContent='';setTimeout(()=>pi.focus(),50)}else{pi.style.display='none';lockTry()}}
 function lockTry(){
+  if(!lockOK()){const pi=$('#lock-pin');if(S.pin&&pinHash(pi.value)===S.pin){$('#lock').classList.remove('on');pi.value=''}else{$('#lock-err').textContent='Wrong PIN';pi.value=''}return}
   if(lockBusy)return;lockBusy=true;
   sms().authenticate({title:'Unlock Arthaly'}).then(r=>{if(r&&r.ok)$('#lock').classList.remove('on')}).catch(()=>{}).finally(()=>{lockBusy=false});
 }
+async function pinToggle(){
+  if(S.pin){const v=await askText('Enter PIN to turn off lock','','PIN','password');if(v!=null&&pinHash(v)===S.pin){S.pin='';save();render();toast('App lock off')}else if(v!=null)toast('Wrong PIN');return}
+  const v=await askText('Set a PIN (4 to 6 digits)','','PIN','password');if(v==null)return;
+  if(!/^\d{4,6}$/.test(v)){toast('PIN must be 4 to 6 digits');return}
+  const w=await askText('Type the PIN again','','PIN','password');if(w==null)return;
+  if(w!==v){toast('PINs did not match');return}
+  S.pin=pinHash(v);save();render();toast('App lock on')
+}
 async function lockToggle(){
-  if(!lockOK()){toast('App lock works in the Android app',2200);return}
+  if(!lockOK()){pinToggle();return}
   if(S.lock){const r=await sms().authenticate({title:'Turn off app lock'}).catch(()=>null);if(r&&r.ok){S.lock=false;save();render();toast('App lock off')}return}
   const av=await sms().lockAvailable().catch(()=>({ok:false}));
   if(!av.ok){toast('First set a fingerprint or screen lock in your phone settings',3200);return}
@@ -2435,8 +2446,9 @@ async function lockToggle(){
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){hiddenAt=Date.now();return}
-  if(S.lock&&lockOK()&&hiddenAt&&Date.now()-hiddenAt>15000)lockShow();
+  if(lockOn()&&hiddenAt&&Date.now()-hiddenAt>15000)lockShow();
 });
+$('#lock-pin').addEventListener('keyup',e=>{if(e.key==='Enter')lockTry()});
 lockShow();
 render();
 {const i=document.getElementById('intro');if(i){setTimeout(()=>i.classList.add('out'),2300);setTimeout(()=>i.remove(),2800)}}
