@@ -310,6 +310,8 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
+const APP_VER='version 1.4 · build 66 · 17 Oct 2026';
+const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
@@ -381,6 +383,17 @@ function applyTheme(){
 }
 if(mqDark)mqDark.addEventListener('change',()=>{if(S.appearance==='auto')applyTheme()});
 /* fills in anything missing (old backups, reset) and re-applies saved look */
+let smsPurged=0;
+/* SMS is off: entries that came from SMS and never got an account are dropped (also from imported backups);
+   SMS entries that were fixed stay as ordinary transactions */
+function purgeSms(){
+  if(SMS_ON)return 0;
+  const n0=S.tx.length;
+  S.tx=S.tx.filter(t=>!(t.src==='sms'&&!t.acc&&!t.fromParty));
+  S.tx.forEach(t=>{if(t.src==='sms'){delete t.src;delete t.raw;delete t.hint4}});
+  S.smsPending=[];
+  return n0-S.tx.length;
+}
 function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
   if(!S.accounts.length)S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
@@ -394,6 +407,7 @@ function normalize(){
   applyTheme();
 }
 normalize();
+smsPurged=purgeSms();
 const totalBudget=()=>{const v=Object.values(S.budgets).reduce((a,b)=>a+b,0);return v>0?v:S.budget};
 const cname=k=>k==='Other'?'Misc':k;
 const NEWCOL=['#14b8a6','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#84cc16'];
@@ -404,6 +418,7 @@ function addCategory(name,icon){
   return name;
 }
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+if(smsPurged)save();
 let q='',catTouched=false,newIcon='star';
 let view='home',month=new Date().toISOString().slice(0,7),seg='people',accFilter='',homeRange='w';
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -498,8 +513,6 @@ function ingest(msgs){
   if(n){render();toast(`${n} new from SMS${un?` · ${un} need an account`:''}`);checkBudgetNotify()}
   return n;
 }
-const APP_VER='version 1.3 · build 65 · 17 Oct 2026';
-const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 async function drainSms(){const p=sms();if(!SMS_ON||!p)return;try{const r=await p.drain();if(r.messages.length)ingest(r.messages)}catch(e){}}
 async function enableSms(){
   const p=sms();if(!p)return toast('Only in the Android app');
@@ -2315,7 +2328,7 @@ document.addEventListener('click',e=>{
   else if(a==='smsimport')importInbox(30);
   else if(a==='addacc'){S.accounts.push({id:uid(),name:id==='cash'?'Cash':id==='card'?'Credit card':'Account '+(S.accounts.length+1),type:id||'bank',last4:'',open:0,limit:0});save();render()}
   else if(a==='export')exportBackup();
-  else if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>i.files[0].text().then(x=>{try{S=JSON.parse(x);normalize();save();render();toast('Imported')}catch(e){toast('Invalid file')}});i.click()}
+  else if(a==='import'){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>i.files[0].text().then(x=>{try{S=JSON.parse(x);normalize();const n=purgeSms();save();render();toast('Imported'+(n?' · '+n+' old SMS entries without account removed':''),4000)}catch(e){toast('Invalid file')}});i.click()}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='dlg-in'){e.preventDefault();dlgClose(e.target.value)}});
 document.addEventListener('change',e=>{if(e.target.type==='date')refreshDates()});
@@ -2500,6 +2513,7 @@ document.addEventListener('visibilitychange',()=>{
 $('#lock-pin').addEventListener('keyup',e=>{if(e.key==='Enter')lockTry()});
 lockShow();
 render();
+if(smsPurged)setTimeout(()=>toast(smsPurged+' old SMS entries without account removed',4500),2900);
 {const i=document.getElementById('intro');if(i){setTimeout(()=>i.classList.add('out'),2300);setTimeout(()=>i.remove(),2800)}}
 drainSms();
 /* text shared to the installed web app (e.g. a bank SMS: Share -> Arthaly) arrives as ?text=... */
