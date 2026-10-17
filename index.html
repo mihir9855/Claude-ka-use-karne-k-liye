@@ -268,9 +268,6 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 .btn.danger{background:var(--debit)!important;color:#fff!important}
 
 .bookseg{margin:12px 0 0}.bookseg button{padding:7px 0}
-.jd{font-size:12px;font-weight:700;color:var(--mute);padding:12px 0 2px}.jv{padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer;font-size:14px}
-.lrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer}.lrow:last-child,.gw:last-child{border-bottom:0}
-.gw{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}.gi{width:38px;height:38px;border-radius:10px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;flex:none}
 #lock{position:fixed;inset:0;z-index:10000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
 #lock.on{display:flex}#lock .lk{width:72px;height:72px;border-radius:20px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
 #intro{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#6a402d,#2b170f);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;transition:opacity .45s ease,transform .45s ease}
@@ -502,7 +499,7 @@ function ingest(msgs){
   if(n){render();toast(`${n} new from SMS${un?` · ${un} need an account`:''}`);checkBudgetNotify()}
   return n;
 }
-const APP_VER='version 1.3 · build 58 · 17 Oct 2026';
+const APP_VER='version 1.3 · build 59 · 17 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 async function drainSms(){const p=sms();if(!SMS_ON||!p)return;try{const r=await p.drain();if(r.messages.length)ingest(r.messages)}catch(e){}}
 async function enableSms(){
@@ -1516,133 +1513,7 @@ function home(){
   ${un?`<div class="card small" style="margin-top:10px;background:var(--brand-soft);cursor:pointer" data-a="unassigned">⚠️ ${un} transaction${un>1?'s':''} not matched to an account. <b>Tap here to assign.</b></div>`:''}
   ${pl.inc?`<div class="card row sp" style="margin-top:10px"><div><div class="small mute">Other-income pool left</div><b class="num" style="font-size:18px">${inrH(pl.left)}</b></div><div class="small mute" style="text-align:right">Earned ${inrH(pl.inc)}<br>Used ${inrH(pl.used)}</div></div>`:''}`;
 }
-/* ---------- BOOKS: double entry (Indian golden rules), Day Book, Cash/Bank Book, Ledgers, Trial Balance ---------- */
-let bookPage='',bookFY=null,bookLimit=40;
 const OWN_KINDS=['capital','drawings','biz'];
-const fyOf=d=>{const y=+d.slice(0,4),m=+d.slice(5,7);return m>=4?y:y-1};
-const fyLabel=y=>'FY '+y+'-'+String((y+1)%100).padStart(2,'0');
-const fyFrom=y=>y+'-04-01',fyTo=y=>(y+1)+'-03-31';
-/* every ledger: key -> {name, group, nominal} */
-function ledInfo(k){
-  const [t,id]=[k.slice(0,3),k.slice(4)];
-  if(t==='acc'){const a=acc(id),ty=a?accType(a):'bank';return {name:(a?a.name:'Account')+' A/c',group:ty==='cash'?'Cash-in-hand':ty==='card'?'Credit cards':'Bank accounts'}}
-  if(t==='exp')return {name:cname(id)+' A/c',group:'Expenses',nominal:1};
-  if(t==='inc')return {name:(id==='Other'?'Other income':id)+' A/c',group:'Income',nominal:1};
-  if(t==='oth')return {name:srcName(id)+' A/c',group:'Income',nominal:1};
-  if(t==='per'){const p=person(id);return {name:(p?p.name:'Person')+' A/c',group:'Persons (sundry)'}}
-  if(k==='cap')return {name:'Capital A/c',group:'Capital'};
-  if(k==='drw')return {name:'Drawings A/c',group:'Capital'};
-  if(k==='biz')return {name:'Investment in business A/c',group:'Investments'};
-  return {name:'Suspense A/c',group:'Suspense'};
-}
-/* one entry -> one journal line {d,dr,cr,amt,note,t} using the golden rules:
-   Real: debit what comes in, credit what goes out · Personal: debit the receiver, credit the giver · Nominal: debit expenses, credit incomes */
-function jline(t){
-  if(t.prepaid)return null;
-  const A=t.acc?'acc:'+t.acc:(t.fromParty&&t.party?'per:'+t.party:'sus');
-  let O;
-  if(t.kind==='transfer')O=t.to?'acc:'+t.to:'sus';
-  else if(t.kind==='pass')O=t.party?'per:'+t.party:'sus';
-  else if(t.kind==='expense')O='exp:'+t.cat;
-  else if(t.kind==='income')O='inc:'+t.cat;
-  else if(t.kind==='other')O='oth:'+(t.source||'');
-  else if(t.kind==='capital')O='cap';
-  else if(t.kind==='drawings')O='drw';
-  else if(t.kind==='biz')O='biz';
-  else O='sus';
-  if(A===O)return null;
-  const inn=t.type==='credit';
-  return {d:t.date,dr:inn?A:O,cr:inn?O:A,amt:t.amt,note:t.note||'',t};
-}
-function journal(){
-  const idx=new Map(S.tx.map((t,i)=>[t,i]));
-  const L=S.tx.slice().sort((a,b)=>a.date.localeCompare(b.date)||(a.ts||0)-(b.ts||0)||idx.get(a)-idx.get(b)).map(jline).filter(Boolean);
-  const first=L.length?L[0].d:todayISO();
-  const op=[];S.accounts.forEach(a=>{if(a.open>0)op.push({d:first,dr:'acc:'+a.id,cr:'cap',amt:a.open,note:'Opening balance',open:1});else if(a.open<0)op.push({d:first,dr:'cap',cr:'acc:'+a.id,amt:-a.open,note:'Opening balance',open:1})});
-  return op.concat(L);
-}
-const fyList=J=>{const s=new Set(J.map(l=>fyOf(l.d)));s.add(fyOf(todayISO()));return [...s].sort((a,b)=>b-a)};
-/* closing balance of every ledger for a financial year (nominal ledgers only count that year; earlier profit goes to capital) */
-function trialBalance(J,fy){
-  const to=fyTo(fy),from=fyFrom(fy),bal={};let prior=0;
-  const add=(k,v)=>{bal[k]=(bal[k]||0)+v};
-  J.forEach(l=>{if(l.d>to)return;
-    const nomD=ledInfo(l.dr).nominal,nomC=ledInfo(l.cr).nominal;
-    if(l.d<from&&!l.open){if(nomD)prior-=l.amt;else add(l.dr,l.amt);if(nomC)prior+=l.amt;else add(l.cr,-l.amt);return}
-    add(l.dr,l.amt);add(l.cr,-l.amt)});
-  if(prior)add('cap',-prior);   // + prior = earlier surplus credited to capital
-  return Object.entries(bal).filter(([,v])=>Math.abs(v)>.004).map(([k,v])=>({k,...ledInfo(k),v}));
-}
-function ledgerLines(J,keys,fy){
-  const from=fyFrom(fy),to=fyTo(fy),ks=new Set(keys),nom=keys.every(k=>ledInfo(k).nominal);
-  let open=0;const rows=[];
-  J.forEach(l=>{const d=ks.has(l.dr),c=ks.has(l.cr);if(!d&&!c||(d&&c))return;if(l.d>to)return;
-    const v=d?l.amt:-l.amt;
-    if(l.d<from&&!l.open){if(!nom)open+=v;return}
-    if(l.open&&l.d<from){open+=v;return}
-    rows.push({l,dr:d?l.amt:0,cr:c?l.amt:0,other:d?l.cr:l.dr})});
-  return {open,rows};
-}
-const drcr=v=>inr(Math.abs(Math.round(v*100)/100))+(v>0.004?' Dr':v<-0.004?' Cr':'');
-const fdl=d=>new Date(d+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
-function booksView(){
-  const J=journal(),fys=fyList(J);if(bookFY==null||!fys.includes(bookFY))bookFY=fys[0];
-  const fy=bookFY,from=fyFrom(fy),to=fyTo(fy),inFY=J.filter(l=>l.d>=from&&l.d<=to&&!l.open);
-  const head=`<div class="row sp"><h1>Books</h1><select id="book-fy" style="width:auto;padding:8px 12px">${fys.map(y=>`<option value="${y}" ${y===fy?'selected':''}>${fyLabel(y)}</option>`).join('')}</select></div>
-  <div class="seg" style="margin:10px 0 14px">${[['personal','Personal'],['business','Business']].map(([k,l])=>`<button data-a="book" data-id="${k}" class="${BOOK===k?'on':''}">${l}</button>`).join('')}</div>`;
-  const back=t=>`<div class="row" style="gap:10px;margin-bottom:6px"><button class="icon-btn" data-a="bookpg" data-id="">‹</button><div><b style="font-size:18px">${t}</b><div class="small mute">${BOOK==='business'?'Business':'Personal'} · ${fyLabel(fy)}</div></div></div>`;
-  if(bookPage==='day'){
-    const list=inFY.slice().reverse(),shown=list.slice(0,bookLimit);let last='';
-    return back('Day Book')+`<div class="small mute" style="margin:6px 2px 10px">${list.length} vouchers · golden rules applied automatically</div><div class="card" style="padding:4px 16px">${shown.map(l=>{const h=l.d!==last?(last=l.d,`<div class="jd">${fdl(l.d)}</div>`):'';
-      return h+`<div class="jv" ${l.t?`data-a="edit" data-id="${l.t.id}"`:''}><div class="row sp"><span>${esc(ledInfo(l.dr).name)} <span class="mute small">Dr</span></span><b class="num">${inr(l.amt)}</b></div><div class="row sp"><span style="padding-left:18px">To ${esc(ledInfo(l.cr).name)}</span><b class="num mute">${inr(l.amt)}</b></div>${l.note?`<div class="small mute" style="padding-left:18px">(Being ${esc(l.note)})</div>`:''}</div>`}).join('')||'<div class="empty">No entries in this year.</div>'}</div>
-      ${list.length>bookLimit?`<button class="btn ghost" data-a="bookmore">Show more (${list.length-bookLimit} left)</button>`:''}`;
-  }
-  if(bookPage==='ledgers'){
-    const tb=trialBalance(J,fy),keys=new Set(tb.map(x=>x.k));inFY.forEach(l=>{keys.add(l.dr);keys.add(l.cr)});
-    const groups={};[...keys].forEach(k=>{const i=ledInfo(k);(groups[i.group]=groups[i.group]||[]).push({k,...i,v:(tb.find(x=>x.k===k)||{v:0}).v})});
-    const order=['Capital','Bank accounts','Cash-in-hand','Credit cards','Persons (sundry)','Investments','Income','Expenses','Suspense'];
-    return back('Ledgers')+order.filter(g=>groups[g]).map(g=>`<h2>${g}</h2><div class="card" style="padding:2px 16px">${groups[g].sort((a,b)=>a.name.localeCompare(b.name)).map(x=>`<div class="lrow" data-a="bookpg" data-id="led:${x.k}"><span class="grow">${esc(x.name)}</span><b class="num">${drcr(x.v)}</b><span class="mute">›</span></div>`).join('')}</div>`).join('');
-  }
-  if(bookPage.startsWith('led:')||bookPage==='cash'||bookPage==='bank'){
-    let keys,title;
-    if(bookPage==='cash'){keys=S.accounts.filter(a=>accType(a)==='cash').map(a=>'acc:'+a.id);title='Cash Book'}
-    else if(bookPage==='bank'){keys=S.accounts.filter(a=>accType(a)==='bank').map(a=>'acc:'+a.id);title='Bank Book'}
-    else{keys=[bookPage.slice(4)];title=ledInfo(keys[0]).name}
-    if(!keys.length)return back(title)+'<div class="card empty">No such account yet.</div>';
-    const {open,rows}=ledgerLines(J,keys,fy);let bal=open;
-    const dr=rows.reduce((a,r)=>a+r.dr,0),cr=rows.reduce((a,r)=>a+r.cr,0),shown=rows.slice(-bookLimit);
-    bal=open+rows.slice(0,rows.length-shown.length).reduce((a,r)=>a+r.dr-r.cr,0);
-    return back(title)+`<div class="card"><div class="grid2"><div><span class="small mute">Total debit</span><b class="num" style="display:block">${inr(dr)}</b></div><div><span class="small mute">Total credit</span><b class="num" style="display:block">${inr(cr)}</b></div></div><div class="row sp small" style="margin-top:10px"><span class="mute">Opening ${drcr(open)}</span><b>Closing ${drcr(open+dr-cr)}</b></div></div>
-    ${rows.length>shown.length?`<button class="btn ghost" data-a="bookmore">Show earlier (${rows.length-shown.length})</button>`:''}
-    <div class="card" style="padding:2px 16px;margin-top:10px">${shown.map(r=>{bal+=r.dr-r.cr;return `<div class="lrow" ${r.l.t?`data-a="edit" data-id="${r.l.t.id}"`:''} style="align-items:flex-start"><div class="grow" style="min-width:0"><div>${r.dr?'To':'By'} ${esc(ledInfo(r.other).name)}</div><div class="small mute tm">${fdl(r.l.d)}${r.l.note?' · '+esc(r.l.note):''}</div></div><div style="text-align:right"><b class="num">${inr(r.dr||r.cr)} <span class="small mute">${r.dr?'Dr':'Cr'}</span></b><div class="small mute">${drcr(bal)}</div></div></div>`}).join('')||'<div class="empty">No entries in this year.</div>'}</div>`;
-  }
-  if(bookPage==='tb'){
-    const tb=trialBalance(J,fy),D=tb.filter(x=>x.v>0),C=tb.filter(x=>x.v<0),sd=D.reduce((a,x)=>a+x.v,0),sc=-C.reduce((a,x)=>a+x.v,0),ok=Math.abs(sd-sc)<.01;
-    const row=x=>`<div class="lrow" data-a="bookpg" data-id="led:${x.k}"><span class="grow">${esc(x.name)}<div class="small mute">${x.group}</div></span><b class="num">${inr(Math.abs(x.v))}</b></div>`;
-    return back('Trial Balance')+`<div class="card row sp" style="margin-top:6px"><span>${ok?'✓ Debit = Credit, books are balanced':'⚠ Not balanced'}</span><b class="num">${inr(sd)}</b></div>
-    <h2>Debit balances</h2><div class="card" style="padding:2px 16px">${D.map(row).join('')||'<div class="empty">None</div>'}<div class="lrow"><b class="grow">Total</b><b class="num">${inr(sd)}</b></div></div>
-    <h2>Credit balances</h2><div class="card" style="padding:2px 16px">${C.map(row).join('')||'<div class="empty">None</div>'}<div class="lrow"><b class="grow">Total</b><b class="num">${inr(sc)}</b></div></div>`;
-  }
-  /* gateway */
-  const tb=trialBalance(J,fy),sd=tb.filter(x=>x.v>0).reduce((a,x)=>a+x.v,0),sc=-tb.filter(x=>x.v<0).reduce((a,x)=>a+x.v,0);
-  const sumG=g=>tb.filter(x=>x.group===g).reduce((a,x)=>a+x.v,0);
-  const inc=-tb.filter(x=>x.group==='Income').reduce((a,x)=>a+x.v,0),exp=sumG('Expenses');
-  const item=(id,icon,t,sub,right)=>`<div class="gw" data-a="bookpg" data-id="${id}"><div class="gi">${ic(icon,19)}</div><div class="grow"><b>${t}</b><div class="small mute">${sub}</div></div>${right?`<b class="num small">${right}</b>`:''}<span class="mute">›</span></div>`;
-  return head+`<div class="card" style="padding:4px 16px">
-    <div class="lrow"><span class="grow mute">Cash-in-hand</span><b class="num">${drcr(sumG('Cash-in-hand'))}</b></div>
-    <div class="lrow"><span class="grow mute">Bank accounts</span><b class="num">${drcr(sumG('Bank accounts'))}</b></div>
-    ${sumG('Credit cards')?`<div class="lrow"><span class="grow mute">Credit cards</span><b class="num">${drcr(sumG('Credit cards'))}</b></div>`:''}
-    <div class="lrow"><span class="grow mute">${BOOK==='business'?'Income − expenses (profit)':'Income − expenses (saving)'}</span><b class="num ${inc-exp<0?'debit':'credit'}">${inr(inc-exp)}</b></div></div>
-  <h2>Books</h2><div class="card" style="padding:2px 16px">
-    ${item('day','receipt','Day Book','Journal of every entry · Dr / To Cr',inFY.length+'')}
-    ${item('cash','wallet','Cash Book','All cash accounts')}
-    ${item('bank','home','Bank Book','All bank accounts')}
-    ${item('ledgers','users','Ledgers','Every account, person, income & expense head')}
-    ${item('tb','chart','Trial Balance',Math.abs(sd-sc)<.01?'✓ Balanced':'⚠ Check',inr(sd))}
-  </div>
-  <h2>${BOOK==='business'?'Owner':'Business'}</h2><div class="card" style="padding:2px 16px"><div class="gw" data-a="ownsheet"><div class="gi">${ic('swap',19)}</div><div class="grow"><b>Personal ↔ Business</b><div class="small mute">Capital in / Drawings out · one entry goes into both books</div></div><span class="mute">›</span></div></div>
-  <div class="small mute" style="margin:12px 2px">Entries are converted to Debit/Credit with the golden rules: Real – debit what comes in, credit what goes out · Personal – debit the receiver, credit the giver · Nominal – debit expenses, credit incomes. Financial year runs April to March.</div>`;
-}
 /* ---------- two books: Personal / Business ---------- */
 const OTHER_KEY=()=>bookKey(BOOK==='business'?'personal':'business');
 function readOther(){try{return JSON.parse(localStorage.getItem(OTHER_KEY()))||null}catch(e){return null}}
@@ -1651,7 +1522,7 @@ function switchBook(b){
   const keep={appearance:S.appearance,lock:S.lock,pin:S.pin,hide:S.hide,pdfColor:S.pdfColor};
   BOOK=b;try{localStorage.setItem('arthaly.book',b)}catch(e){}KEY=bookKey(b);
   try{S=JSON.parse(localStorage.getItem(KEY))||defaults()}catch(e){S=defaults()}
-  Object.assign(S,keep);normalize();save();accFilter='';bookFY=null;render();toast((b==='business'?'Business':'Personal')+' book');
+  Object.assign(S,keep);normalize();save();accFilter='';render();toast((b==='business'?'Business':'Personal')+' book');
 }
 function ownSheet(t){
   const biz=BOOK==='business',o=readOther()||defaults();
@@ -1997,7 +1868,6 @@ function askText(title,def,ph,type){
   });
 }
 function navTo(id){
-  bookPage='';
   accFilter='';scrollTo(0,0);view=id;render();
 }
 /* Back button: the page keeps ONE guard history entry ahead of its root entry. Every back press lands on the root,
@@ -2014,7 +1884,6 @@ function handleBack(){
   if(calcEl){closeCalc();return true}
   if(dlgIsOpen()){const d=dlgDone;dlgDone=null;$('#dlg').innerHTML='';if(d)d(null);return true}
   if(sheetIsOpen()){closeSheet();return true}
-  if(view==='dash'&&bookPage){bookPage='';scrollTo(0,0);render();return true}
   if(view!=='home'||accFilter){accFilter='';view='home';scrollTo(0,0);render();return true}
   if(exitArmed)return false;
   exitArmed=true;toast('Press back again to exit',1800);setTimeout(()=>{exitArmed=false},2000);return true;
@@ -2210,7 +2079,7 @@ function syncKind(){
 /* ---------- render & events ---------- */
 function render(){
   applyEmis();
-  $('#app').innerHTML={home,dash:booksView,stats,people:khata,accounts,budget:budgetView,sms:smsView,txns:txView}[view]();
+  $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView,sms:smsView,txns:txView}[view]();
   const nav=[['home','home','Home'],['txns','wallet','Accounts'],...(SMS_ON?[['sms','msg','SMS']]:[]),['add','+',''],['budget','target','Budget'],['stats','chart','Insights'],['people','users','Ledger']];
   $('#nav').innerHTML=nav.map(([k,i,l])=>k==='add'?`<button class="fab" data-a="new" aria-label="Add"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>`:`<button class="${view===k?'on':''}" data-a="nav" data-id="${k}"><span>${ic(i,22)}</span>${l}</button>`).join('');
 }
@@ -2272,8 +2141,6 @@ document.addEventListener('click',e=>{
   }
   else if(a==='edit'){const t=S.tx.find(x=>x.id===id);if(!t)return;if(OWN_KINDS.includes(t.kind)){ownSheet(t);return}tt=t.type;txSheet(t)}
   else if(a==='book')switchBook(id);
-  else if(a==='bookpg'){bookPage=id;bookLimit=40;scrollTo(0,0);render()}
-  else if(a==='bookmore'){bookLimit+=40;render()}
   else if(a==='ownsheet')ownSheet(null);
   else if(a==='owndir'){window.__owndir=id;document.querySelectorAll('#ownseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id))}
   else if(a==='ownsave')ownSave(id);
@@ -2471,7 +2338,6 @@ document.addEventListener('input',e=>{if(e.target.type==='date')refreshDates();
   if(e.target.id==='f-amt')updateBHint();
   if(e.target.id==='q'){q=e.target.value;txLimit=15;$('#txlist').innerHTML=txListHTML();$('#txsum').innerHTML=txSummary()}
   if(e.target.id==='tx-month'){txMonth=e.target.value;txLimit=15;render()}
-  if(e.target.id==='book-fy'){bookFY=+e.target.value;render()}
   if(e.target.id==='tx-acc'){accFilter=e.target.value;txLimit=15;render()}
   else if(e.target.id==='f-note'&&!catTouched&&$('#f-kind').value==='expense'){
     const g=guessCat(e.target.value);
