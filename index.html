@@ -43,7 +43,7 @@ h1{font-size:20px;margin:0}h2{font-size:13px;margin:22px 0 10px;color:var(--mute
 .acc{flex:0 0 66%;scroll-snap-align:start;border-radius:16px;padding:9px 13px;color:#fff;position:relative;overflow:hidden;cursor:pointer}
 .acc small{opacity:.85;font-size:11.5px}.acc b{display:block;font-size:19px;margin:2px 0 4px}
 .acc .io{display:flex;gap:14px;font-size:12px;opacity:.95}
-.tx{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.tm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tx .grow{min-width:0}.tx{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .tx:last-child{border:0}
 .dot{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:17px;background:var(--brand-soft);flex:none}
 .tx .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1424,13 +1424,13 @@ function txRow(t){
   if(t.kind==='transfer'){
     const f=acc(t.acc),to=acc(t.to);
     return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:var(--brand-soft);color:var(--brand)">${ic('swap',19)}</div>
-    <div class="grow"><div class="t">${esc(t.note||'Transfer')}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})} · ${t.to?esc(f?f.name:'?')+' → '+esc(to?to.name:'?'):esc(f?f.name:'?')+' · payment received'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}</div></div>
+    <div class="grow"><div class="t">${esc(t.note||'Transfer')}</div><div class="small mute tm">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${t.to?esc(f?f.name:'?')+' → '+esc(to?to.name:'?'):esc(f?f.name:'?')+' · payment received'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}</div></div>
     <b class="num mute">${inr(t.amt)}</b></div>`;
   }
   const a=acc(t.acc),p=person(t.party);
   const tag=t.kind==='pass'?esc(p?p.name:'party'):t.kind==='other'?esc(srcName(t.source||'')+' · '+(t.cat==='Other'?'Other income':t.cat)):t.kind==='income'?esc(t.cat==='Other'?'Income':t.cat):esc(t.cat);
   return `<div class="tx" data-a="edit" data-id="${t.id}"><div class="dot" style="background:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8')+'26':t.kind==='pass'?'var(--brand-soft)':(ICATCOL[t.cat]||'#94a3b8')+'26'};color:${t.kind==='expense'?(CATCOL[t.cat]||'#94a3b8'):t.kind==='pass'?'var(--brand)':(ICATCOL[t.cat]||'var(--brand)')}">${t.kind==='pass'?ic('swap',19):t.kind==='expense'?ic(CATS[t.cat]||'receipt',19):ic(ICATS[t.cat]||'wallet',19)}</div>
-  <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})} · ${tag} · ${a?esc(a.name)+(a.last4?' ••'+a.last4:''):t.fromParty?'<span class="mute">paid from '+esc(p?p.name:'person')+'</span>':'<span class="debit">⚠ Pick account'+(t.hint4?' (••'+t.hint4+')':'')+'</span>'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}${t.pool?' · from '+esc(srcName(t.poolSrc||'')):''}</div></div>
+  <div class="grow"><div class="t">${esc(t.note||t.cat)}</div><div class="small mute tm">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${tag}${a&&!accFilter?' · ':a?'':' · '}${a?(accFilter?'':esc(a.name)):t.fromParty?'<span class="mute">paid from '+esc(p?p.name:'person')+'</span>':'<span class="debit">⚠ Pick account'+(t.hint4?' (••'+t.hint4+')':'')+'</span>'}${t.src==='sms'?' · SMS':t.src==='stmt'?' · Statement':''}${t.pool?' · from '+esc(srcName(t.poolSrc||'')):''}</div></div>
   <b class="num ${t.type}">${t.type==='credit'?'+':'−'}${inr(t.amt)}</b></div>`;
 }
 const shade=(hex,f)=>{const n=parseInt(hex.slice(1),16),c=k=>Math.max(0,Math.min(255,Math.round(((n>>k)&255)*(1+f))));return '#'+[16,8,0].map(k=>c(k).toString(16).padStart(2,'0')).join('')};
@@ -1448,7 +1448,7 @@ function accTile(a,i){
   const bg=ty==='cash'?'#5d8a63':COLORS[i%6];
   return `<div class="acc${accFilter===a.id?' sel':''}${accCC(a)||'" style="background:'+bg}" data-a="filter" data-id="${a.id}"><small>${esc(a.name)}${ty==='cash'?' · in hand':a.last4?' ••'+a.last4:''}${sel}</small><b class="num">${inrH(bal)}</b>${io}</div>`;
 }
-let txMonth='all',txKind='all',txLimit=25;
+let txMonth='all',txKind='all',txLimit=15;
 function txFiltered(){
   const ql=q.trim().toLowerCase(),idx=new Map(S.tx.map((t,i)=>[t,i]));
   return S.tx.filter(t=>(txMonth==='all'||t.date.startsWith(txMonth))&&(!accFilter||t.acc===accFilter||t.to===accFilter)&&(txKind==='all'||(txKind==='dr'?t.type==='debit':t.type==='credit'))&&(!ql||[t.note,t.cat,(person(t.party)||{}).name,String(t.amt)].join(' ').toLowerCase().includes(ql)))
@@ -1463,7 +1463,7 @@ function txListHTML(){
   if(!list.length)return '<div class="empty">'+(q.trim()?'No match.':'Nothing here.<br>Tap + to add one.')+'</div>';
   let out='',last='';
   list.slice(0,txLimit).forEach(t=>{const m=t.date.slice(0,7);if(m!==last){last=m;out+=`<div class="small mute" style="padding:12px 0 2px;font-weight:700">${mlabel(m)}</div>`}out+=txRow(t)});
-  if(list.length>txLimit)out+=`<div class="row" style="gap:8px;margin:10px 0"><button class="btn ghost" data-a="txmore" style="margin:0;flex:1">Show 25 more (${list.length-txLimit} left)</button><button class="btn ghost" data-a="txall" style="margin:0">All</button></div>`;
+  if(list.length>txLimit)out+=`<div class="row" style="gap:8px;margin:10px 0"><button class="btn ghost" data-a="txmore" style="margin:0;flex:1">Show 15 more (${list.length-txLimit} left)</button><button class="btn ghost" data-a="txall" style="margin:0">All</button></div>`;
   return out;
 }
 function txView(){
@@ -1476,10 +1476,9 @@ function txView(){
     if(sel){if(ty==='card'){big=(bal<0?'Due ':'Credit ')+inrH(Math.abs(bal));sub='credit card'+(sel.last4?' ••'+sel.last4:'')}else sub=ty==='cash'?'cash in hand':'bank'+(sel.last4?' ••'+sel.last4:'')}
     return `<div class="card" style="margin:8px 0;padding:12px 14px"><select id="tx-acc" style="font-weight:700"><option value="" ${sel?'':'selected'}>All accounts</option>${S.accounts.map(a=>`<option value="${a.id}" ${accFilter===a.id?'selected':''}>${esc(a.name)}${accType(a)==='card'?' (card)':accType(a)==='cash'?' (cash)':a.last4?' ••'+a.last4:''}</option>`).join('')}</select>
     <div class="row sp" style="margin-top:10px;align-items:flex-end"><div><div class="small mute">${sub}</div><div class="num" style="font-size:24px;font-weight:700">${big}</div></div>${m?`<div class="small mute" style="text-align:right">${mlabel(month)}<br><span class="credit">↓ ${inrH(m.i)}</span> · <span class="debit">↑ ${inrH(m.o)}</span></div>`:''}</div>${sel?`<button class="btn ghost" data-a="accpdfmenu" data-id="${sel.id}" style="margin:12px 0 0">Statement PDF</button>`:`<div class="small mute" style="margin-top:10px">Choose an account above to get its statement PDF.</div>`}</div>`})()}
-  <h2>${sel?'Transactions · '+esc(sel.name):'All transactions'}</h2>
   <input id="q" class="search" placeholder="Search note, category, person or amount" value="${esc(q)}">
-  <div style="margin-top:10px"><select id="tx-month"><option value="all" ${txMonth==='all'?'selected':''}>All time</option>${months.map(m=>`<option value="${m}" ${txMonth===m?'selected':''}>${mlabel(m)}</option>`).join('')}</select></div>
-  <div class="seg" style="margin:10px 0">${KF.map(([k,l])=>`<button data-a="txkind" data-id="${k}" class="${txKind===k?'on':''}">${l}</button>`).join('')}</div>
+  <div class="row" style="margin:8px 0;gap:8px;align-items:stretch"><select id="tx-month" style="flex:1;min-width:0"><option value="all" ${txMonth==='all'?'selected':''}>All time</option>${months.map(m=>`<option value="${m}" ${txMonth===m?'selected':''}>${mlabel(m)}</option>`).join('')}</select>
+  <div class="seg" style="margin:0;flex:1.3">${KF.map(([k,l])=>`<button data-a="txkind" data-id="${k}" class="${txKind===k?'on':''}">${l}</button>`).join('')}</div></div>
   <div class="row sp small mute" id="txsum" style="margin:4px 2px 8px">${txSummary()}</div>
   <div class="card" style="padding:4px 16px" id="txlist">${txListHTML()}</div>`;
 }
@@ -2059,8 +2058,8 @@ document.addEventListener('click',e=>{
   else if(a==='acccolor'){const x=acc(id);if(x){x.color=el.dataset.c||'';save();render()}}
   else if(a==='manageacc'){openSec.add('acc');view='accounts';scrollTo(0,0);render()}
   else if(a==='txall'){txLimit=1e9;$('#txlist').innerHTML=txListHTML()}
-  else if(a==='txmore'){txLimit+=25;$('#txlist').innerHTML=txListHTML()}
-  else if(a==='txkind'){txKind=id;txLimit=25;render()}
+  else if(a==='txmore'){txLimit+=15;$('#txlist').innerHTML=txListHTML()}
+  else if(a==='txkind'){txKind=id;txLimit=15;render()}
   else if(a==='seg'){seg=id;render()}
   else if(a==='range'){homeRange=id;render()}
   else if(a==='new'){txSheet()}
@@ -2287,9 +2286,9 @@ document.addEventListener('input',e=>{if(e.target.type==='date')refreshDates();
     if(am>0&&mo>0)$('#e-mon').value=Math.round(am/mo);
   }
   if(e.target.id==='f-amt')updateBHint();
-  if(e.target.id==='q'){q=e.target.value;txLimit=25;$('#txlist').innerHTML=txListHTML();$('#txsum').innerHTML=txSummary()}
-  if(e.target.id==='tx-month'){txMonth=e.target.value;txLimit=25;render()}
-  if(e.target.id==='tx-acc'){accFilter=e.target.value;txLimit=25;render()}
+  if(e.target.id==='q'){q=e.target.value;txLimit=15;$('#txlist').innerHTML=txListHTML();$('#txsum').innerHTML=txSummary()}
+  if(e.target.id==='tx-month'){txMonth=e.target.value;txLimit=15;render()}
+  if(e.target.id==='tx-acc'){accFilter=e.target.value;txLimit=15;render()}
   else if(e.target.id==='f-note'&&!catTouched&&$('#f-kind').value==='expense'){
     const g=guessCat(e.target.value);
     if(g!=='Other'){$('#f-cat').value=g;document.querySelectorAll('#f-cats .chip').forEach(b=>b.classList.toggle('on',b.dataset.id===g));$('#smart').innerHTML=`<div class="hint">Smart category: ${g}. Tap another chip to change.</div>`}
