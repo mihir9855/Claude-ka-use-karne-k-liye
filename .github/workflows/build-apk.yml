@@ -23,7 +23,7 @@ jobs:
       - name: Make app icons
         run: |
           npm install --no-save @capacitor/assets@3.0.5
-          npx capacitor-assets generate --android --iconBackgroundColor '#4A4E8C' --iconBackgroundColorDark '#4A4E8C'
+          npx capacitor-assets generate --android --iconBackgroundColor '#F5F4F0' --iconBackgroundColorDark '#F5F4F0'
       - run: npx cap sync android
       - name: Build debug APK
         working-directory: android
