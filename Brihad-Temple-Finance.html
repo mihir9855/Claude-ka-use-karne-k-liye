@@ -204,6 +204,7 @@ svg{display:block;max-width:100%}
 
 <script>
 (function(){
+var BIZ={name:'Brihad Temple Construction Co.',phone:'+91 XXXXX XXXXX',addr:'Office address, City, State - PIN'};
 var INR=function(n){return '₹'+Number(n).toLocaleString('en-IN')};
 var LAKH=function(n){return '₹'+(n/100000).toFixed(2).replace(/\.?0+$/,'')+'L'};
 var ICON={
@@ -421,7 +422,7 @@ function payDetail(e){
   +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px"><button class="btnp" data-act="payVoucher" data-arg="'+PAYS.indexOf(e)+'">Create voucher</button><button class="btn" data-act="toast" data-arg="Statement PDF saves to your phone in the real app. This is a preview.">Statement PDF</button></div></section>'}
 
 function voucherPaper(v,signed){
-  return '<div class="paper"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="display:flex;align-items:center;gap:8px"><div style="width:30px;height:30px;border-radius:9px;background:#4A4E8C;color:#fff;display:flex;align-items:center;justify-content:center">'+ic('proj',18,1.8)+'</div><b style="font-size:13px;line-height:1.2">Brihad Temple Construction Co.</b></div><div class="pl" style="margin-top:12px">'+(v.type==='Payment'?'PAYMENT VOUCHER':'RECEIPT VOUCHER')+'</div></div><div style="text-align:right"><div class="pl">VOUCHER NO.</div><div class="disp" style="font-size:16px">'+v.no+'</div><div style="font-size:12px;color:#62668A">'+v.date+'</div></div></div>'
+  return '<div class="paper"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="display:flex;align-items:center;gap:8px"><div style="width:30px;height:30px;border-radius:9px;background:#4A4E8C;color:#fff;display:flex;align-items:center;justify-content:center">'+ic('proj',18,1.8)+'</div><b style="font-size:13px;line-height:1.2">'+BIZ.name+'</b></div><div style="font-size:11px;color:#62668A;margin-top:6px;line-height:1.4">'+BIZ.addr+'<br>Phone: '+BIZ.phone+'</div><div class="pl" style="margin-top:12px">'+(v.type==='Payment'?'PAYMENT VOUCHER':'RECEIPT VOUCHER')+'</div></div><div style="text-align:right"><div class="pl">VOUCHER NO.</div><div class="disp" style="font-size:16px">'+v.no+'</div><div style="font-size:12px;color:#62668A">'+v.date+'</div></div></div>'
   +'<div style="height:1px;background:#E6E8F3;margin:14px 0"></div><div class="pl">'+(v.type==='Payment'?'PAID TO':'RECEIVED FROM')+'</div><div style="font-size:18px;font-weight:800;margin-top:2px">'+esc(v.name)+'</div><div style="font-size:12px;color:#62668A">'+esc(v.project)+' · '+esc(v.stage)+'</div>'
   +'<div style="background:#F3F4FB;border-radius:14px;padding:12px 14px;margin-top:14px"><div class="pl">AMOUNT</div><div class="disp tn" style="font-size:30px">'+INR(v.amount)+'</div><div style="font-size:12px;color:#44486B;margin-top:4px">'+words(v.amount)+'</div></div>'
   +'<div style="display:flex;gap:12px;margin-top:14px"><div style="flex:1.4"><div class="pl">FOR</div><b style="font-size:13px">'+esc(v.purpose)+'</b></div><div style="flex:1"><div class="pl">MODE</div><b style="font-size:13px">'+v.mode+'</b></div></div>'
