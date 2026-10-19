@@ -70,8 +70,11 @@ svg{display:block;max-width:100%}
 .dot{display:inline-block;width:8px;height:8px;border-radius:99px;background:var(--teal);margin-right:6px}
 
 /* header */
-.head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
-.head h1{margin:2px 0 0;font-size:30px;line-height:1.05}
+.head{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.head>div:first-child{min-width:0;flex:1}
+.head .hrow{flex-shrink:0}
+.head h1{margin:2px 0 0;font-size:30px;line-height:1.1;overflow-wrap:anywhere}
+.head h1.long{font-size:24px}
 .hrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ibtn{width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center}
 .btn{min-height:46px;padding:0 20px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-weight:800;font-size:14px}
@@ -119,7 +122,7 @@ svg{display:block;max-width:100%}
 .li{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);min-width:0}
 .li:last-child{border-bottom:0}
 .li .m{flex:1;min-width:0}
-.li .m b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .m b{display:block;font-size:14px;overflow-wrap:anywhere;line-height:1.35}
 .li .m span{font-size:12px;color:var(--muted)}
 .av{width:40px;height:40px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
 .rowb{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid transparent;border-radius:18px;background:transparent;text-align:left;min-width:0}
@@ -172,8 +175,10 @@ svg{display:block;max-width:100%}
 .paper{background:#fff;color:#1F2230;border-radius:18px;padding:20px;box-shadow:0 14px 40px rgba(0,0,0,.25)}
 .pl{font-size:10px;font-weight:800;letter-spacing:.06em;color:#7A7FA6}
 .signbox{width:100%;height:74px;border:1.5px dashed #B7BBD8;border-radius:12px;background:#FAFAFE;color:#6B70A0;font-weight:700;font-size:12px}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:99px;font-weight:700;font-size:13px;max-width:calc(100vw - 32px);text-align:center;box-shadow:0 14px 30px rgba(0,0,0,.35)}
-@media (min-width:980px){.toast{bottom:28px}}
+#toast{position:fixed;left:0;right:0;bottom:calc(160px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;justify-content:center;padding:0 16px;pointer-events:none}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:14px;width:fit-content;max-width:100%;background:var(--ink);color:var(--bg);padding:10px 12px 10px 20px;border-radius:16px;font-weight:700;font-size:14px;line-height:1.35;box-shadow:0 14px 30px rgba(0,0,0,.3)}
+.toast:not(:has(.undo)){padding:12px 20px}
+@media (min-width:980px){#toast{bottom:28px;justify-content:center}}
 .field{display:block;margin-top:14px}
 .field>span{display:block;margin-bottom:6px}
 .amt{font-family:var(--font-display);font-weight:800;font-size:34px;letter-spacing:-0.03em;min-height:64px}
@@ -192,7 +197,7 @@ svg{display:block;max-width:100%}
 .stg{border:1px solid var(--line);border-radius:16px;padding:10px;margin-bottom:8px;background:var(--surface2)}
 textarea.inp{width:100%;font-family:inherit;resize:vertical;line-height:1.4}
 .field input[type=date]{min-width:0}
-.toast .undo{margin-left:14px;border:0;background:var(--amber);color:#1F2230;font-weight:800;border-radius:99px;padding:6px 14px;min-height:32px}
+.toast .undo{flex-shrink:0;border:0;background:var(--amber);color:#1F2230;font-weight:800;border-radius:12px;padding:0 16px;min-height:38px;font-size:14px}
 .li{font:inherit;color:inherit}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lgt{filter:invert(1) hue-rotate(180deg)}}
 :root[data-theme="dark"] .lgt{filter:invert(1) hue-rotate(180deg)}
@@ -362,10 +367,10 @@ function segs(p){var h='<div class="seg">';p.stages.forEach(function(s,i){h+='<i
 function templeArt(sz){return '<img src="'+LH.l+'" alt="Brihad Temple logo" class="lgt" style="height:'+sz+'px;width:auto;max-width:100%">'}
 
 /* ---------- small views ---------- */
-function stepper(p){return '<div class="step">'+p.stages.map(function(s,i){return '<div><div class="ln '+(i===0?'f':(s.done||i===p.curIdx?'d':''))+'"></div><div class="nd '+(s.done?'d':i===p.curIdx?'n':'')+'">'+(s.done?'✓':i+1)+'</div><span style="display:block;padding:0 2px;overflow-wrap:anywhere">'+esc(s.name.length>14?s.name.slice(0,13)+'…':s.name)+'</span></div>'}).join('')+'</div>'}
+function stepper(p){return '<div class="step">'+p.stages.map(function(s,i){return '<div><div class="ln '+(i===0?'f':(s.done||i===p.curIdx?'d':''))+'"></div><div class="nd '+(s.done?'d':i===p.curIdx?'n':'')+'">'+(s.done?'✓':i+1)+'</div><span style="display:block;padding:0 2px;overflow-wrap:anywhere;line-height:1.25">'+esc(s.name)+'</span></div>'}).join('')+'</div>'}
 function projCard(p){
   var done=p.status==='done',stg=p.curIdx>=0?p.stages[p.curIdx].name:'All stages done';
-  return '<button class="proj" data-act="openProj" data-arg="'+p.id+'"><div style="display:flex;align-items:center;gap:14px"><div style="position:relative;width:58px;height:58px;flex-shrink:0">'+ring(p.progress,58)+'<div class="disp" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px">'+p.progress+'%</div></div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</b><span class="chip '+(done?'c-teal':'c-violet')+'">'+(done?'Completed':'Active')+'</span></div><div class="lbl" style="margin-top:2px">'+esc(p.client||'')+(p.client?' · ':'')+(done?'Finished':'Stage '+(p.curIdx+1)+' of '+p.stages.length+' · '+esc(stg))+'</div></div></div>'
+  return '<button class="proj" data-act="openProj" data-arg="'+p.id+'"><div style="display:flex;align-items:center;gap:14px"><div style="position:relative;width:58px;height:58px;flex-shrink:0">'+ring(p.progress,58)+'<div class="disp" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px">'+p.progress+'%</div></div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="font-size:16px;overflow-wrap:anywhere;line-height:1.3">'+esc(p.name)+'</b><span class="chip '+(done?'c-teal':'c-violet')+'">'+(done?'Completed':'Active')+'</span></div><div class="lbl" style="margin-top:2px">'+esc(p.client||'')+(p.client?' · ':'')+(done?'Finished':'Stage '+(p.curIdx+1)+' of '+p.stages.length+' · '+esc(stg))+'</div></div></div>'
   +'<div style="margin-top:14px">'+segs(p)+'</div><div style="display:flex;justify-content:space-between;margin-top:14px;gap:8px"><div><div class="lbl">Received</div><b class="tn" style="color:var(--teal-x)">'+INR(p.received)+'</b></div><div style="text-align:center"><div class="lbl">Spent</div><b class="tn">'+INR(p.spent)+'</b></div><div style="text-align:right"><div class="lbl">Deal value</div><b class="tn">'+INR(p.value)+'</b></div></div></button>'}
 function projListHtml(D){
   var q=S.q.toLowerCase();
@@ -375,9 +380,9 @@ function projListHtml(D){
 function txnRow(t,D,showProj){
   var inn=t.kind==='in',bill=t.kind==='bill',p=D.byId[t.projId];
   var title=bill?'Bill · '+(t.who||''):(inn?'Received from '+t.who:'Paid to '+t.who);
-  var sub=[fmt(t.date),showProj&&p?p.name:'',inn?(t.stageName||''):(bill?'':t.section),t.mode].filter(Boolean).join(' · ');
+  var sub1=[fmt(t.date),t.mode].filter(Boolean).join(' · '),sub2=[showProj&&p?p.name:'',inn?(t.stageName||''):(bill?'':t.section)].filter(Boolean).join(' · ');
   var open=bill?'':' data-act="openV" data-arg="'+t.id+'"';
-  return '<button class="rowb"'+open+(bill?' style="cursor:default"':'')+'><div class="av '+(inn?'c-teal':bill?'c-amber':'c-coral')+'">'+ic(inn?'inn':'out',18,2.4)+'</div><div style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(title)+'</b><span class="lbl">'+esc(sub)+'</span></div><b class="tn" style="color:'+(inn?'var(--teal-x)':'var(--ink)')+'">'+(inn?'+':bill?'':'−')+INR(t.amount)+'</b></button>'}
+  return '<button class="rowb"'+open+(bill?' style="cursor:default"':'')+'><div class="av '+(inn?'c-teal':bill?'c-amber':'c-coral')+'">'+ic(inn?'inn':'out',18,2.4)+'</div><div style="flex:1;min-width:0"><b style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere">'+esc(title)+'</b><span class="lbl" style="display:block">'+esc(sub1)+'</span>'+(sub2?'<span class="lbl" style="display:block">'+esc(sub2)+'</span>':'')+'</div><b class="tn" style="color:'+(inn?'var(--teal-x)':'var(--ink)')+'">'+(inn?'+':bill?'':'−')+INR(t.amount)+'</b></button>'}
 function stageName(p,id){var s=p&&p.stages.filter(function(x){return x.id===id})[0];return s?s.name:''}
 function enrich(D,list){return list.map(function(t){var p=D.byId[t.projId];return Object.assign({},t,{stageName:t.stageId?stageName(p,t.stageId):''})})}
 function emptyBox(msg,btn,act){return '<div style="text-align:center;padding:26px 10px"><div style="display:flex;justify-content:center;margin-bottom:12px">'+templeArt(70)+'</div><div class="lbl" style="max-width:320px;margin:0 auto 14px;line-height:1.5">'+msg+'</div>'+(btn?'<button class="btnp" data-act="'+act+'">'+btn+'</button>':'')+'</div>'}
@@ -456,7 +461,7 @@ function pagePeople(D){
   var q=S.peq.toLowerCase();
   var tot=D.owe;
   var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+ib('newParty',null,'userplus','Add person','pri')+'</div>';
-  if(D.parties.length)h+='<div class="tile bg-blue" style="margin-bottom:12px"><div class="t-l">You owe in total</div><div class="t-v" style="font-size:36px">'+INR(tot)+'</div><div class="t-n">to '+D.parties.filter(function(x){return x.bal>0}).length+' people</div></div>';
+  if(D.parties.length)h+='<div class="tile bg-blue" style="margin-bottom:12px"><div class="t-l">You owe in total</div><div class="t-v" style="font-size:36px">'+INR(tot)+'</div><div class="t-n">to '+(function(n){return n+(n===1?' person':' people')})(D.parties.filter(function(x){return x.bal>0}).length)+'</div></div>';
   h+='<section class="card"><label class="sr" for="peq">Search people</label><input class="search" id="peq" type="search" placeholder="Search name or type" value="'+esc(S.peq)+'" autocomplete="off"><div id="peList" style="margin-top:8px">'+peopleListHtml(D)+'</div></section>';
   return h}
 function peopleListHtml(D){
@@ -464,7 +469,7 @@ function peopleListHtml(D){
   if(!D.parties.length)return emptyBox('Add your stone suppliers, carving workers and fitting teams to keep a ledger for each.','+ Add person','newParty');
   var l=D.parties.filter(function(x){return !q||(x.name+' '+x.type).toLowerCase().indexOf(q)>=0});
   if(!l.length)return '<div class="lbl" style="padding:20px;text-align:center">No one matches.</div>';
-  return l.map(function(x){return '<button class="rowb" data-act="openParty" data-arg="'+x.id+'"><div class="av c-violet">'+esc((x.name[0]||'?').toUpperCase())+'</div><div style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.name)+'</b><span class="lbl">'+esc(x.type)+'</span></div><div style="text-align:right"><div class="lbl">'+(x.bal>0?'You owe':x.bal<0?'Advance paid':'Settled')+'</div><b class="tn">'+(x.bal?INR(Math.abs(x.bal)):'₹0')+'</b></div></button>'}).join('')}
+  return l.map(function(x){return '<button class="rowb" data-act="openParty" data-arg="'+x.id+'"><div class="av c-violet">'+esc((x.name[0]||'?').toUpperCase())+'</div><div style="flex:1;min-width:0"><b style="display:block;overflow-wrap:anywhere;line-height:1.3">'+esc(x.name)+'</b><span class="lbl">'+esc(x.type)+'</span></div><div style="text-align:right"><div class="lbl">'+(x.bal>0?'You owe':x.bal<0?'Advance paid':'Settled')+'</div><b class="tn">'+(x.bal?INR(Math.abs(x.bal)):'₹0')+'</b></div></button>'}).join('')}
 function partyDetail(D,x){
   var lines=x.lines.map(function(t,i){return Object.assign({n:i},t)}).sort(function(a,b){return a.date===b.date?(a.n-b.n):(a.date<b.date?-1:1)});
   var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+ib('closeParty',null,'back','All people','')+ib('addBill',x.id,'note','Add bill (amount owed)','pri')+ib('payParty',x.id,'out','Pay now','')+ib('editParty',x.id,'edit','Edit person','')+'</div>'
@@ -673,7 +678,7 @@ function render(){
   if(S.page==='projects'&&S.projId&&D.byId[S.projId]){ttl=D.byId[S.projId].name;sub=D.byId[S.projId].client||'Project'}
   if(S.page==='people'&&S.partyId&&D.pById[S.partyId]){ttl=D.pById[S.partyId].name;sub='Ledger'}
   if(S.page==='home'){var hr=new Date().getHours();ttl=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';sub=fmt(today())}
-  var head='<div class="head"><div><div class="lbl">'+esc(sub)+'</div><h1 class="disp">'+esc(ttl)+'</h1></div><div class="hrow"><button class="ibtn" data-act="theme" aria-label="Switch light or dark theme">'+ic(isDark()?'sun':'moon',20)+'</button></div></div>';
+  var head='<div class="head"><div><div class="lbl">'+esc(sub)+'</div><h1 class="disp'+(ttl.length>20?' long':'')+'">'+esc(ttl)+'</h1></div><div class="hrow"><button class="ibtn" data-act="theme" aria-label="Switch light or dark theme">'+ic(isDark()?'sun':'moon',20)+'</button></div></div>';
   var body={home:pageHome,projects:pageProjects,payments:pagePayments,people:pagePeople,settings:pageSettings}[S.page](D);
   document.getElementById('main').innerHTML=head+body;
   renderModal(D);
