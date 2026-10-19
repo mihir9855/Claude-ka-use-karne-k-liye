@@ -483,7 +483,7 @@ function letterPaper(t){
   +'<div style="text-align:center;font-size:15px;letter-spacing:.3em;font-weight:700;margin:26px 0 18px;text-decoration:underline;text-underline-offset:5px">RECEIPT</div>'
   +'<div style="font-size:14px;line-height:1.5;margin-bottom:10px">To,<br><b>'+esc(v.who)+'</b><br>'+esc(v.proj)+'</div>'
   +'<p style="font-size:14px;line-height:1.8;margin:12px 0;text-align:justify">Received with thanks from <b>'+esc(v.who)+'</b> the sum of <b>'+INR(t.amount)+'/-</b> ('+words(t.amount)+') by <b>'+esc(t.mode)+'</b> on <b>'+fmt(t.date)+'</b>'+(v.stage?', towards <b>'+esc(v.stage)+'</b>':'')+(t.note?' ('+esc(t.note)+')':'')+', for the construction work of <b>'+esc(v.proj)+'</b>.</p>'
-  +(p?'<div style="margin:14px 0 4px">'+r('Total deal value',INR(p.value))+r('Received so far',INR(p.received))+r('Balance to receive',INR(Math.max(0,p.value-p.received)))+'</div>':'')
+  +'<div style="margin:14px 0 4px">'+r('Amount received',INR(t.amount)+'/-')+'</div>'
   +'<div style="margin-top:34px;text-align:right;font-size:13px"><div style="height:54px"></div><div style="display:inline-block;border-top:1.5px solid #1F2230;padding-top:5px;min-width:200px;text-align:center"><b>For BRIHAD TEMPLE CONSTRUCTION CO.</b><div style="font-size:11px;color:#62668A">Authorised Signatory</div></div></div></div>'
   +'<img src="'+LH.f+'" alt="" style="width:100%;display:block;margin-top:6px"></div>'}
 function pdfLetter(t){
@@ -495,7 +495,7 @@ function pdfLetter(t){
   y=88;d.setFontSize(11);d.setFont('times','normal');d.text('To,',L,y);y+=6;d.setFont('times','bold');d.text(v.who,L,y);y+=6;d.setFont('times','normal');d.text(v.proj,L,y);y+=12;
   var body='Received with thanks from '+v.who+' the sum of '+rs(t.amount)+'/- ('+words(t.amount)+') by '+t.mode+' on '+fmt(t.date)+(v.stage?', towards '+v.stage:'')+(t.note?' ('+t.note+')':'')+', for the construction work of '+v.proj+'.';
   var ls=d.splitTextToSize(body,R-L);d.setFontSize(11.5);d.text(ls,L,y,{lineHeightFactor:1.7});y+=ls.length*7.2+8;
-  if(p){[['Total deal value',p.value],['Received so far',p.received],['Balance to receive',Math.max(0,p.value-p.received)]].forEach(function(x){d.setFontSize(10.5);d.setFont('times','normal');d.text(x[0],L,y);d.setFont('times','bold');d.text(rs(x[1]),R,y,{align:'right'});d.setDrawColor(210,208,200);d.setLineWidth(0.2);d.line(L,y+2,R,y+2);y+=8})}
+  {[['Amount received',t.amount]].forEach(function(x){d.setFontSize(10.5);d.setFont('times','normal');d.text(x[0],L,y);d.setFont('times','bold');d.text(rs(x[1]),R,y,{align:'right'});d.setDrawColor(210,208,200);d.setLineWidth(0.2);d.line(L,y+2,R,y+2);y+=8})}
   y=Math.max(y+22,215);d.setDrawColor(31,34,48);d.setLineWidth(0.4);d.line(R-62,y,R,y);d.setFont('times','bold');d.setFontSize(9.5);d.text('For BRIHAD TEMPLE CONSTRUCTION CO.',R-31,y+5,{align:'center'});d.setFont('times','normal');d.setFontSize(8.5);d.text('Authorised Signatory',R-31,y+9.5,{align:'center'});
   try{d.save(t.vno+'.pdf');toast('Saved '+t.vno+'.pdf')}catch(e){toast('Could not save the PDF on this device.')}}
 function voucherText(t){var v=voucherInfo(t),b=DB.biz;return [b.name,(v.inn?'RECEIPT VOUCHER ':'PAYMENT VOUCHER ')+t.vno,'Date: '+fmt(t.date),(v.inn?'Received from: ':'Paid to: ')+v.who,'Project: '+v.proj+(v.stage?' ('+v.stage+')':''),'Amount: '+INR(t.amount),words(t.amount),'Mode: '+t.mode].concat(t.note?['Note: '+t.note]:[]).concat(b.phone?['Phone: '+b.phone]:[]).join('\n')}
