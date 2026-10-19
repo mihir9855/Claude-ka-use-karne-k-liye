@@ -196,6 +196,8 @@ textarea.inp{width:100%;font-family:inherit;resize:vertical;line-height:1.4}
 .li{font:inherit;color:inherit}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lgt{filter:invert(1) hue-rotate(180deg)}}
 :root[data-theme="dark"] .lgt{filter:invert(1) hue-rotate(180deg)}
+#printArea{display:none}
+@media print{body>*:not(#printArea){display:none!important}#printArea{display:block!important}.vfit{height:auto!important}.vin{transform:none!important;margin:0 auto}body{background:#fff!important}.paper{box-shadow:none!important}}
 </style>
 </head>
 <body>
@@ -209,9 +211,11 @@ textarea.inp{width:100%;font-family:inherit;resize:vertical;line-height:1.4}
 <main class="main" id="main"></main>
 </div>
 <nav class="bottom" id="bottom" aria-label="Main menu"></nav>
-<button class="fab" id="fab" data-act="openAdd" aria-label="New entry"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<button class="fab" id="fab" data-act="openAdd" aria-label="New voucher"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 <div id="modal"></div>
 <div id="toast"></div>
+<div id="printArea"></div>
+<style id="pgstyle"></style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
@@ -264,7 +268,7 @@ var S={page:'home',projId:null,tab:'overview',partyId:null,pf:'all',pq:'',peq:''
 
 /* ---------- derived numbers ---------- */
 function derive(){
-  var D={projects:[],byId:{},parties:[],pById:{},months:[],heat:{}};
+  var D={projects:[],byId:{},parties:[],pById:{},months:[],heat:{},looseIn:0,looseOut:0,looseSec:{}};SECTIONS.forEach(function(s){D.looseSec[s]=0});
   DB.projects.forEach(function(p){
     var q=Object.assign({},p);q.received=0;q.spent=0;q.billed=0;q.paidParty=0;q.stageRec={};q.sec={};SECTIONS.forEach(function(s){q.sec[s]=0});
     var done=0;q.stages.forEach(function(s){if(s.done)done++});
@@ -279,8 +283,8 @@ function derive(){
   var curM=today().slice(0,7);
   DB.txns.forEach(function(t){
     var p=D.byId[t.projId];
-    if(t.kind==='in'){if(p){p.received+=t.amount;if(t.stageId)p.stageRec[t.stageId]=(p.stageRec[t.stageId]||0)+t.amount}}
-    else if(t.kind==='out'){if(p){p.spent+=t.amount;p.sec[t.section]=(p.sec[t.section]||0)+t.amount}}
+    if(t.kind==='in'){if(p){p.received+=t.amount;if(t.stageId)p.stageRec[t.stageId]=(p.stageRec[t.stageId]||0)+t.amount}else D.looseIn+=t.amount}
+    else if(t.kind==='out'){if(p){p.spent+=t.amount;p.sec[t.section]=(p.sec[t.section]||0)+t.amount}else{D.looseOut+=t.amount;D.looseSec[t.section]=(D.looseSec[t.section]||0)+t.amount}}
     var pt=t.partyId&&D.pById[t.partyId];
     if(pt){if(t.kind==='bill'){pt.bills+=t.amount;if(p)p.billed+=t.amount}else if(t.kind==='out'){pt.paid+=t.amount;if(p)p.paidParty+=t.amount}pt.lines.push(t)}
     D.months.forEach(function(m){if(t.date&&t.date.slice(0,7)===m.k){if(t.kind==='in')m.inn+=t.amount;else if(t.kind==='out')m.out+=t.amount}});
@@ -289,7 +293,7 @@ function derive(){
   D.projects.forEach(function(p){p.due=Math.max(0,p.billed-p.paidParty)});
   D.totalValue=0;D.received=0;D.spent=0;D.toReceive=0;D.sec={};SECTIONS.forEach(function(s){D.sec[s]=0});
   D.projects.forEach(function(p){D.totalValue+=p.value;D.received+=p.received;D.spent+=p.spent;D.toReceive+=Math.max(0,p.value-p.received);SECTIONS.forEach(function(s){D.sec[s]+=p.sec[s]||0})});
-  D.cash=D.received-D.spent;
+  D.received+=D.looseIn;D.spent+=D.looseOut;SECTIONS.forEach(function(s){D.sec[s]+=D.looseSec[s]||0});D.cash=D.received-D.spent;
   D.owe=0;D.parties.forEach(function(p){p.bal=p.bills-p.paid;if(p.bal>0)D.owe+=p.bal});
   D.month=D.months[5];
   return D}
@@ -301,6 +305,7 @@ function gauge(pct){pct=Math.max(0,Math.min(100,pct));var len=Math.PI*70,fg=len*
  return '<svg viewBox="0 0 170 100" width="170" height="100" role="img" aria-label="'+pct+' percent of total deal value collected"><path d="M15 90A70 70 0 0 1 155 90" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="14" stroke-linecap="round"/><path class="sw" d="M15 90A70 70 0 0 1 155 90" fill="none" stroke="#E3B55A" stroke-width="14" stroke-linecap="round" stroke-dasharray="'+fg.toFixed(1)+' 260"/><text x="85" y="84" text-anchor="middle" font-family="Bricolage Grotesque, Manrope, sans-serif" font-weight="800" font-size="26" fill="#fff">'+pct+'%</text></svg>'}
 function ring(p,sz){var r=sz/2-8,c=2*Math.PI*r;return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'" aria-hidden="true"><circle cx="'+sz/2+'" cy="'+sz/2+'" r="'+r+'" fill="none" stroke="var(--line)" stroke-width="8"/><circle cx="'+sz/2+'" cy="'+sz/2+'" r="'+r+'" fill="none" stroke="var(--violet)" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+(c*p/100).toFixed(1)+' '+c.toFixed(1)+'" transform="rotate(-90 '+sz/2+' '+sz/2+')"/></svg>'}
 function waterfall(D){
+  if(!D.received)return '<div class="lbl" style="padding:40px 0;text-align:center">This chart appears once you record money received from a client.</div>';
   var steps=[{l:'Received',v:D.received,c:'teal',t:1}],run=D.received;
   SECTIONS.forEach(function(s,i){if(D.sec[s]>0){steps.push({l:s==='Site visit'?'Site':s,v:D.sec[s],c:SCOL[i],from:run});run-=D.sec[s]}});
   steps.push({l:'In hand',v:Math.abs(run),c:run<0?'coral':'ink',t:1,neg:run<0});
@@ -362,7 +367,7 @@ function emptyBox(msg,btn,act){return '<div style="text-align:center;padding:26p
 
 /* ---------- pages ---------- */
 function pageHome(D){
-  if(!D.projects.length){
+  if(!D.projects.length&&!DB.txns.length){
     return '<section class="card" style="text-align:center;padding:34px 20px"><div style="display:flex;justify-content:center">'+templeArt(120)+'</div><h2 class="disp" style="font-size:26px;margin:18px 0 6px">Welcome to '+esc(DB.biz.name)+'</h2><p class="lbl" style="max-width:420px;margin:0 auto 18px;line-height:1.6;font-size:14px">Your app is empty and ready. Start by adding your first temple project. Your numbers, charts and vouchers will appear here as you add entries.</p><button class="btnp" data-act="newProject">+ Add first project</button></section>'
     +'<div class="grid2 sect">'+[['1','Add a project','Enter the temple name, the full deal value, and split it into stages with the payment due at each stage.','violet'],['2','Add your people','Stone suppliers, carving workers, fitting teams. Add what you owe them and what you pay.','teal'],['3','Record every payment','Money received from the client or paid out. A voucher is made for each one.','amber']].map(function(x){return '<section class="card" style="display:flex;gap:14px"><div class="av c-'+x[3]+'" style="width:44px;height:44px;font-size:18px">'+x[0]+'</div><div><b>'+x[1]+'</b><div class="lbl" style="margin-top:4px;line-height:1.5">'+x[2]+'</div></div></section>'}).join('')+'</div>'}
   var pct=D.totalValue?Math.round(D.received/D.totalValue*100):0;
@@ -424,7 +429,7 @@ function pagePayments(D){
 function payListHtml(D){
   var q=S.pq.toLowerCase();
   var l=enrich(D,sortedTxns(['in','out'])).filter(function(t){var p=D.byId[t.projId];return (S.pf==='all'||t.kind===S.pf)&&(!q||((t.who||'')+' '+(p?p.name:'')+' '+(t.note||'')+' '+(t.vno||'')).toLowerCase().indexOf(q)>=0)});
-  if(!DB.txns.length)return emptyBox('No payments yet. Tap + to record money received from a client or paid to someone. A voucher is made for each one.','+ Add entry','openAdd');
+  if(!DB.txns.length)return emptyBox('No vouchers yet. Tap the button to make a voucher for money you paid or money a client paid you. No project needed.','+ New voucher','openAdd');
   if(!l.length)return '<div class="lbl" style="padding:20px;text-align:center">No payment matches.</div>';
   return l.map(function(t){return txnRow(t,D,true)}).join('')}
 
@@ -477,9 +482,15 @@ function voucherPaper(t){
   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:start"><div>'
   +'<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:'+AC+';background:#E4F1EF;border-radius:99px;padding:5px 12px"><span style="width:7px;height:7px;border-radius:50%;background:'+AC+'"></span>'+(v.inn?'Received':'Paid')+'</span>'
   +'<div class="disp tn" style="font-size:52px;line-height:1.05;margin-top:12px;letter-spacing:-0.03em">'+INR(t.amount)+'</div><div style="font-size:13px;color:'+MU+';margin-top:6px;line-height:1.45">'+words(t.amount)+'</div><div style="margin-top:26px">'+fld('Date',fmt(t.date))+'</div></div>'
-  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px 24px">'+fld(v.inn?'Received from':'Paid to',esc(v.who),1)+fld('Project',esc(v.proj)+(v.stage?' · '+esc(v.stage):''),1)+fld('For',esc(t.note||v.stage||'Payment'))+fld('Mode',esc(t.mode))+'</div></div>'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px 24px">'+fld(v.inn?'Received from':'Paid to',esc(v.who),1)+(v.proj?fld('Project',esc(v.proj)+(v.stage?' · '+esc(v.stage):''),1):'')+fld('For',esc(t.note||v.stage||'Payment'))+fld('Mode',esc(t.mode))+'</div></div>'
   +'<div style="display:flex;gap:44px;margin-top:40px">'+[v.inn?"Client's signature":"Receiver's signature",'Authorised signatory'].map(function(x){return '<div style="flex:1;min-width:0;border-top:1px solid #CFCDC4;padding-top:6px;font-size:12px;color:'+MU+'">'+x+'</div>'}).join('')+'</div></div></div></div>'}
-function fitPapers(){var els=document.querySelectorAll('.vfit');for(var i=0;i<els.length;i++){var w=els[i],inn=w.firstChild,s=Math.min(1,w.clientWidth/720);inn.style.transformOrigin='top left';inn.style.transform='scale('+s+')';w.style.height=(inn.offsetHeight*s)+'px'}}
+function printVoucher(id){
+  var t=findTxn(id);if(!t)return;var pa=document.getElementById('printArea'),inn=t.kind==='in';
+  pa.innerHTML=inn?'<div style="width:700px;max-width:100%;margin:0 auto">'+letterPaper(t)+'</div>':voucherPaper(t);
+  document.getElementById('pgstyle').textContent='@page{size:'+(inn?'A4 portrait':'A5 landscape')+';margin:8mm}';
+  var done=function(){pa.innerHTML='';window.removeEventListener('afterprint',done)};window.addEventListener('afterprint',done);
+  try{window.print()}catch(e){done();toast('Print is not available here. Download the PDF and print that.')}}
+function fitPapers(){var els=document.querySelectorAll('#main .vfit,#modal .vfit');for(var i=0;i<els.length;i++){var w=els[i],inn=w.firstChild,s=Math.min(1,w.clientWidth/720);inn.style.transformOrigin='top left';inn.style.transform='scale('+s+')';w.style.height=(inn.offsetHeight*s)+'px'}}
 window.addEventListener('resize',fitPapers);
 function letterPaper(t){
   var v=voucherInfo(t),D=derive(),p=D.byId[t.projId],bw=DB.biz.lhBW;
@@ -487,8 +498,8 @@ function letterPaper(t){
   return '<div class="paper" style="padding:0;overflow:hidden;border:1px solid #D8D6CE;font-family:Georgia,\'Times New Roman\',serif"><img src="'+(bw?LH.b:LH.c)+'" alt="Brihad Temple Construction Co." style="width:100%;display:block">'
   +'<div style="padding:0 6%"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:11px;letter-spacing:.12em;font-weight:700;margin-top:2px"><span>DATE: <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+fmt(t.date)+'</span></span><span>REF. NO.: <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+esc(t.vno)+'</span></span></div>'
   +'<div style="text-align:center;font-size:15px;letter-spacing:.3em;font-weight:700;margin:26px 0 18px;text-decoration:underline;text-underline-offset:5px">RECEIPT</div>'
-  +'<div style="font-size:14px;line-height:1.5;margin-bottom:10px">To,<br><b>'+esc(v.who)+'</b><br>'+esc(v.proj)+'</div>'
-  +'<p style="font-size:14px;line-height:1.8;margin:12px 0;text-align:justify">Received with thanks from <b>'+esc(v.who)+'</b> the sum of <b>'+INR(t.amount)+'/-</b> ('+words(t.amount)+') by <b>'+esc(t.mode)+'</b> on <b>'+fmt(t.date)+'</b>'+(v.stage?', towards <b>'+esc(v.stage)+'</b>':'')+(t.note?' ('+esc(t.note)+')':'')+', for the construction work of <b>'+esc(v.proj)+'</b>.</p>'
+  +'<div style="font-size:14px;line-height:1.5;margin-bottom:10px">To,<br><b>'+esc(v.who)+'</b>'+(v.proj?'<br>'+esc(v.proj):'')+'</div>'
+  +'<p style="font-size:14px;line-height:1.8;margin:12px 0;text-align:justify">Received with thanks from <b>'+esc(v.who)+'</b> the sum of <b>'+INR(t.amount)+'/-</b> ('+words(t.amount)+') by <b>'+esc(t.mode)+'</b> on <b>'+fmt(t.date)+'</b>'+(v.stage?', towards <b>'+esc(v.stage)+'</b>':'')+(t.note?' ('+esc(t.note)+')':'')+(v.proj?', for the construction work of <b>'+esc(v.proj)+'</b>':'')+'.</p>'
   +'<div style="margin:14px 0 4px">'+r('Amount received',INR(t.amount)+'/-')+'</div>'
   +'<div style="margin-top:34px;text-align:right;font-size:13px"><div style="height:54px"></div><div style="display:inline-block;border-top:1.5px solid #1F2230;padding-top:5px;min-width:200px;text-align:center"><b>For BRIHAD TEMPLE CONSTRUCTION CO.</b><div style="font-size:11px;color:#62668A">Authorised Signatory</div></div></div></div>'
   +'<img src="'+LH.f+'" alt="" style="width:100%;display:block;margin-top:6px"></div>'}
@@ -498,8 +509,8 @@ function pdfLetter(t){
   y=52;d.setTextColor(31,34,48);d.setFont('times','bold');d.setFontSize(9);d.text('DATE:',L,y);d.setFont('times','normal');d.setFontSize(10);d.text(fmt(t.date),L+13,y);d.line(L+12,y+1.2,L+48,y+1.2);
   d.setFont('times','bold');d.setFontSize(9);d.text('REF. NO.:',82,y);d.setFont('times','normal');d.setFontSize(10);d.text(t.vno,82+19,y);d.line(82+18,y+1.2,82+50,y+1.2);
   y=72;d.setFont('times','bold');d.setFontSize(14);d.text('R E C E I P T',105,y,{align:'center'});d.line(88,y+1.5,122,y+1.5);
-  y=88;d.setFontSize(11);d.setFont('times','normal');d.text('To,',L,y);y+=6;d.setFont('times','bold');d.text(v.who,L,y);y+=6;d.setFont('times','normal');d.text(v.proj,L,y);y+=12;
-  var body='Received with thanks from '+v.who+' the sum of '+rs(t.amount)+'/- ('+words(t.amount)+') by '+t.mode+' on '+fmt(t.date)+(v.stage?', towards '+v.stage:'')+(t.note?' ('+t.note+')':'')+', for the construction work of '+v.proj+'.';
+  y=88;d.setFontSize(11);d.setFont('times','normal');d.text('To,',L,y);y+=6;d.setFont('times','bold');d.text(v.who,L,y);y+=6;d.setFont('times','normal');if(v.proj)d.text(v.proj,L,y);y+=12;
+  var body='Received with thanks from '+v.who+' the sum of '+rs(t.amount)+'/- ('+words(t.amount)+') by '+t.mode+' on '+fmt(t.date)+(v.stage?', towards '+v.stage:'')+(t.note?' ('+t.note+')':'')+(v.proj?', for the construction work of '+v.proj:'')+'.';
   var ls=d.splitTextToSize(body,R-L);d.setFontSize(11.5);d.text(ls,L,y,{lineHeightFactor:1.7});y+=ls.length*7.2+8;
   {[['Amount received',t.amount]].forEach(function(x){d.setFontSize(10.5);d.setFont('times','normal');d.text(x[0],L,y);d.setFont('times','bold');d.text(rs(x[1]),R,y,{align:'right'});d.setDrawColor(210,208,200);d.setLineWidth(0.2);d.line(L,y+2,R,y+2);y+=8})}
   y=Math.max(y+22,215);d.setDrawColor(31,34,48);d.setLineWidth(0.4);d.line(R-62,y,R,y);d.setFont('times','bold');d.setFontSize(9.5);d.text('For BRIHAD TEMPLE CONSTRUCTION CO.',R-31,y+5,{align:'center'});d.setFont('times','normal');d.setFontSize(8.5);d.text('Authorised Signatory',R-31,y+9.5,{align:'center'});
@@ -519,7 +530,7 @@ function pdfVoucher(t){
   d.setFontSize(28);d.setTextColor(INK[0],INK[1],INK[2]);d.text('Rs. '+Number(t.amount).toLocaleString('en-IN'),X0,64);
   d.setFont('helvetica','normal');d.setFontSize(8.5);d.setTextColor(MU[0],MU[1],MU[2]);d.text(d.splitTextToSize(words(t.amount),80),X0,71);
   function f(l,val,x,y,w){d.setFont('helvetica','normal');d.setFontSize(7.5);d.setTextColor(MU[0],MU[1],MU[2]);d.text(l,x,y);d.setFont('helvetica','bold');d.setFontSize(10.5);d.setTextColor(INK[0],INK[1],INK[2]);d.text(d.splitTextToSize(String(val),w)[0],x,y+5.5)}
-  var rx=108,rw=X1-rx;f(v.inn?'Received from':'Paid to',v.who,rx,44,rw);f('Project',v.proj+(v.stage?' - '+v.stage:''),rx,59,rw);f('For',t.note||v.stage||'Payment',rx,74,rw/2-3);f('Mode',t.mode,rx+rw/2+3,74,rw/2-3);f('Date',fmt(t.date),rx,89,rw/2-3);
+  var rx=108,rw=X1-rx;f(v.inn?'Received from':'Paid to',v.who,rx,44,rw);if(v.proj)f('Project',v.proj+(v.stage?' - '+v.stage:''),rx,59,rw);f('For',t.note||v.stage||'Payment',rx,74,rw/2-3);f('Mode',t.mode,rx+rw/2+3,74,rw/2-3);f('Date',fmt(t.date),rx,89,rw/2-3);
   var sy=124,names=[v.inn?"Client's signature":"Receiver's signature",'Authorised signatory'];d.setDrawColor(207,205,196);d.setLineWidth(0.3);[X0,X0+90].forEach(function(x,i){d.line(x,sy,x+80,sy);d.setFont('helvetica','normal');d.setFontSize(7.5);d.setTextColor(MU[0],MU[1],MU[2]);d.text(names[i],x,sy+4.5)});
   try{d.save(t.vno+'.pdf');toast('Saved '+t.vno+'.pdf')}catch(e){toast('Could not save the PDF on this device.')}}
 function stmtLines(x){var D=derive();return x.lines.map(function(t,i){return {n:i,t:t}}).sort(function(a,b){return a.t.date===b.t.date?(a.n-b.n):(a.t.date<b.t.date?-1:1)}).map(function(o){var t=o.t,p=D.byId[t.projId];return {date:fmt(t.date),desc:(t.kind==='bill'?'Bill':'Paid ('+t.mode+')')+(t.note?' - '+t.note:'')+(p?' ['+p.name+']':''),bill:t.kind==='bill'?t.amount:0,paid:t.kind==='out'?t.amount:0}})}
@@ -550,8 +561,8 @@ function renderModal(D){
   var projOpts=D.projects.map(function(p){return [p.id,p.name]});
   if(S.modal==='entry'){
     var p=D.byId[f.projId],inn=f.kind==='in';
-    h+=head(f.editId?'Edit entry':'New entry')+(f.editId?'':'<div class="pills" style="margin-top:12px"><button class="pill'+(!inn?' on':'')+'" data-act="kind" data-arg="out" style="flex:1">Payment made</button><button class="pill'+(inn?' on':'')+'" data-act="kind" data-arg="in" style="flex:1">Client payment</button></div>')
-    +fld('Amount (₹)','amount',{big:1,inputmode:'numeric',ph:'0'})+sel('Project','projId',projOpts);
+    h+=head(f.editId?'Edit entry':'New voucher','Fill the details. A voucher is made when you save.')+(f.editId?'':'<div class="pills" style="margin-top:12px"><button class="pill'+(!inn?' on':'')+'" data-act="kind" data-arg="out" style="flex:1">Payment made</button><button class="pill'+(inn?' on':'')+'" data-act="kind" data-arg="in" style="flex:1">Client payment</button></div>')
+    +fld('Amount (₹)','amount',{big:1,inputmode:'numeric',ph:'0'})+sel('Project (optional)','projId',projOpts,'No project (general)');
     if(inn){h+=sel('Stage (optional)','stageId',p?p.stages.map(function(s){return [s.id,s.name]}):[],'Not linked to a stage')+fld('Received from','who',{ph:'Client name'})}
     else{h+='<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Section</span>'+chips('section',SECTIONS,f.section)+'</div>'+sel('Paid to','partyId',D.parties.map(function(x){return [x.id,x.name+' ('+x.type+')']}),'Someone else (type the name)')+(f.partyId?'':fld('Name','who',{ph:'Who did you pay?'}))}
     h+='<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Mode</span>'+chips('mode',MODES,f.mode)+'</div>'+fld('Date','date',{type:'date'})+fld('Note (optional)','note',{ph:inn?'e.g. 2nd installment':'e.g. weekly payout'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveEntry">'+(f.editId?'Save changes':'Save and make voucher')+'</button>';
@@ -565,12 +576,12 @@ function renderModal(D){
   }else if(S.modal==='party'){
     h+=head(f.editId?'Edit person':'Add person')+fld('Name','name',{ph:'e.g. Rampal Stones'})+'<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Type</span>'+chips('ptype',TYPES,f.type)+'</div>'+fld('Phone (optional)','phone',{inputmode:'tel',ph:'+91'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveParty">'+(f.editId?'Save changes':'Save person')+'</button>';
   }else if(S.modal==='bill'){
-    h+=head(f.editId?'Edit bill':'Add bill','Money you now owe '+esc((D.pById[f.partyId]||{}).name||''))+fld('Amount owed (₹)','amount',{big:1,inputmode:'numeric',ph:'0'})+sel('Project','projId',projOpts)+fld('What is it for?','note',{ph:'e.g. Agreed supply / extra work'})+fld('Date','date',{type:'date'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveBill">'+(f.editId?'Save changes':'Save bill')+'</button>'+(f.editId?'<div style="margin-top:12px;text-align:center">'+(S.confirm==='delbill'?'<div class="card" style="border-color:var(--coral);text-align:left"><b>Delete this bill?</b><div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-act="cancelConfirm">Keep</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delBill" data-arg="'+f.editId+'">Yes, delete</button></div></div>':'<button class="btn" style="color:var(--coral-x)" data-act="askConfirm" data-arg="delbill">Delete bill</button>')+'</div>':'');
+    h+=head(f.editId?'Edit bill':'Add bill','Money you now owe '+esc((D.pById[f.partyId]||{}).name||''))+fld('Amount owed (₹)','amount',{big:1,inputmode:'numeric',ph:'0'})+sel('Project (optional)','projId',projOpts,'No project (general)')+fld('What is it for?','note',{ph:'e.g. Agreed supply / extra work'})+fld('Date','date',{type:'date'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveBill">'+(f.editId?'Save changes':'Save bill')+'</button>'+(f.editId?'<div style="margin-top:12px;text-align:center">'+(S.confirm==='delbill'?'<div class="card" style="border-color:var(--coral);text-align:left"><b>Delete this bill?</b><div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-act="cancelConfirm">Keep</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delBill" data-arg="'+f.editId+'">Yes, delete</button></div></div>':'<button class="btn" style="color:var(--coral-x)" data-act="askConfirm" data-arg="delbill">Delete bill</button>')+'</div>':'');
   }else if(S.modal==='voucher'){
     var t=findTxn(S.vid);
     if(!t){m.innerHTML='';S.modal=null;return}
     h+=head(t.kind==='in'?'Receipt on letterhead':'Voucher',esc(t.vno)+(f&&f.fresh?' · created just now':''))+voucherPaper(t)
-    +'<div style="display:flex;gap:10px;margin-top:14px"><button class="btn" style="flex:1" data-act="vpdf" data-arg="'+t.id+'">Download PDF</button><button class="btnp" style="flex:1" data-act="vshare" data-arg="'+t.id+'">Share</button></div>'
+    +'<div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap"><button class="btn" style="flex:1;min-width:120px" data-act="vpdf" data-arg="'+t.id+'">Download PDF</button><button class="btn" style="flex:1;min-width:100px" data-act="vprint" data-arg="'+t.id+'">Print</button><button class="btnp" style="flex:1;min-width:100px" data-act="vshare" data-arg="'+t.id+'">Share</button></div><p class="lbl" style="text-align:center;margin:10px 0 0;line-height:1.5">Print works from the PC browser. On a phone, tap Download PDF and print that file.</p>'
     +'<div style="margin-top:12px;text-align:center">'+(S.confirm==='deltx'?'<div class="card" style="border-color:var(--coral);text-align:left"><b>Delete this entry?</b><div class="lbl" style="margin:4px 0 10px">Totals will change. This cannot be undone.</div><div style="display:flex;gap:8px"><button class="btn" data-act="cancelConfirm">Keep</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delTx" data-arg="'+t.id+'">Yes, delete</button></div></div>':'<button class="btn" data-act="editTx" data-arg="'+t.id+'" style="margin-right:8px">Edit entry</button><button class="btn" style="color:var(--coral-x)" data-act="askConfirm" data-arg="deltx">Delete entry</button>')+'</div>';
   }else if(S.modal==='copy'){
     h+=head('Copy this text','Select it and copy')+'<textarea class="inp" style="min-height:180px;padding:12px" readonly id="copybox">'+esc(f.text)+'</textarea><button class="btnp" style="width:100%;margin-top:10px" data-act="selectCopy">Select all</button>';
@@ -593,7 +604,7 @@ function render(){
   if(S.page==='projects'&&S.projId&&D.byId[S.projId]){ttl=D.byId[S.projId].name;sub=D.byId[S.projId].client||'Project'}
   if(S.page==='people'&&S.partyId&&D.pById[S.partyId]){ttl=D.pById[S.partyId].name;sub='Ledger'}
   if(S.page==='home'){var hr=new Date().getHours();ttl=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';sub=fmt(today())}
-  var head='<div class="head"><div><div class="lbl">'+esc(sub)+'</div><h1 class="disp">'+esc(ttl)+'</h1></div><div class="hrow"><button class="ibtn" data-act="theme" aria-label="Switch light or dark theme">'+ic(isDark()?'sun':'moon',20)+'</button><button class="btnp" data-act="openAdd">+ New entry</button></div></div>';
+  var head='<div class="head"><div><div class="lbl">'+esc(sub)+'</div><h1 class="disp">'+esc(ttl)+'</h1></div><div class="hrow"><button class="ibtn" data-act="theme" aria-label="Switch light or dark theme">'+ic(isDark()?'sun':'moon',20)+'</button><button class="btnp" data-act="openAdd">+ New voucher</button></div></div>';
   var body={home:pageHome,projects:pageProjects,payments:pagePayments,people:pagePeople,settings:pageSettings}[S.page](D);
   document.getElementById('main').innerHTML=head+body;
   renderModal(D);
@@ -606,8 +617,7 @@ function go(page){S.page=page;S.projId=null;S.partyId=null;S.tab='overview';S.co
 
 /* ---------- forms ---------- */
 function openEntry(projId,partyId){
-  if(!DB.projects.length){toast('Add a project first, then record payments.');openProject();return}
-  var pid=projId||S.projId||DB.projects[0].id,pt=partyId?DB.parties.filter(function(x){return x.id===partyId})[0]:null;
+  var pid=projId||S.projId||(DB.projects[0]?DB.projects[0].id:''),pt=partyId?DB.parties.filter(function(x){return x.id===partyId})[0]:null;
   S.form={kind:'out',projId:pid,stageId:'',section:'Stone',partyId:partyId||'',who:pt?pt.name:'',amount:'',mode:'Cash',date:today(),note:''};S.err='';S.modal='entry';render()}
 function openProject(id){var ep=id?DB.projects.filter(function(x){return x.id===id})[0]:null;if(ep){S.form={editId:ep.id,name:ep.name,client:ep.client||'',value:String(ep.value),start:ep.start||'',handover:ep.handover||'',stages:ep.stages.map(function(s){return {id:s.id,name:s.name,amount:s.amount?String(s.amount):'',date:s.date||''}})};S.err='';S.modal='project';render();return}S.form={name:'',client:'',value:'',start:today(),handover:'',stages:DEF_STAGES.map(function(n){return {id:uid(),name:n,amount:'',date:''}})};S.err='';S.modal='project';render()}
 function saveEntry(){
@@ -669,11 +679,12 @@ document.addEventListener('click',function(e){
   case 'saveParty':if(!String(f.name).trim()){S.err='Enter a name.';render();break}if(f.editId){var ep2=DB.parties.filter(function(x){return x.id===f.editId})[0];ep2.name=f.name.trim();ep2.type=f.type;ep2.phone=String(f.phone).trim();DB.txns.forEach(function(t){if(t.partyId===ep2.id)t.who=ep2.name});save();S.modal=null;toast('Person updated');break}DB.parties.push({id:uid(),name:f.name.trim(),type:f.type,phone:String(f.phone).trim()});save();S.modal=null;toast('Person added');break;
   case 'openParty':S.page='people';S.partyId=g;S.confirm='';render();window.scrollTo(0,0);break;
   case 'closeParty':S.partyId=null;S.confirm='';render();break;
-  case 'addBill':if(!DB.projects.length){toast('Add a project first.');break}S.form={partyId:g,projId:S.projId||DB.projects[0].id,amount:'',note:'',date:today()};S.err='';S.modal='bill';render();break;
+  case 'addBill':S.form={partyId:g,projId:S.projId||(DB.projects[0]?DB.projects[0].id:''),amount:'',note:'',date:today()};S.err='';S.modal='bill';render();break;
   case 'saveBill':var am=num(f.amount);if(!am){S.err='Enter an amount greater than zero.';render();break}if(f.editId){var bt=findTxn(f.editId);bt.amount=am;bt.projId=f.projId;bt.note=String(f.note||'').trim();bt.date=f.date||today();save();S.modal=null;toast('Bill updated');break}DB.txns.push({id:uid(),kind:'bill',projId:f.projId,stageId:'',section:'',partyId:f.partyId,who:(DB.parties.filter(function(x){return x.id===f.partyId})[0]||{}).name||'',amount:am,mode:'',date:f.date||today(),note:String(f.note||'').trim(),vno:''});save();S.modal=null;toast('Bill added');break;
   case 'payParty':openEntry(S.projId||null,g);break;
   case 'delParty':delWith('Person deleted',function(){DB.parties=DB.parties.filter(function(x){return x.id!==g});S.partyId=null});break;
   case 'openV':S.vid=g;S.form={};S.confirm='';S.modal='voucher';render();break;
+  case 'vprint':printVoucher(g);break;
   case 'vpdf':pdfVoucher(findTxn(g));break;
   case 'vshare':shareText(voucherText(findTxn(g)),'Voucher');break;
   case 'stmtPdf':pdfStatement(derive().pById[g]);break;
