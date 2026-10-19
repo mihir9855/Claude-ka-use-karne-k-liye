@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#4A4E8C">
-<title>Temple Finance</title>
+<title>Brihad Finance</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iMTAyNCIgaGVpZ2h0PSIxMDI0Ij48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzRBNEU4QyIvPjxnIGZpbGw9IiNGNUY0RjAiIHN0cm9rZT0iIzRBNEU4QyIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSI5NiIgeT0iMzkyIiB3aWR0aD0iMzIwIiBoZWlnaHQ9IjI4IiByeD0iOCIvPjxyZWN0IHg9IjE1MCIgeT0iMzAwIiB3aWR0aD0iMjEyIiBoZWlnaHQ9IjkyIi8+PHBvbHlnb24gcG9pbnRzPSIxMzAsMzAwIDM4MiwzMDAgMzQ2LDI0OCAxNjYsMjQ4Ii8+PHBvbHlnb24gcG9pbnRzPSIxNzAsMjQ4IDM0MiwyNDggMzEyLDIwMiAyMDAsMjAyIi8+PHBvbHlnb24gcG9pbnRzPSIyMDYsMjAyIDMwNiwyMDIgMjg0LDE2MiAyMjgsMTYyIi8+PHBvbHlnb24gcG9pbnRzPSIyMzIsMTYyIDI4MCwxNjIgMjY2LDEyOCAyNDYsMTI4Ii8+PC9nPjxwYXRoIGQ9Ik0yMzYgMzkydi00NmEyMCAyMCAwIDAxNDAgMHY0NnoiIGZpbGw9IiM0QTRFOEMiLz48cGF0aCBkPSJNMjU2IDEwOFY3NCIgc3Ryb2tlPSIjRTNCNTVBIiBzdHJva2Utd2lkdGg9IjciIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjExNiIgcj0iMTEiIGZpbGw9IiNFM0I1NUEiLz48L3N2Zz4=">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -188,7 +189,13 @@ svg{display:block;max-width:100%}
 .pp{transform-box:fill-box;transform-origin:center;animation:pop .5s ease both}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.stg{border:1px solid var(--line);border-radius:16px;padding:10px;margin-bottom:8px;background:var(--surface2)}
+textarea.inp{width:100%;font-family:inherit;resize:vertical;line-height:1.4}
+.field input[type=date]{min-width:0}
 </style>
+</head>
+<body>
+
 </head>
 <body>
 
@@ -201,343 +208,449 @@ svg{display:block;max-width:100%}
 <button class="fab" id="fab" data-act="openAdd" aria-label="New entry"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 <div id="modal"></div>
 <div id="toast"></div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
-var BIZ={name:'Brihad Temple Construction Co.',phone:'+91 XXXXX XXXXX',addr:'Office address, City, State - PIN'};
-var INR=function(n){return '₹'+Number(n).toLocaleString('en-IN')};
-var LAKH=function(n){return '₹'+(n/100000).toFixed(2).replace(/\.?0+$/,'')+'L'};
+var KEY='bt-data-v1';
+var SECTIONS=['Stone','Carving','Fitting','Transport','Site visit','Other'];
+var SCOL=['coral','amber','violet','blue','pink','teal'];
+var TYPES=['Stone supplier','Carving worker','Fitting team','Daily wage (via seth)','Transport','Other'];
+var MODES=['Cash','UPI','Bank','Cheque'];
+var DEF_STAGES=['Foundation','Plinth','Pillars and beams','Walls and ceiling','Spire (shikhar)','Finishing and handover'];
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 var ICON={
 home:'M4 11l8-7 8 7v9H4z',
 proj:'M3 20h18M5 20v-5h14v5M8 15v-4h8v4M10 11C10 8 11 6 12 4c1 2 2 4 2 7',
 pay:'M3 7h18v12H3zM3 7l2-3h14l2 3M16 13h2',
-vou:'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6',
 work:'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5.5a3 3 0 010 5.5M18 14.5c1.8.8 3 2.6 3 5.5',
+set:'M12 15a3 3 0 100-6 3 3 0 000 6zM19 12l2-1-1-3-2 .5-1.5-1.5.5-2-3-1-1 2h-2l-1-2-3 1 .5 2L6 8.5 4 8l-1 3 2 1v2l-2 1 1 3 2-.5 1.5 1.5-.5 2 3 1 1-2h2l1 2 3-1-.5-2 1.5-1.5 2 .5 1-3-2-1z',
 moon:'M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z',
 sun:'M12 16a4 4 0 100-8 4 4 0 000 8zM12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5',
 close:'M6 6l12 12M18 6L6 18',
-back:'M15 5l-7 7 7 7',
-plus:'M12 5v14M5 12h14',
 inn:'M7 7l10 10M17 9v8H9',
-out:'M17 17L7 7M7 15V7h8',
-clock:'M12 7v5l3 2M12 21a9 9 0 100-18 9 9 0 000 18z',
-chev:'M9 5l7 7-7 7'
+out:'M17 17L7 7M7 15V7h8'
 };
 function ic(n,s,w){s=s||22;return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||1.9)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+ICON[n]+'"/></svg>'}
-function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-
-/* ---------- sample data (clearly an example) ---------- */
-var BASE={
-shiva:{id:'shiva',name:'Shiva Temple',client:'Rajesh Sharma',since:'12 Aug 2026',value:1850000,received:1000000,spent:895900,stageNo:3,stageName:'Pillars and beams',progress:25,day:'Day 68 of 322',handover:'30 Jun 2027',status:'active',
- expenses:[{n:'Stone',amt:360000,due:60000},{n:'Fitting',amt:250000,due:150000},{n:'Carving',amt:245000,due:0},{n:'Transport',amt:28500,due:0},{n:'Site visit',amt:12400,due:0}],
- payments:[{n:'Advance',stage:'Foundation',date:'12 Aug 2026 · UPI',amt:300000,paid:1},{n:'1st installment',stage:'Plinth',date:'10 Sep 2026 · Cheque',amt:300000,paid:1},{n:'2nd installment',stage:'Pillars and beams',date:'14 Oct 2026 · Bank',amt:400000,paid:1},{n:'3rd installment',stage:'Walls and ceiling',date:'Due 28 Feb 2027',amt:500000,paid:0},{n:'Final payment',stage:'Finishing and handover',date:'Due on handover',amt:350000,paid:0}],
- stages:[{n:'Foundation',d:'12 Aug – 5 Sep 2026',st:'d',rec:300000,sp:180000},{n:'Plinth',d:'6 – 30 Sep 2026',st:'d',rec:300000,sp:240900},{n:'Pillars and beams',d:'1 Oct – 15 Dec 2026',st:'n',rec:400000,sp:475000},{n:'Walls and ceiling',d:'16 Dec – 28 Feb 2027',st:'x',rec:0,sp:0},{n:'Spire (shikhar)',d:'1 Mar – 30 Apr 2027',st:'x',rec:0,sp:0},{n:'Finishing and handover',d:'1 May – 30 Jun 2027',st:'x',rec:0,sp:0}],
- people:[{n:'Rampal Stones',t:'Stone supplier',total:420000,paid:360000,h:[['Agreed supply','20 Aug',420000,1],['Advance','25 Aug',160000,0],['On delivery','30 Sep',100000,0],['On delivery, cash','12 Oct',100000,0]]},{n:'Mohan Fitting Team',t:'Fitting team',total:400000,paid:250000,h:[['Agreed contract','20 Aug',400000,1],['Advance','20 Aug',100000,0],['Part payment','18 Sep',100000,0],['Part payment','5 Oct',50000,0]]},{n:'Mahesh (carver)',t:'Carving worker',total:110000,paid:110000,h:[['Weekly payouts','Aug–Oct',110000,0]]},{n:'Kishan (carving)',t:'Carving worker',total:85000,paid:85000,h:[['Weekly payouts','Aug–Oct',85000,0]]},{n:'Lattice carving team',t:'Daily wage · via Seth Ramlal',total:50000,paid:50000,h:[['20 days × ₹2,500','Sep–Oct',50000,1],['Paid to Seth Ramlal','5 Oct',20000,0],['Paid to Seth Ramlal','12 Oct',30000,0]]}]},
-hanuman:{id:'hanuman',name:'Hanuman Temple',client:'Mahesh Patel',since:'1 Sep 2026',value:2400000,received:600000,spent:320000,stageNo:1,stageName:'Foundation',progress:60,day:'Day 49 of 365',handover:'31 Aug 2027',status:'active',
- expenses:[{n:'Stone',amt:140000,due:0},{n:'Carving',amt:110000,due:0},{n:'Fitting',amt:40000,due:0},{n:'Transport',amt:20000,due:0},{n:'Site visit',amt:10000,due:0}],
- payments:[{n:'Advance',stage:'Foundation',date:'1 Sep 2026 · Bank',amt:600000,paid:1},{n:'1st installment',stage:'Plinth',date:'Due 15 Dec 2026',amt:600000,paid:0},{n:'2nd installment',stage:'Walls and ceiling',date:'Due 30 Apr 2027',amt:600000,paid:0},{n:'Final payment',stage:'Finishing and handover',date:'Due on handover',amt:600000,paid:0}],
- stages:[{n:'Foundation',d:'1 Sep – 5 Oct 2026',st:'n',rec:600000,sp:320000},{n:'Plinth',d:'6 Oct – 4 Nov 2026',st:'x',rec:0,sp:0},{n:'Pillars and beams',d:'5 Nov 2026 – 3 Feb 2027',st:'x',rec:0,sp:0},{n:'Walls and ceiling',d:'4 Feb – 5 May 2027',st:'x',rec:0,sp:0},{n:'Spire (shikhar)',d:'6 May – 4 Jul 2027',st:'x',rec:0,sp:0},{n:'Finishing and handover',d:'5 Jul – 31 Aug 2027',st:'x',rec:0,sp:0}],
- people:[{n:'Shree Quarry',t:'Stone supplier',total:140000,paid:140000,h:[['Stone supply','Sep–Oct',140000,0]]},{n:'Kishore (carver)',t:'Carving worker',total:110000,paid:110000,h:[['Weekly payouts','Sep–Oct',110000,0]]},{n:'Raju Fitting Team',t:'Fitting team',total:40000,paid:40000,h:[['Fitting work','Oct',40000,0]]}]},
-jain:{id:'jain',name:'Jain Temple',client:'Dilip Shah',since:'Handed over 10 Aug 2026',value:1250000,received:1250000,spent:1040000,stageNo:7,stageName:'Handed over',progress:100,status:'done',expenses:[],payments:[],stages:[],people:[]}
-};
-var PAYS=[
-{l:'R',name:'Rampal Stones',proj:'Shiva Temple',type:'Stone supplier',date:'12 Oct',when:'Paid 12 Oct 2026 · Cash',amt:100000,st:'Paid',lines:[['Advance','25 Aug 2026',160000],['On delivery','30 Sep 2026',100000],['On delivery, cash','12 Oct 2026',100000]],sum:[['Agreed supply',420000],['Paid so far',360000],['Balance due',60000]],notes:'Stone supply for the sanctum. Balance to be paid on final delivery.',phone:'+91 98xxx xx001'},
-{l:'S',name:'Shiva Temple',proj:'Rajesh Sharma',type:'Client payment',date:'14 Oct',when:'Received 14 Oct 2026 · Bank',amt:400000,st:'Received',lines:[['Advance · Foundation','12 Aug',300000],['1st installment · Plinth','10 Sep',300000],['2nd installment · Pillars','14 Oct',400000]],sum:[['Total deal',1850000],['Received so far',1000000],['Still to receive',850000]],notes:'Next payment of ₹5,00,000 is due when Walls and ceiling is completed.',phone:'+91 98xxx xx002'},
-{l:'M',name:'Mohan Fitting Team',proj:'Shiva Temple',type:'Fitting team',date:'Pending',when:'Balance due',amt:150000,st:'Due',lines:[['Advance','20 Aug 2026',100000],['Part payment','18 Sep 2026',100000],['Part payment','5 Oct 2026',50000]],sum:[['Agreed contract',400000],['Paid so far',250000],['Balance due',150000]],notes:'Fitting of pillars and beams. Balance after the stage inspection.',phone:'+91 98xxx xx003'},
-{l:'H',name:'Hanuman Temple',proj:'Mahesh Patel',type:'Client payment',date:'15 Dec',when:'Due 15 Dec 2026',amt:600000,st:'Upcoming',lines:[['Advance · Foundation','1 Sep',600000],['1st installment · Plinth','due 15 Dec',600000],['2nd installment · Walls','due 30 Apr',600000]],sum:[['Total deal',2400000],['Received so far',600000],['Still to receive',1800000]],notes:'First installment falls due when Plinth is completed.',phone:'+91 98xxx xx004'},
-{l:'L',name:'Lattice carving team',proj:'Shiva Temple',type:'Daily wage · via Seth Ramlal',date:'12 Oct',when:'Paid 12 Oct 2026 · Cash',amt:30000,st:'Paid',lines:[['Days worked · 20 × ₹2,500','Sep–Oct',50000],['Paid to Seth Ramlal','5 Oct',20000],['Paid to Seth Ramlal','12 Oct',30000]],sum:[['Payable',50000],['Paid so far',50000],['Balance due',0]],notes:'One payment goes to the seth for the whole team of five.',phone:'+91 98xxx xx005'}];
-var VBASE=[
-{no:'TF-0042',type:'Receipt',name:'Rajesh Sharma',project:'Shiva Temple',stage:'Pillars and beams',purpose:'2nd installment',amount:400000,mode:'Bank',date:'14 Oct 2026'},
-{no:'TF-0041',type:'Payment',name:'Rampal Stones',project:'Shiva Temple',stage:'Pillars and beams',purpose:'Stone supply · on delivery',amount:100000,mode:'Cash',date:'12 Oct 2026'},
-{no:'TF-0040',type:'Payment',name:'Seth Ramlal (for Lattice carving team)',project:'Shiva Temple',stage:'Pillars and beams',purpose:'Daily wage · team of 5',amount:30000,mode:'Cash',date:'12 Oct 2026'},
-{no:'TF-0039',type:'Payment',name:'Mahesh (carver)',project:'Shiva Temple',stage:'Pillars and beams',purpose:'Carving · weekly payout',amount:38000,mode:'Cash',date:'11 Oct 2026'},
-{no:'TF-0038',type:'Receipt',name:'Mahesh Patel',project:'Hanuman Temple',stage:'Foundation',purpose:'Advance',amount:600000,mode:'Bank',date:'1 Sep 2026'}];
-var ACT_BASE=[
-{t:'2nd installment received',s:'Shiva Temple · 14 Oct',a:400000,k:'in'},
-{t:'Rampal Stones paid',s:'Shiva Temple · 12 Oct',a:100000,k:'out'},
-{t:'Lattice carving team paid',s:'Via Seth Ramlal · 12 Oct',a:30000,k:'out'},
-{t:'Carving weekly payout',s:'Shiva Temple · 11 Oct',a:38000,k:'out'}];
-var HEAT=[20,0,35,0,60,0,0,45,80,0,38,100,0,40,62,0,50,0,50]; /* Oct 1..19, thousands */
-var SECTIONS=['Stone','Carving','Fitting','Transport','Site visit'];
-
-/* ---------- state ---------- */
-var S={page:'home',proj:null,tab:'overview',filter:'all',q:'',pf:'all',pq:'',sel:0,vf:'all',vsel:0,modal:null,draft:null,signed:false,openW:-1,entries:[],toast:''};
-try{var sv=JSON.parse(localStorage.getItem('tf-entries')||'[]');if(Array.isArray(sv))S.entries=sv}catch(e){}
-function saveEntries(){try{localStorage.setItem('tf-entries',JSON.stringify(S.entries))}catch(e){}}
-
-/* ---------- derived numbers ---------- */
-function derive(){
-  var P={};Object.keys(BASE).forEach(function(k){P[k]=JSON.parse(JSON.stringify(BASE[k]))});
-  var heat=HEAT.slice();
-  S.entries.forEach(function(e){
-    var p=P[e.projId];if(!p)return;
-    if(e.kind==='out'){p.spent+=e.amount;var ex=p.expenses.filter(function(x){return x.n===e.section})[0];if(ex)ex.amt+=e.amount;if(e.day===19)heat[18]+=Math.round(e.amount/1000)}
-    else{p.received+=e.amount}
-  });
-  var all=Object.keys(P).map(function(k){return P[k]});
-  var act=all.filter(function(p){return p.status==='active'});
-  var D={P:P,all:all,act:act,heat:heat};
-  D.totalValue=all.reduce(function(a,p){return a+p.value},0);
-  D.received=all.reduce(function(a,p){return a+p.received},0);
-  D.spent=all.reduce(function(a,p){return a+p.spent},0);
-  D.cash=D.received-D.spent;
-  D.toReceive=D.totalValue-D.received;
-  var owe=0;act.forEach(function(p){p.people.forEach(function(w){owe+=w.total-w.paid})});D.owe=owe;
-  D.actReceived=act.reduce(function(a,p){return a+p.received},0);
-  D.cat={};SECTIONS.forEach(function(s){D.cat[s]=0});act.forEach(function(p){p.expenses.forEach(function(x){D.cat[x.n]=(D.cat[x.n]||0)+x.amt})});
-  D.catTotal=SECTIONS.reduce(function(a,s){return a+D.cat[s]},0);
-  D.vouchers=S.entries.map(function(e){return e.voucher}).reverse().concat(VBASE);
-  return D;
-}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function INR(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
+function SHORT(n){var a=Math.abs(n),s=n<0?'−':'';if(a>=10000000)return s+'₹'+(a/10000000).toFixed(2).replace(/\.?0+$/,'')+'Cr';if(a>=100000)return s+'₹'+(a/100000).toFixed(2).replace(/\.?0+$/,'')+'L';return s+'₹'+a.toLocaleString('en-IN')}
+function num(v){var n=parseInt(String(v==null?'':v).replace(/[^0-9]/g,''),10);return isNaN(n)?0:n}
+function pad(n,l){return ('0000000'+n).slice(-l)}
+function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1,2)+'-'+pad(d.getDate(),2)}
+function fmt(iso){if(!iso)return '';var p=iso.split('-');if(p.length<3)return iso;return (+p[2])+' '+MON[+p[1]-1]+' '+p[0]}
 function words(n){var a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'],b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
  function two(x){return x<20?a[x]:b[Math.floor(x/10)]+(x%10?' '+a[x%10]:'')}
  function three(x){var r='';if(x>=100){r+=a[Math.floor(x/100)]+' Hundred';x=x%100;if(x)r+=' '}if(x)r+=two(x);return r}
  var r=[],cr=Math.floor(n/10000000);n=n%10000000;var lk=Math.floor(n/100000);n=n%100000;var th=Math.floor(n/1000);n=n%1000;
  if(cr)r.push(two(cr)+' Crore');if(lk)r.push(two(lk)+' Lakh');if(th)r.push(two(th)+' Thousand');if(n)r.push(three(n));return 'Rupees '+(r.join(' ')||'Zero')+' only'}
 
-/* ---------- charts ---------- */
-function gauge(pct){var len=Math.PI*70,fg=len*pct/100;
- return '<svg viewBox="0 0 170 100" width="170" height="100" role="img" aria-label="'+pct+' percent of total project value collected"><path d="M15 90A70 70 0 0 1 155 90" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="14" stroke-linecap="round"/><path class="sw" d="M15 90A70 70 0 0 1 155 90" fill="none" stroke="#E3B55A" stroke-width="14" stroke-linecap="round" stroke-dasharray="'+fg.toFixed(1)+' 260"/><text x="85" y="84" text-anchor="middle" font-family="Bricolage Grotesque, Manrope, sans-serif" font-weight="800" font-size="26" fill="#fff">'+pct+'%</text></svg>'}
-function miniBars(vals,mx){var h=60,x=6,out='<svg viewBox="0 0 120 62" width="100%" height="62" aria-hidden="true">';vals.forEach(function(v,i){var bh=Math.max(6,v/mx*h);out+='<rect class="gb" x="'+(x+i*40)+'" y="'+(62-bh)+'" width="28" height="'+bh+'" rx="8" fill="#fff" opacity="'+(i===1?1:.55)+'" style="animation-delay:'+(i*.12)+'s"/>'});return out+'</svg>'}
-function dotLine(){return '<svg viewBox="0 0 120 62" width="100%" height="62" aria-hidden="true"><path d="M10 52L38 44L66 32L92 24L112 8" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 8" opacity=".7"/><g fill="#fff"><circle class="pp" cx="10" cy="52" r="5"/><circle class="pp" cx="38" cy="44" r="5"/><circle class="pp" cx="66" cy="32" r="5"/><circle class="pp" cx="92" cy="24" r="5"/><circle class="pp" cx="112" cy="8" r="7"/></g></svg>'}
-function waterfall(D){
-  var steps=[{l:'Received',v:D.actReceived,c:'teal',t:1}];
-  var cols={Stone:'coral',Carving:'amber',Fitting:'violet',Transport:'blue','Site visit':'pink'};
-  var run=D.actReceived;
-  SECTIONS.forEach(function(s){steps.push({l:s==='Site visit'?'Site':s,v:D.cat[s],c:cols[s],from:run});run-=D.cat[s]});
-  steps.push({l:'In hand',v:run,c:'ink',t:1});
-  var W=600,H=290,top=36,base=232,mx=Math.max(D.actReceived,1),sc=(base-top)/mx,bw=56,gap=(W-40-7*bw)/6,x0=20;
-  var out='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Waterfall: '+LAKH(D.actReceived)+' received, spent by section, leaving '+LAKH(run)+' in hand">';
-  out+='<g stroke="var(--line)" stroke-width="1"><path d="M0 '+top+'H'+W+'M0 '+(top+(base-top)/3).toFixed(0)+'H'+W+'M0 '+(top+2*(base-top)/3).toFixed(0)+'H'+W+'M0 '+base+'H'+W+'"/></g>';
-  steps.forEach(function(s,i){
-    var x=x0+i*(bw+gap),y,h;
-    if(s.t){h=Math.max(3,s.v*sc);y=base-h}else{h=Math.max(3,s.v*sc);y=base-s.from*sc}
-    out+='<rect class="gb f-'+s.c+'" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw+'" height="'+h.toFixed(1)+'" rx="12" style="animation-delay:'+(i*.1)+'s"/>';
-    var lab=s.t?LAKH(s.v):'−'+LAKH(s.v);
-    out+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(y-7).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="800" class="t-ink" font-family="Manrope, sans-serif">'+lab+'</text>';
-    out+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(base+20)+'" text-anchor="middle" font-size="11" font-weight="700" class="t-mu" font-family="Manrope, sans-serif">'+s.l+'</text>';
-  });
-  return out+'</svg>'}
-function treemap(D){
-  var items=SECTIONS.map(function(s){return {n:s,v:D.cat[s]}}).sort(function(a,b){return b.v-a.v});
-  var tot=D.catTotal||1,W=400,H=240,col=['coral','amber','violet','blue','pink'],cm={};
-  var colorOf={};items.forEach(function(it,i){colorOf[it.n]=col[i]});
-  var lw=Math.round(items[0].v/tot*W)-3,rx=lw+6,rw=W-rx;
-  var a=items[1].v,b=items[2].v,s2=items[3].v+items[4].v,rt=a+b+s2,stripH=Math.max(20,Math.round(s2/rt*H)),avail=H-stripH-12;
-  var ha=Math.round(avail*a/(a+b)),hb=avail-ha;
-  var s3w=Math.round((rw-6)*items[3].v/s2),s4w=rw-6-s3w;
-  function r(it,x,y,w,h,big){var c=colorOf[it.n],dark=(c==='amber');var fill=dark?'#1F2230':'#fff';var pct=Math.round(it.v/tot*100);
-    var out='<rect class="pp f-'+c+'" x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="'+(big?16:9)+'"/>';
-    if(big)out+='<text x="'+(x+14)+'" y="'+(y+26)+'" font-size="14" font-weight="800" fill="'+fill+'" font-family="Manrope, sans-serif">'+it.n+'</text><text x="'+(x+14)+'" y="'+(y+54)+'" font-size="26" font-weight="800" fill="'+fill+'" font-family="Bricolage Grotesque, Manrope, sans-serif">'+pct+'%</text><text x="'+(x+14)+'" y="'+(y+73)+'" font-size="11" font-weight="700" fill="'+fill+'" opacity=".9" font-family="Manrope, sans-serif">'+INR(it.v)+'</text>';
-    else out+='<text x="'+(x+8)+'" y="'+(y+h/2+4)+'" font-size="10" font-weight="800" fill="'+fill+'" font-family="Manrope, sans-serif">'+it.n+' '+pct+'%</text>';return out}
-  var o='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Treemap of spending by section">';
-  o+=r(items[0],0,0,lw,H,1)+r(items[1],rx,0,rw,ha,1)+r(items[2],rx,ha+6,rw,hb,1)+r(items[3],rx,H-stripH,s3w,stripH,0)+r(items[4],rx+s3w+6,H-stripH,s4w,stripH,0);
-  return o+'</svg>'}
-function heatmap(D){var lv=function(v){return v===0?0:v<=30?1:v<=52?2:v<=70?3:v<=90?4:5};
-  var h='<div class="hmh"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="hm" role="img" aria-label="Calendar heat map of October spending">';
-  h+='<span style="visibility:hidden"></span><span style="visibility:hidden"></span><span style="visibility:hidden"></span>';
-  D.heat.forEach(function(v,i){h+='<span data-l="'+lv(v)+'"'+(i===18?' class="today"':'')+'></span>'});
-  for(var i=0;i<6;i++)h+='<span class="fut"></span>';return h+'</div>'}
-function ring(p,sz){var r=sz/2-8,c=2*Math.PI*r;return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'" aria-hidden="true"><circle cx="'+sz/2+'" cy="'+sz/2+'" r="'+r+'" fill="none" stroke="var(--line)" stroke-width="8"/><circle cx="'+sz/2+'" cy="'+sz/2+'" r="'+r+'" fill="none" stroke="var(--violet)" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+(c*p/100).toFixed(1)+' '+c.toFixed(1)+'" transform="rotate(-90 '+sz/2+' '+sz/2+')"/></svg>'}
-function segs(p){var h='<div class="seg">';for(var i=1;i<=6;i++)h+='<i class="'+(i<p.stageNo?'d':i===p.stageNo?'n':'')+'"></i>';return h+'</div>'}
+/* ---------- storage ---------- */
+function blank(){return {biz:{name:'Brihad Temple Construction Co.',phone:'',addr:''},projects:[],parties:[],txns:[],seq:0,vseq:0}}
+var DB=(function(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.projects&&d.parties&&d.txns){d.biz=d.biz||blank().biz;d.seq=d.seq||0;d.vseq=d.vseq||0;return d}}catch(e){}return blank()})();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
+function uid(){DB.seq=(DB.seq||0)+1;return 'i'+Date.now().toString(36)+DB.seq}
+try{var th=localStorage.getItem('bt-theme');if(th)document.documentElement.setAttribute('data-theme',th)}catch(e){}
 
-/* ---------- pieces ---------- */
+/* ---------- state ---------- */
+var S={page:'home',projId:null,tab:'overview',partyId:null,pf:'all',pq:'',peq:'',filter:'all',q:'',modal:null,form:null,err:'',toast:'',confirm:'',vid:null};
+
+/* ---------- derived numbers ---------- */
+function derive(){
+  var D={projects:[],byId:{},parties:[],pById:{},months:[],heat:{}};
+  DB.projects.forEach(function(p){
+    var q=Object.assign({},p);q.received=0;q.spent=0;q.billed=0;q.paidParty=0;q.stageRec={};q.sec={};SECTIONS.forEach(function(s){q.sec[s]=0});
+    var done=0;q.stages.forEach(function(s){if(s.done)done++});
+    q.doneCount=done;q.progress=q.stages.length?Math.round(done/q.stages.length*100):0;
+    q.curIdx=-1;for(var i=0;i<q.stages.length;i++){if(!q.stages[i].done){q.curIdx=i;break}}
+    q.status=(q.stages.length&&done===q.stages.length)?'done':'active';
+    D.byId[p.id]=q;D.projects.push(q)});
+  DB.parties.forEach(function(p){var q=Object.assign({},p);q.bills=0;q.paid=0;q.lines=[];D.pById[p.id]=q;D.parties.push(q)});
+  var months=[],d=new Date();d.setDate(1);
+  for(var i=5;i>=0;i--){var m=new Date(d.getFullYear(),d.getMonth()-i,1);months.push({k:m.getFullYear()+'-'+pad(m.getMonth()+1,2),l:MON[m.getMonth()],inn:0,out:0})}
+  D.months=months;
+  var curM=today().slice(0,7);
+  DB.txns.forEach(function(t){
+    var p=D.byId[t.projId];
+    if(t.kind==='in'){if(p){p.received+=t.amount;if(t.stageId)p.stageRec[t.stageId]=(p.stageRec[t.stageId]||0)+t.amount}}
+    else if(t.kind==='out'){if(p){p.spent+=t.amount;p.sec[t.section]=(p.sec[t.section]||0)+t.amount}}
+    var pt=t.partyId&&D.pById[t.partyId];
+    if(pt){if(t.kind==='bill'){pt.bills+=t.amount;if(p)p.billed+=t.amount}else if(t.kind==='out'){pt.paid+=t.amount;if(p)p.paidParty+=t.amount}pt.lines.push(t)}
+    D.months.forEach(function(m){if(t.date&&t.date.slice(0,7)===m.k){if(t.kind==='in')m.inn+=t.amount;else if(t.kind==='out')m.out+=t.amount}});
+    if(t.kind==='out'&&t.date&&t.date.slice(0,7)===curM){var dd=+t.date.slice(8,10);D.heat[dd]=(D.heat[dd]||0)+t.amount}
+  });
+  D.projects.forEach(function(p){p.due=Math.max(0,p.billed-p.paidParty)});
+  D.totalValue=0;D.received=0;D.spent=0;D.toReceive=0;D.sec={};SECTIONS.forEach(function(s){D.sec[s]=0});
+  D.projects.forEach(function(p){D.totalValue+=p.value;D.received+=p.received;D.spent+=p.spent;D.toReceive+=Math.max(0,p.value-p.received);SECTIONS.forEach(function(s){D.sec[s]+=p.sec[s]||0})});
+  D.cash=D.received-D.spent;
+  D.owe=0;D.parties.forEach(function(p){p.bal=p.bills-p.paid;if(p.bal>0)D.owe+=p.bal});
+  D.month=D.months[5];
+  return D}
+function dateSort(a,b){return a.date===b.date?(a.n<b.n?1:-1):(a.date<b.date?1:-1)}
+function sortedTxns(kinds){var out=[];DB.txns.forEach(function(t,i){if(!kinds||kinds.indexOf(t.kind)>=0)out.push(Object.assign({n:i},t))});out.sort(dateSort);return out}
+
+/* ---------- charts ---------- */
+function gauge(pct){pct=Math.max(0,Math.min(100,pct));var len=Math.PI*70,fg=len*pct/100;
+ return '<svg viewBox="0 0 170 100" width="170" height="100" role="img" aria-label="'+pct+' percent of total deal value collected"><path d="M15 90A70 70 0 0 1 155 90" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="14" stroke-linecap="round"/><path class="sw" d="M15 90A70 70 0 0 1 155 90" fill="none" stroke="#E3B55A" stroke-width="14" stroke-linecap="round" stroke-dasharray="'+fg.toFixed(1)+' 260"/><text x="85" y="84" text-anchor="middle" font-family="Bricolage Grotesque, Manrope, sans-serif" font-weight="800" font-size="26" fill="#fff">'+pct+'%</text></svg>'}
+function ring(p,sz){var r=sz/2-8,c=2*Math.PI*r;return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'" aria-hidden="true"><circle cx="'+sz/2+'" cy="'+sz/2+'" r="'+r+'" fill="none" stroke="var(--line)" stroke-width="8"/><circle cx="'+sz/2+'" cy="'+sz/2+'" r="'+r+'" fill="none" stroke="var(--violet)" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+(c*p/100).toFixed(1)+' '+c.toFixed(1)+'" transform="rotate(-90 '+sz/2+' '+sz/2+')"/></svg>'}
+function waterfall(D){
+  var steps=[{l:'Received',v:D.received,c:'teal',t:1}],run=D.received;
+  SECTIONS.forEach(function(s,i){if(D.sec[s]>0){steps.push({l:s==='Site visit'?'Site':s,v:D.sec[s],c:SCOL[i],from:run});run-=D.sec[s]}});
+  steps.push({l:'In hand',v:Math.abs(run),c:run<0?'coral':'ink',t:1,neg:run<0});
+  var mx=Math.max(D.received,D.spent,1),W=600,H=290,top=36,base=232,sc=(base-top)/mx,n=steps.length,bw=Math.min(56,(W-40)/(n*1.5)),gap=n>1?(W-40-n*bw)/(n-1):0,x0=20;
+  var out='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Waterfall from money received to cash in hand">';
+  out+='<g stroke="var(--line)" stroke-width="1"><path d="M0 '+top+'H'+W+'M0 '+(top+(base-top)/3).toFixed(0)+'H'+W+'M0 '+(top+2*(base-top)/3).toFixed(0)+'H'+W+'M0 '+base+'H'+W+'"/></g>';
+  steps.forEach(function(s,i){var x=x0+i*(bw+gap),h=Math.max(3,s.v*sc),y=s.t?base-h:base-s.from*sc;
+    out+='<rect class="gb f-'+s.c+'" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="12" style="animation-delay:'+(i*.1)+'s"/>';
+    var lab=s.t?(s.neg?'−':'')+SHORT(s.v):'−'+SHORT(s.v);
+    out+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(y-7).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="800" class="t-ink" font-family="Manrope, sans-serif">'+lab+'</text><text x="'+(x+bw/2).toFixed(1)+'" y="'+(base+20)+'" text-anchor="middle" font-size="11" font-weight="700" class="t-mu" font-family="Manrope, sans-serif">'+s.l+'</text>'});
+  return out+'</svg>'}
+function donut(D){
+  var tot=D.spent;if(!tot)return '<div class="lbl" style="padding:30px 0;text-align:center">No spending yet.</div>';
+  var r=60,C=2*Math.PI*r,off=0,seg='',leg='';
+  SECTIONS.forEach(function(s,i){var v=D.sec[s];if(!v)return;var len=v/tot*C;seg+='<circle cx="80" cy="80" r="'+r+'" fill="none" stroke="var(--'+SCOL[i]+')" stroke-width="22" stroke-dasharray="'+Math.max(0,len-2).toFixed(1)+' '+C.toFixed(1)+'" stroke-dashoffset="'+(-off).toFixed(1)+'" transform="rotate(-90 80 80)"/>';off+=len;
+    leg+='<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--'+SCOL[i]+');margin-right:8px"></i>'+s+'</span><b class="tn">'+Math.round(v/tot*100)+'%</b></div>'});
+  return '<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap"><svg viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="Spending by section"><g class="pp">'+seg+'</g><text x="80" y="76" text-anchor="middle" font-size="11" font-weight="700" class="t-mu" font-family="Manrope, sans-serif">Spent</text><text x="80" y="96" text-anchor="middle" font-size="17" font-weight="800" class="t-ink" font-family="Bricolage Grotesque, Manrope, sans-serif">'+SHORT(tot)+'</text></svg><div style="flex:1;min-width:130px">'+leg+'</div></div>'}
+function monthBars(D){
+  var mx=1;D.months.forEach(function(m){mx=Math.max(mx,m.inn,m.out)});
+  var W=600,H=230,base=190,top=26,sc=(base-top)/mx,bw=26,out='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Money received and spent in the last six months"><g stroke="var(--line)"><path d="M0 '+top+'H'+W+'M0 '+((top+base)/2)+'H'+W+'M0 '+base+'H'+W+'"/></g>';
+  D.months.forEach(function(m,i){var cx=50+i*100,hi=m.inn*sc,ho=m.out*sc;
+    out+='<rect class="gb f-teal" x="'+(cx-bw-2)+'" y="'+(base-hi).toFixed(1)+'" width="'+bw+'" height="'+Math.max(m.inn?3:0,hi).toFixed(1)+'" rx="8"/><rect class="gb f-coral" x="'+(cx+2)+'" y="'+(base-ho).toFixed(1)+'" width="'+bw+'" height="'+Math.max(m.out?3:0,ho).toFixed(1)+'" rx="8" style="animation-delay:.15s"/>';
+    if(m.inn)out+='<text x="'+(cx-bw/2-2)+'" y="'+(base-hi-6).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="800" class="t-ink" font-family="Manrope, sans-serif">'+SHORT(m.inn)+'</text>';
+    if(m.out)out+='<text x="'+(cx+bw/2+2)+'" y="'+(base-ho-6).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="800" class="t-ink" font-family="Manrope, sans-serif">'+SHORT(m.out)+'</text>';
+    out+='<text x="'+cx+'" y="'+(base+22)+'" text-anchor="middle" font-size="12" font-weight="700" class="t-mu" font-family="Manrope, sans-serif">'+m.l+'</text>'});
+  return out+'</svg>'}
+function heatmap(D){
+  var now=new Date(),y=now.getFullYear(),m=now.getMonth(),dim=new Date(y,m+1,0).getDate(),first=(new Date(y,m,1).getDay()+6)%7,td=now.getDate(),mx=1;
+  for(var k in D.heat)mx=Math.max(mx,D.heat[k]);
+  var h='<div class="hmh"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="hm" role="img" aria-label="Calendar of spending this month">';
+  for(var i=0;i<first;i++)h+='<span style="visibility:hidden"></span>';
+  for(var d=1;d<=dim;d++){var v=D.heat[d]||0,l=!v?0:Math.min(5,1+Math.floor(v/mx*4.99));h+='<span '+(d>td?'class="fut"':'data-l="'+l+'"'+(d===td?' class="today"':''))+' title="'+d+' '+MON[m]+(v?' · '+INR(v):'')+'"></span>'}
+  return h+'</div>'}
+function segs(p){var h='<div class="seg">';p.stages.forEach(function(s,i){h+='<i class="'+(s.done?'d':i===p.curIdx?'n':'')+'"></i>'});return h+'</div>'}
+
+/* ---------- empty-state illustration ---------- */
+function templeArt(sz){return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="var(--violet)"/><g fill="#F5F4F0" stroke="var(--violet)" stroke-width="5" stroke-linejoin="round"><rect x="96" y="392" width="320" height="28" rx="8"/><rect x="150" y="300" width="212" height="92"/><polygon points="130,300 382,300 346,248 166,248"/><polygon points="170,248 342,248 312,202 200,202"/><polygon points="206,202 306,202 284,162 228,162"/><polygon points="232,162 280,162 266,128 246,128"/></g><path d="M236 392v-46a20 20 0 0140 0v46z" fill="var(--violet)"/><path d="M256 108V74" stroke="#E3B55A" stroke-width="7" stroke-linecap="round"/><circle cx="256" cy="116" r="11" fill="#E3B55A"/></svg>'}
+
+/* ---------- small views ---------- */
+function stepper(p){return '<div class="step">'+p.stages.map(function(s,i){return '<div><div class="ln '+(i===0?'f':(s.done||i===p.curIdx?'d':''))+'"></div><div class="nd '+(s.done?'d':i===p.curIdx?'n':'')+'">'+(s.done?'✓':i+1)+'</div><span style="display:block;padding:0 2px;overflow-wrap:anywhere">'+esc(s.name.length>14?s.name.slice(0,13)+'…':s.name)+'</span></div>'}).join('')+'</div>'}
 function projCard(p){
-  var done=p.status==='done';
-  return '<button class="proj" data-act="openProj" data-arg="'+p.id+'"><div style="display:flex;align-items:center;gap:14px"><div style="position:relative;width:58px;height:58px;flex-shrink:0">'+ring(p.progress,58)+'<div class="disp" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px">'+p.progress+'%</div></div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="font-size:16px">'+esc(p.name)+'</b><span class="chip '+(done?'c-mu':'c-violet')+'">'+(done?'Completed':'Active')+'</span></div><div class="lbl" style="margin-top:2px">'+(done?esc(p.since):'Stage '+p.stageNo+' of 6 · '+esc(p.stageName))+'</div></div></div>'
-   +(done?'':'<div style="margin-top:14px">'+segs(p)+'</div>')
-   +'<div style="display:flex;justify-content:space-between;margin-top:14px;gap:8px"><div><div class="lbl">Received</div><b class="tn" style="color:var(--teal-x)">'+INR(p.received)+'</b></div><div style="text-align:center"><div class="lbl">Spent</div><b class="tn">'+INR(p.spent)+'</b></div><div style="text-align:right"><div class="lbl">'+(done?'Profit':'Value')+'</div><b class="tn">'+INR(done?p.received-p.spent:p.value)+'</b></div></div></button>'}
-function projList(D){
+  var done=p.status==='done',stg=p.curIdx>=0?p.stages[p.curIdx].name:'All stages done';
+  return '<button class="proj" data-act="openProj" data-arg="'+p.id+'"><div style="display:flex;align-items:center;gap:14px"><div style="position:relative;width:58px;height:58px;flex-shrink:0">'+ring(p.progress,58)+'<div class="disp" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px">'+p.progress+'%</div></div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</b><span class="chip '+(done?'c-teal':'c-violet')+'">'+(done?'Completed':'Active')+'</span></div><div class="lbl" style="margin-top:2px">'+esc(p.client||'')+(p.client?' · ':'')+(done?'Finished':'Stage '+(p.curIdx+1)+' of '+p.stages.length+' · '+esc(stg))+'</div></div></div>'
+  +'<div style="margin-top:14px">'+segs(p)+'</div><div style="display:flex;justify-content:space-between;margin-top:14px;gap:8px"><div><div class="lbl">Received</div><b class="tn" style="color:var(--teal-x)">'+INR(p.received)+'</b></div><div style="text-align:center"><div class="lbl">Spent</div><b class="tn">'+INR(p.spent)+'</b></div><div style="text-align:right"><div class="lbl">Deal value</div><b class="tn">'+INR(p.value)+'</b></div></div></button>'}
+function projListHtml(D){
   var q=S.q.toLowerCase();
-  var l=D.all.filter(function(p){return (S.filter==='all'||p.status===S.filter)&&(!q||(p.name+' '+p.client).toLowerCase().indexOf(q)>=0)});
-  if(!l.length)return '<div class="lbl" style="padding:20px 0;text-align:center">No project matches your search or filter.</div>';
-  return l.map(function(p){return '<div>'+projCard(p)+'</div>'}).join('')}
-function activity(D){
-  var ents=S.entries.slice().reverse().map(function(e){return {t:e.kind==='out'?e.who+' paid':'Payment from '+e.who,s:e.projName+' · '+e.date,a:e.amount,k:e.kind}});
-  var l=ents.concat(ACT_BASE).slice(0,6);
-  return l.map(function(x){var inn=x.k==='in';return '<div class="li"><div class="av '+(inn?'c-teal':'c-coral')+'">'+ic(inn?'inn':'out',18,2.4)+'</div><div class="m"><b>'+esc(x.t)+'</b><span>'+esc(x.s)+'</span></div><b class="tn" style="color:'+(inn?'var(--teal-x)':'var(--ink)')+'">'+(inn?'+':'−')+INR(x.a)+'</b></div>'}).join('')}
-function dueCard(){
-  return '<div class="lbl" style="letter-spacing:.06em;margin-top:6px">TO RECEIVE</div>'
-  +'<div class="li"><span class="dot" style="background:var(--teal);margin:0"></span><div class="m"><b>Hanuman Temple</b><span>1st installment · 15 Dec</span></div><b class="tn">₹6,00,000</b></div>'
-  +'<div class="li"><span class="dot" style="background:var(--teal);margin:0"></span><div class="m"><b>Shiva Temple</b><span>3rd installment · 28 Feb</span></div><b class="tn">₹5,00,000</b></div>'
-  +'<div class="lbl" style="letter-spacing:.06em;margin-top:14px">TO PAY</div>'
-  +'<div class="li"><span class="dot" style="background:var(--coral);margin:0"></span><div class="m"><b>Mohan Fitting Team</b><span>Shiva Temple</span></div><b class="tn">₹1,50,000</b></div>'
-  +'<div class="li"><span class="dot" style="background:var(--coral);margin:0"></span><div class="m"><b>Rampal Stones</b><span>Shiva Temple</span></div><b class="tn">₹60,000</b></div>'}
+  var l=D.projects.filter(function(p){return (S.filter==='all'||p.status===S.filter)&&(!q||(p.name+' '+(p.client||'')).toLowerCase().indexOf(q)>=0)});
+  if(!l.length)return '<div class="lbl" style="padding:20px 0;text-align:center">No project matches.</div>';
+  return l.map(projCard).join('')}
+function txnRow(t,D,showProj){
+  var inn=t.kind==='in',bill=t.kind==='bill',p=D.byId[t.projId];
+  var title=bill?'Bill · '+(t.who||''):(inn?'Received from '+t.who:'Paid to '+t.who);
+  var sub=[fmt(t.date),showProj&&p?p.name:'',inn?(t.stageName||''):(bill?'':t.section),t.mode].filter(Boolean).join(' · ');
+  var open=bill?'':' data-act="openV" data-arg="'+t.id+'"';
+  return '<button class="rowb"'+open+(bill?' style="cursor:default"':'')+'><div class="av '+(inn?'c-teal':bill?'c-amber':'c-coral')+'">'+ic(inn?'inn':'out',18,2.4)+'</div><div style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(title)+'</b><span class="lbl">'+esc(sub)+'</span></div><b class="tn" style="color:'+(inn?'var(--teal-x)':'var(--ink)')+'">'+(inn?'+':bill?'':'−')+INR(t.amount)+'</b></button>'}
+function stageName(p,id){var s=p&&p.stages.filter(function(x){return x.id===id})[0];return s?s.name:''}
+function enrich(D,list){return list.map(function(t){var p=D.byId[t.projId];return Object.assign({},t,{stageName:t.stageId?stageName(p,t.stageId):''})})}
+function emptyBox(msg,btn,act){return '<div style="text-align:center;padding:26px 10px"><div style="display:flex;justify-content:center;margin-bottom:12px">'+templeArt(70)+'</div><div class="lbl" style="max-width:320px;margin:0 auto 14px;line-height:1.5">'+msg+'</div>'+(btn?'<button class="btnp" data-act="'+act+'">'+btn+'</button>':'')+'</div>'}
 
 /* ---------- pages ---------- */
 function pageHome(D){
-  var pct=Math.round(D.received/D.totalValue*100);
+  if(!D.projects.length){
+    return '<section class="card" style="text-align:center;padding:34px 20px"><div style="display:flex;justify-content:center">'+templeArt(120)+'</div><h2 class="disp" style="font-size:26px;margin:18px 0 6px">Welcome to '+esc(DB.biz.name)+'</h2><p class="lbl" style="max-width:420px;margin:0 auto 18px;line-height:1.6;font-size:14px">Your app is empty and ready. Start by adding your first temple project. Your numbers, charts and vouchers will appear here as you add entries.</p><button class="btnp" data-act="newProject">+ Add first project</button></section>'
+    +'<div class="grid2 sect">'+[['1','Add a project','Enter the temple name, the full deal value, and split it into stages with the payment due at each stage.','violet'],['2','Add your people','Stone suppliers, carving workers, fitting teams. Add what you owe them and what you pay.','teal'],['3','Record every payment','Money received from the client or paid out. A voucher is made for each one.','amber']].map(function(x){return '<section class="card" style="display:flex;gap:14px"><div class="av c-'+x[3]+'" style="width:44px;height:44px;font-size:18px">'+x[0]+'</div><div><b>'+x[1]+'</b><div class="lbl" style="margin-top:4px;line-height:1.5">'+x[2]+'</div></div></section>'}).join('')+'</div>'}
+  var pct=D.totalValue?Math.round(D.received/D.totalValue*100):0;
   var h='<div class="bento">'
-  +'<div class="tile bg-violet cash span2 rise"><div style="position:absolute;right:-50px;top:-50px;width:170px;height:170px;border-radius:99px;background:rgba(255,255,255,.10)"></div><div style="position:relative;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><div class="t-l">Cash in hand · all projects</div><div class="t-v" style="font-size:42px;line-height:1.05">'+INR(D.cash)+'</div><span class="chip chipw" style="margin-top:8px">↓ 22.9% vs end of Sep</span></div><div style="text-align:center">'+gauge(pct)+'<div class="t-n" style="margin-top:-2px">collected of '+LAKH(D.totalValue)+'</div></div></div></div>'
-  +'<div class="tile bg-teal k rise"><div class="t-l">Received</div><div class="t-v">'+LAKH(D.received)+'</div><div class="t-n">This month ₹4.0L</div><div style="margin-top:10px">'+miniBars([3,9,4],9)+'</div></div>'
-  +'<div class="tile bg-coral k rise"><div class="t-l">Spent</div><div class="t-v">'+LAKH(D.spent)+'</div><div class="t-n">This month ₹5.8L</div><div style="margin-top:10px">'+dotLine()+'</div></div>'
-  +'<div class="tile bg-amber k rise"><div class="t-l" style="font-weight:800">To receive</div><div class="t-v">'+LAKH(D.toReceive)+'</div><div class="t-n">Next ₹6L · 15 Dec</div><div style="display:flex;gap:4px;margin-top:20px"><i style="flex:1;height:10px;border-radius:99px;background:#1F2230"></i><i style="flex:1;height:10px;border-radius:99px;background:#1F2230"></i><i style="flex:1;height:10px;border-radius:99px;background:#1F2230"></i><i style="flex:1;height:10px;border-radius:99px;background:rgba(21,20,43,.25)"></i><i style="flex:1;height:10px;border-radius:99px;background:rgba(21,20,43,.25)"></i></div></div>'
-  +'<div class="tile bg-blue k rise"><div class="t-l">To pay</div><div class="t-v">'+LAKH(D.owe)+'</div><div class="t-n">2 people pending</div><div style="display:flex;margin-top:18px"><span class="av" style="width:30px;height:30px;font-size:12px;background:#fff;color:#3F6591">M</span><span class="av" style="width:30px;height:30px;font-size:12px;background:#E3B55A;color:#1F2230;margin-left:-8px;border:2px solid var(--blue)">R</span></div></div>'
-  +'</div>';
-  h+='<div class="row2"><section class="card c7"><div class="cardhead"><div><h2 class="disp">Where the money goes</h2><div class="lbl">Active projects · received to what is left</div></div><span class="chip c-violet">Waterfall</span></div>'+waterfall(D)+'</section>'
-  +'<section class="card c5"><div class="cardhead"><div><h2 class="disp">Spending map</h2><div class="lbl">Bigger block, bigger spend</div></div><span class="chip c-coral">Treemap</span></div>'+treemap(D)+'</section></div>';
-  h+='<div class="row2"><section class="card c4"><div class="cardhead"><div><h2 class="disp">Daily spending</h2><div class="lbl">October · darker is more</div></div><span class="chip c-coral">₹5.8L</span></div>'+heatmap(D)+'</section>'
-  +'<section class="card c5"><div class="cardhead"><h2 class="disp">Projects</h2></div><label class="sr" for="pq">Search projects</label><input class="search" id="pq" type="search" placeholder="Search project or client" value="'+esc(S.q)+'" autocomplete="off"><div class="pills" style="margin:10px 0 12px">'+['all|All','active|Active','done|Completed'].map(function(x){var a=x.split('|');return '<button class="pill'+(S.filter===a[0]?' on':'')+'" data-act="filter" data-arg="'+a[0]+'">'+a[1]+'</button>'}).join('')+'</div><div id="projList" style="display:grid;gap:10px">'+projList(D)+'</div></section>'
-  +'<section class="card c3"><div class="cardhead"><h2 class="disp">Money due</h2></div>'+dueCard()+'</section></div>';
-  h+='<div class="row2"><section class="card c12"><div class="cardhead"><h2 class="disp">Recent activity</h2></div>'+activity(D)+'</section></div>';
+  +'<div class="tile bg-violet cash span2 rise"><div style="position:absolute;right:-50px;top:-50px;width:170px;height:170px;border-radius:99px;background:rgba(255,255,255,.10)"></div><div style="position:relative;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><div class="t-l">Cash in hand · all projects</div><div class="t-v" style="font-size:42px;line-height:1.05">'+(D.cash<0?'−':'')+INR(Math.abs(D.cash))+'</div><span class="chip chipw" style="margin-top:8px">Received − spent</span></div><div style="text-align:center">'+gauge(pct)+'<div class="t-n" style="margin-top:-2px">collected of '+SHORT(D.totalValue)+'</div></div></div></div>'
+  +'<div class="tile bg-teal k rise"><div class="t-l">Received</div><div class="t-v">'+SHORT(D.received)+'</div><div class="t-n">This month '+SHORT(D.month.inn)+'</div></div>'
+  +'<div class="tile bg-coral k rise"><div class="t-l">Spent</div><div class="t-v">'+SHORT(D.spent)+'</div><div class="t-n">This month '+SHORT(D.month.out)+'</div></div>'
+  +'<div class="tile bg-amber k rise"><div class="t-l" style="font-weight:800">To receive</div><div class="t-v">'+SHORT(D.toReceive)+'</div><div class="t-n">From clients</div></div>'
+  +'<div class="tile bg-blue k rise"><div class="t-l">To pay</div><div class="t-v">'+SHORT(D.owe)+'</div><div class="t-n">To suppliers and workers</div></div></div>';
+  h+='<div class="row2"><section class="card c7"><div class="cardhead"><div><h2 class="disp">Where the money goes</h2><div class="lbl">Received, then each spending section, then cash left</div></div></div>'+waterfall(D)+'</section>'
+  +'<section class="card c5"><div class="cardhead"><div><h2 class="disp">Spending by section</h2><div class="lbl">Share of everything you paid out</div></div></div>'+donut(D)+'</section></div>';
+  h+='<div class="row2"><section class="card c7"><div class="cardhead"><div><h2 class="disp">Last 6 months</h2><div class="lbl"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--teal);margin-right:5px"></i>Received &nbsp; <i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--coral);margin-right:5px"></i>Spent</div></div></div>'+monthBars(D)+'</section>'
+  +'<section class="card c5"><div class="cardhead"><div><h2 class="disp">Daily spending</h2><div class="lbl">This month · darker is more</div></div><span class="chip c-coral">'+SHORT(D.month.out)+'</span></div>'+heatmap(D)+'</section></div>';
+  var due='',pend=[];
+  D.projects.forEach(function(p){if(p.status==='done')return;for(var i=0;i<p.stages.length;i++){var s=p.stages[i],left=s.amount-(p.stageRec[s.id]||0);if(left>0){pend.push({p:p,s:s,left:left});break}}});
+  due+='<div class="lbl" style="letter-spacing:.06em">TO RECEIVE</div>'+(pend.length?pend.slice(0,4).map(function(x){return '<div class="li"><span class="dot" style="background:var(--teal);margin:0"></span><div class="m"><b>'+esc(x.p.name)+'</b><span>'+esc(x.s.name)+(x.s.date?' · '+fmt(x.s.date):'')+'</span></div><b class="tn">'+INR(x.left)+'</b></div>'}).join(''):'<div class="lbl" style="padding:10px 0">Nothing due.</div>');
+  var owed=D.parties.filter(function(x){return x.bal>0}).sort(function(a,b){return b.bal-a.bal});
+  due+='<div class="lbl" style="letter-spacing:.06em;margin-top:14px">TO PAY</div>'+(owed.length?owed.slice(0,4).map(function(x){return '<div class="li"><span class="dot" style="background:var(--coral);margin:0"></span><div class="m"><b>'+esc(x.name)+'</b><span>'+esc(x.type)+'</span></div><b class="tn">'+INR(x.bal)+'</b></div>'}).join(''):'<div class="lbl" style="padding:10px 0">Nobody to pay.</div>');
+  var recent=enrich(D,sortedTxns().slice(0,6));
+  h+='<div class="row2"><section class="card c4"><div class="cardhead"><h2 class="disp">Money due</h2></div>'+due+'</section>'
+  +'<section class="card c8"><div class="cardhead"><h2 class="disp">Recent activity</h2></div>'+(recent.length?recent.map(function(t){return txnRow(t,D,true)}).join(''):'<div class="lbl" style="padding:14px 0">No entries yet. Tap + to add one.</div>')+'</section></div>';
+  h+='<section class="card sect"><div class="cardhead"><h2 class="disp">Projects</h2><button class="btn" data-act="newProject">+ New project</button></div><label class="sr" for="pq">Search projects</label><input class="search" id="pq" type="search" placeholder="Search project or client" value="'+esc(S.q)+'" autocomplete="off"><div class="pills" style="margin:10px 0 12px">'+['all|All','active|Active','done|Completed'].map(function(x){var a=x.split('|');return '<button class="pill'+(S.filter===a[0]?' on':'')+'" data-act="filter" data-arg="'+a[0]+'">'+a[1]+'</button>'}).join('')+'</div><div id="projList" class="grid2">'+projListHtml(D)+'</div></section>';
   return h}
 
-function stepper(p){var cur=p.stages.findIndex(function(s){return s.st==='n'});var sh=['Found.','Plinth','Pillars','Walls','Spire','Finish'];
-  return '<div class="step">'+p.stages.map(function(s,i){return '<div><div class="ln '+(i===0?'f':(i<=cur?'d':''))+'"></div><div class="nd '+(s.st==='d'?'d':s.st==='n'?'n':'')+'">'+(s.st==='d'?'✓':i+1)+'</div>'+sh[i]+'</div>'}).join('')+'</div>'}
 function pageProjects(D){
-  if(!S.proj){return '<div class="grid2">'+D.all.map(function(p){return projCard(p)}).join('')+'</div>'}
-  var p=D.P[S.proj];
-  if(p.status==='done')return '<button class="btn" data-act="closeProj" style="margin-bottom:12px">← All projects</button><div class="card"><h2 class="disp" style="margin:0">'+esc(p.name)+'</h2><p class="lbl">'+esc(p.client)+' · '+esc(p.since)+'</p><div class="g3"><div class="mini"><span class="lbl">Value</span><b>'+INR(p.value)+'</b></div><div class="mini"><span class="lbl">Spent</span><b>'+INR(p.spent)+'</b></div><div class="mini"><span class="lbl">Profit</span><b style="color:var(--teal-x)">'+INR(p.received-p.spent)+'</b></div></div></div>';
-  var tabs=[['overview','Overview'],['expenses','Expenses'],['payments','Client payments'],['timeline','Timeline'],['people','Workers']];
-  var h='<button class="btn" data-act="closeProj" style="margin-bottom:12px">← All projects</button>'
-   +'<div class="tile bg-violet rise"><div style="position:absolute;right:-50px;top:-60px;width:200px;height:200px;border-radius:99px;background:rgba(255,255,255,.10)"></div><div style="position:relative"><div class="t-l">'+esc(p.client)+' · since '+esc(p.since)+'</div><div class="disp" style="font-size:28px;margin-top:2px">'+esc(p.name)+'</div><div class="t-l" style="margin-top:14px">Project value</div><div class="t-v" style="font-size:38px">'+INR(p.value)+'</div><div class="trk" style="margin-top:12px;background:rgba(255,255,255,.25)"><i style="width:'+Math.round(p.received/p.value*100)+'%;background:#fff"></i></div><div class="t-n">'+Math.round(p.received/p.value*100)+'% received</div><div class="g3" style="margin-top:12px"><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Received</span><b class="tn">'+INR(p.received)+'</b></div><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Spent</span><b class="tn">'+INR(p.spent)+'</b></div><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Left</span><b class="tn">'+INR(p.value-p.spent)+'</b></div></div></div></div>'
+  if(!S.projId||!D.byId[S.projId]){
+    S.projId=null;
+    if(!D.projects.length)return '<section class="card">'+emptyBox('No projects yet. Add a temple project with its deal value and stage-wise client payments.','+ Add project','newProject')+'</section>';
+    return '<div style="margin-bottom:12px"><button class="btnp" data-act="newProject">+ New project</button></div><div class="grid2">'+D.projects.map(projCard).join('')+'</div>'}
+  var p=D.byId[S.projId],pc=p.value?Math.round(p.received/p.value*100):0;
+  var tabs=[['overview','Overview'],['timeline','Timeline'],['payments','Client payments'],['expenses','Expenses'],['people','People']];
+  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="btn" data-act="closeProj">← All projects</button><button class="btnp" data-act="openAdd" data-arg="'+p.id+'">+ Add entry</button></div>'
+   +'<div class="tile bg-violet rise"><div style="position:absolute;right:-50px;top:-60px;width:200px;height:200px;border-radius:99px;background:rgba(255,255,255,.10)"></div><div style="position:relative"><div class="t-l">'+esc(p.client||'')+(p.start?(p.client?' · ':'')+'started '+fmt(p.start):'')+'</div><div class="disp" style="font-size:28px;margin-top:2px">'+esc(p.name)+'</div><div class="t-l" style="margin-top:14px">Deal value</div><div class="t-v" style="font-size:38px">'+INR(p.value)+'</div><div class="trk" style="margin-top:12px;background:rgba(255,255,255,.25)"><i style="width:'+Math.min(100,pc)+'%;background:#fff"></i></div><div class="t-n">'+pc+'% received'+(p.handover?' · handover '+fmt(p.handover):'')+'</div><div class="g3" style="margin-top:12px"><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Received</span><b class="tn">'+SHORT(p.received)+'</b></div><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Spent</span><b class="tn">'+SHORT(p.spent)+'</b></div><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Budget left</span><b class="tn">'+SHORT(p.value-p.spent)+'</b></div></div></div></div>'
    +'<div class="tabs" role="tablist">'+tabs.map(function(t){return '<button class="pill'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-arg="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div>';
+  var tx=enrich(D,sortedTxns().filter(function(t){return t.projId===p.id}));
   if(S.tab==='overview'){
-    var mx=Math.max.apply(null,p.expenses.map(function(e){return e.amt})),cols=['coral','amber','violet','blue','pink'];
-    var sa=p.stages.map(function(st){return p.payments.filter(function(x){return x.stage===st.n}).reduce(function(a,x){return a+x.amt},0)}),ma=Math.max.apply(null,sa.concat([1])),sh=['Found.','Plinth','Pillars','Walls','Spire','Finish'];
-    h+='<section class="card sect"><div class="lbl">Stage '+p.stageNo+' of 6</div><div class="disp" style="font-size:22px;margin-bottom:16px">'+esc(p.stageName)+'</div>'+stepper(p)+'<div class="lbl" style="margin-top:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px"><span>'+p.progress+'% done · '+p.day+'</span><span>Handover '+p.handover+'</span></div></section>'
-     +'<div class="grid2 sect"><section class="card"><h2 class="disp" style="margin:0 0 4px;font-size:20px">Where the money went</h2>'+p.expenses.map(function(e,i){return '<div style="margin-top:14px"><div style="display:flex;justify-content:space-between;font-weight:700"><span>'+e.n+'</span><span class="tn">'+INR(e.amt)+'</span></div><div class="trk" style="margin-top:6px"><i style="width:'+Math.round(e.amt/mx*100)+'%;background:var(--'+cols[i%5]+')"></i></div></div>'}).join('')+'</section>'
-     +'<section class="card"><h2 class="disp" style="margin:0 0 4px;font-size:20px">Client payments by stage</h2><div class="lbl" style="display:flex;gap:14px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--teal);margin-right:5px"></i>Received</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;border:2px dashed var(--teal);margin-right:5px"></i>Due</span></div><div style="display:flex;align-items:flex-end;gap:6px;height:180px;border-bottom:1px solid var(--line);margin-top:8px">'+p.stages.map(function(st,i){var amt=sa[i],rec=p.payments.some(function(x){return x.stage===st.n&&x.paid});return '<div style="flex:1;text-align:center"><div class="lbl" style="font-size:10px">'+(amt?(amt/100000).toFixed(1)+'L':'0')+'</div>'+(amt?'<div class="gb" style="margin:3px auto 0;width:70%;max-width:40px;height:'+Math.round(amt/ma*130)+'px;border-radius:10px 10px 0 0;'+(rec?'background:var(--teal)':'border:2px dashed var(--teal);border-bottom:0')+'"></div>':'<div style="height:2px"></div>')+'</div>'}).join('')+'</div><div class="lbl" style="display:flex;gap:6px;margin-top:6px;font-size:10px">'+sh.map(function(s){return '<span style="flex:1;text-align:center">'+s+'</span>'}).join('')+'</div></section></div>';
+    var mx=1;SECTIONS.forEach(function(s){mx=Math.max(mx,p.sec[s])});
+    var smx=1;p.stages.forEach(function(s){smx=Math.max(smx,s.amount)});
+    h+='<section class="card sect"><div class="lbl">'+(p.curIdx>=0?'Stage '+(p.curIdx+1)+' of '+p.stages.length:'All stages completed')+'</div><div class="disp" style="font-size:22px;margin-bottom:16px">'+(p.curIdx>=0?esc(p.stages[p.curIdx].name):'Project complete')+'</div>'+stepper(p)+'<div class="lbl" style="margin-top:12px">'+p.progress+'% of stages done</div></section>'
+    +'<div class="grid2 sect"><section class="card"><h2 class="disp" style="margin:0 0 4px;font-size:20px">Where the money went</h2>'+(p.spent?SECTIONS.filter(function(s){return p.sec[s]>0}).map(function(s){var i=SECTIONS.indexOf(s);return '<div style="margin-top:14px"><div style="display:flex;justify-content:space-between;font-weight:700"><span>'+s+'</span><span class="tn">'+INR(p.sec[s])+'</span></div><div class="trk" style="margin-top:6px"><i style="width:'+Math.round(p.sec[s]/mx*100)+'%;background:var(--'+SCOL[i]+')"></i></div></div>'}).join(''):'<div class="lbl" style="padding:14px 0">No expenses yet.</div>')+'</section>'
+    +'<section class="card"><h2 class="disp" style="margin:0 0 4px;font-size:20px">Client payments by stage</h2><div class="lbl" style="display:flex;gap:14px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--teal);margin-right:5px"></i>Received</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;border:2px dashed var(--teal);margin-right:5px"></i>Agreed</span></div><div style="display:flex;align-items:flex-end;gap:6px;height:170px;border-bottom:1px solid var(--line);margin-top:8px">'+p.stages.map(function(s,i){var rec=p.stageRec[s.id]||0;return '<div style="flex:1;min-width:0;text-align:center"><div class="lbl" style="font-size:10px">'+(s.amount?SHORT(s.amount):'')+'</div><div style="position:relative;margin:3px auto 0;width:70%;max-width:40px;height:'+Math.max(2,Math.round(s.amount/smx*120))+'px;border:2px dashed var(--teal);border-bottom:0;border-radius:10px 10px 0 0"><div class="gb" style="position:absolute;left:-2px;right:-2px;bottom:0;height:'+(s.amount?Math.min(100,Math.round(rec/s.amount*100)):0)+'%;background:var(--teal);border-radius:8px 8px 0 0"></div></div></div>'}).join('')+'</div><div class="lbl" style="display:flex;gap:6px;margin-top:6px;font-size:10px">'+p.stages.map(function(s,i){return '<span style="flex:1;min-width:0;text-align:center">'+(i+1)+'</span>'}).join('')+'</div></section></div>'
+    +'<section class="card sect"><div class="cardhead"><h2 class="disp">Entries</h2></div>'+(tx.length?tx.slice(0,8).map(function(t){return txnRow(t,D,false)}).join(''):'<div class="lbl" style="padding:14px 0">No entries in this project yet.</div>')+'</section>'
+    +'<div style="margin-top:14px">'+(S.confirm==='delproj'?'<div class="card" style="border-color:var(--coral)"><b>Delete "'+esc(p.name)+'" and all its entries?</b><div class="lbl" style="margin:4px 0 12px">This cannot be undone.</div><div style="display:flex;gap:8px"><button class="btn" data-act="cancelConfirm">Keep it</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delProj">Yes, delete</button></div></div>':'<button class="btn" style="color:var(--coral-x)" data-act="askConfirm" data-arg="delproj">Delete project</button>')+'</div>';
   }
-  if(S.tab==='expenses'){h+='<section class="card sect scrollx"><table class="tbl"><thead><tr><th>Section</th><th class="r">Paid</th><th class="r">Still due</th><th class="r">Share</th></tr></thead><tbody>'+p.expenses.map(function(e){return '<tr><td><b>'+e.n+'</b></td><td class="r tn"><b>'+INR(e.amt)+'</b></td><td class="r tn" style="color:var(--muted)">'+(e.due?INR(e.due):'—')+'</td><td class="r" style="color:var(--muted)">'+Math.round(e.amt/p.spent*100)+'%</td></tr>'}).join('')+'<tr><td><b>Total</b></td><td class="r tn"><b>'+INR(p.spent)+'</b></td><td></td><td></td></tr></tbody></table></section>'}
-  if(S.tab==='payments'){h+='<section class="card sect">'+p.payments.map(function(x){return '<div class="li"><div class="nd '+(x.paid?'d':'')+'" style="margin:0">'+(x.paid?'✓':'')+'</div><div class="m"><b>'+x.n+' · '+x.stage+'</b><span>'+x.date+'</span></div><b class="tn">'+INR(x.amt)+'</b><span class="chip '+(x.paid?'c-teal':'c-amber')+'">'+(x.paid?'Received':'Due')+'</span></div>'}).join('')+'</section>'}
-  if(S.tab==='timeline'){h+='<div class="grid2 sect">'+p.stages.map(function(st){return '<section class="card" style="'+(st.st==='n'?'border:2px solid var(--violet)':'')+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="font-size:15px">'+st.n+'</b><span class="chip '+(st.st==='d'?'c-teal':st.st==='n'?'c-violet':'c-mu')+'">'+(st.st==='d'?'Completed':st.st==='n'?'In progress':'Upcoming')+'</span></div><div class="lbl">'+st.d+'</div><div class="g3" style="grid-template-columns:repeat(2,1fr);margin-top:12px"><div class="mini"><span class="lbl">Received</span><b class="tn" style="color:var(--teal-x)">'+INR(st.rec)+'</b></div><div class="mini"><span class="lbl">Spent</span><b class="tn">'+INR(st.sp)+'</b></div></div></section>'}).join('')+'</div>'}
-  if(S.tab==='people'){h+='<section class="card sect">'+p.people.map(function(w){var owe=w.total-w.paid;return '<div class="li"><div class="av c-violet">'+w.n[0]+'</div><div class="m"><b>'+esc(w.n)+'</b><span>'+esc(w.t)+'</span></div><div style="text-align:right"><div class="lbl">You owe</div><b class="tn">'+(owe?INR(owe):'Settled')+'</b></div></div>'}).join('')+'</section>'}
+  if(S.tab==='timeline'){h+='<div class="grid2 sect">'+p.stages.map(function(s,i){var rec=p.stageRec[s.id]||0,cur=i===p.curIdx;return '<section class="card" style="'+(cur?'border:2px solid var(--violet)':'')+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b style="font-size:15px">'+(i+1)+'. '+esc(s.name)+'</b><span class="chip '+(s.done?'c-teal':cur?'c-violet':'c-mu')+'">'+(s.done?'Completed':cur?'In progress':'Upcoming')+'</span></div><div class="lbl">'+(s.date?'Target '+fmt(s.date):'No target date')+'</div><div class="g3" style="grid-template-columns:repeat(2,1fr);margin-top:12px"><div class="mini"><span class="lbl">Client pays</span><b class="tn">'+INR(s.amount)+'</b></div><div class="mini"><span class="lbl">Received</span><b class="tn" style="color:var(--teal-x)">'+INR(rec)+'</b></div></div><button class="btn" style="margin-top:12px;width:100%" data-act="toggleStage" data-arg="'+s.id+'">'+(s.done?'Mark as not completed':'Mark stage completed')+'</button></section>'}).join('')+'</div>'}
+  if(S.tab==='payments'){h+='<section class="card sect">'+p.stages.map(function(s,i){var rec=p.stageRec[s.id]||0,left=s.amount-rec;return '<div class="li"><div class="nd '+(left<=0&&s.amount>0?'d':'')+'" style="margin:0;flex-shrink:0">'+(left<=0&&s.amount>0?'✓':i+1)+'</div><div class="m"><b>'+esc(s.name)+'</b><span>'+(left>0?'Still to receive '+INR(left):'Fully received')+(s.date?' · target '+fmt(s.date):'')+'</span></div><div style="text-align:right"><b class="tn">'+INR(s.amount)+'</b><div class="lbl">got '+INR(rec)+'</div></div></div>'}).join('')+'<div class="mini" style="margin-top:12px"><div style="display:flex;justify-content:space-between"><span class="lbl">Total deal</span><b class="tn">'+INR(p.value)+'</b></div><div style="display:flex;justify-content:space-between"><span class="lbl">Received</span><b class="tn">'+INR(p.received)+'</b></div><div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:5px;padding-top:5px"><span class="lbl">Still to receive</span><b class="tn">'+INR(Math.max(0,p.value-p.received))+'</b></div></div></section>'
+   +'<section class="card sect"><div class="cardhead"><h2 class="disp">Payments received</h2></div>'+(tx.filter(function(t){return t.kind==='in'}).map(function(t){return txnRow(t,D,false)}).join('')||'<div class="lbl" style="padding:14px 0">Nothing received yet.</div>')+'</section>'}
+  if(S.tab==='expenses'){var ex=tx.filter(function(t){return t.kind==='out'});h+='<section class="card sect scrollx"><table class="tbl"><thead><tr><th>Section</th><th class="r">Paid</th><th class="r">Share</th></tr></thead><tbody>'+SECTIONS.filter(function(s){return p.sec[s]>0}).map(function(s){return '<tr><td><b>'+s+'</b></td><td class="r tn"><b>'+INR(p.sec[s])+'</b></td><td class="r" style="color:var(--muted)">'+Math.round(p.sec[s]/p.spent*100)+'%</td></tr>'}).join('')+'<tr><td><b>Total</b></td><td class="r tn"><b>'+INR(p.spent)+'</b></td><td></td></tr></tbody></table></section><section class="card sect"><div class="cardhead"><h2 class="disp">All payments made</h2></div>'+(ex.map(function(t){return txnRow(t,D,false)}).join('')||'<div class="lbl" style="padding:14px 0">No expenses yet.</div>')+'</section>'}
+  if(S.tab==='people'){
+    var ids={};tx.forEach(function(t){if(t.partyId)ids[t.partyId]=1});
+    var list=D.parties.filter(function(x){return ids[x.id]});
+    h+='<section class="card sect">'+(list.length?list.map(function(x){var b=0,pd=0;tx.forEach(function(t){if(t.partyId===x.id){if(t.kind==='bill')b+=t.amount;else if(t.kind==='out')pd+=t.amount}});return '<button class="rowb" data-act="openParty" data-arg="'+x.id+'"><div class="av c-violet">'+esc(x.name[0]||'?').toUpperCase()+'</div><div style="flex:1;min-width:0"><b style="display:block">'+esc(x.name)+'</b><span class="lbl">'+esc(x.type)+' · paid '+INR(pd)+'</span></div><div style="text-align:right"><div class="lbl">Balance</div><b class="tn">'+INR(b-pd)+'</b></div></button>'}).join(''):'<div class="lbl" style="padding:14px 0">No people linked to this project yet.</div>')+'</section>'}
   return h}
 
-function payChip(st){return st==='Paid'||st==='Received'?'c-teal':st==='Due'?'c-amber':'c-violet'}
 function pagePayments(D){
   var q=S.pq.toLowerCase();
-  var list=PAYS.map(function(e,i){return {e:e,i:i}}).filter(function(o){return (S.pf==='all'||o.e.st===S.pf)&&(!q||(o.e.name+' '+o.e.proj+' '+o.e.type).toLowerCase().indexOf(q)>=0)});
-  var sel=list.some(function(o){return o.i===S.sel})?S.sel:(list.length?list[0].i:-1);
-  var left='<section class="card"><label class="sr" for="payq">Search payments</label><input class="search" id="payq" type="search" placeholder="Search person or project" value="'+esc(S.pq)+'" autocomplete="off"><div class="pills" style="margin:10px 0 8px">'+['all|All','Received|Received','Paid|Paid','Due|Due','Upcoming|Upcoming'].map(function(x){var a=x.split('|');return '<button class="pill'+(S.pf===a[0]?' on':'')+'" data-act="pf" data-arg="'+a[0]+'">'+a[1]+'</button>'}).join('')+'</div><div id="payList">'+payListHtml(list,sel)+'</div></section>';
-  var right=sel>=0?payDetail(PAYS[sel]):'';
-  return '<div class="grid2" style="align-items:start">'+left+'<div>'+right+'</div></div>'}
-function payListHtml(list,sel){if(!list.length)return '<div class="lbl" style="padding:20px;text-align:center">No payment matches.</div>';return list.map(function(o){var e=o.e;return '<button class="rowb'+(o.i===sel?' on':'')+'" data-act="selPay" data-arg="'+o.i+'"><div class="av c-violet">'+e.l+'</div><div style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.name)+'</b><span class="lbl">'+esc(e.proj)+' · '+e.date+'</span></div><div style="text-align:right"><b class="tn" style="display:block">'+INR(e.amt)+'</b><span class="chip '+payChip(e.st)+'">'+e.st+'</span></div></button>'}).join('')}
-function payDetail(e){
-  return '<section class="tile bg-violet rise"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div style="display:flex;align-items:center;gap:12px"><div class="av" style="background:rgba(255,255,255,.22);width:50px;height:50px;font-size:20px">'+e.l+'</div><div><div class="disp" style="font-size:20px">'+esc(e.name)+'</div><div class="t-n">'+esc(e.type)+' · '+esc(e.proj)+'</div></div></div><div style="text-align:right"><div class="t-n">'+e.when+'</div><div class="t-v" style="font-size:30px">'+INR(e.amt)+'</div></div></div></section>'
-  +'<section class="card sect"><table class="tbl"><tbody>'+e.lines.map(function(l){return '<tr><td><b>'+l[0]+'</b><div class="lbl">'+l[1]+'</div></td><td class="r tn"><b>'+INR(l[2])+'</b></td></tr>'}).join('')+'</tbody></table>'
-  +'<div class="mini" style="margin-top:12px">'+e.sum.map(function(s,i){return '<div style="display:flex;justify-content:space-between;padding:5px 0;'+(i===e.sum.length-1?'border-top:1px solid var(--line);margin-top:4px;padding-top:9px':'')+'"><span class="lbl">'+s[0]+'</span><b class="tn">'+INR(s[1])+'</b></div>'}).join('')+'</div>'
-  +'<p class="lbl" style="line-height:1.6;margin:12px 0 0">'+esc(e.notes)+'</p><div class="lbl" style="margin-top:6px">'+e.phone+'</div>'
-  +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px"><button class="btnp" data-act="payVoucher" data-arg="'+PAYS.indexOf(e)+'">Create voucher</button><button class="btn" data-act="toast" data-arg="Statement PDF saves to your phone in the real app. This is a preview.">Statement PDF</button></div></section>'}
+  var h='<section class="card"><label class="sr" for="payq">Search payments</label><input class="search" id="payq" type="search" placeholder="Search name, project or note" value="'+esc(S.pq)+'" autocomplete="off"><div class="pills" style="margin:10px 0 8px">'+['all|All','in|Received','out|Paid'].map(function(x){var a=x.split('|');return '<button class="pill'+(S.pf===a[0]?' on':'')+'" data-act="pf" data-arg="'+a[0]+'">'+a[1]+'</button>'}).join('')+'</div><div id="payList">'+payListHtml(D)+'</div></section>';
+  return h}
+function payListHtml(D){
+  var q=S.pq.toLowerCase();
+  var l=enrich(D,sortedTxns(['in','out'])).filter(function(t){var p=D.byId[t.projId];return (S.pf==='all'||t.kind===S.pf)&&(!q||((t.who||'')+' '+(p?p.name:'')+' '+(t.note||'')+' '+(t.vno||'')).toLowerCase().indexOf(q)>=0)});
+  if(!DB.txns.length)return emptyBox('No payments yet. Tap + to record money received from a client or paid to someone. A voucher is made for each one.','+ Add entry','openAdd');
+  if(!l.length)return '<div class="lbl" style="padding:20px;text-align:center">No payment matches.</div>';
+  return l.map(function(t){return txnRow(t,D,true)}).join('')}
 
-function voucherPaper(v,signed){
-  return '<div class="paper"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="display:flex;align-items:center;gap:8px"><div style="width:30px;height:30px;border-radius:9px;background:#4A4E8C;color:#fff;display:flex;align-items:center;justify-content:center">'+ic('proj',18,1.8)+'</div><b style="font-size:13px;line-height:1.2">'+BIZ.name+'</b></div><div style="font-size:11px;color:#62668A;margin-top:6px;line-height:1.4">'+BIZ.addr+'<br>Phone: '+BIZ.phone+'</div><div class="pl" style="margin-top:12px">'+(v.type==='Payment'?'PAYMENT VOUCHER':'RECEIPT VOUCHER')+'</div></div><div style="text-align:right"><div class="pl">VOUCHER NO.</div><div class="disp" style="font-size:16px">'+v.no+'</div><div style="font-size:12px;color:#62668A">'+v.date+'</div></div></div>'
-  +'<div style="height:1px;background:#E6E8F3;margin:14px 0"></div><div class="pl">'+(v.type==='Payment'?'PAID TO':'RECEIVED FROM')+'</div><div style="font-size:18px;font-weight:800;margin-top:2px">'+esc(v.name)+'</div><div style="font-size:12px;color:#62668A">'+esc(v.project)+' · '+esc(v.stage)+'</div>'
-  +'<div style="background:#F3F4FB;border-radius:14px;padding:12px 14px;margin-top:14px"><div class="pl">AMOUNT</div><div class="disp tn" style="font-size:30px">'+INR(v.amount)+'</div><div style="font-size:12px;color:#44486B;margin-top:4px">'+words(v.amount)+'</div></div>'
-  +'<div style="display:flex;gap:12px;margin-top:14px"><div style="flex:1.4"><div class="pl">FOR</div><b style="font-size:13px">'+esc(v.purpose)+'</b></div><div style="flex:1"><div class="pl">MODE</div><b style="font-size:13px">'+v.mode+'</b></div></div>'
-  +'<div style="display:flex;gap:12px;margin-top:16px"><div style="flex:1"><div class="pl" style="margin-bottom:6px">'+(v.type==='Payment'?"RECEIVER'S SIGNATURE":"CLIENT'S SIGNATURE")+'</div>'+(signed?'<div style="height:74px;border-bottom:1.5px solid #B7BBD8;display:flex;align-items:flex-end;padding-bottom:4px"><svg width="110" height="52" viewBox="0 0 110 52" fill="none" aria-hidden="true"><path d="M6 38C16 8 24 58 34 28S52 8 60 34 80 48 102 16" stroke="#3B3F78" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>':'<button class="signbox" data-act="sign">Tap here to sign</button>')+'</div><div style="flex:1"><div class="pl" style="margin-bottom:6px">'+(v.type==='Payment'?'PAID BY (OWNER)':'RECEIVED BY (OWNER)')+'</div><div style="height:74px;border-bottom:1.5px solid #B7BBD8;display:flex;align-items:flex-end;padding-bottom:4px"><svg width="110" height="52" viewBox="0 0 110 52" fill="none" aria-hidden="true"><path d="M8 30C20 10 28 50 40 24S60 14 70 34 92 40 104 20" stroke="#1F2230" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div>'
-  +'<div style="font-size:10px;color:#7A7FA6;margin-top:12px;text-align:center">Brihad Temple Construction Co. · '+v.no+'</div></div>'}
-function pageVouchers(D){
-  var l=D.vouchers.map(function(v,i){return {v:v,i:i}}).filter(function(o){return S.vf==='all'||o.v.type===S.vf});
-  var left='<section class="card"><div class="pills" style="margin-bottom:8px">'+['all|All','Payment|Payments','Receipt|Receipts'].map(function(x){var a=x.split('|');return '<button class="pill'+(S.vf===a[0]?' on':'')+'" data-act="vf" data-arg="'+a[0]+'">'+a[1]+'</button>'}).join('')+'</div>'+l.map(function(o){var v=o.v,pay=v.type==='Payment';return '<button class="rowb'+(o.i===S.vsel?' on':'')+'" data-act="openV" data-arg="'+o.i+'"><div class="av '+(pay?'c-coral':'c-teal')+'">'+ic(pay?'out':'inn',18,2.3)+'</div><div style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(v.name)+'</b><span class="lbl">'+v.no+' · '+v.date+' · '+v.mode+'</span></div><div style="text-align:right"><b class="tn" style="display:block">'+INR(v.amount)+'</b><span class="chip '+(pay?'c-coral':'c-teal')+'">'+v.type+'</span></div></button>'}).join('')+'</section>';
-  var cur=D.vouchers[S.vsel]||D.vouchers[0];
-  var right='<div class="hide-s2" style="display:none"></div>';
-  return '<div class="grid2" style="align-items:start">'+left+'<div class="card" style="background:var(--surface2)">'+voucherPaper(cur,true)+'<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btnp" data-act="dl" data-arg="'+cur.no+'">Download PDF</button><button class="btn" data-act="share" data-arg="'+cur.no+'">Share</button></div></div></div>'}
-
-function pageWorkers(D){
-  var p=D.P.shiva,tot=0,paid=0;p.people.forEach(function(w){tot+=w.total;paid+=w.paid});
-  var h='<div class="bento" style="margin-bottom:12px"><div class="tile bg-blue span2" style="grid-column:span 2"><div class="t-l">You owe in total · Shiva Temple</div><div class="t-v" style="font-size:36px">'+INR(tot-paid)+'</div><div class="g3" style="grid-template-columns:repeat(2,1fr);margin-top:12px"><div class="mini" style="background:rgba(255,255,255,.18)"><span class="lbl" style="color:#fff">Payable</span><b class="tn">'+INR(tot)+'</b></div><div class="mini" style="background:rgba(255,255,255,.18)"><span class="lbl" style="color:#fff">Paid</span><b class="tn">'+INR(paid)+'</b></div></div></div></div>';
-  h+='<div class="grid2">'+p.people.map(function(w,i){var owe=w.total-w.paid,pc=Math.round(w.paid/w.total*100),open=S.openW===i;
-    return '<section class="card"><button style="display:block;width:100%;text-align:left;border:0;background:transparent;padding:0" data-act="toggleW" data-arg="'+i+'" aria-expanded="'+open+'"><div style="display:flex;justify-content:space-between;gap:8px"><div><b style="font-size:15px">'+esc(w.n)+'</b><div class="lbl">'+esc(w.t)+'</div></div><div style="text-align:right"><div class="lbl">You owe</div><b class="tn">'+(owe?INR(owe):'Settled')+'</b></div></div><div class="trk" style="margin-top:12px"><i style="width:'+pc+'%;background:var(--'+['coral','amber','violet','blue','pink'][i%5]+')"></i></div><div class="lbl" style="margin-top:6px">Paid '+INR(w.paid)+' of '+INR(w.total)+'</div></button>'
-    +(open?'<div style="margin-top:10px;border-top:1px solid var(--line)">'+w.h.map(function(r){return '<div class="li"><div class="m"><b>'+r[0]+'</b><span>'+r[1]+'</span></div><b class="tn" style="color:'+(r[3]?'var(--ink)':'var(--coral-x)')+'">'+(r[3]?'+':'−')+INR(r[2])+'</b></div>'}).join('')+'<div class="lbl" style="margin-top:8px">+ adds to what you owe. − is a payment you made.</div></div>':'')+'</section>'}).join('')+'</div>';
+function pagePeople(D){
+  if(S.partyId&&D.pById[S.partyId])return partyDetail(D,D.pById[S.partyId]);
+  S.partyId=null;
+  var q=S.peq.toLowerCase();
+  var tot=D.owe;
+  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="btnp" data-act="newParty">+ Add person</button></div>';
+  if(D.parties.length)h+='<div class="tile bg-blue" style="margin-bottom:12px"><div class="t-l">You owe in total</div><div class="t-v" style="font-size:36px">'+INR(tot)+'</div><div class="t-n">to '+D.parties.filter(function(x){return x.bal>0}).length+' people</div></div>';
+  h+='<section class="card"><label class="sr" for="peq">Search people</label><input class="search" id="peq" type="search" placeholder="Search name or type" value="'+esc(S.peq)+'" autocomplete="off"><div id="peList" style="margin-top:8px">'+peopleListHtml(D)+'</div></section>';
+  return h}
+function peopleListHtml(D){
+  var q=S.peq.toLowerCase();
+  if(!D.parties.length)return emptyBox('Add your stone suppliers, carving workers and fitting teams to keep a ledger for each.','+ Add person','newParty');
+  var l=D.parties.filter(function(x){return !q||(x.name+' '+x.type).toLowerCase().indexOf(q)>=0});
+  if(!l.length)return '<div class="lbl" style="padding:20px;text-align:center">No one matches.</div>';
+  return l.map(function(x){return '<button class="rowb" data-act="openParty" data-arg="'+x.id+'"><div class="av c-violet">'+esc((x.name[0]||'?').toUpperCase())+'</div><div style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.name)+'</b><span class="lbl">'+esc(x.type)+'</span></div><div style="text-align:right"><div class="lbl">'+(x.bal>0?'You owe':x.bal<0?'Advance paid':'Settled')+'</div><b class="tn">'+(x.bal?INR(Math.abs(x.bal)):'₹0')+'</b></div></button>'}).join('')}
+function partyDetail(D,x){
+  var lines=x.lines.map(function(t,i){return Object.assign({n:i},t)}).sort(function(a,b){return a.date===b.date?(a.n-b.n):(a.date<b.date?-1:1)});
+  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="btn" data-act="closeParty">← All people</button><button class="btnp" data-act="addBill" data-arg="'+x.id+'">+ Bill (amount owed)</button><button class="btn" data-act="payParty" data-arg="'+x.id+'">Pay now</button></div>'
+  +'<div class="tile bg-blue rise"><div class="t-l">'+esc(x.type)+(x.phone?' · '+esc(x.phone):'')+'</div><div class="disp" style="font-size:26px">'+esc(x.name)+'</div><div class="t-l" style="margin-top:12px">'+(x.bal>=0?'You owe':'Advance paid')+'</div><div class="t-v" style="font-size:36px">'+INR(Math.abs(x.bal))+'</div><div class="g3" style="grid-template-columns:repeat(2,1fr);margin-top:12px"><div class="mini" style="background:rgba(255,255,255,.18)"><span class="lbl" style="color:#fff">Total billed</span><b class="tn">'+INR(x.bills)+'</b></div><div class="mini" style="background:rgba(255,255,255,.18)"><span class="lbl" style="color:#fff">Paid</span><b class="tn">'+INR(x.paid)+'</b></div></div></div>'
+  +'<section class="card sect"><div class="cardhead"><h2 class="disp">Ledger</h2><div class="hrow"><button class="btn" data-act="stmtPdf" data-arg="'+x.id+'">Statement PDF</button><button class="btn" data-act="stmtShare" data-arg="'+x.id+'">Share</button></div></div>'
+  +(lines.length?lines.map(function(t){var p=D.byId[t.projId],bill=t.kind==='bill';return '<div class="li"><div class="m"><b>'+(bill?'Bill':'Paid')+(t.note?' · '+esc(t.note):'')+'</b><span>'+fmt(t.date)+(p?' · '+esc(p.name):'')+(bill?'':' · '+t.mode)+'</span></div><b class="tn" style="color:'+(bill?'var(--ink)':'var(--coral-x)')+'">'+(bill?'+':'−')+INR(t.amount)+'</b></div>'}).join('')+'<div class="lbl" style="margin-top:8px">+ adds to what you owe. − is a payment you made.</div>':'<div class="lbl" style="padding:14px 0">No bills or payments yet.</div>')+'</section>'
+  +(x.lines.length?'':'<div style="margin-top:14px">'+(S.confirm==='delparty'?'<div class="card" style="border-color:var(--coral)"><b>Delete '+esc(x.name)+'?</b><div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-act="cancelConfirm">Keep</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delParty" data-arg="'+x.id+'">Yes, delete</button></div></div>':'<button class="btn" style="color:var(--coral-x)" data-act="askConfirm" data-arg="delparty">Delete person</button>')+'</div>');
   return h}
 
-/* ---------- frame ---------- */
-var NAV=[['home','Home','home'],['projects','Projects','proj'],['payments','Payments','pay'],['vouchers','Vouchers','vou'],['workers','Workers','work']];
-var TITLES={home:['Monday, 19 October 2026','Good morning'],projects:['Every temple you are building','Projects'],payments:['Client and supplier payments','Payments'],vouchers:['Proof for every payment and receipt','Vouchers'],workers:['Suppliers and workers','Workers']};
-function isDark(){var r=document.documentElement.getAttribute('data-theme');if(r)return r==='dark';return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches}
-function render(){
-  var D=derive();
-  var side='<div class="logo"><i>'+ic('proj',22,1.8)+'</i><b class="disp" style="font-size:16px;line-height:1.15">Brihad Temple<br>Construction Co.</b></div>'+NAV.map(function(n){return '<button class="navb'+(S.page===n[0]?' on':'')+'" data-act="nav" data-arg="'+n[0]+'">'+ic(n[2],20)+n[1]+'</button>'}).join('')+'<div class="syncbox"><b>Synced with phone</b><div class="lbl" style="margin-top:2px"><span class="dot"></span>Last synced 2 min ago</div></div>';
-  document.getElementById('side').innerHTML=side;
-  document.getElementById('bottom').innerHTML=NAV.map(function(n){return '<button class="bt'+(S.page===n[0]?' on':'')+'" data-act="nav" data-arg="'+n[0]+'">'+ic(n[2],22)+n[1]+'</button>'}).join('');
-  var t=TITLES[S.page],ttl=t[1],sub=t[0];
-  if(S.page==='projects'&&S.proj){ttl=D.P[S.proj].name;sub=D.P[S.proj].client}
-  var head='<div class="head"><div><div class="lbl">'+sub+'</div><h1 class="disp">'+esc(ttl)+'</h1></div><div class="hrow"><button class="ibtn" data-act="theme" aria-label="Switch light or dark theme">'+ic(isDark()?'sun':'moon',20)+'</button><button class="btn hide-s" data-act="toast" data-arg="Statement PDF saves to your phone in the real app. This is a preview.">Statement</button><button class="btnp" data-act="openAdd">+ New entry</button></div></div>';
-  var body={home:pageHome,projects:pageProjects,payments:pagePayments,vouchers:pageVouchers,workers:pageWorkers}[S.page](D);
-  document.getElementById('main').innerHTML=head+body;
-  renderModal(D);
-  var tt=document.getElementById('toast');tt.innerHTML=S.toast?'<div class="toast" role="status">'+esc(S.toast)+'</div>':'';
-  document.getElementById('fab').style.display=S.modal?'none':'flex';
-}
+function pageSettings(D){
+  var b=DB.biz;
+  return '<div class="grid2" style="align-items:start"><section class="card"><h2 class="disp" style="margin:0 0 4px;font-size:20px">Business details</h2><div class="lbl">Shown at the top of every voucher and statement.</div>'
+  +'<label class="field"><span class="lbl">Business name</span><input class="inp" id="b-name" value="'+esc(b.name)+'" autocomplete="off"></label>'
+  +'<label class="field"><span class="lbl">Phone number</span><input class="inp" id="b-phone" inputmode="tel" value="'+esc(b.phone)+'" placeholder="+91 98XXX XXXXX" autocomplete="off"></label>'
+  +'<label class="field"><span class="lbl">Address</span><input class="inp" id="b-addr" value="'+esc(b.addr)+'" placeholder="Office address, city, state" autocomplete="off"></label>'
+  +'<button class="btnp" style="margin-top:16px" data-act="saveBiz">Save details</button></section>'
+  +'<section class="card"><h2 class="disp" style="margin:0 0 4px;font-size:20px">Backup</h2><div class="lbl" style="line-height:1.5">Your data is saved on this device only. Copy a backup now and then, and keep it in WhatsApp notes or email. To move data to another phone or PC, paste the backup there.</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btnp" data-act="backup">Copy backup</button><button class="btn" data-act="restore">Restore from backup</button></div>'
+  +'<h2 class="disp" style="margin:24px 0 4px;font-size:20px">Theme</h2><div class="pills"><button class="pill'+(isDark()?'':' on')+'" data-act="setTheme" data-arg="light">Light</button><button class="pill'+(isDark()?' on':'')+'" data-act="setTheme" data-arg="dark">Dark</button></div>'
+  +'<h2 class="disp" style="margin:24px 0 4px;font-size:20px">Erase everything</h2>'+(S.confirm==='erase'?'<div class="card" style="border-color:var(--coral);margin-top:8px"><b>Erase all projects, people and entries?</b><div class="lbl" style="margin:4px 0 12px">Copy a backup first. This cannot be undone.</div><div style="display:flex;gap:8px"><button class="btn" data-act="cancelConfirm">Keep my data</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="erase">Yes, erase</button></div></div>':'<div class="lbl">Start again with an empty app.</div><button class="btn" style="margin-top:10px;color:var(--coral-x)" data-act="askConfirm" data-arg="erase">Erase all data</button>')+'</section></div>'}
+
+/* ---------- vouchers, PDF, share ---------- */
+function findTxn(id){for(var i=0;i<DB.txns.length;i++)if(DB.txns[i].id===id)return DB.txns[i]}
+function voucherInfo(t){var D=derive(),p=D.byId[t.projId],inn=t.kind==='in';return {t:t,inn:inn,proj:p?p.name:'',stage:inn?(t.stageId?stageName(p,t.stageId):''):t.section,who:t.who||''}}
+function voucherPaper(t){
+  var v=voucherInfo(t),b=DB.biz;
+  return '<div class="paper"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div style="min-width:0"><div style="display:flex;align-items:center;gap:8px"><div style="width:30px;height:30px;border-radius:9px;background:#4A4E8C;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+ic('proj',18,1.8)+'</div><b style="font-size:13px;line-height:1.2">'+esc(b.name)+'</b></div>'+((b.addr||b.phone)?'<div style="font-size:11px;color:#62668A;margin-top:6px;line-height:1.4">'+esc(b.addr)+(b.addr&&b.phone?'<br>':'')+(b.phone?'Phone: '+esc(b.phone):'')+'</div>':'')+'<div class="pl" style="margin-top:12px">'+(v.inn?'RECEIPT VOUCHER':'PAYMENT VOUCHER')+'</div></div><div style="text-align:right;flex-shrink:0"><div class="pl">VOUCHER NO.</div><div class="disp" style="font-size:16px">'+esc(t.vno)+'</div><div style="font-size:12px;color:#62668A">'+fmt(t.date)+'</div></div></div>'
+  +'<div style="height:1px;background:#E4E2DB;margin:14px 0"></div><div class="pl">'+(v.inn?'RECEIVED FROM':'PAID TO')+'</div><div style="font-size:18px;font-weight:800;margin-top:2px">'+esc(v.who)+'</div><div style="font-size:12px;color:#62668A">'+esc(v.proj)+(v.stage?' · '+esc(v.stage):'')+'</div>'
+  +'<div style="background:#F3F2EE;border-radius:14px;padding:12px 14px;margin-top:14px"><div class="pl">AMOUNT</div><div class="disp tn" style="font-size:30px">'+INR(t.amount)+'</div><div style="font-size:12px;color:#44486B;margin-top:4px">'+words(t.amount)+'</div></div>'
+  +'<div style="display:flex;gap:12px;margin-top:14px"><div style="flex:1.4;min-width:0"><div class="pl">NOTE</div><b style="font-size:13px">'+esc(t.note||'—')+'</b></div><div style="flex:1"><div class="pl">MODE</div><b style="font-size:13px">'+esc(t.mode)+'</b></div></div>'
+  +'<div style="display:flex;gap:12px;margin-top:26px"><div style="flex:1"><div style="height:46px;border-bottom:1.5px solid #B7BBD8"></div><div class="pl" style="margin-top:6px">'+(v.inn?"CLIENT'S SIGNATURE":"RECEIVER'S SIGNATURE")+'</div></div><div style="flex:1"><div style="height:46px;border-bottom:1.5px solid #B7BBD8"></div><div class="pl" style="margin-top:6px">'+(v.inn?'RECEIVED BY (OWNER)':'PAID BY (OWNER)')+'</div></div></div></div>'}
+function voucherText(t){var v=voucherInfo(t),b=DB.biz;return [b.name,(v.inn?'RECEIPT VOUCHER ':'PAYMENT VOUCHER ')+t.vno,'Date: '+fmt(t.date),(v.inn?'Received from: ':'Paid to: ')+v.who,'Project: '+v.proj+(v.stage?' ('+v.stage+')':''),'Amount: '+INR(t.amount),words(t.amount),'Mode: '+t.mode].concat(t.note?['Note: '+t.note]:[]).concat(b.phone?['Phone: '+b.phone]:[]).join('\n')}
+function pdfLib(){var J=window.jspdf;if(!J||!J.jsPDF){toast('PDF tool could not load. Check your internet and try again.');return null}return J.jsPDF}
+function rs(n){return 'Rs. '+Number(n).toLocaleString('en-IN')}
+function pdfVoucher(t){
+  var C=pdfLib();if(!C)return;var v=voucherInfo(t),b=DB.biz,d=new C({unit:'mm',format:'a5'}),y=16;
+  d.setFont('helvetica','bold');d.setFontSize(14);d.text(b.name,12,y);y+=6;d.setFont('helvetica','normal');d.setFontSize(9);
+  if(b.addr){d.text(b.addr,12,y);y+=5}if(b.phone){d.text('Phone: '+b.phone,12,y);y+=5}
+  y+=3;d.setFont('helvetica','bold');d.setFontSize(11);d.text(v.inn?'RECEIPT VOUCHER':'PAYMENT VOUCHER',12,y);d.text('No. '+t.vno,136,y,{align:'right'});y+=6;d.setFont('helvetica','normal');d.setFontSize(9);d.text('Date: '+fmt(t.date),136,y,{align:'right'});y+=4;d.line(12,y,136,y);y+=9;
+  d.setFontSize(9);d.text(v.inn?'RECEIVED FROM':'PAID TO',12,y);y+=6;d.setFont('helvetica','bold');d.setFontSize(13);d.text(v.who,12,y);y+=6;d.setFont('helvetica','normal');d.setFontSize(9);d.text(v.proj+(v.stage?' - '+v.stage:''),12,y);y+=10;
+  d.setFont('helvetica','bold');d.setFontSize(18);d.text(rs(t.amount),12,y);y+=6;d.setFont('helvetica','normal');d.setFontSize(9);d.text(d.splitTextToSize(words(t.amount),122),12,y);y+=12;
+  d.text('Mode: '+t.mode,12,y);y+=6;if(t.note){d.text(d.splitTextToSize('Note: '+t.note,122),12,y);y+=8}
+  y=Math.max(y+22,150);d.line(12,y,60,y);d.line(88,y,136,y);d.setFontSize(8);d.text(v.inn?"Client's signature":"Receiver's signature",12,y+4);d.text(v.inn?'Received by (owner)':'Paid by (owner)',88,y+4);
+  try{d.save(t.vno+'.pdf');toast('Saved '+t.vno+'.pdf')}catch(e){toast('Could not save the PDF on this device.')}}
+function stmtLines(x){var D=derive();return x.lines.map(function(t,i){return {n:i,t:t}}).sort(function(a,b){return a.t.date===b.t.date?(a.n-b.n):(a.t.date<b.t.date?-1:1)}).map(function(o){var t=o.t,p=D.byId[t.projId];return {date:fmt(t.date),desc:(t.kind==='bill'?'Bill':'Paid ('+t.mode+')')+(t.note?' - '+t.note:'')+(p?' ['+p.name+']':''),bill:t.kind==='bill'?t.amount:0,paid:t.kind==='out'?t.amount:0}})}
+function pdfStatement(x){
+  var C=pdfLib();if(!C)return;var d=new C({unit:'mm',format:'a4'}),b=DB.biz,y=18,L=stmtLines(x),bal=0;
+  d.setFont('helvetica','bold');d.setFontSize(15);d.text(b.name,14,y);y+=6;d.setFont('helvetica','normal');d.setFontSize(9);if(b.phone||b.addr){d.text([b.addr,b.phone?'Phone: '+b.phone:''].filter(Boolean).join('  |  '),14,y);y+=6}
+  d.setFont('helvetica','bold');d.setFontSize(12);d.text('Statement: '+x.name+' ('+x.type+')',14,y);y+=6;d.setFont('helvetica','normal');d.setFontSize(9);d.text('As on '+fmt(today()),14,y);y+=8;
+  function head(){d.setFont('helvetica','bold');d.text('Date',14,y);d.text('Details',40,y);d.text('Billed',140,y,{align:'right'});d.text('Paid',166,y,{align:'right'});d.text('Balance',196,y,{align:'right'});y+=2;d.line(14,y,196,y);y+=5;d.setFont('helvetica','normal')}
+  head();L.forEach(function(r){bal+=r.bill-r.paid;var lines=d.splitTextToSize(r.desc,92);if(y+lines.length*4.5>280){d.addPage();y=18;head()}d.text(r.date,14,y);d.text(lines,40,y);if(r.bill)d.text(rs(r.bill),140,y,{align:'right'});if(r.paid)d.text(rs(r.paid),166,y,{align:'right'});d.text(rs(bal),196,y,{align:'right'});y+=lines.length*4.5+1.5});
+  y+=3;d.line(14,y,196,y);y+=6;d.setFont('helvetica','bold');d.text('Total billed '+rs(x.bills)+'   Paid '+rs(x.paid)+'   Balance '+rs(x.bills-x.paid),14,y);
+  try{d.save('Statement-'+x.name.replace(/[^a-z0-9]+/gi,'-')+'.pdf');toast('Statement saved')}catch(e){toast('Could not save the PDF on this device.')}}
+function stmtText(x){var L=stmtLines(x),bal=0,s=[DB.biz.name,'Statement: '+x.name+' ('+x.type+')','As on '+fmt(today()),''];L.forEach(function(r){bal+=r.bill-r.paid;s.push(r.date+' | '+r.desc+' | '+(r.bill?'+'+INR(r.bill):'-'+INR(r.paid))+' | Balance '+INR(bal))});s.push('','Billed '+INR(x.bills)+' · Paid '+INR(x.paid)+' · Balance '+INR(x.bills-x.paid));return s.join('\n')}
+function shareText(text,title){
+  if(navigator.share){navigator.share({title:title,text:text}).catch(function(){});return}
+  try{navigator.clipboard.writeText(text).then(function(){toast('Copied. Paste it into WhatsApp or any app.')},function(){fallbackCopy(text)})}catch(e){fallbackCopy(text)}}
+function fallbackCopy(text){S.modal='copy';S.form={text:text};render()}
+
+/* ---------- modals ---------- */
 function renderModal(D){
   var m=document.getElementById('modal');
   if(!S.modal){m.innerHTML='';return}
-  var h='<div class="ov" data-act="ovclick"><div class="sheet" role="dialog" aria-modal="true" aria-label="'+(S.modal==='add'?'New entry':'Voucher')+'"><div class="grab"></div>';
-  if(S.modal==='add'){
-    var d=S.draft;
-    h+='<div style="display:flex;justify-content:space-between;align-items:center"><h2 class="disp" style="margin:0;font-size:24px">New entry</h2><button class="ibtn" data-act="closeModal" aria-label="Close">'+ic('close',20)+'</button></div>'
-    +'<div class="pills" style="margin-top:14px"><button class="pill'+(d.kind==='out'?' on':'')+'" data-act="kind" data-arg="out" style="flex:1">Expense paid</button><button class="pill'+(d.kind==='in'?' on':'')+'" data-act="kind" data-arg="in" style="flex:1">Client payment</button></div>'
-    +'<label class="field"><span class="lbl">Amount (₹)</span><input class="inp amt tn" id="d-amount" data-draft="amount" inputmode="numeric" value="'+esc(d.amount)+'" autocomplete="off"></label>'
-    +'<label class="field"><span class="lbl">Project</span><select class="inp" id="d-proj" data-draft="projId">'+['shiva','hanuman'].map(function(k){return '<option value="'+k+'"'+(d.projId===k?' selected':'')+'>'+BASE[k].name+'</option>'}).join('')+'</select></label>'
-    +(d.kind==='out'?'<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Section</span><div class="pills">'+SECTIONS.map(function(s){return '<button class="pill'+(d.section===s?' on':'')+'" data-act="section" data-arg="'+s+'">'+s+'</button>'}).join('')+'</div></div>':'')
-    +'<label class="field"><span class="lbl">'+(d.kind==='out'?'Paid to':'Received from')+'</span><input class="inp" id="d-who" data-draft="who" value="'+esc(d.who)+'" autocomplete="off"></label>'
-    +'<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Mode</span><div class="pills">'+['Cash','UPI','Bank','Cheque'].map(function(s){return '<button class="pill'+(d.mode===s?' on':'')+'" data-act="mode" data-arg="'+s+'">'+s+'</button>'}).join('')+'</div></div>'
-    +'<p class="lbl" id="d-err" style="color:var(--coral-x);min-height:18px;margin:10px 0 0">'+(S.err||'')+'</p>'
-    +'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveEntry">Save entry and make voucher</button>';
-  }else{
-    var v=S.vcur;
-    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><h2 class="disp" style="margin:0;font-size:24px">Voucher</h2><div class="lbl">'+v.no+(v.isNew?' · created just now':'')+'</div></div><button class="ibtn" data-act="closeModal" aria-label="Close">'+ic('close',20)+'</button></div>'
-    +voucherPaper(v,S.signed)
-    +'<div style="display:flex;gap:10px;margin-top:14px"><button class="btn" style="flex:1" data-act="dl" data-arg="'+v.no+'">Download PDF</button><button class="btnp" style="flex:1" data-act="share" data-arg="'+v.no+'">Share</button></div><p class="lbl" style="text-align:center;margin:10px 0 0">In the real app, Download saves a copy on your phone or PC. Share sends it on WhatsApp or any app.</p>';
+  var f=S.form,h='<div class="ov" data-act="ovclick"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>';
+  function head(t,sub){return '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div><h2 class="disp" style="margin:0;font-size:24px">'+t+'</h2>'+(sub?'<div class="lbl">'+sub+'</div>':'')+'</div><button class="ibtn" data-act="closeModal" aria-label="Close">'+ic('close',20)+'</button></div>'}
+  function err(){return '<p class="lbl" id="m-err" style="color:var(--coral-x);min-height:18px;margin:10px 0 0">'+esc(S.err)+'</p>'}
+  function chips(act,list,cur){return '<div class="pills">'+list.map(function(s){return '<button class="pill'+(cur===s?' on':'')+'" data-act="'+act+'" data-arg="'+esc(s)+'">'+esc(s)+'</button>'}).join('')+'</div>'}
+  function fld(label,key,opts){opts=opts||{};return '<label class="field"><span class="lbl">'+label+'</span><input class="inp'+(opts.big?' amt tn':'')+'" data-f="'+key+'" '+(opts.type?'type="'+opts.type+'" ':'')+(opts.inputmode?'inputmode="'+opts.inputmode+'" ':'')+'value="'+esc(f[key])+'" '+(opts.ph?'placeholder="'+esc(opts.ph)+'" ':'')+'autocomplete="off"></label>'}
+  function sel(label,key,items,blank){return '<label class="field"><span class="lbl">'+label+'</span><select class="inp" data-f="'+key+'">'+(blank?'<option value="">'+blank+'</option>':'')+items.map(function(i){return '<option value="'+i[0]+'"'+(f[key]===i[0]?' selected':'')+'>'+esc(i[1])+'</option>'}).join('')+'</select></label>'}
+  var projOpts=D.projects.map(function(p){return [p.id,p.name]});
+  if(S.modal==='entry'){
+    var p=D.byId[f.projId],inn=f.kind==='in';
+    h+=head('New entry')+'<div class="pills" style="margin-top:12px"><button class="pill'+(!inn?' on':'')+'" data-act="kind" data-arg="out" style="flex:1">Payment made</button><button class="pill'+(inn?' on':'')+'" data-act="kind" data-arg="in" style="flex:1">Client payment</button></div>'
+    +fld('Amount (₹)','amount',{big:1,inputmode:'numeric',ph:'0'})+sel('Project','projId',projOpts);
+    if(inn){h+=sel('Stage (optional)','stageId',p?p.stages.map(function(s){return [s.id,s.name]}):[],'Not linked to a stage')+fld('Received from','who',{ph:'Client name'})}
+    else{h+='<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Section</span>'+chips('section',SECTIONS,f.section)+'</div>'+sel('Paid to','partyId',D.parties.map(function(x){return [x.id,x.name+' ('+x.type+')']}),'Someone else (type the name)')+(f.partyId?'':fld('Name','who',{ph:'Who did you pay?'}))}
+    h+='<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Mode</span>'+chips('mode',MODES,f.mode)+'</div>'+fld('Date','date',{type:'date'})+fld('Note (optional)','note',{ph:inn?'e.g. 2nd installment':'e.g. weekly payout'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveEntry">Save and make voucher</button>';
+  }else if(S.modal==='project'){
+    var sum=0;f.stages.forEach(function(s){sum+=num(s.amount)});
+    h+=head('New project','Deal value and stage-wise client payments')+fld('Temple / project name','name',{ph:'e.g. Shiva Temple'})+fld('Client name','client',{ph:'Who is the temple for?'})+fld('Total deal value (₹)','value',{big:1,inputmode:'numeric',ph:'0'})
+    +'<div class="grid2" style="gap:0 12px">'+fld('Start date','start',{type:'date'})+fld('Handover date','handover',{type:'date'})+'</div>'
+    +'<div class="field"><span class="lbl" style="display:block;margin-bottom:2px">Stages and what the client pays at each stage</span><div class="lbl" id="stgSum" style="margin-bottom:8px">'+stgSumText(f.value,sum)+'</div>'
+    +f.stages.map(function(s,i){return '<div class="stg"><div style="display:flex;gap:8px"><input class="inp" data-si="'+i+'" data-sf="name" value="'+esc(s.name)+'" placeholder="Stage name" aria-label="Stage '+(i+1)+' name"><button class="ibtn" data-act="rmStage" data-arg="'+i+'" aria-label="Remove stage">'+ic('close',18)+'</button></div><div style="display:flex;gap:8px;margin-top:8px"><input class="inp" data-si="'+i+'" data-sf="amount" inputmode="numeric" value="'+esc(s.amount)+'" placeholder="Client pays ₹" aria-label="Amount at stage '+(i+1)+'"><input class="inp" type="date" data-si="'+i+'" data-sf="date" value="'+esc(s.date)+'" aria-label="Target date for stage '+(i+1)+'"></div></div>'}).join('')
+    +'<button class="btn" style="margin-top:8px" data-act="addStage">+ Add stage</button></div>'+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveProject">Save project</button>';
+  }else if(S.modal==='party'){
+    h+=head('Add person')+fld('Name','name',{ph:'e.g. Rampal Stones'})+'<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Type</span>'+chips('ptype',TYPES,f.type)+'</div>'+fld('Phone (optional)','phone',{inputmode:'tel',ph:'+91'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveParty">Save person</button>';
+  }else if(S.modal==='bill'){
+    h+=head('Add bill','Money you now owe '+esc((D.pById[f.partyId]||{}).name||''))+fld('Amount owed (₹)','amount',{big:1,inputmode:'numeric',ph:'0'})+sel('Project','projId',projOpts)+fld('What is it for?','note',{ph:'e.g. Agreed supply / extra work'})+fld('Date','date',{type:'date'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveBill">Save bill</button>';
+  }else if(S.modal==='voucher'){
+    var t=findTxn(S.vid);
+    if(!t){m.innerHTML='';S.modal=null;return}
+    h+=head('Voucher',esc(t.vno)+(f&&f.fresh?' · created just now':''))+voucherPaper(t)
+    +'<div style="display:flex;gap:10px;margin-top:14px"><button class="btn" style="flex:1" data-act="vpdf" data-arg="'+t.id+'">Download PDF</button><button class="btnp" style="flex:1" data-act="vshare" data-arg="'+t.id+'">Share</button></div>'
+    +'<div style="margin-top:12px;text-align:center">'+(S.confirm==='deltx'?'<div class="card" style="border-color:var(--coral);text-align:left"><b>Delete this entry?</b><div class="lbl" style="margin:4px 0 10px">Totals will change. This cannot be undone.</div><div style="display:flex;gap:8px"><button class="btn" data-act="cancelConfirm">Keep</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delTx" data-arg="'+t.id+'">Yes, delete</button></div></div>':'<button class="btn" style="color:var(--coral-x)" data-act="askConfirm" data-arg="deltx">Delete entry</button>')+'</div>';
+  }else if(S.modal==='copy'){
+    h+=head('Copy this text','Select it and copy')+'<textarea class="inp" style="min-height:180px;padding:12px" readonly id="copybox">'+esc(f.text)+'</textarea><button class="btnp" style="width:100%;margin-top:10px" data-act="selectCopy">Select all</button>';
+  }else if(S.modal==='restore'){
+    h+=head('Restore from backup','Paste the backup text here. This replaces the data on this device.')+'<textarea class="inp" style="min-height:160px;padding:12px;margin-top:10px" id="restorebox" placeholder="Paste backup here"></textarea>'+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="doRestore">Restore</button>';
   }
-  m.innerHTML=h+'</div></div>';
-}
+  m.innerHTML=h+'</div></div>'}
+function stgSumText(val,sum){var v=num(val);return 'Stages add up to '+INR(sum)+(v?' of '+INR(v)+(sum===v?' ✓':(sum<v?' · '+INR(v-sum)+' not yet assigned':' · '+INR(sum-v)+' more than the deal')):'')}
 
-/* ---------- events ---------- */
+/* ---------- frame ---------- */
+var NAV=[['home','Home','home'],['projects','Projects','proj'],['payments','Payments','pay'],['people','People','work'],['settings','Settings','set']];
+var TITLES={home:['Overview','Home'],projects:['Every temple you are building','Projects'],payments:['Every payment, with its voucher','Payments'],people:['Suppliers and workers','People'],settings:['Business, backup and theme','Settings']};
+function isDark(){var r=document.documentElement.getAttribute('data-theme');if(r)return r==='dark';return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches}
+function render(){
+  var D=derive();
+  var navb=function(c,t){return NAV.map(function(n){return '<button class="'+c+(S.page===n[0]?' on':'')+'" data-act="nav" data-arg="'+n[0]+'">'+ic(n[2],c==='bt'?22:20)+n[1]+'</button>'}).join('')};
+  document.getElementById('side').innerHTML='<div class="logo"><i>'+ic('proj',22,1.8)+'</i><b class="disp" style="font-size:16px;line-height:1.15">'+esc(DB.biz.name)+'</b></div>'+navb('navb')+'<div class="syncbox"><b>Saved on this device</b><div class="lbl" style="margin-top:2px">Use Settings → Copy backup to move data.</div></div>';
+  document.getElementById('bottom').innerHTML=navb('bt');
+  var t=TITLES[S.page],ttl=t[1],sub=t[0];
+  if(S.page==='projects'&&S.projId&&D.byId[S.projId]){ttl=D.byId[S.projId].name;sub=D.byId[S.projId].client||'Project'}
+  if(S.page==='people'&&S.partyId&&D.pById[S.partyId]){ttl=D.pById[S.partyId].name;sub='Ledger'}
+  if(S.page==='home'){var hr=new Date().getHours();ttl=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';sub=fmt(today())}
+  var head='<div class="head"><div><div class="lbl">'+esc(sub)+'</div><h1 class="disp">'+esc(ttl)+'</h1></div><div class="hrow"><button class="ibtn" data-act="theme" aria-label="Switch light or dark theme">'+ic(isDark()?'sun':'moon',20)+'</button><button class="btnp" data-act="openAdd">+ New entry</button></div></div>';
+  var body={home:pageHome,projects:pageProjects,payments:pagePayments,people:pagePeople,settings:pageSettings}[S.page](D);
+  document.getElementById('main').innerHTML=head+body;
+  renderModal(D);
+  document.getElementById('toast').innerHTML=S.toast?'<div class="toast" role="status">'+esc(S.toast)+'</div>':'';
+  document.getElementById('fab').style.display=S.modal?'none':'flex'}
 var toastTimer=null;
 function toast(msg){S.toast=msg;render();clearTimeout(toastTimer);toastTimer=setTimeout(function(){S.toast='';render()},3600)}
-function newDraft(){return {kind:'out',amount:'38,000',projId:'shiva',section:'Carving',who:'Mahesh (carver)',mode:'Cash'}}
+function go(page){S.page=page;S.projId=null;S.partyId=null;S.tab='overview';S.confirm='';render();window.scrollTo(0,0)}
+
+/* ---------- forms ---------- */
+function openEntry(projId,partyId){
+  if(!DB.projects.length){toast('Add a project first, then record payments.');openProject();return}
+  var pid=projId||S.projId||DB.projects[0].id,pt=partyId?DB.parties.filter(function(x){return x.id===partyId})[0]:null;
+  S.form={kind:'out',projId:pid,stageId:'',section:'Stone',partyId:partyId||'',who:pt?pt.name:'',amount:'',mode:'Cash',date:today(),note:''};S.err='';S.modal='entry';render()}
+function openProject(){S.form={name:'',client:'',value:'',start:today(),handover:'',stages:DEF_STAGES.map(function(n){return {id:uid(),name:n,amount:'',date:''}})};S.err='';S.modal='project';render()}
+function saveEntry(){
+  var f=S.form,amount=num(f.amount),inn=f.kind==='in';
+  if(!amount){S.err='Enter an amount greater than zero.';render();return}
+  var who=String(f.who||'').trim(),pt=f.partyId?DB.parties.filter(function(x){return x.id===f.partyId})[0]:null;
+  if(!inn&&pt)who=pt.name;
+  if(!who){S.err=inn?'Enter who paid you.':'Enter who you paid.';render();return}
+  if(!f.date){S.err='Choose a date.';render();return}
+  DB.vseq=(DB.vseq||0)+1;
+  var t={id:uid(),kind:f.kind,projId:f.projId,stageId:inn?f.stageId:'',section:inn?'':f.section,partyId:inn?'':(f.partyId||''),who:who,amount:amount,mode:f.mode,date:f.date,note:String(f.note||'').trim(),vno:'BTC-'+pad(DB.vseq,4)};
+  DB.txns.push(t);save();S.vid=t.id;S.form={fresh:1};S.modal='voucher';S.err='';render()}
+function saveProject(){
+  var f=S.form,value=num(f.value);
+  if(!String(f.name).trim()){S.err='Enter the project name.';render();return}
+  if(!value){S.err='Enter the total deal value.';render();return}
+  var st=f.stages.filter(function(s){return String(s.name).trim()});
+  if(!st.length){S.err='Add at least one stage.';render();return}
+  DB.projects.push({id:uid(),name:f.name.trim(),client:String(f.client).trim(),value:value,start:f.start,handover:f.handover,stages:st.map(function(s){return {id:s.id,name:s.name.trim(),amount:num(s.amount),date:s.date,done:false}})});
+  save();S.modal=null;S.page='projects';S.projId=DB.projects[DB.projects.length-1].id;S.tab='overview';render();window.scrollTo(0,0)}
+
+/* ---------- events ---------- */
 document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]');if(!t)return;
-  var a=t.getAttribute('data-act'),g=t.getAttribute('data-arg');
-  if(a==='ovclick'){if(e.target===t){S.modal=null;render()}return}
-  if(a==='nav'){S.page=g;S.proj=null;S.tab='overview';render();window.scrollTo(0,0)}
-  else if(a==='openProj'){S.proj=g;S.tab='overview';render();window.scrollTo(0,0)}
-  else if(a==='closeProj'){S.proj=null;render()}
-  else if(a==='tab'){S.tab=g;render()}
-  else if(a==='filter'){S.filter=g;render()}
-  else if(a==='pf'){S.pf=g;render()}
-  else if(a==='vf'){S.vf=g;render()}
-  else if(a==='selPay'){S.sel=+g;render()}
-  else if(a==='openV'){S.vsel=+g;render()}
-  else if(a==='toggleW'){S.openW=S.openW===+g?-1:+g;render()}
-  else if(a==='theme'){var r=document.documentElement;r.setAttribute('data-theme',isDark()?'light':'dark');render()}
-  else if(a==='openAdd'){S.draft=newDraft();S.err='';S.modal='add';render()}
-  else if(a==='closeModal'){S.modal=null;render()}
-  else if(a==='kind'){S.draft.kind=g;if(g==='in'){S.draft.who='Rajesh Sharma';S.draft.amount='4,00,000';S.draft.mode='Bank'}else{S.draft.who='Mahesh (carver)';S.draft.amount='38,000';S.draft.mode='Cash'}render()}
-  else if(a==='section'){S.draft.section=g;render()}
-  else if(a==='mode'){S.draft.mode=g;render()}
-  else if(a==='saveEntry'){saveEntry()}
-  else if(a==='sign'){S.signed=true;render()}
-  else if(a==='dl'){toast('Saved as '+g+'.pdf. In the real app this goes to your Downloads. This is a preview.')}
-  else if(a==='share'){toast('Share opens WhatsApp or any app in the real app. This is a preview.')}
-  else if(a==='toast'){toast(g)}
-  else if(a==='payVoucher'){var p=PAYS[+g];var no='TF-'+('0000'+(43+S.entries.length)).slice(-4);S.vcur={no:no,type:/payment/i.test(p.type)?'Receipt':'Payment',name:p.name,project:p.proj,stage:'Pillars and beams',purpose:p.type,amount:p.amt,mode:'Cash',date:'19 Oct 2026',isNew:1};S.signed=false;S.modal='voucher';render()}
+  var a=t.getAttribute('data-act'),g=t.getAttribute('data-arg'),f=S.form;
+  if(a==='ovclick'){if(e.target===t){S.modal=null;S.confirm='';render()}return}
+  switch(a){
+  case 'nav':go(g);break;
+  case 'openProj':S.page='projects';S.projId=g;S.tab='overview';S.confirm='';render();window.scrollTo(0,0);break;
+  case 'closeProj':S.projId=null;S.confirm='';render();break;
+  case 'tab':S.tab=g;render();break;
+  case 'filter':S.filter=g;render();break;
+  case 'pf':S.pf=g;render();break;
+  case 'newProject':openProject();break;
+  case 'openAdd':openEntry(g&&g!=='undefined'?g:null);break;
+  case 'closeModal':S.modal=null;S.confirm='';render();break;
+  case 'kind':f.kind=g;f.who='';f.partyId='';f.stageId='';if(g==='in'){var pp=DB.projects.filter(function(x){return x.id===f.projId})[0];f.who=pp?pp.client||'':'';f.mode='Bank'}else f.mode='Cash';render();break;
+  case 'section':f.section=g;render();break;
+  case 'mode':f.mode=g;render();break;
+  case 'ptype':f.type=g;render();break;
+  case 'saveEntry':saveEntry();break;
+  case 'addStage':f.stages.push({id:uid(),name:'',amount:'',date:''});render();break;
+  case 'rmStage':if(f.stages.length>1){f.stages.splice(+g,1);render()}break;
+  case 'saveProject':saveProject();break;
+  case 'toggleStage':var p=DB.projects.filter(function(x){return x.id===S.projId})[0];p.stages.forEach(function(s){if(s.id===g)s.done=!s.done});save();render();break;
+  case 'askConfirm':S.confirm=g;render();break;
+  case 'cancelConfirm':S.confirm='';render();break;
+  case 'delProj':DB.txns=DB.txns.filter(function(x){return x.projId!==S.projId});DB.projects=DB.projects.filter(function(x){return x.id!==S.projId});save();S.projId=null;S.confirm='';toast('Project deleted');break;
+  case 'newParty':S.form={name:'',type:TYPES[0],phone:''};S.err='';S.modal='party';render();break;
+  case 'saveParty':if(!String(f.name).trim()){S.err='Enter a name.';render();break}DB.parties.push({id:uid(),name:f.name.trim(),type:f.type,phone:String(f.phone).trim()});save();S.modal=null;toast('Person added');break;
+  case 'openParty':S.page='people';S.partyId=g;S.confirm='';render();window.scrollTo(0,0);break;
+  case 'closeParty':S.partyId=null;S.confirm='';render();break;
+  case 'addBill':if(!DB.projects.length){toast('Add a project first.');break}S.form={partyId:g,projId:S.projId||DB.projects[0].id,amount:'',note:'',date:today()};S.err='';S.modal='bill';render();break;
+  case 'saveBill':var am=num(f.amount);if(!am){S.err='Enter an amount greater than zero.';render();break}DB.txns.push({id:uid(),kind:'bill',projId:f.projId,stageId:'',section:'',partyId:f.partyId,who:(DB.parties.filter(function(x){return x.id===f.partyId})[0]||{}).name||'',amount:am,mode:'',date:f.date||today(),note:String(f.note||'').trim(),vno:''});save();S.modal=null;toast('Bill added');break;
+  case 'payParty':openEntry(S.projId||null,g);break;
+  case 'delParty':DB.parties=DB.parties.filter(function(x){return x.id!==g});save();S.partyId=null;S.confirm='';toast('Person deleted');break;
+  case 'openV':S.vid=g;S.form={};S.confirm='';S.modal='voucher';render();break;
+  case 'vpdf':pdfVoucher(findTxn(g));break;
+  case 'vshare':shareText(voucherText(findTxn(g)),'Voucher');break;
+  case 'stmtPdf':pdfStatement(derive().pById[g]);break;
+  case 'stmtShare':shareText(stmtText(derive().pById[g]),'Statement');break;
+  case 'delTx':DB.txns=DB.txns.filter(function(x){return x.id!==g});save();S.modal=null;S.confirm='';toast('Entry deleted');break;
+  case 'theme':case 'setTheme':var nv=a==='theme'?(isDark()?'light':'dark'):g;document.documentElement.setAttribute('data-theme',nv);try{localStorage.setItem('bt-theme',nv)}catch(x){}render();break;
+  case 'saveBiz':DB.biz={name:document.getElementById('b-name').value.trim()||'My Business',phone:document.getElementById('b-phone').value.trim(),addr:document.getElementById('b-addr').value.trim()};save();toast('Details saved');break;
+  case 'backup':var txt=JSON.stringify(DB);try{navigator.clipboard.writeText(txt).then(function(){toast('Backup copied. Paste it somewhere safe.')},function(){fallbackCopy(txt)})}catch(x){fallbackCopy(txt)}break;
+  case 'restore':S.form={};S.err='';S.modal='restore';render();break;
+  case 'doRestore':try{var d=JSON.parse(document.getElementById('restorebox').value);if(!d||!d.projects||!d.parties||!d.txns)throw 0;DB=d;DB.biz=DB.biz||blank().biz;save();S.modal=null;S.page='home';S.projId=null;S.partyId=null;toast('Backup restored')}catch(x){S.err='This does not look like a valid backup.';render()}break;
+  case 'selectCopy':var cb=document.getElementById('copybox');cb.focus();cb.select();break;
+  case 'erase':DB=blank();save();S.confirm='';S.page='home';S.projId=null;S.partyId=null;toast('All data erased');break;
+  }
 });
 document.addEventListener('input',function(e){
   var t=e.target;
-  if(t.id==='pq'){S.q=t.value;var d=derive();document.getElementById('projList').innerHTML=projList(d);return}
-  if(t.id==='payq'){S.pq=t.value;var q=S.pq.toLowerCase();var list=PAYS.map(function(x,i){return {e:x,i:i}}).filter(function(o){return (S.pf==='all'||o.e.st===S.pf)&&(!q||(o.e.name+' '+o.e.proj+' '+o.e.type).toLowerCase().indexOf(q)>=0)});document.getElementById('payList').innerHTML=payListHtml(list,list.some(function(o){return o.i===S.sel})?S.sel:(list.length?list[0].i:-1));return}
-  var k=t.getAttribute&&t.getAttribute('data-draft');if(k&&S.draft){S.draft[k]=t.value}
+  if(t.id==='pq'){S.q=t.value;document.getElementById('projList').innerHTML=projListHtml(derive());return}
+  if(t.id==='payq'){S.pq=t.value;document.getElementById('payList').innerHTML=payListHtml(derive());return}
+  if(t.id==='peq'){S.peq=t.value;document.getElementById('peList').innerHTML=peopleListHtml(derive());return}
+  if(!S.form)return;
+  var k=t.getAttribute&&t.getAttribute('data-f');if(k){S.form[k]=t.value;if(k==='value'){var s=0;S.form.stages&&S.form.stages.forEach(function(x){s+=num(x.amount)});var el=document.getElementById('stgSum');if(el)el.textContent=stgSumText(t.value,s)}return}
+  var si=t.getAttribute&&t.getAttribute('data-si');if(si!==null&&si!==undefined&&S.form.stages){S.form.stages[+si][t.getAttribute('data-sf')]=t.value;var s2=0;S.form.stages.forEach(function(x){s2+=num(x.amount)});var el2=document.getElementById('stgSum');if(el2)el2.textContent=stgSumText(S.form.value,s2)}
 });
-document.addEventListener('change',function(e){var k=e.target.getAttribute&&e.target.getAttribute('data-draft');if(k&&S.draft){S.draft[k]=e.target.value}});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'&&S.modal){S.modal=null;render()}});
-function saveEntry(){
-  var d=S.draft,amount=parseInt(String(d.amount).replace(/[^0-9]/g,''),10);
-  if(!amount||amount<1){S.err='Enter an amount greater than zero.';render();return}
-  if(!String(d.who).trim()){S.err='Enter a name.';render();return}
-  var no='TF-'+('0000'+(43+S.entries.length)).slice(-4);
-  var pn=BASE[d.projId].name,out=d.kind==='out';
-  var v={no:no,type:out?'Payment':'Receipt',name:d.who.trim(),project:pn,stage:BASE[d.projId].stageName,purpose:out?d.section+' · payout':'Client installment',amount:amount,mode:d.mode,date:'19 Oct 2026'};
-  S.entries.push({kind:d.kind,amount:amount,projId:d.projId,projName:pn,section:d.section,who:d.who.trim(),mode:d.mode,date:'19 Oct',day:19,voucher:v});
-  saveEntries();
-  S.vcur=Object.assign({isNew:1},v);S.signed=false;S.modal='voucher';S.err='';render();
-}
+document.addEventListener('change',function(e){
+  var t=e.target,k=t.getAttribute&&t.getAttribute('data-f');
+  if(k&&S.form&&t.tagName==='SELECT'){S.form[k]=t.value;if(k==='projId'){S.form.stageId=''}if(k==='partyId'&&S.form.kind==='out'){var pt=DB.parties.filter(function(x){return x.id===t.value})[0];S.form.who=pt?pt.name:''}render()}
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&S.modal){S.modal=null;S.confirm='';render()}});
 render();
 })();
 </script>
-
 </body>
 </html>
