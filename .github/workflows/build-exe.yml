@@ -1,0 +1,39 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-finance-app-pzfrcs]
+    paths: [www/**, desktop/**, assets/**, .github/workflows/build-exe.yml]
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install
+      - name: Prepare app files (PDF libraries packed inside, no internet needed for them)
+        working-directory: desktop
+        run: |
+          mkdir -p app/lib
+          cp ../www/index.html app/index.html
+          cp node_modules/jspdf/dist/jspdf.umd.min.js app/lib/
+          cp node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.min.js app/lib/
+          cp node_modules/html2canvas/dist/html2canvas.min.js app/lib/
+          sed -i 's#https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js#lib/jspdf.umd.min.js#; s#https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js#lib/jspdf.plugin.autotable.min.js#; s#https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js#lib/html2canvas.min.js#' app/index.html
+          echo "remaining cdnjs references: $(grep -c 'cdnjs.cloudflare.com' app/index.html || true)"
+      - name: Build EXE (portable and installer)
+        working-directory: desktop
+        run: npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Brihad-Temple-Finance-exe
+          path: desktop/dist/*.exe
