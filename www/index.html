@@ -493,7 +493,7 @@ function pageSettings(D){
   +'<button class="btnp" style="margin-top:16px" data-act="saveBiz">Save details</button></section>'
   +'<section class="card"><h2 class="disp" style="margin:0 0 4px;font-size:20px">Backup</h2><div class="lbl" style="line-height:1.5">Your data is saved on this device only. Copy a backup now and then, and keep it in WhatsApp notes or email. To move data to another phone or PC, paste the backup there.</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btnp" data-act="backup">Copy backup</button><button class="btn" data-act="restore">Restore from backup</button></div>'
   +'<h2 class="disp" style="margin:24px 0 4px;font-size:20px">Letterhead for client receipts</h2><div class="pills"><button class="pill'+(DB.biz.lhBW?'':' on')+'" data-act="lh" data-arg="c">Colour</button><button class="pill'+(DB.biz.lhBW?' on':'')+'" data-act="lh" data-arg="b">Black and white</button></div><h2 class="disp" style="margin:24px 0 4px;font-size:20px">Theme</h2><div class="pills"><button class="pill'+(isDark()?'':' on')+'" data-act="setTheme" data-arg="light">Light</button><button class="pill'+(isDark()?' on':'')+'" data-act="setTheme" data-arg="dark">Dark</button></div>'
-  +'<h2 class="disp" style="margin:24px 0 4px;font-size:20px">Erase everything</h2>'+(S.confirm==='erase'?'<div class="card" style="border-color:var(--coral);margin-top:8px"><b>Erase all projects, people and entries?</b><div class="lbl" style="margin:4px 0 12px">Copy a backup first. This cannot be undone.</div><div style="display:flex;gap:8px"><button class="btn" data-act="cancelConfirm">Keep my data</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="erase">Yes, erase</button></div></div>':'<div class="lbl">Start again with an empty app.</div><button class="btn" style="margin-top:10px;color:var(--coral-x)" data-act="askConfirm" data-arg="erase">Erase all data</button>')+'</section></div>'}
+  +'</section></div>'}
 
 /* ---------- vouchers, PDF, share ---------- */
 function findTxn(id){for(var i=0;i<DB.txns.length;i++)if(DB.txns[i].id===id)return DB.txns[i]}
@@ -1122,7 +1122,6 @@ document.addEventListener('click',function(e){
   case 'restore':S.form={};S.err='';S.modal='restore';render();break;
   case 'doRestore':try{var d=JSON.parse(document.getElementById('restorebox').value);if(!d||!d.projects||!d.parties||!d.txns)throw 0;DB=d;DB.biz=DB.biz||blank().biz;DB.proposals=DB.proposals||[];DB.pseq=DB.pseq||0;DB.terms=DB.terms||{};save();S.modal=null;S.page='home';S.projId=null;S.partyId=null;toast('Backup restored')}catch(x){S.err='This does not look like a valid backup.';render()}break;
   case 'selectCopy':var cb=document.getElementById('copybox');cb.focus();cb.select();break;
-  case 'erase':delWith('All data erased',function(){DB=blank();S.page='home';S.projId=null;S.partyId=null});break;
   }
 });
 document.addEventListener('input',function(e){
