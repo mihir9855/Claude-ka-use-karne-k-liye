@@ -552,16 +552,29 @@ function pdfLetterNative(t){
   var ls=d.splitTextToSize(body,R-L);d.setFontSize(11.5);d.text(ls,L,y,{lineHeightFactor:1.7});y+=ls.length*7.2+8;
   {[['Amount received',t.amount]].forEach(function(x){d.setFontSize(10.5);d.setFont('times','normal');d.text(x[0],L,y);d.setFont('times','bold');d.text(rs(x[1]),R,y,{align:'right'});d.setDrawColor(210,208,200);d.setLineWidth(0.2);d.line(L,y+2,R,y+2);y+=8})}
   y=Math.max(y+22,215);d.setDrawColor(31,34,48);d.setLineWidth(0.4);d.line(R-62,y,R,y);d.setFont('times','bold');d.setFontSize(9.5);d.text('For BRIHAD TEMPLE CONSTRUCTION CO.',R-31,y+5,{align:'center'});d.setFont('times','normal');d.setFontSize(8.5);d.text('Authorised Signatory',R-31,y+9.5,{align:'center'});
-  try{d.save(t.vno+'.pdf');toast('Saved '+t.vno+'.pdf')}catch(e){toast('Could not save the PDF on this device.')}}
+  finishPdf(d,t.vno+'.pdf','Saved '+t.vno+'.pdf')}
 function voucherText(t){if(t.kind==='in')return letterPlain(t);var v=voucherInfo(t),b=DB.biz;return [b.name,(v.inn?'RECEIPT VOUCHER ':'PAYMENT VOUCHER ')+t.vno,'Date: '+fmt(t.date),(v.inn?'Received from: ':'Paid to: ')+v.who,'Project: '+v.proj+(v.stage?' ('+v.stage+')':''),'Amount: '+INR(t.amount),words(t.amount),'Mode: '+t.mode].concat(t.note?['Note: '+t.note]:[]).concat(b.phone?['Phone: '+b.phone]:[]).join('\n')}
 function pdfLib(){var J=window.jspdf;if(!J||!J.jsPDF){toast('PDF tool could not load. Check your internet and try again.');return null}return J.jsPDF}
+var PDFMODE='save';
+function finishPdf(d,name,msg){
+  var mode=PDFMODE;PDFMODE='save';
+  if(mode!=='share'){try{d.save(name);toast(msg||('Saved '+name))}catch(e){toast('Could not save the PDF on this device.')}return}
+  var blob;try{blob=d.output('blob')}catch(e){toast('Could not make the PDF.');return}
+  var cap=window.Capacitor,pl=cap&&cap.Plugins;
+  if(cap&&cap.isNativePlatform&&cap.isNativePlatform()&&pl&&pl.Filesystem&&pl.Share){
+    var rd=new FileReader();rd.onload=function(){var b64=String(rd.result).split(',')[1];
+      pl.Filesystem.writeFile({path:name,data:b64,directory:'CACHE'}).then(function(r){return pl.Share.share({title:name,dialogTitle:'Share PDF',files:[r.uri]})}).catch(function(e){if(!(e&&/cancel/i.test(String(e.message||e))))toast('Could not share the PDF.')})};
+    rd.readAsDataURL(blob);return}
+  var file=null;try{file=new File([blob],name,{type:'application/pdf'})}catch(e){}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name}).catch(function(e){if(!e||e.name!=='AbortError')toast('Could not share the PDF.')});return}
+  try{d.save(name);toast('This device cannot share files directly. The PDF was downloaded, send it from your files.')}catch(e){toast('Could not share the PDF.')}}
 function rs(n){return 'Rs. '+Number(n).toLocaleString('en-IN')}
 function pdfLetter(t){
   var C=pdfLib();if(!C)return;var lg=curLang();
   if(!window.html2canvas){if(lg==='en'){pdfLetterNative(t);return}toast('Hindi and Gujarati PDF needs internet. Connect and try again.');return}
   var host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:700px;background:#fff';host.innerHTML=letterPaper(t,lg);document.body.appendChild(host);
   var done=function(){if(host.parentNode)host.parentNode.removeChild(host)};
-  var go=function(){window.html2canvas(host.querySelector('.paper'),{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false}).then(function(cv){var d=new C({unit:'mm',format:'a4'});var h=Math.min(297,210*cv.height/cv.width);d.addImage(cv.toDataURL('image/jpeg',0.95),'JPEG',0,0,210,h);done();try{d.save(t.vno+'.pdf');toast('Saved '+t.vno+'.pdf')}catch(e){toast('Could not save the PDF on this device.')}}).catch(function(){done();toast('Could not make the PDF. Try again.')})};
+  var go=function(){window.html2canvas(host.querySelector('.paper'),{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false}).then(function(cv){var d=new C({unit:'mm',format:'a4'});var h=Math.min(297,210*cv.height/cv.width);d.addImage(cv.toDataURL('image/jpeg',0.95),'JPEG',0,0,210,h);done();finishPdf(d,t.vno+'.pdf','Saved '+t.vno+'.pdf')}).catch(function(){done();toast('Could not make the PDF. Try again.')})};
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(go);else go()}
 function ganeshImg(){var cv=document.createElement('canvas'),px=56,txt='॥ श्री गणेशाय नमः ॥',ctx=cv.getContext('2d');ctx.font='700 '+px+'px "Noto Sans Devanagari","Mangal",sans-serif';var w=Math.ceil(ctx.measureText(txt).width)+8;cv.width=w;cv.height=Math.round(px*1.5);ctx=cv.getContext('2d');ctx.font='700 '+px+'px "Noto Sans Devanagari","Mangal",sans-serif';ctx.fillStyle='#55597A';ctx.textBaseline='middle';ctx.fillText(txt,4,cv.height/2);return {uri:cv.toDataURL('image/png'),r:cv.width/cv.height}}
 function pdfVoucher(t){
@@ -576,7 +589,7 @@ function pdfVoucherRun(t){
   var lgh=16,lgw=lgh*LH.r;try{d.addImage(LH.l,'PNG',X0,13,lgw,lgh)}catch(e){}var tx=X0+lgw+5;
   d.setTextColor(INK[0],INK[1],INK[2]);d.setFont('helvetica','bold');d.setFontSize(10.5);d.text(b.name.toUpperCase(),tx,19,{charSpace:0.5});
   d.setFont('helvetica','normal');d.setFontSize(7.5);d.setTextColor(MU[0],MU[1],MU[2]);var yy=24.5;[b.phone,b.addr].filter(Boolean).forEach(function(s){d.text(s,tx,yy);yy+=4});
-  d.setFont('helvetica','bold');d.setFontSize(8.5);d.setTextColor(INK[0],INK[1],INK[2]);d.text(v.inn?'RECEIPT VOUCHER':'PAYMENT VOUCHER',X1,18,{align:'right',charSpace:1.2});
+  d.setFont('helvetica','bold');d.setFontSize(8.5);d.setTextColor(INK[0],INK[1],INK[2]);d.text(v.inn?'RECEIPT VOUCHER':'PAYMENT VOUCHER',X1,18,{align:'right'});
   d.setFont('helvetica','normal');d.setFontSize(8.5);d.setTextColor(MU[0],MU[1],MU[2]);d.text('No.',X1-38,24);d.text('Date',X1-38,29.5);d.setFont('helvetica','bold');d.setTextColor(INK[0],INK[1],INK[2]);d.text(t.vno,X1,24,{align:'right'});d.text(fmt(t.date),X1,29.5,{align:'right'});
   d.setDrawColor(SF[0],SF[1],SF[2]);d.setLineWidth(0.3);d.line(X0,36,W/2-3,36);d.line(W/2+3,36,X1,36);d.setFillColor(SF[0],SF[1],SF[2]);d.rect(W/2-0.9,35.1,1.8,1.8,'F');
   var ws=d.splitTextToSize(words(t.amount),70);d.setFillColor(247,244,236);d.roundedRect(X0,44,78,46,3,3,'F');
@@ -588,7 +601,7 @@ function pdfVoucherRun(t){
   row(v.inn?'Received from':'Paid to',v.who);if(v.proj)row('Project',v.proj+(v.stage?' - '+v.stage:''));row('For',t.note||v.stage||'Payment');row('Mode of payment',t.mode);
   var sy=122,names=[v.inn?"Client's signature":"Receiver's signature",'Authorised signatory'];d.setDrawColor(INK[0],INK[1],INK[2]);d.setLineWidth(0.3);[X0,W/2+10].forEach(function(x,i){d.line(x,sy,x+70,sy);d.setFont('helvetica','normal');d.setFontSize(7.5);d.setTextColor(MU[0],MU[1],MU[2]);d.text(names[i],x+35,sy+4.5,{align:'center'})});
   d.setFontSize(6);d.setTextColor(163,166,182);d.text(t.vno+'  |  COMPUTER GENERATED',W/2,H-10.5,{align:'center',charSpace:0.4});
-  try{d.save(t.vno+'.pdf');toast('Saved '+t.vno+'.pdf')}catch(e){toast('Could not save the PDF on this device.')}}
+  finishPdf(d,t.vno+'.pdf','Saved '+t.vno+'.pdf')}
 function stmtLines(x){var D=derive();return x.lines.map(function(t,i){return {n:i,t:t}}).sort(function(a,b){return a.t.date===b.t.date?(a.n-b.n):(a.t.date<b.t.date?-1:1)}).map(function(o){var t=o.t,p=D.byId[t.projId];return {date:fmt(t.date),desc:(t.kind==='bill'?'Bill':'Paid ('+t.mode+')')+(t.note?' - '+t.note:'')+(p?' ['+p.name+']':''),bill:t.kind==='bill'?t.amount:0,paid:t.kind==='out'?t.amount:0}})}
 function pdfStatement(x){
   var C=pdfLib();if(!C)return;var d=new C({unit:'mm',format:'a4'}),b=DB.biz,y=34,L=stmtLines(x),bal=0;try{d.addImage(LH.l,'PNG',14,8,16*LH.r,16)}catch(e){}
@@ -597,7 +610,7 @@ function pdfStatement(x){
   function head(){d.setFont('helvetica','bold');d.text('Date',14,y);d.text('Details',40,y);d.text('Billed',140,y,{align:'right'});d.text('Paid',166,y,{align:'right'});d.text('Balance',196,y,{align:'right'});y+=2;d.line(14,y,196,y);y+=5;d.setFont('helvetica','normal')}
   head();L.forEach(function(r){bal+=r.bill-r.paid;var lines=d.splitTextToSize(r.desc,92);if(y+lines.length*4.5>280){d.addPage();y=18;head()}d.text(r.date,14,y);d.text(lines,40,y);if(r.bill)d.text(rs(r.bill),140,y,{align:'right'});if(r.paid)d.text(rs(r.paid),166,y,{align:'right'});d.text(rs(bal),196,y,{align:'right'});y+=lines.length*4.5+1.5});
   y+=3;d.line(14,y,196,y);y+=6;d.setFont('helvetica','bold');d.text('Total billed '+rs(x.bills)+'   Paid '+rs(x.paid)+'   Balance '+rs(x.bills-x.paid),14,y);
-  try{d.save('Statement-'+x.name.replace(/[^a-z0-9]+/gi,'-')+'.pdf');toast('Statement saved')}catch(e){toast('Could not save the PDF on this device.')}}
+  finishPdf(d,'Statement-'+x.name.replace(/[^a-z0-9]+/gi,'-')+'.pdf','Statement saved')}
 function stmtText(x){var L=stmtLines(x),bal=0,s=[DB.biz.name,'Statement: '+x.name+' ('+x.type+')','As on '+fmt(today()),''];L.forEach(function(r){bal+=r.bill-r.paid;s.push(r.date+' | '+r.desc+' | '+(r.bill?'+'+INR(r.bill):'-'+INR(r.paid))+' | Balance '+INR(bal))});s.push('','Billed '+INR(x.bills)+' · Paid '+INR(x.paid)+' · Balance '+INR(x.bills-x.paid));return s.join('\n')}
 function shareText(text,title){
   if(navigator.share){navigator.share({title:title,text:text}).catch(function(){});return}
@@ -743,9 +756,9 @@ document.addEventListener('click',function(e){
   case 'lang':DB.biz.lang=g;save();render();break;
   case 'vprint':printVoucher(g);break;
   case 'vpdf':pdfVoucher(findTxn(g));break;
-  case 'vshare':shareText(voucherText(findTxn(g)),'Voucher');break;
+  case 'vshare':if(!window.jspdf){shareText(voucherText(findTxn(g)),'Voucher');break}PDFMODE='share';pdfVoucher(findTxn(g));break;
   case 'stmtPdf':pdfStatement(derive().pById[g]);break;
-  case 'stmtShare':shareText(stmtText(derive().pById[g]),'Statement');break;
+  case 'stmtShare':if(!window.jspdf){shareText(stmtText(derive().pById[g]),'Statement');break}PDFMODE='share';pdfStatement(derive().pById[g]);break;
   case 'delTx':delWith('Entry deleted',function(){DB.txns=DB.txns.filter(function(x){return x.id!==g});S.modal=null});break;
   case 'delBill':delWith('Bill deleted',function(){DB.txns=DB.txns.filter(function(x){return x.id!==g});S.modal=null});break;
   case 'undo':if(S.snap){DB=JSON.parse(S.snap);S.snap=null;save();S.modal=null;S.confirm='';toast('Restored')}break;
