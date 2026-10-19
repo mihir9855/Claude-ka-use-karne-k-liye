@@ -254,7 +254,9 @@ print:'M7 9V4h10v5M6 17H4v-6h16v6h-2M7 14h10v6H7z',
 share:'M18 8a3 3 0 100-6 3 3 0 000 6zM6 15a3 3 0 100-6 3 3 0 000 6zM18 22a3 3 0 100-6 3 3 0 000 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4',
 check:'M5 12.5l4.5 4.5L19 7.5',
 copy:'M9 9h10v11H9zM5 15V4h10',
-restore:'M4 12a8 8 0 108-8M4 4v5h5'
+restore:'M4 12a8 8 0 108-8M4 4v5h5',
+userplus:'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M19 8v6M16 11h6',
+projplus:'M2 20h13M4 20v-4h9v4M6 16v-3h5v3M8.5 13c0-2 .4-3.2 1-4.5.6 1.300 1 2.500 1 4.500M19 4v6M16 7h6'
 };
 function ic(n,s,w){s=s||22;return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||1.9)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+ICON[n]+'"/></svg>'}
 function ib(act,arg,icon,label,cls){return '<button class="ibtn '+(cls||'')+'" data-act="'+act+'"'+(arg!=null?' data-arg="'+arg+'"':'')+' aria-label="'+label+'" title="'+label+'">'+ic(icon,20,2.1)+'</button>'}
@@ -404,17 +406,17 @@ function pageHome(D){
   var recent=enrich(D,sortedTxns().slice(0,6));
   h+='<div class="row2"><section class="card c4"><div class="cardhead"><h2 class="disp">Money due</h2></div>'+due+'</section>'
   +'<section class="card c8"><div class="cardhead"><h2 class="disp">Recent activity</h2></div>'+(recent.length?recent.map(function(t){return txnRow(t,D,true)}).join(''):'<div class="lbl" style="padding:14px 0">No entries yet. Tap + to add one.</div>')+'</section></div>';
-  h+='<section class="card sect"><div class="cardhead"><h2 class="disp">Projects</h2>'+ib('newProject',null,'plus','New project','')+'</div><label class="sr" for="pq">Search projects</label><input class="search" id="pq" type="search" placeholder="Search project or client" value="'+esc(S.q)+'" autocomplete="off"><div class="pills" style="margin:10px 0 12px">'+['all|All','active|Active','done|Completed'].map(function(x){var a=x.split('|');return '<button class="pill'+(S.filter===a[0]?' on':'')+'" data-act="filter" data-arg="'+a[0]+'">'+a[1]+'</button>'}).join('')+'</div><div id="projList" class="grid2">'+projListHtml(D)+'</div></section>';
+  h+='<section class="card sect"><div class="cardhead"><h2 class="disp">Projects</h2>'+ib('newProject',null,'projplus','New project','')+'</div><label class="sr" for="pq">Search projects</label><input class="search" id="pq" type="search" placeholder="Search project or client" value="'+esc(S.q)+'" autocomplete="off"><div class="pills" style="margin:10px 0 12px">'+['all|All','active|Active','done|Completed'].map(function(x){var a=x.split('|');return '<button class="pill'+(S.filter===a[0]?' on':'')+'" data-act="filter" data-arg="'+a[0]+'">'+a[1]+'</button>'}).join('')+'</div><div id="projList" class="grid2">'+projListHtml(D)+'</div></section>';
   return h}
 
 function pageProjects(D){
   if(!S.projId||!D.byId[S.projId]){
     S.projId=null;
     if(!D.projects.length)return '<section class="card">'+emptyBox('No projects yet. Add a temple project with its deal value and stage-wise client payments.','+ Add project','newProject')+'</section>';
-    return '<div style="margin-bottom:12px">'+ib('newProject',null,'plus','New project','pri')+'</div><div class="grid2">'+D.projects.map(projCard).join('')+'</div>'}
+    return '<div style="margin-bottom:12px">'+ib('newProject',null,'projplus','New project','pri')+'</div><div class="grid2">'+D.projects.map(projCard).join('')+'</div>'}
   var p=D.byId[S.projId],pc=p.value?Math.round(p.received/p.value*100):0;
   var tabs=[['overview','Overview'],['timeline','Timeline'],['payments','Client payments'],['expenses','Expenses'],['people','People']];
-  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+ib('closeProj',null,'back','All projects','')+ib('openAdd',p.id,'plus','Add entry','pri')+ib('editProject',null,'edit','Edit project','')+'</div>'
+  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+ib('closeProj',null,'back','All projects','')+ib('editProject',null,'edit','Edit project','')+'</div>'
    +'<div class="tile bg-violet rise"><div style="position:absolute;right:-50px;top:-60px;width:200px;height:200px;border-radius:99px;background:rgba(255,255,255,.10)"></div><div style="position:relative"><div class="t-l">'+esc(p.client||'')+(p.start?(p.client?' · ':'')+'started '+fmt(p.start):'')+'</div><div class="disp" style="font-size:28px;margin-top:2px">'+esc(p.name)+'</div><div class="t-l" style="margin-top:14px">Deal value</div><div class="t-v" style="font-size:38px">'+INR(p.value)+'</div><div class="trk" style="margin-top:12px;background:rgba(255,255,255,.25)"><i style="width:'+Math.min(100,pc)+'%;background:#fff"></i></div><div class="t-n">'+pc+'% received'+(p.handover?' · handover '+fmt(p.handover):'')+'</div><div class="g3" style="margin-top:12px"><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Received</span><b class="tn">'+SHORT(p.received)+'</b></div><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Spent</span><b class="tn">'+SHORT(p.spent)+'</b></div><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Budget left</span><b class="tn">'+SHORT(p.value-p.spent)+'</b></div></div></div></div>'
    +'<div class="tabs" role="tablist">'+tabs.map(function(t){return '<button class="pill'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-arg="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div>';
   var tx=enrich(D,sortedTxns().filter(function(t){return t.projId===p.id}));
@@ -453,7 +455,7 @@ function pagePeople(D){
   S.partyId=null;
   var q=S.peq.toLowerCase();
   var tot=D.owe;
-  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+ib('newParty',null,'plus','Add person','pri')+'</div>';
+  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+ib('newParty',null,'userplus','Add person','pri')+'</div>';
   if(D.parties.length)h+='<div class="tile bg-blue" style="margin-bottom:12px"><div class="t-l">You owe in total</div><div class="t-v" style="font-size:36px">'+INR(tot)+'</div><div class="t-n">to '+D.parties.filter(function(x){return x.bal>0}).length+' people</div></div>';
   h+='<section class="card"><label class="sr" for="peq">Search people</label><input class="search" id="peq" type="search" placeholder="Search name or type" value="'+esc(S.peq)+'" autocomplete="off"><div id="peList" style="margin-top:8px">'+peopleListHtml(D)+'</div></section>';
   return h}
@@ -465,7 +467,7 @@ function peopleListHtml(D){
   return l.map(function(x){return '<button class="rowb" data-act="openParty" data-arg="'+x.id+'"><div class="av c-violet">'+esc((x.name[0]||'?').toUpperCase())+'</div><div style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.name)+'</b><span class="lbl">'+esc(x.type)+'</span></div><div style="text-align:right"><div class="lbl">'+(x.bal>0?'You owe':x.bal<0?'Advance paid':'Settled')+'</div><b class="tn">'+(x.bal?INR(Math.abs(x.bal)):'₹0')+'</b></div></button>'}).join('')}
 function partyDetail(D,x){
   var lines=x.lines.map(function(t,i){return Object.assign({n:i},t)}).sort(function(a,b){return a.date===b.date?(a.n-b.n):(a.date<b.date?-1:1)});
-  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+ib('closeParty',null,'back','All people','')+ib('addBill',x.id,'plus','Add bill (amount owed)','pri')+ib('payParty',x.id,'out','Pay now','')+ib('editParty',x.id,'edit','Edit person','')+'</div>'
+  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+ib('closeParty',null,'back','All people','')+ib('addBill',x.id,'note','Add bill (amount owed)','pri')+ib('payParty',x.id,'out','Pay now','')+ib('editParty',x.id,'edit','Edit person','')+'</div>'
   +'<div class="tile bg-blue rise"><div class="t-l">'+esc(x.type)+(x.phone?' · '+esc(x.phone):'')+'</div><div class="disp" style="font-size:26px">'+esc(x.name)+'</div><div class="t-l" style="margin-top:12px">'+(x.bal>=0?'You owe':'Advance paid')+'</div><div class="t-v" style="font-size:36px">'+INR(Math.abs(x.bal))+'</div><div class="g3" style="grid-template-columns:repeat(2,1fr);margin-top:12px"><div class="mini" style="background:rgba(255,255,255,.18)"><span class="lbl" style="color:#fff">Total billed</span><b class="tn">'+INR(x.bills)+'</b></div><div class="mini" style="background:rgba(255,255,255,.18)"><span class="lbl" style="color:#fff">Paid</span><b class="tn">'+INR(x.paid)+'</b></div></div></div>'
   +'<section class="card sect"><div class="cardhead"><h2 class="disp">Ledger</h2><div class="hrow">'+ib('stmtPdf',x.id,'download','Download statement PDF','')+ib('stmtShare',x.id,'share','Share statement','')+'</div></div>'
   +(lines.length?lines.map(function(t){var p=D.byId[t.projId],bill=t.kind==='bill';return '<button class="li" style="width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left" data-act="'+(bill?'editBill':'openV')+'" data-arg="'+t.id+'"><div class="m"><b>'+(bill?'Bill':'Paid')+(t.note?' · '+esc(t.note):'')+'</b><span>'+fmt(t.date)+(p?' · '+esc(p.name):'')+(bill?'':' · '+t.mode)+'</span></div><b class="tn" style="color:'+(bill?'var(--ink)':'var(--coral-x)')+'">'+(bill?'+':'−')+INR(t.amount)+'</b></button>'}).join('')+'<div class="lbl" style="margin-top:8px">Tap a line to open or edit it. + adds to what you owe. − is a payment you made.</div>':'<div class="lbl" style="padding:14px 0">No bills or payments yet.</div>')+'</section>'
@@ -658,7 +660,7 @@ function render(){
   if(S.page==='projects'&&S.projId&&D.byId[S.projId]){ttl=D.byId[S.projId].name;sub=D.byId[S.projId].client||'Project'}
   if(S.page==='people'&&S.partyId&&D.pById[S.partyId]){ttl=D.pById[S.partyId].name;sub='Ledger'}
   if(S.page==='home'){var hr=new Date().getHours();ttl=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';sub=fmt(today())}
-  var head='<div class="head"><div><div class="lbl">'+esc(sub)+'</div><h1 class="disp">'+esc(ttl)+'</h1></div><div class="hrow"><button class="ibtn" data-act="theme" aria-label="Switch light or dark theme">'+ic(isDark()?'sun':'moon',20)+'</button><button class="ibtn pri" data-act="openAdd" aria-label="New voucher" title="New voucher">'+ic('plus',22,2.4)+'</button></div></div>';
+  var head='<div class="head"><div><div class="lbl">'+esc(sub)+'</div><h1 class="disp">'+esc(ttl)+'</h1></div><div class="hrow"><button class="ibtn" data-act="theme" aria-label="Switch light or dark theme">'+ic(isDark()?'sun':'moon',20)+'</button></div></div>';
   var body={home:pageHome,projects:pageProjects,payments:pagePayments,people:pagePeople,settings:pageSettings}[S.page](D);
   document.getElementById('main').innerHTML=head+body;
   renderModal(D);
