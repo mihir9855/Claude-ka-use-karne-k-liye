@@ -192,6 +192,8 @@ svg{display:block;max-width:100%}
 .stg{border:1px solid var(--line);border-radius:16px;padding:10px;margin-bottom:8px;background:var(--surface2)}
 textarea.inp{width:100%;font-family:inherit;resize:vertical;line-height:1.4}
 .field input[type=date]{min-width:0}
+.toast .undo{margin-left:14px;border:0;background:var(--amber);color:#1F2230;font-weight:800;border-radius:99px;padding:6px 14px;min-height:32px}
+.li{font:inherit;color:inherit}
 </style>
 </head>
 <body>
@@ -388,7 +390,7 @@ function pageProjects(D){
     return '<div style="margin-bottom:12px"><button class="btnp" data-act="newProject">+ New project</button></div><div class="grid2">'+D.projects.map(projCard).join('')+'</div>'}
   var p=D.byId[S.projId],pc=p.value?Math.round(p.received/p.value*100):0;
   var tabs=[['overview','Overview'],['timeline','Timeline'],['payments','Client payments'],['expenses','Expenses'],['people','People']];
-  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="btn" data-act="closeProj">← All projects</button><button class="btnp" data-act="openAdd" data-arg="'+p.id+'">+ Add entry</button></div>'
+  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="btn" data-act="closeProj">← All projects</button><button class="btnp" data-act="openAdd" data-arg="'+p.id+'">+ Add entry</button><button class="btn" data-act="editProject">Edit project</button></div>'
    +'<div class="tile bg-violet rise"><div style="position:absolute;right:-50px;top:-60px;width:200px;height:200px;border-radius:99px;background:rgba(255,255,255,.10)"></div><div style="position:relative"><div class="t-l">'+esc(p.client||'')+(p.start?(p.client?' · ':'')+'started '+fmt(p.start):'')+'</div><div class="disp" style="font-size:28px;margin-top:2px">'+esc(p.name)+'</div><div class="t-l" style="margin-top:14px">Deal value</div><div class="t-v" style="font-size:38px">'+INR(p.value)+'</div><div class="trk" style="margin-top:12px;background:rgba(255,255,255,.25)"><i style="width:'+Math.min(100,pc)+'%;background:#fff"></i></div><div class="t-n">'+pc+'% received'+(p.handover?' · handover '+fmt(p.handover):'')+'</div><div class="g3" style="margin-top:12px"><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Received</span><b class="tn">'+SHORT(p.received)+'</b></div><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Spent</span><b class="tn">'+SHORT(p.spent)+'</b></div><div class="mini" style="background:rgba(255,255,255,.16)"><span class="lbl" style="color:#fff;opacity:.85">Budget left</span><b class="tn">'+SHORT(p.value-p.spent)+'</b></div></div></div></div>'
    +'<div class="tabs" role="tablist">'+tabs.map(function(t){return '<button class="pill'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-arg="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div>';
   var tx=enrich(D,sortedTxns().filter(function(t){return t.projId===p.id}));
@@ -439,10 +441,10 @@ function peopleListHtml(D){
   return l.map(function(x){return '<button class="rowb" data-act="openParty" data-arg="'+x.id+'"><div class="av c-violet">'+esc((x.name[0]||'?').toUpperCase())+'</div><div style="flex:1;min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.name)+'</b><span class="lbl">'+esc(x.type)+'</span></div><div style="text-align:right"><div class="lbl">'+(x.bal>0?'You owe':x.bal<0?'Advance paid':'Settled')+'</div><b class="tn">'+(x.bal?INR(Math.abs(x.bal)):'₹0')+'</b></div></button>'}).join('')}
 function partyDetail(D,x){
   var lines=x.lines.map(function(t,i){return Object.assign({n:i},t)}).sort(function(a,b){return a.date===b.date?(a.n-b.n):(a.date<b.date?-1:1)});
-  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="btn" data-act="closeParty">← All people</button><button class="btnp" data-act="addBill" data-arg="'+x.id+'">+ Bill (amount owed)</button><button class="btn" data-act="payParty" data-arg="'+x.id+'">Pay now</button></div>'
+  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><button class="btn" data-act="closeParty">← All people</button><button class="btnp" data-act="addBill" data-arg="'+x.id+'">+ Bill (amount owed)</button><button class="btn" data-act="payParty" data-arg="'+x.id+'">Pay now</button><button class="btn" data-act="editParty" data-arg="'+x.id+'">Edit</button></div>'
   +'<div class="tile bg-blue rise"><div class="t-l">'+esc(x.type)+(x.phone?' · '+esc(x.phone):'')+'</div><div class="disp" style="font-size:26px">'+esc(x.name)+'</div><div class="t-l" style="margin-top:12px">'+(x.bal>=0?'You owe':'Advance paid')+'</div><div class="t-v" style="font-size:36px">'+INR(Math.abs(x.bal))+'</div><div class="g3" style="grid-template-columns:repeat(2,1fr);margin-top:12px"><div class="mini" style="background:rgba(255,255,255,.18)"><span class="lbl" style="color:#fff">Total billed</span><b class="tn">'+INR(x.bills)+'</b></div><div class="mini" style="background:rgba(255,255,255,.18)"><span class="lbl" style="color:#fff">Paid</span><b class="tn">'+INR(x.paid)+'</b></div></div></div>'
   +'<section class="card sect"><div class="cardhead"><h2 class="disp">Ledger</h2><div class="hrow"><button class="btn" data-act="stmtPdf" data-arg="'+x.id+'">Statement PDF</button><button class="btn" data-act="stmtShare" data-arg="'+x.id+'">Share</button></div></div>'
-  +(lines.length?lines.map(function(t){var p=D.byId[t.projId],bill=t.kind==='bill';return '<div class="li"><div class="m"><b>'+(bill?'Bill':'Paid')+(t.note?' · '+esc(t.note):'')+'</b><span>'+fmt(t.date)+(p?' · '+esc(p.name):'')+(bill?'':' · '+t.mode)+'</span></div><b class="tn" style="color:'+(bill?'var(--ink)':'var(--coral-x)')+'">'+(bill?'+':'−')+INR(t.amount)+'</b></div>'}).join('')+'<div class="lbl" style="margin-top:8px">+ adds to what you owe. − is a payment you made.</div>':'<div class="lbl" style="padding:14px 0">No bills or payments yet.</div>')+'</section>'
+  +(lines.length?lines.map(function(t){var p=D.byId[t.projId],bill=t.kind==='bill';return '<button class="li" style="width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left" data-act="'+(bill?'editBill':'openV')+'" data-arg="'+t.id+'"><div class="m"><b>'+(bill?'Bill':'Paid')+(t.note?' · '+esc(t.note):'')+'</b><span>'+fmt(t.date)+(p?' · '+esc(p.name):'')+(bill?'':' · '+t.mode)+'</span></div><b class="tn" style="color:'+(bill?'var(--ink)':'var(--coral-x)')+'">'+(bill?'+':'−')+INR(t.amount)+'</b></button>'}).join('')+'<div class="lbl" style="margin-top:8px">Tap a line to open or edit it. + adds to what you owe. − is a payment you made.</div>':'<div class="lbl" style="padding:14px 0">No bills or payments yet.</div>')+'</section>'
   +(x.lines.length?'':'<div style="margin-top:14px">'+(S.confirm==='delparty'?'<div class="card" style="border-color:var(--coral)"><b>Delete '+esc(x.name)+'?</b><div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-act="cancelConfirm">Keep</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delParty" data-arg="'+x.id+'">Yes, delete</button></div></div>':'<button class="btn" style="color:var(--coral-x)" data-act="askConfirm" data-arg="delparty">Delete person</button>')+'</div>');
   return h}
 
@@ -543,28 +545,28 @@ function renderModal(D){
   var projOpts=D.projects.map(function(p){return [p.id,p.name]});
   if(S.modal==='entry'){
     var p=D.byId[f.projId],inn=f.kind==='in';
-    h+=head('New entry')+'<div class="pills" style="margin-top:12px"><button class="pill'+(!inn?' on':'')+'" data-act="kind" data-arg="out" style="flex:1">Payment made</button><button class="pill'+(inn?' on':'')+'" data-act="kind" data-arg="in" style="flex:1">Client payment</button></div>'
+    h+=head(f.editId?'Edit entry':'New entry')+(f.editId?'':'<div class="pills" style="margin-top:12px"><button class="pill'+(!inn?' on':'')+'" data-act="kind" data-arg="out" style="flex:1">Payment made</button><button class="pill'+(inn?' on':'')+'" data-act="kind" data-arg="in" style="flex:1">Client payment</button></div>')
     +fld('Amount (₹)','amount',{big:1,inputmode:'numeric',ph:'0'})+sel('Project','projId',projOpts);
     if(inn){h+=sel('Stage (optional)','stageId',p?p.stages.map(function(s){return [s.id,s.name]}):[],'Not linked to a stage')+fld('Received from','who',{ph:'Client name'})}
     else{h+='<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Section</span>'+chips('section',SECTIONS,f.section)+'</div>'+sel('Paid to','partyId',D.parties.map(function(x){return [x.id,x.name+' ('+x.type+')']}),'Someone else (type the name)')+(f.partyId?'':fld('Name','who',{ph:'Who did you pay?'}))}
-    h+='<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Mode</span>'+chips('mode',MODES,f.mode)+'</div>'+fld('Date','date',{type:'date'})+fld('Note (optional)','note',{ph:inn?'e.g. 2nd installment':'e.g. weekly payout'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveEntry">Save and make voucher</button>';
+    h+='<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Mode</span>'+chips('mode',MODES,f.mode)+'</div>'+fld('Date','date',{type:'date'})+fld('Note (optional)','note',{ph:inn?'e.g. 2nd installment':'e.g. weekly payout'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveEntry">'+(f.editId?'Save changes':'Save and make voucher')+'</button>';
   }else if(S.modal==='project'){
     var sum=0;f.stages.forEach(function(s){sum+=num(s.amount)});
-    h+=head('New project','Deal value and stage-wise client payments')+fld('Temple / project name','name',{ph:'e.g. Shiva Temple'})+fld('Client name','client',{ph:'Who is the temple for?'})+fld('Total deal value (₹)','value',{big:1,inputmode:'numeric',ph:'0'})
+    h+=head(f.editId?'Edit project':'New project','Deal value and stage-wise client payments')+fld('Temple / project name','name',{ph:'e.g. Shiva Temple'})+fld('Client name','client',{ph:'Who is the temple for?'})+fld('Total deal value (₹)','value',{big:1,inputmode:'numeric',ph:'0'})
     +'<div class="grid2" style="gap:0 12px">'+fld('Start date','start',{type:'date'})+fld('Handover date','handover',{type:'date'})+'</div>'
     +'<div class="field"><span class="lbl" style="display:block;margin-bottom:2px">Stages and what the client pays at each stage</span><div class="lbl" id="stgSum" style="margin-bottom:8px">'+stgSumText(f.value,sum)+'</div>'
     +f.stages.map(function(s,i){return '<div class="stg"><div style="display:flex;gap:8px"><input class="inp" data-si="'+i+'" data-sf="name" value="'+esc(s.name)+'" placeholder="Stage name" aria-label="Stage '+(i+1)+' name"><button class="ibtn" data-act="rmStage" data-arg="'+i+'" aria-label="Remove stage">'+ic('close',18)+'</button></div><div style="display:flex;gap:8px;margin-top:8px"><input class="inp" data-si="'+i+'" data-sf="amount" inputmode="numeric" value="'+esc(s.amount)+'" placeholder="Client pays ₹" aria-label="Amount at stage '+(i+1)+'"><input class="inp" type="date" data-si="'+i+'" data-sf="date" value="'+esc(s.date)+'" aria-label="Target date for stage '+(i+1)+'"></div></div>'}).join('')
-    +'<button class="btn" style="margin-top:8px" data-act="addStage">+ Add stage</button></div>'+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveProject">Save project</button>';
+    +'<button class="btn" style="margin-top:8px" data-act="addStage">+ Add stage</button></div>'+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveProject">'+(f.editId?'Save changes':'Save project')+'</button>';
   }else if(S.modal==='party'){
-    h+=head('Add person')+fld('Name','name',{ph:'e.g. Rampal Stones'})+'<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Type</span>'+chips('ptype',TYPES,f.type)+'</div>'+fld('Phone (optional)','phone',{inputmode:'tel',ph:'+91'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveParty">Save person</button>';
+    h+=head(f.editId?'Edit person':'Add person')+fld('Name','name',{ph:'e.g. Rampal Stones'})+'<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Type</span>'+chips('ptype',TYPES,f.type)+'</div>'+fld('Phone (optional)','phone',{inputmode:'tel',ph:'+91'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveParty">'+(f.editId?'Save changes':'Save person')+'</button>';
   }else if(S.modal==='bill'){
-    h+=head('Add bill','Money you now owe '+esc((D.pById[f.partyId]||{}).name||''))+fld('Amount owed (₹)','amount',{big:1,inputmode:'numeric',ph:'0'})+sel('Project','projId',projOpts)+fld('What is it for?','note',{ph:'e.g. Agreed supply / extra work'})+fld('Date','date',{type:'date'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveBill">Save bill</button>';
+    h+=head(f.editId?'Edit bill':'Add bill','Money you now owe '+esc((D.pById[f.partyId]||{}).name||''))+fld('Amount owed (₹)','amount',{big:1,inputmode:'numeric',ph:'0'})+sel('Project','projId',projOpts)+fld('What is it for?','note',{ph:'e.g. Agreed supply / extra work'})+fld('Date','date',{type:'date'})+err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveBill">'+(f.editId?'Save changes':'Save bill')+'</button>'+(f.editId?'<div style="margin-top:12px;text-align:center">'+(S.confirm==='delbill'?'<div class="card" style="border-color:var(--coral);text-align:left"><b>Delete this bill?</b><div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-act="cancelConfirm">Keep</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delBill" data-arg="'+f.editId+'">Yes, delete</button></div></div>':'<button class="btn" style="color:var(--coral-x)" data-act="askConfirm" data-arg="delbill">Delete bill</button>')+'</div>':'');
   }else if(S.modal==='voucher'){
     var t=findTxn(S.vid);
     if(!t){m.innerHTML='';S.modal=null;return}
     h+=head(t.kind==='in'?'Receipt on letterhead':'Voucher',esc(t.vno)+(f&&f.fresh?' · created just now':''))+voucherPaper(t)
     +'<div style="display:flex;gap:10px;margin-top:14px"><button class="btn" style="flex:1" data-act="vpdf" data-arg="'+t.id+'">Download PDF</button><button class="btnp" style="flex:1" data-act="vshare" data-arg="'+t.id+'">Share</button></div>'
-    +'<div style="margin-top:12px;text-align:center">'+(S.confirm==='deltx'?'<div class="card" style="border-color:var(--coral);text-align:left"><b>Delete this entry?</b><div class="lbl" style="margin:4px 0 10px">Totals will change. This cannot be undone.</div><div style="display:flex;gap:8px"><button class="btn" data-act="cancelConfirm">Keep</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delTx" data-arg="'+t.id+'">Yes, delete</button></div></div>':'<button class="btn" style="color:var(--coral-x)" data-act="askConfirm" data-arg="deltx">Delete entry</button>')+'</div>';
+    +'<div style="margin-top:12px;text-align:center">'+(S.confirm==='deltx'?'<div class="card" style="border-color:var(--coral);text-align:left"><b>Delete this entry?</b><div class="lbl" style="margin:4px 0 10px">Totals will change. This cannot be undone.</div><div style="display:flex;gap:8px"><button class="btn" data-act="cancelConfirm">Keep</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delTx" data-arg="'+t.id+'">Yes, delete</button></div></div>':'<button class="btn" data-act="editTx" data-arg="'+t.id+'" style="margin-right:8px">Edit entry</button><button class="btn" style="color:var(--coral-x)" data-act="askConfirm" data-arg="deltx">Delete entry</button>')+'</div>';
   }else if(S.modal==='copy'){
     h+=head('Copy this text','Select it and copy')+'<textarea class="inp" style="min-height:180px;padding:12px" readonly id="copybox">'+esc(f.text)+'</textarea><button class="btnp" style="width:100%;margin-top:10px" data-act="selectCopy">Select all</button>';
   }else if(S.modal==='restore'){
@@ -590,10 +592,11 @@ function render(){
   var body={home:pageHome,projects:pageProjects,payments:pagePayments,people:pagePeople,settings:pageSettings}[S.page](D);
   document.getElementById('main').innerHTML=head+body;
   renderModal(D);
-  document.getElementById('toast').innerHTML=S.toast?'<div class="toast" role="status">'+esc(S.toast)+'</div>':'';
+  document.getElementById('toast').innerHTML=S.toast?'<div class="toast" role="status">'+esc(S.toast)+(S.undoOn?'<button class="undo" data-act="undo">Undo</button>':'')+'</div>':'';
   document.getElementById('fab').style.display=S.modal?'none':'flex'}
 var toastTimer=null;
-function toast(msg){S.toast=msg;render();clearTimeout(toastTimer);toastTimer=setTimeout(function(){S.toast='';render()},3600)}
+function toast(msg,undo){S.toast=msg;S.undoOn=!!undo;render();clearTimeout(toastTimer);toastTimer=setTimeout(function(){S.toast='';S.undoOn=false;S.snap=null;render()},undo?9000:3600)}
+function delWith(msg,fn){S.snap=JSON.stringify(DB);fn();save();S.confirm='';toast(msg,true)}
 function go(page){S.page=page;S.projId=null;S.partyId=null;S.tab='overview';S.confirm='';render();window.scrollTo(0,0)}
 
 /* ---------- forms ---------- */
@@ -601,7 +604,7 @@ function openEntry(projId,partyId){
   if(!DB.projects.length){toast('Add a project first, then record payments.');openProject();return}
   var pid=projId||S.projId||DB.projects[0].id,pt=partyId?DB.parties.filter(function(x){return x.id===partyId})[0]:null;
   S.form={kind:'out',projId:pid,stageId:'',section:'Stone',partyId:partyId||'',who:pt?pt.name:'',amount:'',mode:'Cash',date:today(),note:''};S.err='';S.modal='entry';render()}
-function openProject(){S.form={name:'',client:'',value:'',start:today(),handover:'',stages:DEF_STAGES.map(function(n){return {id:uid(),name:n,amount:'',date:''}})};S.err='';S.modal='project';render()}
+function openProject(id){var ep=id?DB.projects.filter(function(x){return x.id===id})[0]:null;if(ep){S.form={editId:ep.id,name:ep.name,client:ep.client||'',value:String(ep.value),start:ep.start||'',handover:ep.handover||'',stages:ep.stages.map(function(s){return {id:s.id,name:s.name,amount:s.amount?String(s.amount):'',date:s.date||''}})};S.err='';S.modal='project';render();return}S.form={name:'',client:'',value:'',start:today(),handover:'',stages:DEF_STAGES.map(function(n){return {id:uid(),name:n,amount:'',date:''}})};S.err='';S.modal='project';render()}
 function saveEntry(){
   var f=S.form,amount=num(f.amount),inn=f.kind==='in';
   if(!amount){S.err='Enter an amount greater than zero.';render();return}
@@ -609,6 +612,7 @@ function saveEntry(){
   if(!inn&&pt)who=pt.name;
   if(!who){S.err=inn?'Enter who paid you.':'Enter who you paid.';render();return}
   if(!f.date){S.err='Choose a date.';render();return}
+  if(f.editId){var ex=findTxn(f.editId);if(ex){ex.projId=f.projId;ex.stageId=inn?f.stageId:'';ex.section=inn?'':f.section;ex.partyId=inn?'':(f.partyId||'');ex.who=who;ex.amount=amount;ex.mode=f.mode;ex.date=f.date;ex.note=String(f.note||'').trim();save();S.vid=ex.id;S.form={};S.modal='voucher';S.err='';toast('Entry updated');return}}
   DB.vseq=(DB.vseq||0)+1;
   var t={id:uid(),kind:f.kind,projId:f.projId,stageId:inn?f.stageId:'',section:inn?'':f.section,partyId:inn?'':(f.partyId||''),who:who,amount:amount,mode:f.mode,date:f.date,note:String(f.note||'').trim(),vno:'BTC-'+pad(DB.vseq,4)};
   DB.txns.push(t);save();S.vid=t.id;S.form={fresh:1};S.modal='voucher';S.err='';render()}
@@ -618,6 +622,10 @@ function saveProject(){
   if(!value){S.err='Enter the total deal value.';render();return}
   var st=f.stages.filter(function(s){return String(s.name).trim()});
   if(!st.length){S.err='Add at least one stage.';render();return}
+  if(f.editId){var ep=DB.projects.filter(function(x){return x.id===f.editId})[0],old={},keep={};ep.stages.forEach(function(s){old[s.id]=s});
+    var st2=st.map(function(s){return {id:s.id,name:s.name.trim(),amount:num(s.amount),date:s.date,done:old[s.id]?old[s.id].done:false}});st2.forEach(function(s){keep[s.id]=1});
+    DB.txns.forEach(function(t){if(t.projId===ep.id&&t.stageId&&!keep[t.stageId])t.stageId=''});
+    ep.name=f.name.trim();ep.client=String(f.client).trim();ep.value=value;ep.start=f.start;ep.handover=f.handover;ep.stages=st2;save();S.modal=null;toast('Project updated');return}
   DB.projects.push({id:uid(),name:f.name.trim(),client:String(f.client).trim(),value:value,start:f.start,handover:f.handover,stages:st.map(function(s){return {id:s.id,name:s.name.trim(),amount:num(s.amount),date:s.date,done:false}})});
   save();S.modal=null;S.page='projects';S.projId=DB.projects[DB.projects.length-1].id;S.tab='overview';render();window.scrollTo(0,0)}
 
@@ -634,6 +642,7 @@ document.addEventListener('click',function(e){
   case 'filter':S.filter=g;render();break;
   case 'pf':S.pf=g;render();break;
   case 'newProject':openProject();break;
+  case 'editProject':openProject(S.projId);break;
   case 'openAdd':openEntry(g&&g!=='undefined'?g:null);break;
   case 'closeModal':S.modal=null;S.confirm='';render();break;
   case 'kind':f.kind=g;f.who='';f.partyId='';f.stageId='';if(g==='in'){var pp=DB.projects.filter(function(x){return x.id===f.projId})[0];f.who=pp?pp.client||'':'';f.mode='Bank'}else f.mode='Cash';render();break;
@@ -647,21 +656,26 @@ document.addEventListener('click',function(e){
   case 'toggleStage':var p=DB.projects.filter(function(x){return x.id===S.projId})[0];p.stages.forEach(function(s){if(s.id===g)s.done=!s.done});save();render();break;
   case 'askConfirm':S.confirm=g;render();break;
   case 'cancelConfirm':S.confirm='';render();break;
-  case 'delProj':DB.txns=DB.txns.filter(function(x){return x.projId!==S.projId});DB.projects=DB.projects.filter(function(x){return x.id!==S.projId});save();S.projId=null;S.confirm='';toast('Project deleted');break;
+  case 'delProj':delWith('Project deleted',function(){DB.txns=DB.txns.filter(function(x){return x.projId!==S.projId});DB.projects=DB.projects.filter(function(x){return x.id!==S.projId});S.projId=null});break;
+  case 'editParty':var pe=DB.parties.filter(function(x){return x.id===g})[0];S.form={editId:pe.id,name:pe.name,type:pe.type,phone:pe.phone||''};S.err='';S.modal='party';render();break;
+  case 'editTx':var et=findTxn(g);S.form={editId:et.id,kind:et.kind,projId:et.projId,stageId:et.stageId||'',section:et.section||'Stone',partyId:et.partyId||'',who:et.who,amount:String(et.amount),mode:et.mode,date:et.date,note:et.note||''};S.err='';S.confirm='';S.modal='entry';render();break;
+  case 'editBill':var eb=findTxn(g);S.form={editId:eb.id,partyId:eb.partyId,projId:eb.projId,amount:String(eb.amount),note:eb.note||'',date:eb.date};S.err='';S.confirm='';S.modal='bill';render();break;
   case 'newParty':S.form={name:'',type:TYPES[0],phone:''};S.err='';S.modal='party';render();break;
-  case 'saveParty':if(!String(f.name).trim()){S.err='Enter a name.';render();break}DB.parties.push({id:uid(),name:f.name.trim(),type:f.type,phone:String(f.phone).trim()});save();S.modal=null;toast('Person added');break;
+  case 'saveParty':if(!String(f.name).trim()){S.err='Enter a name.';render();break}if(f.editId){var ep2=DB.parties.filter(function(x){return x.id===f.editId})[0];ep2.name=f.name.trim();ep2.type=f.type;ep2.phone=String(f.phone).trim();DB.txns.forEach(function(t){if(t.partyId===ep2.id)t.who=ep2.name});save();S.modal=null;toast('Person updated');break}DB.parties.push({id:uid(),name:f.name.trim(),type:f.type,phone:String(f.phone).trim()});save();S.modal=null;toast('Person added');break;
   case 'openParty':S.page='people';S.partyId=g;S.confirm='';render();window.scrollTo(0,0);break;
   case 'closeParty':S.partyId=null;S.confirm='';render();break;
   case 'addBill':if(!DB.projects.length){toast('Add a project first.');break}S.form={partyId:g,projId:S.projId||DB.projects[0].id,amount:'',note:'',date:today()};S.err='';S.modal='bill';render();break;
-  case 'saveBill':var am=num(f.amount);if(!am){S.err='Enter an amount greater than zero.';render();break}DB.txns.push({id:uid(),kind:'bill',projId:f.projId,stageId:'',section:'',partyId:f.partyId,who:(DB.parties.filter(function(x){return x.id===f.partyId})[0]||{}).name||'',amount:am,mode:'',date:f.date||today(),note:String(f.note||'').trim(),vno:''});save();S.modal=null;toast('Bill added');break;
+  case 'saveBill':var am=num(f.amount);if(!am){S.err='Enter an amount greater than zero.';render();break}if(f.editId){var bt=findTxn(f.editId);bt.amount=am;bt.projId=f.projId;bt.note=String(f.note||'').trim();bt.date=f.date||today();save();S.modal=null;toast('Bill updated');break}DB.txns.push({id:uid(),kind:'bill',projId:f.projId,stageId:'',section:'',partyId:f.partyId,who:(DB.parties.filter(function(x){return x.id===f.partyId})[0]||{}).name||'',amount:am,mode:'',date:f.date||today(),note:String(f.note||'').trim(),vno:''});save();S.modal=null;toast('Bill added');break;
   case 'payParty':openEntry(S.projId||null,g);break;
-  case 'delParty':DB.parties=DB.parties.filter(function(x){return x.id!==g});save();S.partyId=null;S.confirm='';toast('Person deleted');break;
+  case 'delParty':delWith('Person deleted',function(){DB.parties=DB.parties.filter(function(x){return x.id!==g});S.partyId=null});break;
   case 'openV':S.vid=g;S.form={};S.confirm='';S.modal='voucher';render();break;
   case 'vpdf':pdfVoucher(findTxn(g));break;
   case 'vshare':shareText(voucherText(findTxn(g)),'Voucher');break;
   case 'stmtPdf':pdfStatement(derive().pById[g]);break;
   case 'stmtShare':shareText(stmtText(derive().pById[g]),'Statement');break;
-  case 'delTx':DB.txns=DB.txns.filter(function(x){return x.id!==g});save();S.modal=null;S.confirm='';toast('Entry deleted');break;
+  case 'delTx':delWith('Entry deleted',function(){DB.txns=DB.txns.filter(function(x){return x.id!==g});S.modal=null});break;
+  case 'delBill':delWith('Bill deleted',function(){DB.txns=DB.txns.filter(function(x){return x.id!==g});S.modal=null});break;
+  case 'undo':if(S.snap){DB=JSON.parse(S.snap);S.snap=null;save();S.modal=null;S.confirm='';toast('Restored')}break;
   case 'lh':DB.biz.lhBW=g==='b';save();render();break;
   case 'theme':case 'setTheme':var nv=a==='theme'?(isDark()?'light':'dark'):g;document.documentElement.setAttribute('data-theme',nv);try{localStorage.setItem('bt-theme',nv)}catch(x){}render();break;
   case 'saveBiz':DB.biz={lhBW:DB.biz.lhBW,name:document.getElementById('b-name').value.trim()||'My Business',phone:document.getElementById('b-phone').value.trim(),addr:document.getElementById('b-addr').value.trim()};save();toast('Details saved');break;
@@ -669,7 +683,7 @@ document.addEventListener('click',function(e){
   case 'restore':S.form={};S.err='';S.modal='restore';render();break;
   case 'doRestore':try{var d=JSON.parse(document.getElementById('restorebox').value);if(!d||!d.projects||!d.parties||!d.txns)throw 0;DB=d;DB.biz=DB.biz||blank().biz;save();S.modal=null;S.page='home';S.projId=null;S.partyId=null;toast('Backup restored')}catch(x){S.err='This does not look like a valid backup.';render()}break;
   case 'selectCopy':var cb=document.getElementById('copybox');cb.focus();cb.select();break;
-  case 'erase':DB=blank();save();S.confirm='';S.page='home';S.projId=null;S.partyId=null;toast('All data erased');break;
+  case 'erase':delWith('All data erased',function(){DB=blank();S.page='home';S.projId=null;S.partyId=null});break;
   }
 });
 document.addEventListener('input',function(e){
