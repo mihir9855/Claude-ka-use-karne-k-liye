@@ -466,16 +466,14 @@ function findTxn(id){for(var i=0;i<DB.txns.length;i++)if(DB.txns[i].id===id)retu
 function voucherInfo(t){var D=derive(),p=D.byId[t.projId],inn=t.kind==='in';return {t:t,inn:inn,proj:p?p.name:'',stage:inn?(t.stageId?stageName(p,t.stageId):''):t.section,who:t.who||''}}
 function voucherPaper(t){
   if(t.kind==='in')return letterPaper(t);
-  var v=voucherInfo(t),b=DB.biz,K='#1F2230',amt=Number(t.amount).toLocaleString('en-IN')+'.00';
-  function fld(l,val,fx){return '<div style="flex:'+fx+';min-width:0"><div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#6A6E8A">'+l+'</div><div style="font-size:16px;font-weight:700;border-bottom:1px solid '+K+';padding:3px 0 6px;margin-top:2px">'+val+'</div></div>'}
-  return '<div class="vfit"><div class="vin" style="width:720px"><div class="paper" style="padding:0;border-radius:3px;border:1px solid #B9B8B0;font-family:Georgia,\'Times New Roman\',serif;color:'+K+'">'
-  +'<div style="padding:16px 26px 12px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:2px solid '+K+'"><div style="display:flex;align-items:center;gap:14px;min-width:0"><img src="'+LH.l+'" alt="Brihad Temple logo" style="height:58px;width:auto;flex-shrink:0"><div style="min-width:0"><div style="font-size:19px;font-weight:700;letter-spacing:.03em;line-height:1.2">'+esc(b.name.toUpperCase())+'</div>'+((b.addr||b.phone)?'<div style="font-size:12px;color:#55597A;margin-top:4px;line-height:1.45;font-family:Manrope,system-ui,sans-serif">'+esc(b.addr)+(b.addr&&b.phone?'<br>':'')+(b.phone?'Phone: '+esc(b.phone):'')+'</div>':'')+'</div></div>'
-  +'<div style="text-align:right;flex-shrink:0;font-size:13px;line-height:1.7"><div><b>No.</b> '+esc(t.vno)+'</div><div><b>Date</b> '+fmt(t.date)+'</div></div></div>'
-  +'<div style="text-align:center;padding:14px 0 4px;font-size:14px;font-weight:700;letter-spacing:.35em">'+(v.inn?'RECEIPT VOUCHER':'PAYMENT VOUCHER')+'</div>'
-  +'<div style="padding:8px 26px 0"><div style="display:flex;gap:30px">'+fld(v.inn?'RECEIVED FROM':'PAID TO',esc(v.who),1)+'</div><div style="display:flex;gap:30px;margin-top:14px">'+fld('PROJECT',esc(v.proj)+(v.stage?' · '+esc(v.stage):''),3)+fld('MODE',esc(t.mode),1)+'</div>'
-  +'<table style="width:100%;border-collapse:collapse;margin-top:30px"><thead><tr><th style="border-bottom:1px solid '+K+';padding:8px 0;text-align:left;font-size:11px;letter-spacing:.1em">PARTICULARS</th><th style="border-bottom:1px solid '+K+';padding:8px 0;text-align:right;font-size:11px;letter-spacing:.1em;width:26%">AMOUNT (₹)</th></tr></thead><tbody><tr><td style="padding:12px 0;font-size:15px;height:40px;vertical-align:top;border-bottom:1px solid #D6D5CE">'+esc(t.note||v.stage||'Payment')+'</td><td style="padding:12px 0;text-align:right;font-size:16px;vertical-align:top;border-bottom:1px solid #D6D5CE">'+amt+'</td></tr><tr><td style="padding:9px 0;text-align:right;font-weight:700;font-size:12px;letter-spacing:.1em">TOTAL</td><td style="padding:9px 0;text-align:right;font-weight:700;font-size:18px">'+amt+'</td></tr></tbody></table>'
-  +'<div style="margin-top:6px;font-size:14px;line-height:1.5;font-style:italic">'+words(t.amount)+'</div></div>'
-  +'<div style="display:flex;gap:40px;padding:46px 26px 18px">'+[v.inn?"Client's signature":"Receiver's signature",'Prepared by','Authorised signatory'].map(function(x){return '<div style="flex:1;min-width:0;border-top:1px solid '+K+';padding-top:5px;text-align:center;font-size:12px;color:#44486B">'+x+'</div>'}).join('')+'</div></div></div></div>'}
+  var v=voucherInfo(t),b=DB.biz,K='#1F2230',AC='#4A4E8C';
+  function row(l,val){return '<div style="padding:11px 0;border-bottom:1px solid #ECEAE3"><div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#7A7E98;font-family:Manrope,system-ui,sans-serif">'+l+'</div><div style="font-size:16px;font-weight:700;margin-top:2px">'+val+'</div></div>'}
+  return '<div class="vfit"><div class="vin" style="width:720px"><div class="paper" style="padding:0;border-radius:14px;border:1px solid #DAD8D0;font-family:Georgia,\'Times New Roman\',serif;color:'+K+';overflow:hidden">'
+  +'<div style="padding:16px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #DAD8D0"><div style="display:flex;align-items:center;gap:14px;min-width:0"><img src="'+LH.l+'" alt="Brihad Temple logo" style="height:54px;width:auto;flex-shrink:0"><div style="min-width:0"><div style="font-size:18px;font-weight:700;letter-spacing:.03em;line-height:1.2">'+esc(b.name.toUpperCase())+'</div>'+((b.addr||b.phone)?'<div style="font-size:11.5px;color:#55597A;margin-top:3px;line-height:1.45;font-family:Manrope,system-ui,sans-serif">'+esc(b.addr)+(b.addr&&b.phone?'<br>':'')+(b.phone?'Phone: '+esc(b.phone):'')+'</div>':'')+'</div></div>'
+  +'<div style="text-align:right;flex-shrink:0;font-family:Manrope,system-ui,sans-serif"><div style="font-size:12px;font-weight:800;letter-spacing:.2em;color:'+AC+'">'+(v.inn?'RECEIPT VOUCHER':'PAYMENT VOUCHER')+'</div><div style="font-size:13px;margin-top:4px;color:#44486B">No. '+esc(t.vno)+' · '+fmt(t.date)+'</div></div></div>'
+  +'<div style="display:flex"><div style="width:270px;flex-shrink:0;background:#F6F4EE;padding:26px 26px;border-right:1px solid #DAD8D0"><div style="font-size:10.5px;font-weight:700;letter-spacing:.12em;color:#7A7E98;font-family:Manrope,system-ui,sans-serif">'+(v.inn?'AMOUNT RECEIVED':'AMOUNT PAID')+'</div><div class="disp tn" style="font-size:40px;line-height:1.1;margin-top:6px;color:'+AC+'">'+INR(t.amount)+'</div><div style="width:44px;height:3px;background:'+AC+';margin:14px 0"></div><div style="font-size:14px;font-style:italic;line-height:1.5;color:#44486B">'+words(t.amount)+'</div></div>'
+  +'<div style="flex:1;min-width:0;padding:10px 26px 14px">'+row(v.inn?'RECEIVED FROM':'PAID TO',esc(v.who))+row('PROJECT',esc(v.proj)+(v.stage?' · '+esc(v.stage):''))+row('FOR',esc(t.note||v.stage||'Payment'))+'<div style="padding:11px 0 0"><div style="font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#7A7E98;font-family:Manrope,system-ui,sans-serif">MODE OF PAYMENT</div><div style="font-size:16px;font-weight:700;margin-top:2px">'+esc(t.mode)+'</div></div></div></div>'
+  +'<div style="display:flex;gap:40px;padding:40px 26px 16px;border-top:1px solid #DAD8D0">'+[v.inn?"Client's signature":"Receiver's signature",'Prepared by','Authorised signatory'].map(function(x){return '<div style="flex:1;min-width:0;border-top:1px solid #9A9EBB;padding-top:5px;text-align:center;font-size:12px;color:#55597A">'+x+'</div>'}).join('')+'</div></div></div></div>'}
 function fitPapers(){var els=document.querySelectorAll('.vfit');for(var i=0;i<els.length;i++){var w=els[i],inn=w.firstChild,s=Math.min(1,w.clientWidth/720);inn.style.transformOrigin='top left';inn.style.transform='scale('+s+')';w.style.height=(inn.offsetHeight*s)+'px'}}
 window.addEventListener('resize',fitPapers);
 function letterPaper(t){
@@ -506,21 +504,26 @@ function pdfLib(){var J=window.jspdf;if(!J||!J.jsPDF){toast('PDF tool could not 
 function rs(n){return 'Rs. '+Number(n).toLocaleString('en-IN')}
 function pdfVoucher(t){
   if(t.kind==='in'){pdfLetter(t);return}
-  var C=pdfLib();if(!C)return;var v=voucherInfo(t),b=DB.biz,d=new C({orientation:'landscape',unit:'mm',format:'a5'}),W=210,X0=12,X1=W-12,K=[31,34,48],amt=Number(t.amount).toLocaleString('en-IN')+'.00';
-  function ln(x1,y,x2,w,g){d.setDrawColor(g?214:K[0],g?213:K[1],g?206:K[2]);d.setLineWidth(w);d.line(x1,y,x2,y)}
-  function fld(l,val,x,y,w){d.setFont('helvetica','bold');d.setFontSize(7);d.setTextColor(106,110,138);d.text(l,x,y);d.setFont('times','bold');d.setFontSize(11.5);d.setTextColor(K[0],K[1],K[2]);d.text(d.splitTextToSize(String(val),w-2)[0],x,y+6);ln(x,y+8.5,x+w,0.3)}
-  d.setDrawColor(185,184,176);d.setLineWidth(0.3);d.rect(6,6,W-12,136);
-  var lgh=16,lgw=lgh*LH.r;try{d.addImage(LH.l,'PNG',X0,10,lgw,lgh)}catch(e){}var tx=X0+lgw+5;
-  d.setTextColor(K[0],K[1],K[2]);d.setFont('times','bold');d.setFontSize(13);d.text(b.name.toUpperCase(),tx,16.5);d.setFont('helvetica','normal');d.setFontSize(7.5);d.setTextColor(85,89,122);
-  var sub=[b.addr,b.phone?'Phone: '+b.phone:''].filter(Boolean).join('   |   ');if(sub)d.text(d.splitTextToSize(sub,110),tx,22);
-  d.setTextColor(K[0],K[1],K[2]);d.setFont('times','bold');d.setFontSize(10);d.text('No.',X1-40,15);d.setFont('times','normal');d.text(t.vno,X1,15,{align:'right'});d.setFont('times','bold');d.text('Date',X1-40,21);d.setFont('times','normal');d.text(fmt(t.date),X1,21,{align:'right'});
-  ln(6,29,W-6,0.7);d.setFont('times','bold');d.setFontSize(11);d.setTextColor(K[0],K[1],K[2]);d.text(v.inn?'R E C E I P T   V O U C H E R':'P A Y M E N T   V O U C H E R',W/2,37,{align:'center'});
-  fld(v.inn?'RECEIVED FROM':'PAID TO',v.who,X0,46,X1-X0);fld('PROJECT',v.proj+(v.stage?' - '+v.stage:''),X0,60,128);fld('MODE',t.mode,X0+138,60,X1-X0-138);
-  var y=80;d.setFont('helvetica','bold');d.setFontSize(7.5);d.setTextColor(K[0],K[1],K[2]);d.text('PARTICULARS',X0,y+5);d.text('AMOUNT (Rs.)',X1,y+5,{align:'right'});ln(X0,y+7.5,X1,0.3);
-  d.setFont('times','normal');d.setFontSize(10.5);d.text(d.splitTextToSize(t.note||v.stage||'Payment',X1-X0-50),X0,y+14);d.text(amt,X1,y+14,{align:'right'});ln(X0,y+21,X1,0.2,1);
-  d.setFont('helvetica','bold');d.setFontSize(7.5);d.text('TOTAL',X1-52,y+27.5,{align:'right'});d.setFont('times','bold');d.setFontSize(12);d.text(amt,X1,y+27.5,{align:'right'});
-  d.setFont('times','italic');d.setFontSize(10);d.setTextColor(68,72,107);d.text(d.splitTextToSize(words(t.amount),X1-X0),X0,y+37);
-  var sy=131;d.setTextColor(68,72,107);var lab=[v.inn?"Client's signature":"Receiver's signature",'Prepared by','Authorised signatory'];[12,80,148].forEach(function(x,i){ln(x,sy,x+50,0.3);d.setFont('times','normal');d.setFontSize(8.5);d.text(lab[i],x+25,sy+4.5,{align:'center'})});
+  var C=pdfLib();if(!C)return;var v=voucherInfo(t),b=DB.biz,d=new C({orientation:'landscape',unit:'mm',format:'a5'}),W=210,X0=12,X1=W-12,K=[31,34,48],AC=[74,78,140];
+  function ln(x1,y,x2,w,g){d.setDrawColor(g?232:K[0],g?230:K[1],g?223:K[2]);d.setLineWidth(w);d.line(x1,y,x2,y)}
+  d.setDrawColor(218,216,208);d.setLineWidth(0.3);d.roundedRect(6,6,W-12,136,3,3);
+  var lgh=15,lgw=lgh*LH.r;try{d.addImage(LH.l,'PNG',X0,10,lgw,lgh)}catch(e){}var tx=X0+lgw+5;
+  d.setTextColor(K[0],K[1],K[2]);d.setFont('times','bold');d.setFontSize(12.5);d.text(b.name.toUpperCase(),tx,16);d.setFont('helvetica','normal');d.setFontSize(7.5);d.setTextColor(85,89,122);
+  var sub=[b.addr,b.phone?'Phone: '+b.phone:''].filter(Boolean).join('   |   ');if(sub)d.text(d.splitTextToSize(sub,100),tx,21.5);
+  d.setFont('helvetica','bold');d.setFontSize(8);d.setTextColor(AC[0],AC[1],AC[2]);d.text(v.inn?'RECEIPT VOUCHER':'PAYMENT VOUCHER',X1,15,{align:'right'});d.setFont('helvetica','normal');d.setFontSize(8.5);d.setTextColor(68,72,107);d.text('No. '+t.vno+'  |  '+fmt(t.date),X1,21,{align:'right'});
+  ln(6,28,W-6,0.3);
+  d.setFillColor(246,244,238);d.rect(6.15,28.15,72,86,'F');ln(78.2,28,78.2,0.3);d.setDrawColor(218,216,208);d.line(78.2,28,78.2,114);
+  d.setFont('helvetica','bold');d.setFontSize(7);d.setTextColor(122,126,152);d.text(v.inn?'AMOUNT RECEIVED':'AMOUNT PAID',X0,40);
+  d.setFont('helvetica','bold');d.setFontSize(21);d.setTextColor(AC[0],AC[1],AC[2]);d.text('Rs. '+Number(t.amount).toLocaleString('en-IN'),X0,52);
+  d.setFillColor(AC[0],AC[1],AC[2]);d.rect(X0,57,12,0.9,'F');
+  d.setFont('times','italic');d.setFontSize(10);d.setTextColor(68,72,107);d.text(d.splitTextToSize(words(t.amount),58),X0,65);
+  function item(l,val,y){d.setFont('helvetica','bold');d.setFontSize(7);d.setTextColor(122,126,152);d.text(l,86,y);d.setFont('times','bold');d.setFontSize(11.5);d.setTextColor(K[0],K[1],K[2]);d.text(d.splitTextToSize(String(val),W-86-14)[0],86,y+6);}
+  item(v.inn?'RECEIVED FROM':'PAID TO',v.who,38);ln(86,47.5,X1+2,0.2,1);
+  item('PROJECT',v.proj+(v.stage?' - '+v.stage:''),54);ln(86,63.5,X1+2,0.2,1);
+  item('FOR',t.note||v.stage||'Payment',70);ln(86,79.5,X1+2,0.2,1);
+  item('MODE OF PAYMENT',t.mode,86);
+  ln(6,114,W-6,0.3);d.setDrawColor(218,216,208);d.setLineWidth(0.3);d.line(6,114,W-6,114);
+  var sy=131;d.setTextColor(85,89,122);var lab=[v.inn?"Client's signature":"Receiver's signature",'Prepared by','Authorised signatory'];[12,80,148].forEach(function(x,i){d.setDrawColor(154,158,187);d.setLineWidth(0.3);d.line(x,sy,x+50,sy);d.setFont('times','normal');d.setFontSize(8.5);d.text(lab[i],x+25,sy+4.5,{align:'center'})});
   try{d.save(t.vno+'.pdf');toast('Saved '+t.vno+'.pdf')}catch(e){toast('Could not save the PDF on this device.')}}
 function stmtLines(x){var D=derive();return x.lines.map(function(t,i){return {n:i,t:t}}).sort(function(a,b){return a.t.date===b.t.date?(a.n-b.n):(a.t.date<b.t.date?-1:1)}).map(function(o){var t=o.t,p=D.byId[t.projId];return {date:fmt(t.date),desc:(t.kind==='bill'?'Bill':'Paid ('+t.mode+')')+(t.note?' - '+t.note:'')+(p?' ['+p.name+']':''),bill:t.kind==='bill'?t.amount:0,paid:t.kind==='out'?t.amount:0}})}
 function pdfStatement(x){
