@@ -50,7 +50,7 @@ svg{display:block;max-width:100%}
 .shell{display:grid;grid-template-columns:minmax(0,1fr);min-height:100vh}
 .side{display:none}
 .main{min-width:0;padding-block:16px 150px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(6,1fr);gap:2px;padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
 .bt{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:52px;justify-content:center;border:0;background:transparent;color:var(--muted);font-size:11px;font-weight:700;border-radius:14px}
 .bt.on{color:var(--violet-x);background:var(--violet-t)}
 .fab{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:21;width:58px;height:58px;border-radius:20px;border:0;background:var(--violet);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 26px -8px var(--violet)}
@@ -206,6 +206,7 @@ textarea.inp{width:100%;font-family:inherit;resize:vertical;line-height:1.4}
 .ibtn.pri{background:var(--violet);color:#fff;border-color:var(--violet);box-shadow:0 10px 20px -10px var(--violet)}
 .ibtn.dng{color:var(--coral-x)}
 .ibtn{flex-shrink:0}
+.pg{width:794px;height:1123px;position:relative;background:#fff;overflow:hidden;color:#1F2230;box-sizing:border-box}
 </style>
 </head>
 <body>
@@ -262,6 +263,8 @@ check:'M5 12.5l4.5 4.5L19 7.5',
 copy:'M9 9h10v11H9zM5 15V4h10',
 restore:'M4 12a8 8 0 108-8M4 4v5h5',
 report:'M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h6M9 9h2',
+prop:'M5 4h14v16H5zM8 8h8M8 12h8M8 16h5',
+propplus:'M5 4h9l5 5v11H5zM8 12h6M8 16h4M17 2v5M14.5 4.5h5',
 userplus:'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M19 8v6M16 11h6',
 projplus:'M2 20h13M4 20v-4h9v4M6 16v-3h5v3M8.5 13c0-2 .4-3.2 1-4.5.6 1.300 1 2.500 1 4.500M19 4v6M16 7h6'
 };
@@ -281,8 +284,8 @@ function words(n){var a=['','One','Two','Three','Four','Five','Six','Seven','Eig
  if(cr)r.push(two(cr)+' Crore');if(lk)r.push(two(lk)+' Lakh');if(th)r.push(two(th)+' Thousand');if(n)r.push(three(n));return 'Rupees '+(r.join(' ')||'Zero')+' only'}
 
 /* ---------- storage ---------- */
-function blank(){return {biz:{name:'Brihad Temple Construction Co.',phone:'+91 77789 52024, +91 98986 30320',addr:'Email: brihadtemple.co@gmail.com',lhBW:false},projects:[],parties:[],txns:[],seq:0,vseq:0}}
-var DB=(function(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.projects&&d.parties&&d.txns){d.biz=d.biz||blank().biz;if(!d.biz.phone)d.biz.phone=blank().biz.phone;if(!d.biz.addr)d.biz.addr=blank().biz.addr;d.seq=d.seq||0;d.vseq=d.vseq||0;return d}}catch(e){}return blank()})();
+function blank(){return {biz:{name:'Brihad Temple Construction Co.',phone:'+91 77789 52024, +91 98986 30320',addr:'Email: brihadtemple.co@gmail.com',lhBW:false},projects:[],parties:[],txns:[],seq:0,vseq:0,proposals:[],pseq:0,terms:{}}}
+var DB=(function(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.projects&&d.parties&&d.txns){d.biz=d.biz||blank().biz;if(!d.biz.phone)d.biz.phone=blank().biz.phone;if(!d.biz.addr)d.biz.addr=blank().biz.addr;d.seq=d.seq||0;d.vseq=d.vseq||0;d.proposals=d.proposals||[];d.pseq=d.pseq||0;d.terms=d.terms||{};return d}}catch(e){}return blank()})();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
 function uid(){DB.seq=(DB.seq||0)+1;return 'i'+Date.now().toString(36)+DB.seq}
 try{var th=localStorage.getItem('bt-theme');if(th)document.documentElement.setAttribute('data-theme',th)}catch(e){}
@@ -739,7 +742,7 @@ function fallbackCopy(text){S.modal='copy';S.form={text:text};render()}
 function renderModal(D){
   var m=document.getElementById('modal');
   if(!S.modal){m.innerHTML='';return}
-  var f=S.form,wide=S.modal==='voucher',h='<div class="ov" data-act="ovclick"><div class="sheet" role="dialog" aria-modal="true"'+(wide?' style="max-width:700px"':'')+'><div class="grab"></div>';
+  var f=S.form,wide=S.modal==='voucher'||S.modal==='pview',h='<div class="ov" data-act="ovclick"><div class="sheet" role="dialog" aria-modal="true"'+(wide?' style="max-width:700px"':'')+'><div class="grab"></div>';
   function head(t,sub){return '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div><h2 class="disp" style="margin:0;font-size:24px">'+t+'</h2>'+(sub?'<div class="lbl">'+sub+'</div>':'')+'</div><button class="ibtn" data-act="closeModal" aria-label="Close">'+ic('close',20)+'</button></div>'}
   function err(){return '<p class="lbl" id="m-err" style="color:var(--coral-x);min-height:18px;margin:10px 0 0">'+esc(S.err)+'</p>'}
   function chips(act,list,cur){return '<div class="pills">'+list.map(function(s){return '<button class="pill'+(cur===s?' on':'')+'" data-act="'+act+'" data-arg="'+esc(s)+'">'+esc(s)+'</button>'}).join('')+'</div>'}
@@ -770,6 +773,11 @@ function renderModal(D){
     h+=head(t.kind==='in'?'Receipt on letterhead':'Voucher',esc(t.vno)+(f&&f.fresh?' · created just now':''))+(t.kind==='in'?'<div class="pills" style="margin:4px 0 12px" role="group" aria-label="Receipt language">'+['en','hi','gu'].map(function(k){return '<button class="pill'+(curLang()===k?' on':'')+'" data-act="lang" data-arg="'+k+'">'+LANG[k].name+'</button>'}).join('')+'</div>':'')+voucherPaper(t)
     +'<div style="display:flex;align-items:center;gap:10px;margin-top:14px">'+ib('vpdf',t.id,'download','Download PDF','')+ib('vprint',t.id,'print','Print','')+ib('vshare',t.id,'share','Share','pri')+'<span style="flex:1"></span>'+ib('editTx',t.id,'edit','Edit entry','')+ib('askConfirm','deltx','trash','Delete entry','dng')+'</div>'
     +(S.confirm==='deltx'?'<div class="card" style="border-color:var(--coral);text-align:left;margin-top:12px"><b>Delete this entry?</b><div class="lbl" style="margin:4px 0 10px">Totals will change. This cannot be undone.</div><div style="display:flex;gap:8px"><button class="btn" data-act="cancelConfirm">Keep</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delTx" data-arg="'+t.id+'">Yes, delete</button></div></div>':'<p class="lbl" style="text-align:center;margin:12px 0 0;line-height:1.5">Print works from the PC browser. On a phone, tap Download and print that PDF.</p>');
+  }else if(S.modal==='proposal'){
+    h+=propFormHtml(f,head,fld,chips,err);
+  }else if(S.modal==='pview'){
+    var pvp=findProp(S.vid);if(!pvp){m.innerHTML='';S.modal=null;return}
+    h+=propViewHtml(pvp,head);
   }else if(S.modal==='report'){
     var rp=D.byId[S.rid];
     if(!rp){m.innerHTML='';S.modal=null;return}
@@ -787,9 +795,203 @@ function renderModal(D){
   m.innerHTML=h+'</div></div>'}
 function stgSumText(val,sum){var v=num(val);return 'Stages add up to '+INR(sum)+(v?' of '+INR(v)+(sum===v?' ✓':(sum<v?' · '+INR(v-sum)+' not yet assigned':' · '+INR(sum-v)+' more than the deal')):'')}
 
+/* ---------- proposals (quotations) ---------- */
+var STONES={
+gu:['ધ્રાંગધ્રા સેન્ડસ્ટોન','અંબાજી સેકેન્ડ-વાઇટ માર્બલ','મકરણા માર્બલ સેકેન્ડ-વાઇટ'],
+hi:['ध्रांगध्रा सैंडस्टोन','अंबाजी सेकंड-व्हाइट मार्बल','मकराना सेकंड-व्हाइट मार्बल'],
+en:['Dhrangadhra Sandstone','Ambaji Second-White Marble','Makrana Second-White Marble']};
+var NOTES_T={
+gu:['મંદિર ના આ ભાવ માં GST નો સમાવેશ થતો નથી GST અલગ થી આપવાનો રહેશે.',
+'મંદિર ના આ ભાવ માં 3Dફોટોસ અને વૉકથરૂં વિડીયો નો સમાવેશ થતો નથી.',
+'મંદિર ના આ ભાવ માં માલ, ઘડતર, ફીટીંગ, ટ્રાન્સપોર્ટ, પાલખ, ક્રેન અને સાદું ગ્રાઈન્ડર મશીન પોલિશ નો સમાવેશ થાય છે.',
+'તમામ કારીગરો ની જવાબદારી અમારી રહશે (એક્સિડન્ટ ની).',
+'પથ્થર માં કલર વેરીએશન રહશે.',
+'આ કામ દરમિયાન મંદિર માં વપરાતા ફીટીંગ મટિરિયલ જેમ કે રેતી, સિમેન્ટ, ઈંટ, કાંકરી, એરેલ્ડેટ (સોલિયુસન), વોટર પ્રૂફઈનગ માટેરિલ તથા મંદિર કવર કરવા માટે નું મટિરિયલ સંસ્થા શ્રી એ આપવાનું રહશે.',
+'સાઇટ સુધી પાવર, પીવા તથા વાપરવાનું પાણી અને છાંટવા માટે પાણી ની મોટર સંસ્થા શ્રી એ આપવાની રહશે.',
+'કારીગરો ને રહેવા માટે જાજરૂ-બાથરૂમ વાડી રૂમ તથા ઘડતર માટે ના પ્લોટ ની સગવડ સંસ્થા શ્રી એ કરી આપવાની રહશે.',
+'આ ભાવ માં પાયા, પ્લીનથ, ફ્લોરિંગ અને દીવાલ ના પાટિયા નું ફીટીંગ મજૂરી અને માલ નો સમાવેસશ થતો નથી તથા ડુંઘા ફિનિશિંગ કે કલર કામ ની માલ મજૂરી નો સમાવેશ થતો નથી તથા આ ભાવ પ્લીનથ ઉપર થી પત્થર કામ કરવાનો છે. પ્લીનથ નીચે કોઈ પણ પ્રકાર નું પત્થર કામ નો સમાવેશ નથી, કોઈ પણ પ્રકાર નું રૂપકમ(મૂર્તિ કામ), સીહાસન, લાકડાના દરવાજા,ઘંટ,પિત્તડ ના કડશ, કડા, લાઇટ ફીટીંગ નળફીટીંગ નો આ એસ્ટીમેટ માં સમાવેશ નથી.'],
+hi:['मंदिर के इन भावों में GST शामिल नहीं है, GST अलग से देना होगा।',
+'मंदिर के इन भावों में 3D फोटो और वॉकथ्रू वीडियो शामिल नहीं हैं।',
+'मंदिर के इन भावों में माल, घड़तर (नक्काशी), फिटिंग, ट्रांसपोर्ट, पाड़ (स्कैफोल्डिंग), क्रेन और साधारण ग्राइंडर मशीन पॉलिश शामिल हैं।',
+'सभी कारीगरों की जिम्मेदारी (दुर्घटना की) हमारी रहेगी।',
+'पत्थर में रंग का अंतर (कलर वेरिएशन) रहेगा।',
+'इस कार्य के दौरान मंदिर में उपयोग होने वाला फिटिंग मटेरियल जैसे रेत, सीमेंट, ईंट, कंकर, अरल्डाइट (सॉल्यूशन), वाटरप्रूफिंग मटेरियल तथा मंदिर को ढकने का मटेरियल संस्था श्री को देना होगा।',
+'साइट तक बिजली, पीने तथा उपयोग का पानी और छिड़काव के लिए पानी की मोटर संस्था श्री को देनी होगी।',
+'कारीगरों के रहने के लिए शौचालय-बाथरूम, वाड़ी रूम तथा घड़तर के लिए प्लॉट की व्यवस्था संस्था श्री को करनी होगी।',
+'इस भाव में नींव, प्लिंथ, फ्लोरिंग और दीवार के पाटिया की फिटिंग मजदूरी और माल शामिल नहीं है तथा डुंघा फिनिशिंग या कलर कार्य की माल-मजदूरी शामिल नहीं है। यह भाव प्लिंथ के ऊपर से पत्थर का कार्य करने का है। प्लिंथ के नीचे किसी भी प्रकार का पत्थर कार्य शामिल नहीं है। किसी भी प्रकार का रूपकाम (मूर्ति कार्य), सिंहासन, लकड़ी के दरवाजे, घंट, पीतल के कलश, कड़े, लाइट फिटिंग और नल फिटिंग इस एस्टिमेट में शामिल नहीं हैं।'],
+en:['GST is not included in the rates of this temple. GST will have to be paid separately.',
+'3D photos and a walkthrough video are not included in the rates of this temple.',
+'The rates of this temple include material, carving, fitting, transport, scaffolding, crane and simple grinder machine polish.',
+'We will be responsible for all the artisans (in case of accidents).',
+'There will be natural colour variation in the stone.',
+'During this work, the fitting material used in the temple such as sand, cement, bricks, gravel, Araldite (solution), waterproofing material, and the material to cover the temple will have to be provided by the Trust.',
+'Electric power up to the site, drinking and utility water, and a water motor for sprinkling will have to be provided by the Trust.',
+'The Trust will arrange toilet-bathroom and a room (vadi room) for the artisans to stay, and a plot for the carving work.',
+'These rates do not include fitting labour and material for the foundation, plinth, flooring and wall panels (patiya), nor labour and material for dungha finishing or colour work. These rates are for stone work from the plinth upward. Any stone work below the plinth is not included. Any kind of figure work (murti), throne (sinhasan), wooden doors, bells, brass kalash, hooks (kada), light fitting and pipe fitting are not included in this estimate.']};
+var NOTES_S={
+gu:['મંદિર ના આ ભાવ માં GST નો સમેવેશ થતો નથી GST અલગ થી આપવાનો રહશે.',
+'મંદિર ના આ ભાવ માં 3Dફોટોસ અને વોંકથરું વિડીયો નો સમાવેશ થતો નથી.',
+'મંદિર ના આ ભાવ માં માલ, ઘડતર, ફીટીંગ, ટ્રાન્સપોર્ટ, અને સાદું ગ્રાઈન્ડર મશીન પોસલિશ નો સમાવેશ થાય છે.',
+'તમામ કારીગરો ની જવાબદારી અમારી રહશે (એક્સિડન્ટ ની).',
+'આ કામ દરમિયાન મદિર માં વપરાતા ફીટીંગ મટિરિયલ જેમ કે રેતી, સિમેન્ટ, ઈટ, કાંકરી, એરેલડેટ (સોલિયુસન), સંસ્થા શ્રી એ આપવાનું રહશે.',
+'સાઇટ સુધી પાવર, પીવા તથા વાપરવાનું પાણી અને છાંટવા માટે પાણી ની મોટર સંસ્થા શ્રી એ આપવાની રહશે.',
+'કારીગરો ને રહેવા માટે જાજરૂ-બાથરૂમ વાડી રૂમ ની સગવડ સંસ્થા શ્રી એ કરી આપવાની રહશે.',
+'આ ભાવ માં દીવાલ ના પાટિયા નું ફીટીંગ મજૂરી અને માલ નો સમાવેસશ થતો નથી.',
+'આ કલર કામ ની માલ મજૂરી નો સમાવેશ થતો નથી.',
+'આ ભાવ મા કોઈ પણ પ્રકાર નું રૂપકમ (મૂર્તિ કામ), સીહાસન, લાકડાના દરવાજા, પિત્તડ ના કડશ, કડા, લાઇટ ફીટીંગ નળફીટીંગ નો આ એસ્ટીમેટ માં સમાવેશ નથી.'],
+hi:['मंदिर के इन भावों में GST शामिल नहीं है, GST अलग से देना होगा।',
+'मंदिर के इन भावों में 3D फोटो और वॉकथ्रू वीडियो शामिल नहीं हैं।',
+'मंदिर के इन भावों में माल, घड़तर (नक्काशी), फिटिंग, ट्रांसपोर्ट और साधारण ग्राइंडर मशीन पॉलिश शामिल हैं।',
+'सभी कारीगरों की जिम्मेदारी (दुर्घटना की) हमारी रहेगी।',
+'इस कार्य के दौरान उपयोग होने वाला फिटिंग मटेरियल जैसे रेत, सीमेंट, ईंट, कंकर, अरल्डाइट (सॉल्यूशन) संस्था श्री को देना होगा।',
+'साइट तक बिजली, पीने तथा उपयोग का पानी और छिड़काव के लिए पानी की मोटर संस्था श्री को देनी होगी।',
+'कारीगरों के रहने के लिए शौचालय-बाथरूम और वाड़ी रूम की व्यवस्था संस्था श्री को करनी होगी।',
+'इस भाव में दीवार के पाटिया की फिटिंग मजदूरी और माल शामिल नहीं है।',
+'कलर कार्य की माल-मजदूरी शामिल नहीं है।',
+'इस भाव में किसी भी प्रकार का रूपकाम (मूर्ति कार्य), सिंहासन, लकड़ी के दरवाजे, पीतल के कलश, कड़े, लाइट फिटिंग और नल फिटिंग इस एस्टिमेट में शामिल नहीं हैं।'],
+en:['GST is not included in the rates of this temple. GST will have to be paid separately.',
+'3D photos and a walkthrough video are not included in the rates.',
+'The rates include material, carving, fitting, transport and simple grinder machine polish.',
+'We will be responsible for all the artisans (in case of accidents).',
+'During this work, the fitting material such as sand, cement, bricks, gravel and Araldite (solution) will have to be provided by the Trust.',
+'Electric power up to the site, drinking and utility water, and a water motor for sprinkling will have to be provided by the Trust.',
+'The Trust will arrange toilet-bathroom and a room (vadi room) for the artisans to stay.',
+'Fitting labour and material for wall panels (patiya) are not included in these rates.',
+'Labour and material for colour work are not included.',
+'Any kind of figure work (murti), throne (sinhasan), wooden doors, brass kalash, hooks (kada), light fitting and pipe fitting are not included in this estimate.']};
+var ITEMS={gu:['મંદિર નું સિંહાસન','ઘર મંદિર'],hi:['मंदिर का सिंहासन','घर मंदिर'],en:['Temple sihasan','House temple']};
+var PT={
+en:{date:'Date',ref:'Ref.',note:'Note:-',font:"Georgia,'Times New Roman',serif",
+ head:function(g,l){return 'Shri '+g+' Temple'+(l?', '+l:'')},
+ intro:function(g,l,v){return 'Rates for constructing the temple of Shri '+g+(l?' at '+(v?'village ':'')+l:'')+' are as follows.'},
+ small:function(it,by,st,a,w){return it+' as per '+(by?by+'\'s ':'the ')+'design and size, made in '+st+': Rs. '+a+'/- ('+w+') has been fixed.'},tem:function(s,a){return 'Temple built in '+s+': total Rs. '+a+'/-'},ran:function(s,a){return 'Rang-mandap built in '+s+': total Rs. '+a+'/-'},when:function(d){return 'Date: '+d}},
+hi:{date:'दिनांक',ref:'संदर्भ',note:'नोंध:-',font:"'Noto Sans Devanagari','Mangal',sans-serif",
+ head:function(g,l){return 'श्री '+g+' मंदिर'+(l?', '+l:'')},
+ intro:function(g,l,v){return (l?(v?'ग्राम ':'')+l+' में ':'')+'श्री '+g+' के मंदिर का निर्माण कार्य करने के भाव नीचे अनुसार हैं।'},
+ small:function(it,by,st,a,w){return it+' '+(by?by+' के ':'')+'डिज़ाइन और साइज़ के अनुसार '+st+' में बनाकर देने के अंकों में रुपये '+a+'/- (शब्दों में '+w+') तय किए गए हैं।'},tem:function(s,a){return 'मंदिर '+s+' में बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},ran:function(s,a){return 'रंग-मंडप '+s+' में बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},when:function(d){return 'दिनांक: '+d}},
+gu:{date:'તારીખ',ref:'સંદર્ભ',note:'નોંધ:-',font:"'Noto Sans Gujarati','Shruti',sans-serif",
+ head:function(g,l){return 'શ્રી '+g+' મંદિર'+(l?', '+l:'')},
+ intro:function(g,l,v){return (l?(v?'ગામ ':'')+l+' માં ':'')+'શ્રી '+g+' ના મંદિર નું બાંધકામ કરવાનાં ભાવ નીચે પ્રમાણે છે.'},
+ small:function(it,by,st,a,w){return it+' '+(by?by+' ની ':'')+'ડીસાઇન અને સાઇઝ પ્રમાણે '+st+' માં કરી આપવાના અંકે રૂપિયા '+a+'/- (અક્ષરે '+w+') નક્કી કરેલ છે.'},tem:function(s,a){return 'મંદિર '+s+' માં બનાવી આપવાના કુલ Rs. '+a+'/- થાય છે.'},ran:function(s,a){return 'રંગ-મંડપ '+s+' માં બનાવી આપવાના કુલ Rs. '+a+'/- થાય છે.'},when:function(d){return 'તા. '+d}}};
+function stripGod(s){return String(s||'').trim().replace(/^(શ્રી|श्री|shri|shree)\s+/i,'').replace(/\s+(મંદિર|मंदिर|mandir|temple)$/i,'').trim()}
+function dmy(iso){if(!iso)return '';var q=iso.split('-');return q[2]+'-'+q[1]+'-'+q[0]}
+function amtTxt(n){return Number(n).toLocaleString('en-IN')+(String(n).length?'':'')}
+function presetNotes(kind,lg){var src=kind==='small'?NOTES_S:NOTES_T,o=DB.terms&&DB.terms[kind]&&DB.terms[kind][lg];return (o&&o.length?o:src[lg]).slice()}
+function findProp(id){for(var i=0;i<DB.proposals.length;i++)if(DB.proposals[i].id===id)return DB.proposals[i]}
+function propTitle(pr){var T=PT[pr.lg||'gu'];return T.head(esc(stripGod(pr.god)),esc(pr.loc||''))}
+
+/* page blocks -> A4 pages (794 x 1123 px) */
+function proposalPages(pr,lg){
+  var T=PT[lg],bw=DB.biz.lhBW,PW=794,PH=1123,HH=Math.round(PW*285/1500),FH=Math.round(PW*185/1500),LIMIT=PH-FH-26;
+  var god=esc(stripGod(pr.god)),loc=esc(pr.loc||''),pad='padding:0 52px';
+  var blocks=[];
+  blocks.push('<div style="display:flex;justify-content:space-between;gap:12px;font-size:14px;font-weight:700;margin-top:14px"><span>'+T.ref+' '+esc(pr.vno||'')+'</span><span>'+T.when(dmy(pr.date))+'</span></div>');
+  blocks.push('<div style="text-align:center;font-weight:700;font-size:21px;margin:26px 0 14px;line-height:1.5">'+T.head(god,loc)+'</div>');
+  blocks.push('<div style="font-weight:700;font-size:15.5px;line-height:1.9;margin:0 0 6px">'+T.intro(god,loc,pr.pt!=='c')+'</div>');
+  var n=0;
+  if(pr.kind==='small'){var o0=(pr.options||[])[0]||{},am=num(o0.mandir);blocks.push('<div style="margin:22px 0 0;font-size:15.5px;line-height:2;font-weight:600;text-align:justify">'+T.small(esc(pr.item||''),esc(pr.by||''),esc(o0.stone||''),amtTxt(am),esc(wordsL(am,lg)))+'</div>')}
+  else (pr.options||[]).forEach(function(o){var l1=num(o.mandir)?T.tem(esc(o.stone||''),amtTxt(num(o.mandir))):'',l2=num(o.rang)?T.ran(esc(o.stone||''),amtTxt(num(o.rang))):'';if(!l1&&!l2)return;n++;
+    blocks.push('<div style="display:flex;gap:10px;margin:20px 0 0;font-size:15.5px;line-height:2;font-weight:600"><span style="width:26px;flex-shrink:0">'+n+'.</span><div>'+l1+(l1&&l2?'<br>':'')+l2+'</div></div>')});
+  var notes=(pr.notes||[]).filter(function(x){return String(x).trim()});
+  notes.forEach(function(x,i){blocks.push((i===0?'<div style="font-weight:700;font-size:16px;margin:26px 0 4px">'+T.note+'</div>':'')+'<div style="display:flex;gap:10px;margin:8px 0 0;font-size:14.5px;line-height:1.85"><span style="width:26px;flex-shrink:0">'+(i+1)+'.</span><div>'+esc(x)+'</div></div>')});
+  blocks.push('<div style="margin-top:30px;text-align:right;font-size:15px"><div style="height:60px"></div><b>Pro. '+esc(pr.signer||'')+'</b></div>');
+  var host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:'+PW+'px';document.body.appendChild(host);
+  var pages=[];
+  function newPage(first){var pg=document.createElement('div');pg.className='pg';pg.style.fontFamily=T.font;pg.innerHTML=(first?'<img src="'+(bw?LH.b:LH.c)+'" alt="" style="width:100%;height:'+HH+'px;display:block">':'<div style="height:34px"></div>')+'<div class="pc" style="'+pad+'"></div><img class="pf" src="'+LH.f+'" alt="" style="position:absolute;left:0;right:0;bottom:0;width:100%;height:'+FH+'px">';host.appendChild(pg);pages.push(pg);return pg}
+  newPage(true);
+  blocks.forEach(function(b){
+    var pg=pages[pages.length-1],pc=pg.querySelector('.pc'),el=document.createElement('div');el.innerHTML=b;pc.appendChild(el);
+    if(el.getBoundingClientRect().bottom-pg.getBoundingClientRect().top>LIMIT&&pc.children.length>1){pc.removeChild(el);var np=newPage(false);np.querySelector('.pc').appendChild(el)}});
+  var total=pages.length;
+  pages.forEach(function(pg,i){if(total>1){var s=document.createElement('div');s.style.cssText='position:absolute;right:52px;bottom:'+(FH+6)+'px;font-size:11px;color:#6E728A';s.textContent=(i+1)+' / '+total;pg.appendChild(s)}});
+  var out=pages.map(function(pg){return pg.outerHTML});
+  document.body.removeChild(host);return out}
+function proposalPreview(pr){var pg=proposalPages(pr,pr.lg||'gu');return pg.map(function(h){return '<div class="vfit" style="margin-bottom:12px"><div class="vin" data-w="794" style="width:794px"><div style="box-shadow:0 8px 24px rgba(0,0,0,.18)">'+h+'</div></div></div>'}).join('')}
+function warmFonts(){try{if(document.fonts&&document.fonts.load){document.fonts.load('400 14px "Noto Sans Gujarati"','અ');document.fonts.load('700 14px "Noto Sans Gujarati"','અ');document.fonts.load('400 14px "Noto Sans Devanagari"','अ');document.fonts.load('700 14px "Noto Sans Devanagari"','अ')}}catch(e){}}
+function pdfProposal(id){
+  var pr=findProp(id);if(!pr)return;var C=pdfLib();if(!C){PDFMODE='save';return}
+  if(!window.html2canvas){PDFMODE='save';toast('Making the PDF needs internet. Connect and try again.');return}
+  var lg=pr.lg||'gu',fam=lg==='gu'?'Noto Sans Gujarati':lg==='hi'?'Noto Sans Devanagari':null,smp=lg==='gu'?'અ':'अ';
+  var run=function(){
+    var pages=proposalPages(pr,lg),host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:794px';host.innerHTML=pages.join('');document.body.appendChild(host);
+    var els=host.querySelectorAll('.pg'),d=new C({unit:'mm',format:'a4'}),idx=0;
+    var fail=function(){if(host.parentNode)host.parentNode.removeChild(host);PDFMODE='save';toast('Could not make the PDF. Try again.')};
+    (function next(){
+      if(idx>=els.length){if(host.parentNode)host.parentNode.removeChild(host);finishPdf(d,'Proposal-'+(stripGod(pr.god)||'temple').replace(/[^a-z0-9ऀ-ॿ઀-૿]+/gi,'-')+'.pdf','Proposal saved');return}
+      window.html2canvas(els[idx],{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false}).then(function(cv){if(idx>0)d.addPage();d.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);idx++;next()}).catch(fail)})()};
+  if(fam&&document.fonts&&document.fonts.load)Promise.all([document.fonts.load('400 14px "'+fam+'"',smp),document.fonts.load('700 14px "'+fam+'"',smp)]).then(run,run);else run()}
+function printProposal(id){
+  var pr=findProp(id);if(!pr)return;var pa=document.getElementById('printArea');
+  pa.innerHTML=proposalPages(pr,pr.lg||'gu').map(function(h){return '<div class="vin" style="width:794px;break-after:page">'+h+'</div>'}).join('');
+  document.getElementById('pgstyle').textContent='@page{size:A4 portrait;margin:0}';
+  var done=function(){pa.innerHTML='';window.removeEventListener('afterprint',done)};window.addEventListener('afterprint',done);
+  try{window.print()}catch(e){done();toast('Print is not available here. Download the PDF and print that.')}}
+function proposalText(pr){var lg=pr.lg||'gu',T=PT[lg],god=stripGod(pr.god),loc=pr.loc||'',r=[T.head(god,loc),T.when(dmy(pr.date)),'',T.intro(god,loc,pr.pt!=='c'),''],n=0;
+  if(pr.kind==='small'){var q0=(pr.options||[])[0]||{},qa=num(q0.mandir);r.push(T.small(pr.item||'',pr.by||'',q0.stone||'',amtTxt(qa),wordsL(qa,lg)))}
+  else (pr.options||[]).forEach(function(o){var a=num(o.mandir)?T.tem(o.stone||'',amtTxt(num(o.mandir))):'',b=num(o.rang)?T.ran(o.stone||'',amtTxt(num(o.rang))):'';if(!a&&!b)return;n++;r.push(n+'. '+a);if(b)r.push('   '+b)});
+  r.push('',T.note);(pr.notes||[]).forEach(function(x,i){if(String(x).trim())r.push((i+1)+'. '+x)});r.push('','Pro. '+(pr.signer||''));return r.join('\n')}
+
+function pageProposals(D){
+  var h='<div style="display:flex;gap:8px;margin-bottom:12px">'+ib('newProp',null,'propplus','New proposal','pri')+'</div>';
+  if(!DB.proposals.length)return h+'<section class="card">'+emptyBox('Make a proposal for a temple in a minute: temple name, place, rates for each stone, and your ready-made terms. Then a PDF on your letterhead in English, Hindi or Gujarati.','','')+'<div style="text-align:center;padding-bottom:14px"><button class="btnp" data-act="newProp">Make first proposal</button></div></section>';
+  return h+'<div class="grid2">'+DB.proposals.slice().reverse().map(function(pr){var n=(pr.options||[]).length;return '<button class="proj" data-act="openProp" data-arg="'+pr.id+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b style="font-size:16px;overflow-wrap:anywhere;line-height:1.35">'+esc(PT[pr.lg||'gu'].head(stripGod(pr.god),''))+'</b><span class="chip c-violet">'+esc(PT[pr.lg||'gu'].name||(LANG[pr.lg||'gu'].name))+'</span></div><div class="lbl" style="margin-top:4px">'+esc(pr.loc||'')+(pr.loc?' · ':'')+fmt(pr.date)+'</div><div class="lbl" style="margin-top:8px">'+(pr.kind==='small'?esc(pr.item||'Small sihasan'):n+' option'+(n===1?'':'s'))+' · '+esc(pr.vno||'')+'</div></button>'}).join('')+'</div>'}
+
+function openProposal(id,copy){
+  var pr=id?findProp(id):null;
+  if(pr){S.form={editId:pr.id,kind:pr.kind||'temple',item:pr.item||'',by:pr.by||'',god:pr.god,loc:pr.loc||'',pt:pr.pt||'v',date:pr.date,lg:pr.lg||'gu',signer:pr.signer||'',touched:true,options:pr.options.map(function(o){return {id:o.id,stone:o.stone||'',mandir:o.mandir?String(o.mandir):'',rang:o.rang?String(o.rang):''}}),notes:(pr.notes||[]).slice()}}
+  if(pr&&copy){S.form.editId=undefined;S.form.god='';S.form.loc='';S.form.date=today()}
+  else if(!pr){var lg=curLang();S.form={kind:'temple',item:ITEMS[lg][0],by:'',god:'',loc:'',pt:'v',date:today(),lg:lg,signer:DB.biz.signer||'Manoj Vinodrai Sompura',touched:false,options:[{id:uid(),stone:'',mandir:'',rang:''}],notes:presetNotes('temple',lg)}}
+  S.err='';S.modal='proposal';render()}
+function saveProposal(){
+  var f=S.form;if(!stripGod(f.god)){S.err='Write which God\'s temple it is.';render();return}
+  var opts=f.options.filter(function(o){return num(o.mandir)||num(o.rang)});if(f.kind==='small'){opts=f.options.slice(0,1);if(!num(opts[0].mandir)){S.err='Write the amount.';render();return}if(!String(f.item||'').trim()){S.err='Write what is being made (for example Sihasan).';render();return}}else if(!opts.length){S.err='Add the rate (amount) for at least one option.';render();return}
+  var notes=f.notes.map(function(x){return String(x).trim()}).filter(Boolean);
+  var base={kind:f.kind||'temple',item:String(f.item||'').trim(),by:String(f.by||'').trim(),god:stripGod(f.god),loc:String(f.loc||'').trim(),pt:f.pt,date:f.date||today(),lg:f.lg,signer:String(f.signer||'').trim(),options:opts.map(function(o){return {id:o.id,stone:String(o.stone||'').trim(),mandir:num(o.mandir),rang:num(o.rang)}}),notes:notes};
+  DB.biz.signer=base.signer||DB.biz.signer;DB.biz.lang=f.lg;
+  if(f.editId){var pr=findProp(f.editId);Object.assign(pr,base);save();S.vid=pr.id}
+  else{DB.pseq=(DB.pseq||0)+1;base.id=uid();base.vno='BTP-'+pad(DB.pseq,3);DB.proposals.push(base);save();S.vid=base.id}
+  S.form={};S.modal='pview';S.err='';S.confirm='';S.page='proposals';render()}
+function propFormHtml(f,head,fld,chips,err){
+  var T=PT[f.lg];
+  var h=head(f.editId?'Edit proposal':'New proposal','Temple name, place, rates and terms')
+  +'<div class="pills" style="margin-top:12px" role="group" aria-label="Proposal type"><button class="pill'+(f.kind!=='small'?' on':'')+'" data-act="pkind" data-arg="temple" style="flex:1">Temple (stone-wise rates)</button><button class="pill'+(f.kind==='small'?' on':'')+'" data-act="pkind" data-arg="small" style="flex:1">Small sihasan or house temple</button></div>'
+  +'<div class="pills" style="margin-top:12px" role="group" aria-label="Proposal language">'+['gu','hi','en'].map(function(k){return '<button class="pill'+(f.lg===k?' on':'')+'" data-act="flang" data-arg="'+k+'">'+LANG[k].name+'</button>'}).join('')+'</div>'
+  +fld('Which God\'s temple (e.g. Khodiyar Mata)','god',{ph:f.lg==='gu'?'ખોડિયાર માતા':f.lg==='hi'?'खोड़ियार माता':'Khodiyar Mata'})
+  +fld('Place (village or city)','loc',{ph:f.lg==='gu'?'પુનધરા':f.lg==='hi'?'पुनधरा':'Punadhara'})
+  +'<div class="pills" style="margin-top:8px"><button class="pill'+(f.pt==='v'?' on':'')+'" data-act="ptype2" data-arg="v">Village</button><button class="pill'+(f.pt==='c'?' on':'')+'" data-act="ptype2" data-arg="c">Town or city</button></div>'
+  +fld('Date','date',{type:'date'})
+  +(f.kind==='small'?smallFields(f,fld):'')
+  +(f.kind==='small'?'':'<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Rates (one card for each stone)</span>'
+  +f.options.map(function(o,i){return '<div class="stg" style="padding:12px"><div style="display:flex;justify-content:space-between;align-items:center"><b>Option '+(i+1)+'</b>'+(f.options.length>1?ib('rmOpt',i,'close','Remove this option',''):'')+'</div>'
+    +'<label class="field" style="margin-top:8px"><span class="lbl">Stone / material</span><input class="inp" data-oi="'+i+'" data-of="stone" value="'+esc(o.stone)+'" autocomplete="off"></label>'
+    +'<div class="pills" style="margin:8px 0 0">'+STONES[f.lg].map(function(s,k){return '<button class="pill" data-act="pickStone" data-arg="'+i+','+k+'">'+esc(s)+'</button>'}).join('')+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px"><label><span class="lbl">Temple total (Rs.)</span><input class="inp tn" inputmode="numeric" data-oi="'+i+'" data-of="mandir" value="'+esc(o.mandir)+'" placeholder="0"></label><label><span class="lbl">Rang-mandap total (Rs.)</span><input class="inp tn" inputmode="numeric" data-oi="'+i+'" data-of="rang" value="'+esc(o.rang)+'" placeholder="optional"></label></div></div>'}).join('')
+  +ib('addOpt',null,'plus','Add another stone option','')+'</div>')
+  +'<div class="field"><span class="lbl" style="display:block;margin-bottom:6px">Notes and terms (ready-made, you can edit)</span>'
+  +f.notes.map(function(x,i){return '<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px"><span class="lbl" style="width:20px;padding-top:12px">'+(i+1)+'.</span><textarea class="inp" style="min-height:74px;padding:10px 12px" data-ni="'+i+'">'+esc(x)+'</textarea>'+ib('rmNote',i,'close','Remove this note','')+'</div>'}).join('')
+  +'<div class="pills" style="margin-top:4px"><button class="pill" data-act="addNote">+ Add note</button><button class="pill" data-act="resetNotes">Reset to ready-made</button><button class="pill" data-act="saveNotesDef">Save these as my default</button></div></div>'
+  +fld('Signed by','signer',{ph:'Manoj Vinodrai Sompura'})
+  +err()+'<button class="btnp" style="width:100%;margin-top:8px" data-act="saveProp">'+(f.editId?'Save changes':'Save and preview')+'</button>';
+  return h}
+function smallFields(f,fld){
+  var o=f.options[0];
+  return fld('What is being made','item',{ph:ITEMS[f.lg][0]})
+  +'<div class="pills" style="margin:8px 0 0">'+ITEMS[f.lg].map(function(s,k){return '<button class="pill" data-act="pickItem" data-arg="'+k+'">'+esc(s)+'</button>'}).join('')+'</div>'
+  +fld('Design and size as per (name, optional)','by',{ph:f.lg==='gu'?'દીનેશભાઈ':f.lg==='hi'?'दिनेशभाई':'Dineshbhai'})
+  +'<label class="field"><span class="lbl">Stone / material</span><input class="inp" data-oi="0" data-of="stone" value="'+esc(o.stone)+'" autocomplete="off"></label>'
+  +'<div class="pills" style="margin:8px 0 0">'+STONES[f.lg].map(function(s,k){return '<button class="pill" data-act="pickStone" data-arg="0,'+k+'">'+esc(s)+'</button>'}).join('')+'</div>'
+  +'<label class="field"><span class="lbl">Total amount (Rs.)</span><input class="inp amt tn" inputmode="numeric" data-oi="0" data-of="mandir" value="'+esc(o.mandir)+'" placeholder="0"></label>'}
+function propViewHtml(pr,head){
+  var lg=pr.lg||'gu';
+  return head('Proposal',esc(PT[lg].head(stripGod(pr.god),''))+' · '+esc(pr.vno||''))
+  +'<div class="pills" style="margin:4px 0 12px" role="group" aria-label="Proposal language">'+['gu','hi','en'].map(function(k){return '<button class="pill'+(lg===k?' on':'')+'" data-act="plang" data-arg="'+k+'">'+LANG[k].name+'</button>'}).join('')+'</div>'
+  +proposalPreview(pr)
+  +'<div style="display:flex;align-items:center;gap:10px;margin-top:6px">'+ib('ppdf',pr.id,'download','Download PDF','')+ib('pprint',pr.id,'print','Print','')+ib('pshare',pr.id,'share','Share PDF','pri')+'<span style="flex:1"></span>'+ib('editProp',pr.id,'edit','Edit proposal','')+ib('dupProp',pr.id,'copy','Make a copy for another temple','')+ib('askConfirm','delprop','trash','Delete proposal','dng')+'</div>'
+  +(S.confirm==='delprop'?'<div class="card" style="border-color:var(--coral);text-align:left;margin-top:12px"><b>Delete this proposal?</b><div class="lbl" style="margin:4px 0 10px">You can undo for a few seconds after.</div><div style="display:flex;gap:8px"><button class="btn" data-act="cancelConfirm">Keep</button><button class="btnx" style="background:var(--coral);color:#fff" data-act="delProp" data-arg="'+pr.id+'">Yes, delete</button></div></div>':'')}
+
 /* ---------- frame ---------- */
-var NAV=[['home','Home','home'],['projects','Projects','proj'],['payments','Payments','pay'],['people','People','work'],['settings','Settings','set']];
-var TITLES={home:['Overview','Home'],projects:['Every temple you are building','Projects'],payments:['Every payment, with its voucher','Payments'],people:['Suppliers and workers','People'],settings:['Business, backup and theme','Settings']};
+var NAV=[['home','Home','home'],['projects','Projects','proj'],['payments','Payments','pay'],['people','People','work'],['proposals','Proposals','prop'],['settings','Settings','set']];
+var TITLES={home:['Overview','Home'],projects:['Every temple you are building','Projects'],payments:['Every payment, with its voucher','Payments'],people:['Suppliers and workers','People'],proposals:['Quotations for new temples','Proposals'],settings:['Business, backup and theme','Settings']};
 function isDark(){var r=document.documentElement.getAttribute('data-theme');if(r)return r==='dark';return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches}
 function render(){
   var D=derive();
@@ -801,7 +1003,7 @@ function render(){
   if(S.page==='people'&&S.partyId&&D.pById[S.partyId]){ttl=D.pById[S.partyId].name;sub='Ledger'}
   if(S.page==='home'){var hr=new Date().getHours();ttl=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';sub=fmt(today())}
   var head='<div class="head"><div><div class="lbl">'+esc(sub)+'</div><h1 class="disp'+(ttl.length>20?' long':'')+'">'+esc(ttl)+'</h1></div><div class="hrow"><button class="ibtn" data-act="theme" aria-label="Switch light or dark theme">'+ic(isDark()?'sun':'moon',20)+'</button></div></div>';
-  var body={home:pageHome,projects:pageProjects,payments:pagePayments,people:pagePeople,settings:pageSettings}[S.page](D);
+  var body={home:pageHome,projects:pageProjects,payments:pagePayments,people:pagePeople,proposals:pageProposals,settings:pageSettings}[S.page](D);
   document.getElementById('main').innerHTML=head+body;
   renderModal(D);
   document.getElementById('toast').innerHTML=S.toast?'<div class="toast" role="status">'+esc(S.toast)+(S.undoOn?'<button class="undo" data-act="undo">Undo</button>':'')+'</div>':'';
@@ -884,6 +1086,27 @@ document.addEventListener('click',function(e){
   case 'openReport':S.rid=g;S.form={};S.confirm='';S.modal='report';render();break;
   case 'rpdf':PDFMODE='save';pdfReport(g);break;
   case 'rshare':PDFMODE='share';pdfReport(g);break;
+  case 'newProp':openProposal();break;
+  case 'editProp':openProposal(g);break;
+  case 'dupProp':openProposal(g,true);break;
+  case 'openProp':S.vid=g;S.confirm='';S.modal='pview';render();break;
+  case 'plang':var ppr=findProp(S.vid),old=ppr.lg||'gu';if(JSON.stringify(ppr.notes)===JSON.stringify(presetNotes(ppr.kind||'temple',old)))ppr.notes=presetNotes(ppr.kind||'temple',g);ppr.lg=g;DB.biz.lang=g;save();render();break;
+  case 'flang':var ol=f.lg;if(!f.touched)f.notes=presetNotes(f.kind||'temple',g);var ix=ITEMS[ol].indexOf(f.item);if(ix>=0)f.item=ITEMS[g][ix];f.lg=g;render();break;
+  case 'pkind':f.kind=g;if(!f.touched)f.notes=presetNotes(g,f.lg);if(g==='small'&&!String(f.item||'').trim())f.item=ITEMS[f.lg][0];render();break;
+  case 'ptype2':f.pt=g;render();break;
+  case 'pickStone':var ps=g.split(',');f.options[+ps[0]].stone=STONES[f.lg][+ps[1]];render();break;
+  case 'pickItem':f.item=ITEMS[f.lg][+g];render();break;
+  case 'addOpt':f.options.push({id:uid(),stone:'',mandir:'',rang:''});render();break;
+  case 'rmOpt':if(f.options.length>1){f.options.splice(+g,1);render()}break;
+  case 'addNote':f.notes.push('');f.touched=true;render();break;
+  case 'rmNote':f.notes.splice(+g,1);f.touched=true;render();break;
+  case 'resetNotes':f.notes=presetNotes(f.kind||'temple',f.lg);f.touched=false;render();break;
+  case 'saveNotesDef':DB.terms=DB.terms||{};DB.terms[f.kind||'temple']=DB.terms[f.kind||'temple']||{};DB.terms[f.kind||'temple'][f.lg]=f.notes.map(function(x){return String(x).trim()}).filter(Boolean);save();toast('Saved. These notes will be used for new proposals.');break;
+  case 'saveProp':saveProposal();break;
+  case 'ppdf':PDFMODE='save';pdfProposal(g);break;
+  case 'pshare':PDFMODE='share';pdfProposal(g);break;
+  case 'pprint':printProposal(g);break;
+  case 'delProp':delWith('Proposal deleted',function(){DB.proposals=DB.proposals.filter(function(x){return x.id!==g});S.modal=null});break;
   case 'vprint':printVoucher(g);break;
   case 'vpdf':pdfVoucher(findTxn(g));break;
   case 'vshare':if(!window.jspdf){shareText(voucherText(findTxn(g)),'Voucher');break}PDFMODE='share';pdfVoucher(findTxn(g));break;
@@ -897,7 +1120,7 @@ document.addEventListener('click',function(e){
   case 'saveBiz':DB.biz={lhBW:DB.biz.lhBW,name:document.getElementById('b-name').value.trim()||'My Business',phone:document.getElementById('b-phone').value.trim(),addr:document.getElementById('b-addr').value.trim()};save();toast('Details saved');break;
   case 'backup':var txt=JSON.stringify(DB);try{navigator.clipboard.writeText(txt).then(function(){toast('Backup copied. Paste it somewhere safe.')},function(){fallbackCopy(txt)})}catch(x){fallbackCopy(txt)}break;
   case 'restore':S.form={};S.err='';S.modal='restore';render();break;
-  case 'doRestore':try{var d=JSON.parse(document.getElementById('restorebox').value);if(!d||!d.projects||!d.parties||!d.txns)throw 0;DB=d;DB.biz=DB.biz||blank().biz;save();S.modal=null;S.page='home';S.projId=null;S.partyId=null;toast('Backup restored')}catch(x){S.err='This does not look like a valid backup.';render()}break;
+  case 'doRestore':try{var d=JSON.parse(document.getElementById('restorebox').value);if(!d||!d.projects||!d.parties||!d.txns)throw 0;DB=d;DB.biz=DB.biz||blank().biz;DB.proposals=DB.proposals||[];DB.pseq=DB.pseq||0;DB.terms=DB.terms||{};save();S.modal=null;S.page='home';S.projId=null;S.partyId=null;toast('Backup restored')}catch(x){S.err='This does not look like a valid backup.';render()}break;
   case 'selectCopy':var cb=document.getElementById('copybox');cb.focus();cb.select();break;
   case 'erase':delWith('All data erased',function(){DB=blank();S.page='home';S.projId=null;S.partyId=null});break;
   }
@@ -909,6 +1132,8 @@ document.addEventListener('input',function(e){
   if(t.id==='peq'){S.peq=t.value;document.getElementById('peList').innerHTML=peopleListHtml(derive());return}
   if(!S.form)return;
   var k=t.getAttribute&&t.getAttribute('data-f');if(k){S.form[k]=t.value;if(k==='value'){var s=0;S.form.stages&&S.form.stages.forEach(function(x){s+=num(x.amount)});var el=document.getElementById('stgSum');if(el)el.textContent=stgSumText(t.value,s)}return}
+  var oi=t.getAttribute&&t.getAttribute('data-oi');if(oi!==null&&oi!==undefined&&S.form.options){S.form.options[+oi][t.getAttribute('data-of')]=t.value;return}
+  var ni=t.getAttribute&&t.getAttribute('data-ni');if(ni!==null&&ni!==undefined&&S.form.notes){S.form.notes[+ni]=t.value;S.form.touched=true;return}
   var si=t.getAttribute&&t.getAttribute('data-si');if(si!==null&&si!==undefined&&S.form.stages){S.form.stages[+si][t.getAttribute('data-sf')]=t.value;var s2=0;S.form.stages.forEach(function(x){s2+=num(x.amount)});var el2=document.getElementById('stgSum');if(el2)el2.textContent=stgSumText(S.form.value,s2)}
 });
 document.addEventListener('change',function(e){
@@ -916,7 +1141,7 @@ document.addEventListener('change',function(e){
   if(k&&S.form&&t.tagName==='SELECT'){S.form[k]=t.value;if(k==='projId'){S.form.stageId=''}if(k==='partyId'&&S.form.kind==='out'){var pt=DB.parties.filter(function(x){return x.id===t.value})[0];S.form.who=pt?pt.name:''}render()}
 });
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&S.modal){S.modal=null;S.confirm='';render()}});
-render();
+warmFonts();render();
 })();
 </script>
 </body>
