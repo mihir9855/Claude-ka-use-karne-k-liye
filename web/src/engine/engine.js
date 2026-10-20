@@ -414,15 +414,18 @@ export function proposalPages(pr,lg){
     if(pr.kind==='small'){var o0=(pr.options||[])[0]||{},am=num(o0.mandir);blocks.push('<div style="margin:'+m(22)+'px 0 0;font-size:'+fs(15.5)+'px;line-height:'+lh(2)+';font-weight:600;text-align:center">'+T.small(esc(pr.item||''),esc(pr.by||''),esc(o0.stone||''),amtTxt(am),esc(wordsL(am,lg)))+'</div>')}
     else (pr.options||[]).forEach(function(o){var l1=num(o.mandir)?T.tem(esc(o.stone||''),amtTxt(num(o.mandir)),num(o.sqft)?amtTxt(num(o.sqft)):''):'',l2=num(o.rang)?T.ran(esc(o.stone||''),amtTxt(num(o.rang))):'';if(!l1&&!l2)return;n++;
       blocks.push('<div style="margin:'+m(20)+'px 0 0;font-size:'+fs(15.5)+'px;line-height:'+lh(2)+';font-weight:600;text-align:center">'+n+'.&nbsp; '+l1+(l1&&l2?'<br>':'')+l2+'</div>')});
-    notes.forEach(function(x,i){blocks.push((i===0?'<div style="font-weight:700;font-size:16px;margin:'+m(26)+'px 0 4px">'+T.note+'</div>':'')+'<div style="display:flex;gap:10px;margin:'+m(8)+'px 0 0;font-size:'+fs(14.5)+'px;line-height:'+lh(1.85)+'"><span style="width:26px;flex-shrink:0">'+(i+1)+'.</span><div>'+esc(x)+'</div></div>')});
+    notes.forEach(function(x,i){blocks.push((i===0?'\u0001<div style="font-weight:700;font-size:16px;margin:'+m(26)+'px 0 4px">'+T.note+'</div>':'')+'<div style="display:flex;gap:10px;margin:'+m(8)+'px 0 0;font-size:'+fs(14.5)+'px;line-height:'+lh(1.85)+'"><span style="width:26px;flex-shrink:0">'+(i+1)+'.</span><div>'+esc(x)+'</div></div>')});
     var sig='<div style="margin-top:'+m(30)+'px;text-align:right;font-size:15px"><div style="height:'+Math.max(40,m(60))+'px"></div><b>Pro. '+esc(pr.signer||'')+'</b></div>';
-    if(together&&notes.length){var last=blocks.pop();blocks.push('<div>'+last+sig+'</div>')}else blocks.push(sig);
+    if(together&&notes.length){var last=blocks.pop(),mk=last.charAt(0)==='\u0001';blocks.push((mk?'\u0001':'')+'<div>'+last.replace('\u0001','')+sig+'</div>')}else blocks.push(sig);
     var host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:'+PW+'px';document.body.appendChild(host);
     var pages=[];
     function newPage(first){var pg=document.createElement('div');pg.className='pg';pg.style.fontFamily=T.font;pg.innerHTML=(first?hdrImgHtml(bw,lg,PW,'width:100%;height:'+HH+'px;display:block'):'<div style="height:34px"></div>')+'<div class="pc" style="'+pad+'"></div><img class="pf" src="'+LH.f+'" alt="" style="position:absolute;left:0;right:0;bottom:0;width:100%;height:'+FH+'px">';host.appendChild(pg);pages.push(pg);return pg}
     newPage(true);
     blocks.forEach(function(b){
-      var pg=pages[pages.length-1],pc=pg.querySelector('.pc'),el=document.createElement('div');el.innerHTML=b;pc.appendChild(el);
+      var brk=b.charAt(0)==='\u0001';if(brk)b=b.slice(1);
+      var pg=pages[pages.length-1],pc=pg.querySelector('.pc');
+      if(brk&&pc.children.length){pg=newPage(false);pc=pg.querySelector('.pc')}
+      var el=document.createElement('div');el.innerHTML=b;pc.appendChild(el);
       if(el.getBoundingClientRect().bottom-pg.getBoundingClientRect().top>LIMIT&&pc.children.length>1){pc.removeChild(el);var np=newPage(false);np.querySelector('.pc').appendChild(el)}});
     var lastOnly=pages.length>1&&pages[pages.length-1].querySelector('.pc').children.length===1;
     return {host:host,pages:pages,orphan:lastOnly}}
