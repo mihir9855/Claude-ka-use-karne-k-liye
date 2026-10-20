@@ -3,6 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Lottie } from "@/components/Lottie"
 import pulse from "@/pulse.json"
 import { motion } from "motion/react"
+import BlurText from "@/react-bits/TextAnimations/BlurText/BlurText"
+import { TextShimmer } from "@/motion-primitives/text-shimmer"
+import { ShimmerButton } from "@/magicui/shimmer-button"
 import { Input } from "@/components/ui/input"
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
@@ -18,11 +21,13 @@ export default function App() {
     >
       <Card>
         <CardHeader>
-          <CardTitle>shadcn/ui is installed</CardTitle>
+          <CardTitle><BlurText text="React Bits is installed" /></CardTitle>
           <CardDescription>Brihad Temple Finance – UI playground</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <Lottie data={pulse} className="mx-auto size-20" />
+          <TextShimmer className="text-sm">Motion Primitives ready</TextShimmer>
+          <ShimmerButton>Magic UI ready</ShimmerButton>
           <Input placeholder="Project name" />
           <Dialog>
             <DialogTrigger asChild><Button>Open dialog</Button></DialogTrigger>
