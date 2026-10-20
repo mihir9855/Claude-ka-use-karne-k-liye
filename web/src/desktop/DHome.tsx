@@ -33,8 +33,8 @@ export default function DHome() {
       </div>
 
       <div className="grid grid-cols-12 gap-5">
-        <CashHero D={D} className="col-span-5" />
-        <div className="col-span-7 grid grid-cols-2 gap-5"><Kpis D={D} /></div>
+        <CashHero D={D} className="col-span-6 xl:col-span-5" />
+        <div className="col-span-6 grid grid-cols-2 gap-5 xl:col-span-7"><Kpis D={D} /></div>
       </div>
 
       <div className="grid grid-cols-12 gap-5">
@@ -72,9 +72,9 @@ export default function DHome() {
       </div>
 
       <div className="grid grid-cols-12 gap-5">
-        <div className="col-span-5"><WaterfallCard D={D} h="h-56" /></div>
-        <div className="col-span-3"><DonutCard D={D} /></div>
-        <div className="col-span-4"><MonthsCard D={D} h="h-52" /></div>
+        <div className="col-span-7 xl:col-span-5"><WaterfallCard D={D} h="h-56" /></div>
+        <div className="col-span-5 xl:col-span-3"><DonutCard D={D} /></div>
+        <div className="col-span-12 xl:col-span-4"><MonthsCard D={D} h="h-52" /></div>
       </div>
 
 

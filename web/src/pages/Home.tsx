@@ -84,7 +84,7 @@ export default function Home() {
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_100%_0%,rgba(255,255,255,.16),transparent_55%)]" />
             <div className="relative">
               <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Cash in hand · all projects</div>
-              <div className="font-display gold-text mt-1 text-[44px] font-extrabold leading-none tn">
+              <div className="font-display gold-text mt-1 whitespace-nowrap text-[clamp(28px,8.5vw,44px)] font-extrabold leading-none tn">
                 {D.cash < 0 ? '−' : ''}₹<NumberTicker value={Math.abs(D.cash)} className="text-inherit dark:text-inherit" />
               </div>
               <div className="mt-5">
