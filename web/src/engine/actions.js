@@ -27,10 +27,10 @@ function delWith(msg, fn) {
 export function newEntryForm(projId, partyId) {
   const pid = projId || (DB.projects[0] ? DB.projects[0].id : '')
   const pt = partyId ? DB.parties.filter((x) => x.id === partyId)[0] : null
-  return { kind: 'out', projId: pid, stageId: '', section: 'Stone', partyId: partyId || '', who: pt ? pt.name : '', amount: '', mode: 'Cash', date: today(), note: '' }
+  return { kind: 'out', projId: pid, stageId: '', section: 'Stone', partyId: partyId || '', who: pt ? pt.name : '', amount: '', mode: 'Cash', ref: '', date: today(), note: '' }
 }
 export function editEntryForm(t) {
-  return { editId: t.id, kind: t.kind, projId: t.projId, stageId: t.stageId || '', section: t.section || 'Stone', partyId: t.partyId || '', who: t.who, amount: String(t.amount), mode: t.mode, date: t.date, note: t.note || '' }
+  return { editId: t.id, kind: t.kind, projId: t.projId, stageId: t.stageId || '', section: t.section || 'Stone', partyId: t.partyId || '', who: t.who, amount: String(t.amount), mode: t.mode, ref: t.ref || '', date: t.date, note: t.note || '' }
 }
 export function newProjectForm() {
   return { name: '', client: '', trust: '', value: '', start: today(), handover: '', stages: DEF_STAGES.map((n) => ({ id: uid(), name: n, amount: '', date: '' })) }
@@ -59,6 +59,8 @@ export function proposalForm(id, copy) {
 }
 
 /* ---------- saves: return an error string, or null when saved ---------- */
+const refOf = (f) => (f.mode === 'Bank' || f.mode === 'Cheque' ? String(f.ref || '').trim() : '')
+
 export function saveEntry(f) {
   const amount = num(f.amount), inn = f.kind === 'in'
   if (!amount) return { err: 'Enter an amount greater than zero.' }
@@ -70,14 +72,14 @@ export function saveEntry(f) {
   if (f.editId) {
     const ex = findTxn(f.editId)
     if (ex) {
-      Object.assign(ex, { projId: f.projId, stageId: inn ? f.stageId : '', section: inn ? '' : f.section, partyId: inn ? '' : f.partyId || '', who, amount, mode: f.mode, date: f.date, note: String(f.note || '').trim() })
+      Object.assign(ex, { projId: f.projId, stageId: inn ? f.stageId : '', section: inn ? '' : f.section, partyId: inn ? '' : f.partyId || '', who, amount, mode: f.mode, ref: refOf(f), date: f.date, note: String(f.note || '').trim() })
       save()
       toast('Entry updated')
       return { id: ex.id, edited: true }
     }
   }
   DB.vseq = (DB.vseq || 0) + 1
-  const t = { id: uid(), kind: f.kind, projId: f.projId, stageId: inn ? f.stageId : '', section: inn ? '' : f.section, partyId: inn ? '' : f.partyId || '', who, amount, mode: f.mode, date: f.date, note: String(f.note || '').trim(), vno: 'BTC-' + pad(DB.vseq, 4) }
+  const t = { id: uid(), kind: f.kind, projId: f.projId, stageId: inn ? f.stageId : '', section: inn ? '' : f.section, partyId: inn ? '' : f.partyId || '', who, amount, mode: f.mode, ref: refOf(f), date: f.date, note: String(f.note || '').trim(), vno: 'BTC-' + pad(DB.vseq, 4) }
   DB.txns.push(t)
   save()
   return { id: t.id }

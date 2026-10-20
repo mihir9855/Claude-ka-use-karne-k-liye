@@ -62,7 +62,7 @@ export default function DPayments() {
                     <td className="max-w-52 truncate px-2 py-3 font-semibold">{t.who}</td>
                     <td className="max-w-56 truncate px-2 py-3 text-muted-foreground">{p ? p.name : '—'}</td>
                     <td className="px-2 py-3 text-muted-foreground">{(inn ? t.stageName : t.section) || '—'}</td>
-                    <td className="px-2 py-3 text-muted-foreground">{t.mode}</td>
+                    <td className="px-2 py-3 text-muted-foreground">{t.mode}{t.ref ? <span className="tn block text-xs">{t.ref}</span> : null}</td>
                     <td className={'tn px-2 py-3 text-right font-bold ' + (inn ? 'text-income' : '')}>{inn ? '+' : '−'}{INR(t.amount)}</td>
                     <td className="px-2 py-3 text-right"><button aria-label="Download PDF" onClick={(e) => { e.stopPropagation(); docs.voucherPdf(t.id) }} className="grid size-8 place-items-center rounded-lg text-muted-foreground opacity-0 transition hover:bg-secondary hover:text-foreground group-hover:opacity-100"><Download className="size-4" /></button></td>
                   </tr>

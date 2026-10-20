@@ -65,7 +65,7 @@ export function Ledger({ id, embedded }: { id: string; embedded?: boolean }) {
         <Button variant="outline" size="icon" className="rounded-full" aria-label="Edit person" onClick={() => open('party', { form: editPartyForm(DB.parties.filter((p: any) => p.id === id)[0]) })}><Pencil className="size-4" /></Button>
         {x.lines.length ? null : <Button variant="outline" size="icon" className="rounded-full text-expense" aria-label="Delete person" onClick={() => open('confirm', { title: `Delete ${x.name}?`, body: 'You can undo for a few seconds after.', action: () => { deleteParty(id); go('people') } })}><Trash2 className="size-4" /></Button>}
       </div>
-      <div className="rounded-3xl bg-[linear-gradient(135deg,var(--hero2-a),var(--hero2-b))] p-5 text-white shadow-lg">
+      <div className="rounded-3xl bg-[image:var(--hero2-grad)] p-5 text-white shadow-lg">
         <div className="text-xs opacity-80">{x.type}{x.phone ? ' · ' + x.phone : ''}</div>
         <h1 className="font-display text-3xl font-extrabold leading-tight">{x.name}</h1>
         <div className="mt-3 text-xs opacity-80">{x.bal >= 0 ? 'You owe' : 'Advance paid'}</div>

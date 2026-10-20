@@ -59,7 +59,7 @@ export function Detail({ id, embedded }: { id: string; embedded?: boolean }) {
       </div>
 
       <BlurFade>
-        <div className="jaali relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg">
+        <div className="jaali relative overflow-hidden rounded-3xl bg-[image:var(--hero-grad)] p-5 text-white shadow-lg">
           <img src={LH.w} alt="" className="hero-mark mandir-only" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_100%_0%,rgba(255,255,255,.16),transparent_55%)]" />
           <div className="relative">

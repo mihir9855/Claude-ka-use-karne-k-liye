@@ -17,7 +17,7 @@ export const SEC_COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', '
 export function CashHero({ D, className }: { D: any; className?: string }) {
   const pct = D.totalValue ? Math.round((D.received / D.totalValue) * 100) : 0
   return (
-    <div className={cn('jaali relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg', className)}>
+    <div className={cn('jaali relative overflow-hidden rounded-3xl bg-[image:var(--hero-grad)] p-5 text-white shadow-lg', className)}>
       <img src={LH.w} alt="" className="hero-mark mandir-only" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_100%_0%,rgba(255,255,255,.16),transparent_55%)]" />
       <div className="relative">
@@ -44,7 +44,7 @@ export function CashHero({ D, className }: { D: any; className?: string }) {
 export function Kpi({ label, value, note, tone, i = 0, className }: { label: string; value: number; note: string; tone: string; i?: number; className?: string }) {
   return (
     <BlurFade delay={0.05 * i} inView className={className}>
-      <div className={cn('kpi-arch relative h-full overflow-hidden rounded-3xl p-4', tone)}>
+      <div data-kpi={label.replace(/\s/g, '').toLowerCase()} className={cn('kpi-arch relative h-full overflow-hidden rounded-3xl p-4', tone)}>
         <div className="text-xs font-semibold opacity-80">{label}</div>
         <div className="font-display tn mt-1 text-[26px] font-extrabold leading-tight">{SHORT(value)}</div>
         <div className="mt-1 text-xs opacity-75">{note}</div>

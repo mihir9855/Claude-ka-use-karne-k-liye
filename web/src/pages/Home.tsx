@@ -24,7 +24,7 @@ const SEC_COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c
 function Kpi({ label, value, note, tone, i }: { label: string; value: number; note: string; tone: string; i: number }) {
   return (
     <BlurFade delay={0.05 * i} inView>
-      <div className={`kpi-arch relative h-full overflow-hidden rounded-3xl p-4 ${tone}`}>
+      <div data-kpi={label.replace(/\s/g, '').toLowerCase()} className={`kpi-arch relative h-full overflow-hidden rounded-3xl p-4 ${tone}`}>
         <div className="text-xs font-semibold opacity-80">{label}</div>
         <div className="font-display mt-1 text-[26px] font-extrabold leading-tight tn">{SHORT(value)}</div>
         <div className="mt-1 text-xs opacity-75">{note}</div>
@@ -129,7 +129,7 @@ export default function Home() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <BlurFade className="col-span-2 md:col-span-4">
-          <div className="jaali relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg">
+          <div className="jaali relative overflow-hidden rounded-3xl bg-[image:var(--hero-grad)] p-5 text-white shadow-lg">
             <img src={LH.w} alt="" className="hero-mark mandir-only" />
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_100%_0%,rgba(255,255,255,.16),transparent_55%)]" />
             <div className="relative">

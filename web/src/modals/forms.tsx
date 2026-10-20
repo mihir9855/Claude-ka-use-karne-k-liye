@@ -72,6 +72,11 @@ export function EntryModal({ form }: { form: any }) {
         </>
       )}
       <Field label="Mode"><Chips options={MODES.map((m: string) => ({ value: m, label: m }))} value={f.mode} onChange={(v) => set('mode', v)} /></Field>
+      {f.mode === 'Bank' || f.mode === 'Cheque' ? (
+        <Field label={f.mode === 'Cheque' ? 'Cheque number' : 'NEFT / RTGS / IMPS reference number'} hint={inn ? 'Shown on the receipt, so the client can match it with the bank statement.' : undefined}>
+          <TextInput value={f.ref || ''} onChange={(v) => set('ref', v)} placeholder={f.mode === 'Cheque' ? 'e.g. 004512' : 'e.g. UTR / transaction id'} className="tn" />
+        </Field>
+      ) : null}
       <Field label="Date"><TextInput type="date" value={f.date} onChange={(v) => set('date', v)} /></Field>
       <Field label="Note (optional)"><TextInput value={f.note} onChange={(v) => set('note', v)} placeholder={inn ? 'e.g. 2nd installment' : 'e.g. weekly payout'} /></Field>
       <FormError msg={err} />

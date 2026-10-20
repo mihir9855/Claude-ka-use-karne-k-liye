@@ -3,13 +3,18 @@ import { motion } from 'motion/react'
 import { cn } from '@/lib/utils'
 import { useTheme } from 'next-themes'
 import { LH } from '@/engine/engine.js'
+import { hashPick } from '@/components/app/rows'
 
 export function Logo({ height = 40, className }: { height?: number; className?: string }) {
   const { resolvedTheme } = useTheme()
   return <img src={resolvedTheme === 'dark' ? LH.w : LH.l} alt="Brihad Temple logo" style={{ height, width: 'auto' }} className={cn('select-none', className)} draggable={false} />
 }
 
-export function Avatar({ name, tone = 'primary', className }: { name: string; tone?: 'primary' | 'income' | 'expense' | 'saffron' | 'info'; className?: string }) {
+export function Avatar({ name, tone, className }: { name: string; tone?: 'primary' | 'income' | 'expense' | 'saffron' | 'info'; className?: string }) {
+  if (!tone) {
+    const col = hashPick(name || '?')
+    return <div style={{ background: `color-mix(in oklab, ${col} 16%, var(--card))`, color: col }} className={cn('grid size-10 shrink-0 place-items-center rounded-full text-sm font-extrabold', className)}>{(name || '?').trim().charAt(0).toUpperCase()}</div>
+  }
   const t = {
     primary: 'bg-primary/10 text-primary',
     income: 'bg-income-soft text-income',

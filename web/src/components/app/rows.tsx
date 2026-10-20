@@ -25,13 +25,20 @@ export function StageDots({ p }: { p: any }) {
   )
 }
 
+export const PALETTE = ['#7c3aed', '#ec4899', '#0ea5e9', '#10b981', '#f59e0b', '#f43f5e']
+export function hashPick(s: string) {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
+  return PALETTE[h % PALETTE.length]
+}
+
 export function ProjectCard({ p }: { p: any }) {
   const done = p.status === 'done'
   const stg = p.curIdx >= 0 ? p.stages[p.curIdx].name : 'All stages done'
   return (
-    <button onClick={() => go('projects', p.id)} className="group w-full rounded-3xl border bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[.99]">
+    <button onClick={() => go('projects', p.id)} style={{ ['--pc' as any]: hashPick(p.id) }} className="proj-card group w-full rounded-3xl border bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[.99]">
       <div className="flex items-center gap-3">
-        <div className="relative grid size-14 shrink-0 place-items-center text-primary">
+        <div className="proj-ring relative grid size-14 shrink-0 place-items-center text-primary">
           <Ring pct={p.progress} size={56} />
           <span className="font-display absolute text-[13px] font-extrabold text-foreground">{p.progress}%</span>
         </div>
@@ -58,7 +65,7 @@ export function TxnRow({ t, D, showProj = true }: { t: any; D: any; showProj?: b
   const inn = t.kind === 'in', bill = t.kind === 'bill'
   const p = D.byId[t.projId]
   const title = bill ? 'Bill · ' + (t.who || '') : inn ? 'Received from ' + t.who : 'Paid to ' + t.who
-  const sub1 = [fmt(t.date), t.mode].filter(Boolean).join(' · ')
+  const sub1 = [fmt(t.date), t.mode, t.ref].filter(Boolean).join(' · ')
   const sub2 = [showProj && p ? p.name : '', inn ? t.stageName || '' : bill ? '' : t.section].filter(Boolean).join(' · ')
   return (
     <button

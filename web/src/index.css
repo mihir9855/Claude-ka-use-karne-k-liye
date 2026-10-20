@@ -94,6 +94,8 @@
   --hero-a: #2e3ad1;
   --hero-b: #6c4df0;
   --hero-glow: #fcd34d;
+  --hero-grad: linear-gradient(135deg, var(--hero-a), var(--hero-b));
+  --hero2-grad: linear-gradient(135deg, var(--hero2-a), var(--hero2-b));
   --hero2-a: #1d4ed8;
   --hero2-b: #1e3a8a;
   --c1: #e5484d;
@@ -281,5 +283,145 @@ html.dark[data-style="mandir"] {
     left: 0.75rem; right: 0.75rem; bottom: calc(0.6rem + env(safe-area-inset-bottom));
     border-radius: 1.6rem; border: 1px solid color-mix(in oklab, var(--gold) 35%, var(--border));
     box-shadow: 0 18px 40px -16px rgba(15, 18, 60, 0.45); padding-bottom: 0 !important;
+  }
+}
+
+
+/* ================= "Vivid" look: colourful fintech, big gradients, saturated tiles ================= */
+@font-face {
+  font-family: "Outfit Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+:root[data-style="vivid"] {
+  --font-display: "Outfit Variable", "Manrope Variable", ui-sans-serif, sans-serif;
+  --radius: 1.25rem;
+  --background: #f3f4fc;
+  --foreground: #14142b;
+  --card: #ffffff;
+  --card-foreground: #14142b;
+  --popover: #ffffff;
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --secondary: #ebebf8;
+  --muted: #eeeefa;
+  --muted-foreground: #6a6a8a;
+  --accent: #efe6ff;
+  --accent-foreground: #5b21b6;
+  --border: #e4e4f4;
+  --input: #d8d8ee;
+  --ring: #7c3aed;
+  --income: #059669;
+  --expense: #e11d48;
+  --saffron: #d97706;
+  --info: #0284c7;
+  --hero-grad: linear-gradient(135deg, #4f46e5 0%, #9333ea 52%, #ec4899 100%);
+  --hero2-grad: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%);
+  --hero-glow: #fde68a;
+  --c1: #f43f5e;
+  --c2: #f59e0b;
+  --c3: #8b5cf6;
+  --c4: #0ea5e9;
+  --c5: #ec4899;
+  --c6: #10b981;
+}
+html.dark[data-style="vivid"] {
+  --background: #0c0c1d;
+  --foreground: #f1f1fb;
+  --card: #15152c;
+  --card-foreground: #f1f1fb;
+  --popover: #1a1a35;
+  --primary: #a78bfa;
+  --primary-foreground: #150a33;
+  --secondary: #1f1f3d;
+  --muted: #1a1a34;
+  --muted-foreground: #9a9ac0;
+  --accent: #2a2150;
+  --accent-foreground: #d8c9ff;
+  --border: #26264a;
+  --input: #30305a;
+  --ring: #a78bfa;
+  --income: #34d399;
+  --expense: #fb7185;
+  --saffron: #fbbf24;
+  --info: #38bdf8;
+  --hero-grad: linear-gradient(135deg, #3730a3 0%, #7e22ce 55%, #be185d 100%);
+  --hero2-grad: linear-gradient(135deg, #0369a1 0%, #3730a3 100%);
+  --c1: #fb7185;
+  --c2: #fbbf24;
+  --c3: #a78bfa;
+  --c4: #38bdf8;
+  --c5: #f472b6;
+  --c6: #34d399;
+}
+
+/* soft colour blobs behind the page */
+[data-style="vivid"] body { background-color: transparent !important; }
+[data-style="vivid"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(42rem 30rem at -5% -8%, rgba(124, 58, 237, 0.2), transparent 62%),
+    radial-gradient(36rem 26rem at 105% 2%, rgba(236, 72, 153, 0.17), transparent 62%),
+    radial-gradient(34rem 24rem at 60% 112%, rgba(14, 165, 233, 0.14), transparent 62%);
+}
+html.dark[data-style="vivid"] body::before {
+  background:
+    radial-gradient(42rem 30rem at -5% -8%, rgba(124, 58, 237, 0.3), transparent 62%),
+    radial-gradient(36rem 26rem at 105% 2%, rgba(236, 72, 153, 0.22), transparent 62%),
+    radial-gradient(34rem 24rem at 60% 112%, rgba(14, 165, 233, 0.18), transparent 62%);
+}
+
+[data-style="vivid"] .font-display { font-weight: 800; letter-spacing: -0.02em; }
+[data-style="vivid"] [data-slot="card"] {
+  border-color: transparent;
+  border-radius: 1.75rem;
+  box-shadow: 0 14px 34px -20px rgba(80, 55, 210, 0.38);
+}
+html.dark[data-style="vivid"] [data-slot="card"] { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04); }
+
+/* every filled primary action */
+[data-style="vivid"] button.bg-primary,
+[data-style="vivid"] [data-slot="button"].bg-primary {
+  background-image: linear-gradient(135deg, #7c3aed, #ec4899);
+  color: #fff;
+  box-shadow: 0 10px 22px -10px rgba(168, 55, 220, 0.7);
+}
+[data-style="vivid"] i.bg-primary { background-image: linear-gradient(90deg, #8b5cf6, #ec4899); }
+
+/* saturated KPI tiles */
+[data-style="vivid"] [data-kpi] { color: #fff !important; box-shadow: 0 16px 28px -18px rgba(0, 0, 0, 0.5); }
+[data-style="vivid"] [data-kpi="received"] { background: linear-gradient(135deg, #34d399, #059669) !important; }
+[data-style="vivid"] [data-kpi="spent"] { background: linear-gradient(135deg, #fb7185, #e11d48) !important; }
+[data-style="vivid"] [data-kpi="toreceive"] { background: linear-gradient(135deg, #fbbf24, #f97316) !important; }
+[data-style="vivid"] [data-kpi="topay"] { background: linear-gradient(135deg, #38bdf8, #4f46e5) !important; }
+[data-style="vivid"] [data-kpi] * { color: inherit !important; }
+
+/* hero shine */
+[data-style="vivid"] .jaali::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(18rem 12rem at 88% -12%, rgba(255, 255, 255, 0.38), transparent 62%),
+    radial-gradient(14rem 10rem at 8% 125%, rgba(255, 255, 255, 0.2), transparent 62%);
+}
+
+/* every project gets its own colour */
+[data-style="vivid"] .proj-card { border-top: 4px solid var(--pc); }
+[data-style="vivid"] .proj-ring { color: var(--pc); }
+
+@media (max-width: 1023px) {
+  [data-style="vivid"] nav.dock {
+    left: 0.75rem; right: 0.75rem; bottom: calc(0.6rem + env(safe-area-inset-bottom));
+    border-radius: 1.75rem; border: 1px solid var(--border);
+    box-shadow: 0 20px 40px -18px rgba(70, 40, 190, 0.5); padding-bottom: 0 !important;
   }
 }
