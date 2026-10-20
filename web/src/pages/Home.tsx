@@ -12,7 +12,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { Logo, SectionTitle, EmptyState } from '@/components/app/common'
-import { ProjectCard, Ring, TxnRow } from '@/components/app/rows'
+import { ProjectCard, TxnRow } from '@/components/app/rows'
 import { useData } from '@/lib/store'
 import { useModal } from '@/app/modal'
 import { INR, MON, SECTIONS, SHORT, fmt, today } from '@/engine/engine.js'
@@ -128,20 +128,22 @@ export default function Home() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <BlurFade className="col-span-2 md:col-span-4">
-          <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg dark:from-[#3c4080] dark:to-[#22244d]">
-            <div className="absolute -right-12 -top-12 size-44 rounded-full bg-white/10" />
-            <div className="relative flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Cash in hand · all projects</div>
-                <div className="font-display mt-1 text-[42px] font-extrabold leading-none tn">
-                  {D.cash < 0 ? '−' : ''}₹<NumberTicker value={Math.abs(D.cash)} className="text-white dark:text-white" />
-                </div>
-                <span className="mt-3 inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">Received − spent</span>
+          <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_100%_0%,rgba(255,255,255,.16),transparent_55%)]" />
+            <div className="relative">
+              <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Cash in hand · all projects</div>
+              <div className="font-display mt-1 text-[42px] font-extrabold leading-none tn">
+                {D.cash < 0 ? '−' : ''}₹<NumberTicker value={Math.abs(D.cash)} className="text-white dark:text-white" />
               </div>
-              <div className="relative grid place-items-center text-[var(--hero-glow)]">
-                <Ring pct={pct} size={104} stroke={9} />
-                <div className="absolute text-center"><div className="font-display text-xl font-extrabold text-white">{pct}%</div></div>
-                <div className="mt-1 text-xs opacity-80 text-white">collected of {SHORT(D.totalValue)}</div>
+              <div className="mt-5">
+                <div className="mb-1.5 flex items-end justify-between gap-3 text-xs">
+                  <span className="opacity-80">Collected from clients</span>
+                  <span className="font-bold tn">{SHORT(D.received)} <span className="font-medium opacity-75">of {SHORT(D.totalValue)}</span></span>
+                </div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-white/20" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+                  <motion.i className="block h-full rounded-full bg-[var(--hero-glow)]" initial={{ width: 0 }} animate={{ width: Math.min(100, pct) + '%' }} transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }} />
+                </div>
+                <div className="mt-1.5 text-right text-xs font-bold tn">{pct}%</div>
               </div>
             </div>
             <BorderBeam size={120} duration={9} colorFrom="#f0c36d" colorTo="#ffffff" />

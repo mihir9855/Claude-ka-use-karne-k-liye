@@ -60,7 +60,7 @@ function Detail({ id }: { id: string }) {
 
       <BlurFade>
         <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg dark:from-[#3c4080] dark:to-[#22244d]">
-          <div className="absolute -right-12 -top-14 size-48 rounded-full bg-white/10" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_100%_0%,rgba(255,255,255,.16),transparent_55%)]" />
           <div className="relative">
             <div className="text-xs opacity-80">{[p.client, p.start ? 'started ' + fmt(p.start) : ''].filter(Boolean).join(' · ')}</div>
             <h1 className="font-display mt-0.5 text-3xl font-extrabold leading-tight">{p.name}</h1>
