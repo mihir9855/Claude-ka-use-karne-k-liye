@@ -191,3 +191,95 @@ main .grid > *, main .flex > * { min-width: 0; }
 
 /* The artifact viewer and some WebViews paint a white body; keep the page on the theme colour in both modes. */
 html, body { background-color: var(--background) !important; color: var(--foreground); }
+
+/* ================= "Mandir" look: midnight indigo, gold, jaali lattice, serif numbers ================= */
+@font-face {
+  font-family: "Fraunces Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+.mandir-only { display: none; }
+[data-style="mandir"] .mandir-only { display: revert; }
+
+:root[data-style="mandir"] {
+  --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --background: #f6f4ee;
+  --foreground: #151833;
+  --card: #ffffff;
+  --card-foreground: #151833;
+  --popover: #ffffff;
+  --primary: #262b80;
+  --primary-foreground: #ffffff;
+  --secondary: #efeadb;
+  --muted: #f1eee4;
+  --muted-foreground: #6b6a7c;
+  --accent: #f5ecd0;
+  --accent-foreground: #7a5a0c;
+  --border: #e9e2cf;
+  --input: #ddd5bd;
+  --ring: #262b80;
+  --hero-a: #0d1138;
+  --hero-b: #2b3190;
+  --hero-glow: #f0cd6e;
+  --gold: #c9962b;
+}
+html.dark[data-style="mandir"] {
+  --background: #080b22;
+  --foreground: #f3f1e8;
+  --card: #101535;
+  --card-foreground: #f3f1e8;
+  --popover: #151a40;
+  --primary: #e6b84c;
+  --primary-foreground: #1a1330;
+  --secondary: #1a2048;
+  --muted: #151a3c;
+  --muted-foreground: #9a9fc4;
+  --accent: #2a2540;
+  --accent-foreground: #f0cd6e;
+  --border: #232a58;
+  --input: #2c3466;
+  --ring: #e6b84c;
+  --hero-a: #0a0e33;
+  --hero-b: #1b2160;
+  --gold: #e6b84c;
+}
+
+[data-style="mandir"] .font-display { font-weight: 700; letter-spacing: -0.01em; }
+[data-style="mandir"] .kpi-arch { border-radius: 2.6rem 2.6rem 1.1rem 1.1rem !important; }
+[data-style="mandir"] [data-slot="card"] { box-shadow: 0 1px 0 rgba(201, 150, 43, 0.14), 0 14px 30px -22px rgba(20, 24, 70, 0.35); }
+[data-style="mandir"] .dark [data-slot="card"], html.dark[data-style="mandir"] [data-slot="card"] { box-shadow: 0 1px 0 rgba(230, 184, 76, 0.12); }
+
+/* gold buttons for every filled primary action */
+[data-style="mandir"] button.bg-primary,
+[data-style="mandir"] [data-slot="button"].bg-primary {
+  background-image: linear-gradient(135deg, #f6d985, #d9a52f 55%, #c28a1f);
+  color: #1a1530;
+  box-shadow: 0 8px 20px -10px rgba(201, 150, 43, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+[data-style="mandir"] i.bg-primary { background-image: linear-gradient(90deg, #f6d985, #c9962b); }
+
+/* hero: jaali lattice + temple watermark */
+.jaali { position: relative; isolation: isolate; }
+[data-style="mandir"] .jaali::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='none' stroke='%23F0CD6E' stroke-opacity='.3' stroke-width='1'%3E%3Cpath d='M22 2 42 22 22 42 2 22Z'/%3E%3Ccircle cx='22' cy='22' r='7'/%3E%3Cpath d='M22 15 29 22 22 29 15 22Z'/%3E%3C/g%3E%3C/svg%3E");
+  -webkit-mask-image: linear-gradient(100deg, transparent 20%, #000 90%);
+  mask-image: linear-gradient(100deg, transparent 20%, #000 90%);
+}
+.hero-mark { position: absolute; right: -0.5rem; bottom: -0.25rem; height: 6.5rem; width: auto; opacity: 0.16; pointer-events: none; z-index: -1; }
+[data-style="mandir"] .gold-text { background: linear-gradient(180deg, #fff3c4, #f0cd6e 60%, #d9a52f); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* floating dock on phones */
+@media (max-width: 1023px) {
+  [data-style="mandir"] nav.dock {
+    left: 0.75rem; right: 0.75rem; bottom: calc(0.6rem + env(safe-area-inset-bottom));
+    border-radius: 1.6rem; border: 1px solid color-mix(in oklab, var(--gold) 35%, var(--border));
+    box-shadow: 0 18px 40px -16px rgba(15, 18, 60, 0.45); padding-bottom: 0 !important;
+  }
+}

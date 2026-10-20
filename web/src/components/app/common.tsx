@@ -65,3 +65,14 @@ export function Paper({ html, className }: { html: string; className?: string })
   }, [html])
   return <div ref={ref} className={className} dangerouslySetInnerHTML={{ __html: html }} />
 }
+
+/** Gold line - diamond - line, a small carved-stone divider. */
+export function Ornament({ className }: { className?: string }) {
+  return (
+    <div className={cn('flex items-center gap-2 text-[var(--gold)]', className)} aria-hidden>
+      <span className="h-px w-10 bg-current opacity-60" />
+      <span className="size-1.5 rotate-45 bg-current" />
+      <span className="h-px flex-1 bg-gradient-to-r from-current to-transparent opacity-50" />
+    </div>
+  )
+}

@@ -110,7 +110,7 @@ function Body() {
         </main>
       </div>
 
-      <nav className="safe-b fixed inset-x-0 bottom-0 z-30 border-t bg-card/90 backdrop-blur-xl lg:hidden" aria-label="Main">
+      <nav className="dock safe-b fixed inset-x-0 bottom-0 z-30 border-t bg-card/90 backdrop-blur-xl lg:hidden" aria-label="Main">
         <div className="mx-auto grid max-w-lg grid-cols-5 px-2 pb-1 pt-1.5">
           {NAV.map((n) => {
             const on = page === n.page

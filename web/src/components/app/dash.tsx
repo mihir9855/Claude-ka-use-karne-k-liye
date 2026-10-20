@@ -7,6 +7,7 @@ import { BorderBeam } from '@/magicui/border-beam'
 import { Card } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { SectionTitle } from '@/components/app/common'
+import { LH } from '@/engine/engine.js'
 import { TxnRow } from '@/components/app/rows'
 import { INR, MON, SECTIONS, SHORT, fmt } from '@/engine/engine.js'
 import { cn } from '@/lib/utils'
@@ -16,12 +17,13 @@ export const SEC_COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', '
 export function CashHero({ D, className }: { D: any; className?: string }) {
   const pct = D.totalValue ? Math.round((D.received / D.totalValue) * 100) : 0
   return (
-    <div className={cn('relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg', className)}>
+    <div className={cn('jaali relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg', className)}>
+      <img src={LH.w} alt="" className="hero-mark mandir-only" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_100%_0%,rgba(255,255,255,.16),transparent_55%)]" />
       <div className="relative">
         <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Cash in hand · all projects</div>
-        <div className="font-display mt-1 text-[42px] font-extrabold leading-none tn">
-          {D.cash < 0 ? '−' : ''}₹<NumberTicker value={Math.abs(D.cash)} className="text-white dark:text-white" />
+        <div className="font-display gold-text mt-1 text-[44px] font-extrabold leading-none tn">
+          {D.cash < 0 ? '−' : ''}₹<NumberTicker value={Math.abs(D.cash)} className="text-inherit dark:text-inherit" />
         </div>
         <div className="mt-5">
           <div className="mb-1.5 flex items-end justify-between gap-3 text-xs">
@@ -42,7 +44,7 @@ export function CashHero({ D, className }: { D: any; className?: string }) {
 export function Kpi({ label, value, note, tone, i = 0, className }: { label: string; value: number; note: string; tone: string; i?: number; className?: string }) {
   return (
     <BlurFade delay={0.05 * i} inView className={className}>
-      <div className={cn('relative h-full overflow-hidden rounded-3xl p-4', tone)}>
+      <div className={cn('kpi-arch relative h-full overflow-hidden rounded-3xl p-4', tone)}>
         <div className="text-xs font-semibold opacity-80">{label}</div>
         <div className="font-display tn mt-1 text-[26px] font-extrabold leading-tight">{SHORT(value)}</div>
         <div className="mt-1 text-xs opacity-75">{note}</div>

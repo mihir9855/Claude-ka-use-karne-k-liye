@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { CashHero, DonutCard, DueCard, HeatCard, Kpis, MonthsCard, RecentCard, WaterfallCard } from '@/components/app/dash'
-import { SectionTitle } from '@/components/app/common'
+import { Ornament, SectionTitle } from '@/components/app/common'
 import Home from '@/pages/Home'
 import { useData } from '@/lib/store'
 import { useModal } from '@/app/modal'
@@ -28,6 +28,7 @@ export default function DHome() {
         <div>
           <div className="text-sm text-muted-foreground">{fmt(today())}</div>
           <h1 className="font-display text-3xl font-extrabold">{greet}</h1>
+          <Ornament className="mandir-only mt-3 w-72" />
         </div>
       </div>
 
@@ -54,14 +55,14 @@ export default function DHome() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
-                  <th className="pb-2 font-semibold">Project</th><th className="pb-2 font-semibold">Stage</th><th className="w-36 pb-2 font-semibold">Progress</th>
+                  <th className="pb-2 font-semibold">Project</th><th className="pb-2 font-semibold">Stage</th><th className="w-28 pb-2 font-semibold">Progress</th>
                   <th className="pb-2 pl-4 text-right font-semibold">Received</th><th className="pb-2 pl-4 text-right font-semibold">Spent</th><th className="pb-2 pl-4 text-right font-semibold">Deal value</th>
                 </tr>
               </thead>
               <tbody>
                 {list.map((p: any) => (
                   <tr key={p.id} onClick={() => go('projects', p.id)} className="cursor-pointer border-b last:border-0 transition hover:bg-muted/60">
-                    <td className="max-w-64 py-3 pr-3"><b className="block truncate">{p.name}</b><span className="text-xs text-muted-foreground">{p.client}</span></td>
+                    <td className="max-w-48 py-3 pr-3"><b className="block truncate">{p.name}</b><span className="text-xs text-muted-foreground">{p.client}</span></td>
                     <td className="py-3 pr-3"><Badge variant="secondary" className={'rounded-full ' + (p.status === 'done' ? 'bg-income-soft text-income' : 'bg-primary/10 text-primary')}>{p.status === 'done' ? 'Completed' : p.stages[p.curIdx]?.name}</Badge></td>
                     <td className="py-3 pr-4"><div className="flex items-center gap-2"><div className="h-2 flex-1 overflow-hidden rounded-full bg-muted"><i className="block h-full rounded-full bg-primary" style={{ width: p.progress + '%' }} /></div><span className="tn w-9 text-right text-xs font-bold">{p.progress}%</span></div></td>
                     <td className="tn whitespace-nowrap py-3 pl-4 text-right font-semibold text-income">{INR(p.received)}</td>

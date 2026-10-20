@@ -6,6 +6,7 @@ import { Root } from '@/app/Shell'
 import { warmFonts } from '@/engine/engine.js'
 
 warmFonts()
+try { document.documentElement.dataset.style = localStorage.getItem('bt-style') || 'mandir' } catch { document.documentElement.dataset.style = 'mandir' }
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

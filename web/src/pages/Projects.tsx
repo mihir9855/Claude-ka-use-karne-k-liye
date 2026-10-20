@@ -13,7 +13,7 @@ import { ProjectCard, TxnRow } from '@/components/app/rows'
 import { useData } from '@/lib/store'
 import { useModal } from '@/app/modal'
 import { go } from '@/lib/router'
-import { INR, SECTIONS, SHORT, fmt } from '@/engine/engine.js'
+import { INR, LH, SECTIONS, SHORT, fmt } from '@/engine/engine.js'
 import { deleteProject, editProjectForm, newEntryForm, newProjectForm, toggleStage } from '@/engine/actions.js'
 
 const SEC = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
@@ -59,7 +59,8 @@ export function Detail({ id, embedded }: { id: string; embedded?: boolean }) {
       </div>
 
       <BlurFade>
-        <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg dark:from-[#3c4080] dark:to-[#22244d]">
+        <div className="jaali relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg">
+          <img src={LH.w} alt="" className="hero-mark mandir-only" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_100%_0%,rgba(255,255,255,.16),transparent_55%)]" />
           <div className="relative">
             <div className="text-xs opacity-80">{[p.client, p.start ? 'started ' + fmt(p.start) : ''].filter(Boolean).join(' · ')}</div>
