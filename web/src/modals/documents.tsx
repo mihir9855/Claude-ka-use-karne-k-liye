@@ -5,7 +5,6 @@ import { Sheet } from '@/components/app/sheet'
 import { Paper } from '@/components/app/common'
 import { Chips, Field, FormError, MoneyInput, TextInput } from '@/components/app/fields'
 import { Lottie } from '@/components/Lottie'
-import { convertAll, convertTyping, type TypeMode } from '@/lib/translit'
 import { filesToAttachments, MAX_ATTACHMENTS, type Attachment } from '@/lib/attach'
 import check from '@/lib/check.json'
 import { useModal } from '@/app/modal'
@@ -98,11 +97,6 @@ export function ProposalModal({ form }: { form: any }) {
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const [attErr, setAttErr] = useState('')
-  const [tm, setTm] = useState<TypeMode>('')
-  const [hardD, setHardD] = useState(true)
-  const [hardT, setHardT] = useState(false)
-  const tt = (v: string) => convertTyping(v, tm, { hardD, hardT })
-  const ta = (v: string) => convertAll(v, tm, { hardD, hardT })
   const set = (k: string, v: any) => setF((p: any) => ({ ...p, [k]: v, touched: p.touched }))
   const lg = f.lg
   const setOpt = (i: number, k: string, v: string) => setF((p: any) => ({ ...p, options: p.options.map((o: any, j: number) => (j === i ? { ...o, [k]: v } : o)) }))
@@ -128,26 +122,17 @@ export function ProposalModal({ form }: { form: any }) {
         ))}
       </div>
       <Field label="Language"><Chips options={langOpts(['gu', 'hi', 'en'])} value={lg} onChange={setLg} /></Field>
-      <Field label="Typing" hint={tm ? 'Type in English letters, for example: shree khodiyaar maataa mandir. Each word turns into ' + (tm === 'gu' ? 'Gujarati' : 'Hindi') + ' when you press space. Use aa for a long vowel. A capital letter gives the other sound (for example D when d is set to hard).' : undefined}>
-        <Chips options={[{ value: '', label: 'Normal' }, { value: 'gu', label: 'ગુજરાતી (type in English letters)' }, { value: 'hi', label: 'हिन्दी (type in English letters)' }] as { value: TypeMode; label: string }[]} value={tm} onChange={(v) => setTm(v)} />
-        {tm ? (
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" aria-pressed={hardD} onClick={() => setHardD((v) => !v)} className={'rounded-full border px-3 py-1.5 text-sm font-semibold ' + (hardD ? 'border-primary bg-primary/10 text-primary' : 'bg-background text-muted-foreground')}>d = {tm === 'gu' ? 'ડ' : 'ड'} {hardD ? '(on)' : '(off: d = ' + (tm === 'gu' ? 'દ' : 'द') + ')'}</button>
-            <button type="button" aria-pressed={hardT} onClick={() => setHardT((v) => !v)} className={'rounded-full border px-3 py-1.5 text-sm font-semibold ' + (hardT ? 'border-primary bg-primary/10 text-primary' : 'bg-background text-muted-foreground')}>t = {tm === 'gu' ? 'ટ' : 'ट'} {hardT ? '(on)' : '(off: t = ' + (tm === 'gu' ? 'ત' : 'त') + ')'}</button>
-          </div>
-        ) : null}
-      </Field>
-      <Field label="Which God's temple (e.g. Khodiyar Mata)"><TextInput value={f.god} onChange={(v) => set('god', tt(v))} onBlur={(e) => set('god', ta(e.currentTarget.value))} placeholder={ph('ખોડિયાર માતા', 'खोड़ियार माता', 'Khodiyar Mata')} /></Field>
-      <Field label="Place (village or city)"><TextInput value={f.loc} onChange={(v) => set('loc', tt(v))} onBlur={(e) => set('loc', ta(e.currentTarget.value))} placeholder={ph('પુનધરા', 'पुनधरा', 'Punadhara')} /></Field>
+      <Field label="Which God's temple (e.g. Khodiyar Mata)"><TextInput value={f.god} onChange={(v) => set('god', v)} placeholder={ph('ખોડિયાર માતા', 'खोड़ियार माता', 'Khodiyar Mata')} /></Field>
+      <Field label="Place (village or city)"><TextInput value={f.loc} onChange={(v) => set('loc', v)} placeholder={ph('પુનધરા', 'पुनधरा', 'Punadhara')} /></Field>
       <Chips className="mt-2" options={[{ value: 'v', label: 'Village' }, { value: 'c', label: 'Town or city' }]} value={f.pt} onChange={(v) => set('pt', v)} />
       <Field label="Date"><TextInput type="date" value={f.date} onChange={(v) => set('date', v)} /></Field>
 
       {f.kind === 'small' ? (
         <>
-          <Field label="What is being made"><TextInput value={f.item} onChange={(v) => set('item', tt(v))} onBlur={(e) => set('item', ta(e.currentTarget.value))} placeholder={ITEMS[lg][0]} /></Field>
+          <Field label="What is being made"><TextInput value={f.item} onChange={(v) => set('item', v)} placeholder={ITEMS[lg][0]} /></Field>
           <Chips className="mt-2" options={ITEMS[lg].map((s: string) => ({ value: s, label: s }))} value={f.item} onChange={(v) => set('item', v)} />
-          <Field label="Design and size as per (name, optional)"><TextInput value={f.by} onChange={(v) => set('by', tt(v))} onBlur={(e) => set('by', ta(e.currentTarget.value))} placeholder={ph('દીનેશભાઈ', 'दिनेशभाई', 'Dineshbhai')} /></Field>
-          <Field label="Stone / material"><TextInput value={f.options[0].stone} onChange={(v) => setOpt(0, 'stone', tt(v))} onBlur={(e) => setOpt(0, 'stone', ta(e.currentTarget.value))} /></Field>
+          <Field label="Design and size as per (name, optional)"><TextInput value={f.by} onChange={(v) => set('by', v)} placeholder={ph('દીનેશભાઈ', 'दिनेशभाई', 'Dineshbhai')} /></Field>
+          <Field label="Stone / material"><TextInput value={f.options[0].stone} onChange={(v) => setOpt(0, 'stone', v)} /></Field>
           <Chips className="mt-2" options={STONES[lg].map((s: string) => ({ value: s, label: s }))} value={f.options[0].stone} onChange={(v) => setOpt(0, 'stone', v)} />
           <Field label="Total amount (Rs.)"><MoneyInput value={f.options[0].mandir} onChange={(v) => setOpt(0, 'mandir', v)} /></Field>
         </>
@@ -157,7 +142,7 @@ export function ProposalModal({ form }: { form: any }) {
             {f.options.map((o: any, i: number) => (
               <div key={o.id} className="rounded-2xl border bg-background p-3">
                 <div className="mb-2 flex items-center justify-between"><b>Option {i + 1}</b>{f.options.length > 1 ? <button onClick={() => setF((p: any) => ({ ...p, options: p.options.filter((_: any, j: number) => j !== i) }))} className="text-xs font-semibold text-expense">Remove</button> : null}</div>
-                <TextInput value={o.stone} onChange={(v) => setOpt(i, 'stone', tt(v))} onBlur={(e) => setOpt(i, 'stone', ta(e.currentTarget.value))} placeholder="Stone / material" />
+                <TextInput value={o.stone} onChange={(v) => setOpt(i, 'stone', v)} placeholder="Stone / material" />
                 <Chips className="mt-2" options={STONES[lg].map((s: string) => ({ value: s, label: s }))} value={o.stone} onChange={(v) => setOpt(i, 'stone', v)} />
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <label className="grid gap-1 text-xs text-muted-foreground">Rate per sq ft (optional)<MoneyInput size="sm" value={o.sqft || ''} onChange={(v) => setOpt(i, 'sqft', v)} placeholder="optional" /></label>
@@ -171,7 +156,7 @@ export function ProposalModal({ form }: { form: any }) {
       )}
 
       <Field label="Extra details (optional)" hint="Write anything else you want in this proposal. It comes after the rates and before the notes.">
-        <textarea value={f.extra || ''} onChange={(e) => set('extra', tt(e.target.value))} onBlur={(e) => set('extra', ta(e.currentTarget.value))} placeholder="e.g. Size, design, delivery time, payment schedule…" className="min-h-24 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40" />
+        <textarea value={f.extra || ''} onChange={(e) => set('extra', e.target.value)} placeholder="e.g. Size, design, delivery time, payment schedule…" className="min-h-24 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40" />
       </Field>
       <Field label="Pictures or PDF (optional)" hint="JPG, PNG or PDF. Each picture, and each page of a PDF, is added as its own page at the end of the proposal.">
         <div className="grid gap-2">
@@ -203,7 +188,7 @@ export function ProposalModal({ form }: { form: any }) {
           {f.notes.map((x: string, i: number) => (
             <div key={i} className="flex items-start gap-2">
               <span className="w-5 pt-3 text-sm text-muted-foreground">{i + 1}.</span>
-              <textarea value={x} onChange={(e) => setNote(i, tt(e.target.value))} onBlur={(e) => setNote(i, ta(e.currentTarget.value))} className="min-h-20 flex-1 rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40" />
+              <textarea value={x} onChange={(e) => setNote(i, e.target.value)} className="min-h-20 flex-1 rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40" />
               <button aria-label="Remove this note" onClick={() => setF((p: any) => ({ ...p, touched: true, notes: p.notes.filter((_: any, j: number) => j !== i) }))} className="grid size-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">×</button>
             </div>
           ))}
@@ -214,7 +199,7 @@ export function ProposalModal({ form }: { form: any }) {
           </div>
         </div>
       </Field>
-      <Field label="Signed by"><TextInput value={f.signer} onChange={(v) => set('signer', tt(v))} onBlur={(e) => set('signer', ta(e.currentTarget.value))} placeholder="Manoj Vinodrai Sompura" /></Field>
+      <Field label="Signed by"><TextInput value={f.signer} onChange={(v) => set('signer', v)} placeholder="Manoj Vinodrai Sompura" /></Field>
       <FormError msg={err} />
     </Sheet>
   )
