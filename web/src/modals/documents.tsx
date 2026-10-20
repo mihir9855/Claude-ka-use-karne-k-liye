@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from 'react'
-import { Copy, Download, FileText, Pencil, Printer, Share2, Trash2 } from 'lucide-react'
+import { Copy, Download, FileText, Paperclip, Pencil, Printer, Share2, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet } from '@/components/app/sheet'
 import { Paper } from '@/components/app/common'
 import { Chips, Field, FormError, MoneyInput, TextInput } from '@/components/app/fields'
 import { Lottie } from '@/components/Lottie'
+import { filesToAttachments, MAX_ATTACHMENTS, type Attachment } from '@/lib/attach'
 import check from '@/lib/check.json'
 import { useModal } from '@/app/modal'
 import { useData } from '@/lib/store'
@@ -94,6 +95,8 @@ export function ProposalModal({ form }: { form: any }) {
   const { open, close } = useModal()
   const [f, setF] = useState<any>(form || proposalForm())
   const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [attErr, setAttErr] = useState('')
   const set = (k: string, v: any) => setF((p: any) => ({ ...p, [k]: v, touched: p.touched }))
   const lg = f.lg
   const setOpt = (i: number, k: string, v: string) => setF((p: any) => ({ ...p, options: p.options.map((o: any, j: number) => (j === i ? { ...o, [k]: v } : o)) }))
@@ -152,6 +155,34 @@ export function ProposalModal({ form }: { form: any }) {
         </Field>
       )}
 
+      <Field label="Extra details (optional)" hint="Write anything else you want in this proposal. It comes after the rates and before the notes.">
+        <textarea value={f.extra || ''} onChange={(e) => set('extra', e.target.value)} placeholder="e.g. Size, design, delivery time, payment schedule…" className="min-h-24 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40" />
+      </Field>
+      <Field label="Pictures or PDF (optional)" hint="JPG, PNG or PDF. Each picture, and each page of a PDF, is added as its own page at the end of the proposal.">
+        <div className="grid gap-2">
+          {(f.attach || []).map((a: Attachment) => (
+            <div key={a.id} className="flex items-center gap-3 rounded-xl border bg-background p-2">
+              <img src={a.data} alt="" className="size-12 shrink-0 rounded-lg object-cover" />
+              <span className="min-w-0 flex-1 truncate text-sm">{a.name}</span>
+              <button type="button" aria-label="Remove" onClick={() => setF((p: any) => ({ ...p, attach: p.attach.filter((x: Attachment) => x.id !== a.id) }))} className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">×</button>
+            </div>
+          ))}
+          <label className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed bg-background text-sm font-semibold text-muted-foreground transition hover:border-primary hover:text-foreground">
+            <Paperclip className="size-4" /> {busy ? 'Adding…' : 'Attach pictures or PDF'}
+            <input type="file" multiple accept="image/jpeg,image/png,application/pdf,.pdf,.jpg,.jpeg,.png" className="sr-only" disabled={busy} onChange={async (e) => {
+              const files = Array.from(e.target.files || [])
+              e.target.value = ''
+              if (!files.length) return
+              setBusy(true)
+              const r = await filesToAttachments(files, MAX_ATTACHMENTS - (f.attach || []).length)
+              setF((p: any) => ({ ...p, attach: [...(p.attach || []), ...r.list] }))
+              setAttErr(r.error)
+              setBusy(false)
+            }} />
+          </label>
+          {attErr ? <p className="text-xs font-semibold text-expense">{attErr}</p> : null}
+        </div>
+      </Field>
       <Field label="Notes and terms (ready-made, you can edit)">
         <div className="grid gap-2">
           {f.notes.map((x: string, i: number) => (

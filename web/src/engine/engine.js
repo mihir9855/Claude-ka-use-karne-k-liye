@@ -99,6 +99,8 @@ export var TAG={en:['SHILP-VASTU TEMPLES · MURTI SCULPTURING','JAIN PARIKAR · 
 export function hdrImgHtml(bw,lg,W,imgStyle){lg=TAG[lg]?lg:'en';var fam=lg==='en'?"'Noto Serif',Georgia,'Times New Roman',serif":LANG[lg].font,fs=(W*0.0135).toFixed(2),lh=(W*27/1500).toFixed(2);
   return '<div style="position:relative;flex-shrink:0"><img src="'+(bw?LH.b:LH.c)+'" alt="Brihad Temple Construction Co." style="'+imgStyle+'"><div style="position:absolute;right:4.8%;top:'+(62/285*100).toFixed(2)+'%;text-align:right;font-family:'+fam+';font-size:'+fs+'px;line-height:'+lh+'px;color:#1F2230;letter-spacing:'+(lg==='en'?'.06em':'0')+';white-space:nowrap">'+TAG[lg][0]+'<br>'+TAG[lg][1]+'</div></div>'}
 export function hdrTagPdf(d,W,y0){d.setTextColor(31,34,48);d.setFont('times','normal');d.setFontSize(W*0.0378);var x=W*1428/1500;d.text(TAG.en[0],x,y0+W*82/1500,{align:'right'});d.text(TAG.en[1],x,y0+W*109/1500,{align:'right'})}
+export function attGet(id){try{return JSON.parse(localStorage.getItem('bt-att-'+id)||'[]')}catch(e){return []}}
+export function attPut(id,list){try{if(list&&list.length)localStorage.setItem('bt-att-'+id,JSON.stringify(list));else localStorage.removeItem('bt-att-'+id)}catch(e){return false}return true}
 export var REFL={en:{Bank:'Ref. no.',Cheque:'Cheque no.'},hi:{Bank:'संदर्भ क्र.',Cheque:'चेक क्र.'},gu:{Bank:'સંદર્ભ ક્રમાંક',Cheque:'ચેક નંબર'}};
 export function refSfx(t,lg){lg=REFL[lg]?lg:'en';var r=String(t.ref||'').trim();if(!r||(t.mode!=='Bank'&&t.mode!=='Cheque'))return '';return ' · '+REFL[lg][t.mode]+' '+r}
 export function modeStr(t,lg){lg=REFL[lg]?lg:'en';var m=(LANG[lg]&&LANG[lg].mode&&LANG[lg].mode[t.mode])||t.mode;return m+refSfx(t,lg)}
@@ -414,6 +416,7 @@ export function proposalPages(pr,lg){
     if(pr.kind==='small'){var o0=(pr.options||[])[0]||{},am=num(o0.mandir);blocks.push('<div style="margin:'+m(22)+'px 0 0;font-size:'+fs(15.5)+'px;line-height:'+lh(2)+';font-weight:600;text-align:center">'+T.small(esc(pr.item||''),esc(pr.by||''),esc(o0.stone||''),amtTxt(am),esc(wordsL(am,lg)))+'</div>')}
     else (pr.options||[]).forEach(function(o){var l1=num(o.mandir)?T.tem(esc(o.stone||''),amtTxt(num(o.mandir)),num(o.sqft)?amtTxt(num(o.sqft)):''):'',l2=num(o.rang)?T.ran(esc(o.stone||''),amtTxt(num(o.rang))):'';if(!l1&&!l2)return;n++;
       blocks.push('<div style="margin:'+m(20)+'px 0 0;font-size:'+fs(15.5)+'px;line-height:'+lh(2)+';font-weight:600;text-align:center">'+n+'.&nbsp; '+l1+(l1&&l2?'<br>':'')+l2+'</div>')});
+    if(String(pr.extra||'').trim())blocks.push('<div style="margin:'+m(20)+'px 0 0;font-size:'+fs(15)+'px;line-height:'+lh(1.9)+';white-space:pre-wrap;text-align:justify">'+esc(String(pr.extra).trim())+'</div>');
     notes.forEach(function(x,i){blocks.push((i===0?'\u0001<div style="font-weight:700;font-size:16px;margin:'+m(26)+'px 0 4px">'+T.note+'</div>':'')+'<div style="display:flex;gap:10px;margin:'+m(8)+'px 0 0;font-size:'+fs(14.5)+'px;line-height:'+lh(1.85)+'"><span style="width:26px;flex-shrink:0">'+(i+1)+'.</span><div>'+esc(x)+'</div></div>')});
     var sig='<div style="margin-top:'+m(30)+'px;text-align:right;font-size:15px"><div style="height:'+Math.max(40,m(60))+'px"></div><b>Pro. '+esc(pr.signer||'')+'</b></div>';
     if(together&&notes.length){var last=blocks.pop(),mk=last.charAt(0)==='\u0001';blocks.push((mk?'\u0001':'')+'<div>'+last.replace('\u0001','')+sig+'</div>')}else blocks.push(sig);
@@ -432,9 +435,10 @@ export function proposalPages(pr,lg){
   var res,ks=[1,0.85,0.72,0.6];
   for(var i=0;i<ks.length;i++){res=layout(ks[i],false);if(!res.orphan||i===ks.length-1)break;document.body.removeChild(res.host)}
   if(res.orphan){document.body.removeChild(res.host);res=layout(0.6,true)}
-  var pages=res.pages,total=pages.length;
+  var pages=res.pages,atts=attGet(pr.id),total=pages.length+atts.length;
   pages.forEach(function(pg,i){if(total>1){var s=document.createElement('div');s.style.cssText='position:absolute;right:52px;bottom:'+(FH+6)+'px;font-size:11px;color:#6E728A';s.textContent=(i+1)+' / '+total;pg.appendChild(s)}});
   var out=pages.map(function(pg){return pg.outerHTML});
+  atts.forEach(function(a,i){var pg=document.createElement('div');pg.className='pg';pg.style.fontFamily=T.font;pg.innerHTML='<div style="height:36px"></div><div style="padding:0 52px;height:'+(PH-FH-96)+'px;display:flex;align-items:center;justify-content:center"><img src="'+a.data+'" alt="" style="max-width:100%;max-height:100%;object-fit:contain"></div><img class="pf" src="'+LH.f+'" alt="" style="position:absolute;left:0;right:0;bottom:0;width:100%;height:'+FH+'px"><div style="position:absolute;right:52px;bottom:'+(FH+6)+'px;font-size:11px;color:#6E728A">'+(pages.length+i+1)+' / '+total+'</div>';out.push(pg.outerHTML)});
   document.body.removeChild(res.host);return out}
 export function proposalPreview(pr){var pg=proposalPages(pr,pr.lg||'gu');return pg.map(function(h){return '<div class="vfit" style="margin-bottom:12px"><div class="vin" data-w="794" style="width:794px"><div style="box-shadow:0 8px 24px rgba(0,0,0,.18)">'+h+'</div></div></div>'}).join('')}
 export function warmFonts(){try{if(document.fonts&&document.fonts.load){document.fonts.load('400 14px "Noto Sans Gujarati"','અ');document.fonts.load('700 14px "Noto Sans Gujarati"','અ');document.fonts.load('400 14px "Noto Sans Devanagari"','अ');document.fonts.load('700 14px "Noto Sans Devanagari"','अ')}}catch(e){}}
@@ -459,4 +463,5 @@ export function printProposal(id){
 export function proposalText(pr){var lg=pr.lg||'gu',T=PT[lg],god=stripGod(pr.god),loc=pr.loc||'',r=[T.head(god,loc),T.when(dmy(pr.date)),'',T.intro(god,loc,pr.pt!=='c'),''],n=0;
   if(pr.kind==='small'){var q0=(pr.options||[])[0]||{},qa=num(q0.mandir);r.push(T.small(pr.item||'',pr.by||'',q0.stone||'',amtTxt(qa),wordsL(qa,lg)))}
   else (pr.options||[]).forEach(function(o){var a=num(o.mandir)?T.tem(o.stone||'',amtTxt(num(o.mandir)),num(o.sqft)?amtTxt(num(o.sqft)):''):'',b=num(o.rang)?T.ran(o.stone||'',amtTxt(num(o.rang))):'';if(!a&&!b)return;n++;r.push(n+'. '+a);if(b)r.push('   '+b)});
+  if(String(pr.extra||'').trim())r.push('',String(pr.extra).trim());
   r.push('',T.note);(pr.notes||[]).forEach(function(x,i){if(String(x).trim())r.push((i+1)+'. '+x)});r.push('','Pro. '+(pr.signer||''));return r.join('\n')}
