@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Lottie } from "@/components/Lottie"
+import pulse from "@/pulse.json"
 import { Input } from "@/components/ui/input"
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
@@ -14,6 +16,7 @@ export default function App() {
           <CardDescription>Brihad Temple Finance – UI playground</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
+          <Lottie data={pulse} className="mx-auto size-20" />
           <Input placeholder="Project name" />
           <Dialog>
             <DialogTrigger asChild><Button>Open dialog</Button></DialogTrigger>
