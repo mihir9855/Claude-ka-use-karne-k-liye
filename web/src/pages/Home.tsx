@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { motion } from 'motion/react'
 import { FolderPlus, Search } from 'lucide-react'
 import { BlurFade } from '@/magicui/blur-fade'
-import { NumberTicker } from '@/magicui/number-ticker'
-import { BorderBeam } from '@/magicui/border-beam'
 import BlurText from '@/react-bits/TextAnimations/BlurText/BlurText'
 import { ShimmerButton } from '@/magicui/shimmer-button'
 import { Button } from '@/components/ui/button'
@@ -85,7 +83,7 @@ export default function Home() {
             <div className="relative">
               <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Cash in hand · all projects</div>
               <div className="font-display gold-text mt-1 whitespace-nowrap text-[clamp(28px,8.5vw,44px)] font-extrabold leading-none tn">
-                {D.cash < 0 ? '−' : ''}₹<NumberTicker value={Math.abs(D.cash)} className="text-inherit dark:text-inherit" />
+                {D.cash < 0 ? '−' : ''}₹{Math.abs(D.cash).toLocaleString('en-IN')}
               </div>
               <div className="mt-5">
                 <div className="mb-1.5 flex items-end justify-between gap-3 text-xs">
@@ -98,7 +96,6 @@ export default function Home() {
                 <div className="mt-1.5 text-right text-xs font-bold tn">{pct}%</div>
               </div>
             </div>
-            <BorderBeam size={120} duration={9} colorFrom="#f0c36d" colorTo="#ffffff" />
           </div>
         </BlurFade>
         <Kpi i={1} label="Received" value={D.received} note={`This month ${SHORT(D.month.inn)}`} tone="bg-income-soft text-income" />

@@ -2,8 +2,6 @@ import { useMemo, useState } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { motion } from 'motion/react'
 import { BlurFade } from '@/magicui/blur-fade'
-import { NumberTicker } from '@/magicui/number-ticker'
-import { BorderBeam } from '@/magicui/border-beam'
 import { Card } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { SectionTitle } from '@/components/app/common'
@@ -24,7 +22,7 @@ export function CashHero({ D, className }: { D: any; className?: string }) {
       <div className="relative">
         <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Cash in hand · all projects</div>
         <div className="font-display gold-text mt-1 whitespace-nowrap text-[clamp(28px,8.5vw,44px)] font-extrabold leading-none tn lg:text-[34px] xl:text-[44px]">
-          {D.cash < 0 ? '−' : ''}₹<NumberTicker value={Math.abs(D.cash)} className="text-inherit dark:text-inherit" />
+          {D.cash < 0 ? '−' : ''}₹{Math.abs(D.cash).toLocaleString('en-IN')}
         </div>
         <div className="mt-5">
           <div className="mb-1.5 flex items-end justify-between gap-3 text-xs">
@@ -37,7 +35,6 @@ export function CashHero({ D, className }: { D: any; className?: string }) {
           <div className="mt-1.5 text-right text-xs font-bold tn">{pct}%</div>
         </div>
       </div>
-      <BorderBeam size={120} duration={9} colorFrom="#f0c36d" colorTo="#ffffff" />
     </div>
   )
 }
