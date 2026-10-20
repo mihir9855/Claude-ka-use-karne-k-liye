@@ -94,6 +94,11 @@ export function printVoucher(id){
   try{window.print()}catch(e){done();toast('Print is not available here. Download the PDF and print that.')}}
 export var HI0=['शून्य','एक','दो','तीन','चार','पाँच','छह','सात','आठ','नौ','दस','ग्यारह','बारह','तेरह','चौदह','पंद्रह','सोलह','सत्रह','अठारह','उन्नीस','बीस','इक्कीस','बाईस','तेईस','चौबीस','पच्चीस','छब्बीस','सत्ताईस','अट्ठाईस','उनतीस','तीस','इकतीस','बत्तीस','तैंतीस','चौंतीस','पैंतीस','छत्तीस','सैंतीस','अड़तीस','उनतालीस','चालीस','इकतालीस','बयालीस','तैंतालीस','चौवालीस','पैंतालीस','छियालीस','सैंतालीस','अड़तालीस','उनचास','पचास','इक्यावन','बावन','तिरपन','चौवन','पचपन','छप्पन','सत्तावन','अट्ठावन','उनसठ','साठ','इकसठ','बासठ','तिरसठ','चौंसठ','पैंसठ','छियासठ','सड़सठ','अड़सठ','उनहत्तर','सत्तर','इकहत्तर','बहत्तर','तिहत्तर','चौहत्तर','पचहत्तर','छिहत्तर','सतहत्तर','अठहत्तर','उनासी','अस्सी','इक्यासी','बयासी','तिरासी','चौरासी','पचासी','छियासी','सत्तासी','अट्ठासी','नवासी','नब्बे','इक्यानवे','बानवे','तिरानवे','चौरानवे','पंचानवे','छियानवे','सत्तानवे','अट्ठानवे','निन्यानवे'];
 export var GU0=['શૂન્ય','એક','બે','ત્રણ','ચાર','પાંચ','છ','સાત','આઠ','નવ','દસ','અગિયાર','બાર','તેર','ચૌદ','પંદર','સોળ','સત્તર','અઢાર','ઓગણીસ','વીસ','એકવીસ','બાવીસ','ત્રેવીસ','ચોવીસ','પચ્ચીસ','છવ્વીસ','સત્તાવીસ','અઠ્ઠાવીસ','ઓગણત્રીસ','ત્રીસ','એકત્રીસ','બત્રીસ','તેત્રીસ','ચોત્રીસ','પાંત્રીસ','છત્રીસ','સાડત્રીસ','આડત્રીસ','ઓગણચાલીસ','ચાલીસ','એકતાલીસ','બેતાલીસ','ત્રેતાલીસ','ચુમાલીસ','પિસ્તાલીસ','છેતાલીસ','સુડતાલીસ','અડતાલીસ','ઓગણપચાસ','પચાસ','એકાવન','બાવન','ત્રેપન','ચોપન','પંચાવન','છપ્પન','સત્તાવન','અઠ્ઠાવન','ઓગણસાઠ','સાઠ','એકસઠ','બાસઠ','ત્રેસઠ','ચોસઠ','પાંસઠ','છાસઠ','સડસઠ','અડસઠ','ઓગણોસિત્તેર','સિત્તેર','એકોતેર','બોતેર','તોતેર','ચુંમોતેર','પંચોતેર','છોતેર','સિત્યોતેર','ઇઠ્યોતેર','ઓગણએંસી','એંસી','એક્યાસી','બ્યાસી','ત્યાસી','ચોર્યાસી','પંચ્યાસી','છ્યાસી','સત્યાસી','અઠ્યાસી','નેવ્યાસી','નેવું','એકાણું','બાણું','ત્રાણું','ચોરાણું','પંચાણું','છન્નું','સત્તાણું','અઠ્ઠાણું','નવ્વાણું'];
+export var TAG={en:['SHILP-VASTU TEMPLES · MURTI SCULPTURING','JAIN PARIKAR · JAIN PRATIMA · CNC ART'],hi:['शिल्प-वास्तु मंदिर · मूर्ति शिल्पकला','जैन परिकर · जैन प्रतिमा · सीएनसी आर्ट'],gu:['શિલ્પ-વાસ્તુ મંદિરો · મૂર્તિ શિલ્પકામ','જૈન પરિકર · જૈન પ્રતિમા · સીએનસી આર્ટ']};
+/* letterhead image has no tagline text; it is written here in the document language */
+export function hdrImgHtml(bw,lg,W,imgStyle){lg=TAG[lg]?lg:'en';var fam=lg==='en'?"'Noto Serif',Georgia,'Times New Roman',serif":LANG[lg].font,fs=(W*0.0135).toFixed(2),lh=(W*27/1500).toFixed(2);
+  return '<div style="position:relative;flex-shrink:0"><img src="'+(bw?LH.b:LH.c)+'" alt="Brihad Temple Construction Co." style="'+imgStyle+'"><div style="position:absolute;right:4.8%;top:'+(62/285*100).toFixed(2)+'%;text-align:right;font-family:'+fam+';font-size:'+fs+'px;line-height:'+lh+'px;color:#1F2230;letter-spacing:'+(lg==='en'?'.06em':'0')+';white-space:nowrap">'+TAG[lg][0]+'<br>'+TAG[lg][1]+'</div></div>'}
+export function hdrTagPdf(d,W,y0){d.setTextColor(31,34,48);d.setFont('times','normal');d.setFontSize(W*0.0378);var x=W*1428/1500;d.text(TAG.en[0],x,y0+W*82/1500,{align:'right'});d.text(TAG.en[1],x,y0+W*109/1500,{align:'right'})}
 export var REFL={en:{Bank:'Ref. no.',Cheque:'Cheque no.'},hi:{Bank:'संदर्भ क्र.',Cheque:'चेक क्र.'},gu:{Bank:'સંદર્ભ ક્રમાંક',Cheque:'ચેક નંબર'}};
 export function refSfx(t,lg){lg=REFL[lg]?lg:'en';var r=String(t.ref||'').trim();if(!r||(t.mode!=='Bank'&&t.mode!=='Cheque'))return '';return ' · '+REFL[lg][t.mode]+' '+r}
 export function modeStr(t,lg){lg=REFL[lg]?lg:'en';var m=(LANG[lg]&&LANG[lg].mode&&LANG[lg].mode[t.mode])||t.mode;return m+refSfx(t,lg)}
@@ -115,20 +120,20 @@ export function letterBody(t,lg,html){
   if(lg==='hi')return (today_?'आज ':'दिनांक '+b(d)+' को ')+(forName?b(forName)+' के निमित्त ':'')+'अंकों में रुपये '+b(a)+' (शब्दों में '+w+') '+b(who)+' के हस्ते प्राप्त हुए हैं।';
   if(lg==='gu')return (today_?'આજ રોજ ':'તા. '+b(d)+' ના રોજ ')+(forName?b(forName)+' ના પેટે ':'')+'અંકે રૂપિયા '+b(a)+' (અંકે '+w+') '+b(who)+' ના હસ્તે મળેલ છે.';
   return 'Received '+(today_?'today':'on '+b(d))+' a payment of '+b(a)+' ('+w+') from '+b(who)+(forName?', towards '+b(forName):'')+'.'}
-export function letterDetail(t,lg,html){var v=voucherInfo(t),L=LANG[lg],e=function(s){return html?esc(s):s},m=L.mode[t.mode]||t.mode,parts=[L.modeL+': '+e(m+refSfx(t,lg))];if(v.stage)parts.push((lg==='en'?'Stage':lg==='hi'?'चरण':'તબક્કો')+': '+e(v.stage));if(t.note)parts.push(L.forL+': '+e(t.note));return parts.join('  ·  ')}
+export function letterDetail(t,lg,html){var v=voucherInfo(t),L=LANG[lg],e=function(s){return html?esc(s):s},m=L.mode[t.mode]||t.mode,parts=[L.modeL+': '+e(m+refSfx(t,lg))];if(t.note)parts.push(L.forL+': '+e(t.note));return parts.join('  ·  ')}
 export function letterPlain(t){var lg=curLang(),L=LANG[lg],v=voucherInfo(t);return [DB.biz.name,L.title+' · '+t.vno,L.date+': '+fmtL(t.date,lg),'',letterBody(t,lg,false),letterDetail(t,lg,false),'',L.amt+': '+INR(t.amount)+'/-'].join('\n')}
 export function letterPaper(t,lg){
   lg=lg||curLang();var v=voucherInfo(t),L=LANG[lg],bw=DB.biz.lhBW;
-  return '<div class="vfit"><div class="vin" data-w="700" style="width:700px"><div class="paper" style="padding:0;overflow:hidden;border:1px solid #D8D6CE;border-radius:0;font-family:'+L.font+';min-height:990px;display:flex;flex-direction:column;color:#1F2230"><img src="'+(bw?LH.b:LH.c)+'" alt="Brihad Temple Construction Co." style="width:100%;display:block;flex-shrink:0">'
+  return '<div class="vfit"><div class="vin" data-w="700" style="width:700px"><div class="paper" style="padding:0;overflow:hidden;border:1px solid #D8D6CE;border-radius:0;font-family:'+L.font+';min-height:990px;display:flex;flex-direction:column;color:#1F2230">'+hdrImgHtml(bw,lg,700,'width:100%;display:block')
   +'<div style="padding:0 6%;flex:1;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;letter-spacing:'+(lg==='en'?'.12em':'.02em')+';font-weight:700;margin-top:2px"><span>'+L.date+': <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+fmtL(t.date,lg)+'</span></span><span>'+L.ref+': <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+esc(t.vno)+'</span></span></div>'
   +'<div style="text-align:center;font-size:16px;letter-spacing:'+(lg==='en'?'.3em':'.12em')+';font-weight:700;margin:30px 0 22px;text-decoration:underline;text-underline-offset:6px">'+L.title+'</div>'
-    +'<p style="font-size:15.5px;line-height:2;margin:6px 0 10px;text-align:justify">'+letterBody(t,lg,true)+'</p><div style="font-size:12.5px;color:#62668A;line-height:1.6">'+letterDetail(t,lg,true)+'</div>'
+    +'<p style="font-size:15.5px;line-height:2;margin:6px 0 10px;text-align:justify">'+letterBody(t,lg,true)+'</p><div style="font-size:15px;color:#1F2230;line-height:1.8">'+letterDetail(t,lg,true)+'</div>'
   +'<div style="margin:18px 0 4px;display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #E4E2DB;font-size:14px"><span style="color:#62668A">'+L.amt+'</span><b class="tn">'+INR(t.amount)+'/-</b></div>'
-  +'<div style="margin-top:auto;padding:46px 0 34px;text-align:right;font-size:14px"><div style="height:60px"></div><div style="display:inline-block;border-top:1.5px solid #1F2230;padding-top:6px;min-width:230px;text-align:center"><b>'+L.sign+'</b><div style="font-size:12px;color:#62668A">'+L.auth+'</div></div></div></div>'
+  +'<div style="margin-top:auto;padding:46px 0 34px;text-align:right;font-size:14px"><div style="height:60px"></div><div style="display:inline-block;border-top:1.5px solid #1F2230;min-width:230px;height:1px"></div></div></div>'
   +'<img src="'+LH.f+'" alt="" style="width:100%;display:block;margin-top:auto;flex-shrink:0"></div></div></div>'}
 export function pdfLetterNative(t){
   var C=pdfLib();if(!C)return;var v=voucherInfo(t),D=derive(),p=D.byId[t.projId],bw=DB.biz.lhBW,d=new C({unit:'mm',format:'a4'}),L=14,R=196,y;
-  try{d.addImage(bw?LH.b:LH.c,'PNG',0,4,210,210*285/1500);d.addImage(LH.f,'PNG',0,297-210*185/1500-2,210,210*185/1500)}catch(e){}
+  try{d.addImage(bw?LH.b:LH.c,'PNG',0,4,210,210*285/1500);hdrTagPdf(d,210,4);d.addImage(LH.f,'PNG',0,297-210*185/1500-2,210,210*185/1500)}catch(e){}
   y=52;d.setTextColor(31,34,48);d.setFont('times','bold');d.setFontSize(9);d.text('DATE:',L,y);d.setFont('times','normal');d.setFontSize(10);d.text(fmt(t.date),L+13,y);d.line(L+12,y+1.2,L+48,y+1.2);
   d.setFont('times','bold');d.setFontSize(9);d.text('REF. NO.:',82,y);d.setFont('times','normal');d.setFontSize(10);d.text(t.vno,82+19,y);d.line(82+18,y+1.2,82+50,y+1.2);
   y=72;d.setFont('times','bold');d.setFontSize(14);d.text('R E C E I P T',105,y,{align:'center'});d.line(88,y+1.5,122,y+1.5);
@@ -136,7 +141,7 @@ export function pdfLetterNative(t){
   var body=letterBody(t,'en',false).replace(/₹/g,'Rs. ');
   var ls=d.splitTextToSize(body,R-L);d.setFontSize(11.5);d.text(ls,L,y,{lineHeightFactor:1.7});y+=ls.length*7.2+8;
   {[['Amount received',t.amount]].forEach(function(x){d.setFontSize(10.5);d.setFont('times','normal');d.text(x[0],L,y);d.setFont('times','bold');d.text(rs(x[1]),R,y,{align:'right'});d.setDrawColor(210,208,200);d.setLineWidth(0.2);d.line(L,y+2,R,y+2);y+=8})}
-  y=Math.max(y+22,248);d.setDrawColor(31,34,48);d.setLineWidth(0.4);d.line(R-62,y,R,y);d.setFont('times','bold');d.setFontSize(9.5);d.text('For BRIHAD TEMPLE CONSTRUCTION CO.',R-31,y+5,{align:'center'});d.setFont('times','normal');d.setFontSize(8.5);d.text('Authorised Signatory',R-31,y+9.5,{align:'center'});
+  y=Math.max(y+22,248);d.setDrawColor(31,34,48);d.setLineWidth(0.4);d.line(R-62,y,R,y);
   finishPdf(d,t.vno+'.pdf','Saved '+t.vno+'.pdf')}
 export function voucherText(t){if(t.kind==='in')return letterPlain(t);var v=voucherInfo(t),b=DB.biz;return [b.name,(v.inn?'RECEIPT VOUCHER ':'PAYMENT VOUCHER ')+t.vno,'Date: '+fmt(t.date),(v.inn?'Received from: ':'Paid to: ')+v.who,'Project: '+v.proj+(v.stage?' ('+v.stage+')':''),'Amount: '+INR(t.amount),words(t.amount),'Mode: '+modeStr(t,'en')].concat(t.note?['Note: '+t.note]:[]).concat(b.phone?['Phone: '+b.phone]:[]).join('\n')}
 export function pdfLib(){var J=window.jspdf;if(!J||!J.jsPDF){toast('PDF tool could not load. Check your internet and try again.');return null}return J.jsPDF}
@@ -193,7 +198,7 @@ export function pdfReportNative(pid){
   var d=new C({unit:'mm',format:'a4'});
   if(!d.autoTable){toast('Report tool could not load. Check your internet and try again.');return}
   var bw=DB.biz.lhBW,W=210,M=14,INK=[31,34,48],MU=[110,114,138],AC=[74,78,140];
-  try{d.addImage(bw?LH.b:LH.c,'PNG',0,4,W,W*285/1500)}catch(e){}
+  try{d.addImage(bw?LH.b:LH.c,'PNG',0,4,W,W*285/1500);hdrTagPdf(d,W,4)}catch(e){}
   var y=4+W*285/1500+6;
   d.setTextColor(INK[0],INK[1],INK[2]);d.setFont('helvetica','bold');d.setFontSize(16);d.text('PROJECT REPORT',W/2,y,{align:'center',charSpace:1.2});
   d.setDrawColor(AC[0],AC[1],AC[2]);d.setLineWidth(0.6);d.line(W/2-22,y+2,W/2+22,y+2);
@@ -250,7 +255,7 @@ export function pdfReport(pid){
   host.innerHTML='<style>.rp{width:'+PW+'px;height:'+PH+'px;position:relative;background:#fff;overflow:hidden;font-size:12px;line-height:1.4}.rp h3{margin:0 0 6px;font-size:14px;color:#4A4E8C;border-bottom:1px solid #DCD9CE;padding-bottom:4px}.rp table{width:100%;border-collapse:collapse}.rp th{background:#4A4E8C;color:#fff;text-align:left;padding:6px 8px;font-size:11px}.rp td{padding:6px 8px;border:1px solid #E6E4DC;font-size:11.5px;vertical-align:top}.rp tbody tr:nth-child(even) td{background:#F8F6F0}.rp tr.ft td{background:#EEECE4!important;font-weight:700}.rp .r{text-align:right}.rp td.k{background:#F4F2EC!important;font-weight:700}.rp .sec{margin-bottom:16px}.rp .foot{position:absolute;left:40px;right:40px;bottom:18px;display:flex;justify-content:space-between;font-size:10px;color:#6E728A}</style>';
   document.body.appendChild(host);
   var pages=[];
-  function newPage(first){var pg=document.createElement('div');pg.className='rp';pg.innerHTML=(first?'<img src="'+(bw?LH.b:LH.c)+'" style="width:100%;height:'+Math.round(PW*285/1500)+'px;display:block">':'')+'<div class="cnt" style="padding:'+(first?'6px':'34px')+' 40px 0"></div><div class="foot"></div>';host.appendChild(pg);pages.push(pg);return pg}
+  function newPage(first){var pg=document.createElement('div');pg.className='rp';pg.innerHTML=(first?hdrImgHtml(bw,lg,PW,'width:100%;height:'+Math.round(PW*285/1500)+'px;display:block'):'')+'<div class="cnt" style="padding:'+(first?'6px':'34px')+' 40px 0"></div><div class="foot"></div>';host.appendChild(pg);pages.push(pg);return pg}
   function cur(){return pages[pages.length-1]}
   function over(sec,pg){return sec.getBoundingClientRect().bottom-pg.getBoundingClientRect().top>LIM}
   function mkRow(def,i){var r=def.rows[i],tr=document.createElement('tr');if(r.foot)tr.className='ft';var cells=r.foot?r.c:r;tr.innerHTML=cells.map(function(c,j){return '<td class="'+((def.al&&def.al[j]==='r')?'r':'')+((def.kv&&(j===0||j===2))?' k':'')+'">'+c+'</td>'}).join('');return tr}
@@ -411,7 +416,7 @@ export function proposalPages(pr,lg){
   blocks.push('<div style="margin-top:30px;text-align:right;font-size:15px"><div style="height:60px"></div><b>Pro. '+esc(pr.signer||'')+'</b></div>');
   var host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:'+PW+'px';document.body.appendChild(host);
   var pages=[];
-  function newPage(first){var pg=document.createElement('div');pg.className='pg';pg.style.fontFamily=T.font;pg.innerHTML=(first?'<img src="'+(bw?LH.b:LH.c)+'" alt="" style="width:100%;height:'+HH+'px;display:block">':'<div style="height:34px"></div>')+'<div class="pc" style="'+pad+'"></div><img class="pf" src="'+LH.f+'" alt="" style="position:absolute;left:0;right:0;bottom:0;width:100%;height:'+FH+'px">';host.appendChild(pg);pages.push(pg);return pg}
+  function newPage(first){var pg=document.createElement('div');pg.className='pg';pg.style.fontFamily=T.font;pg.innerHTML=(first?hdrImgHtml(bw,lg,PW,'width:100%;height:'+HH+'px;display:block'):'<div style="height:34px"></div>')+'<div class="pc" style="'+pad+'"></div><img class="pf" src="'+LH.f+'" alt="" style="position:absolute;left:0;right:0;bottom:0;width:100%;height:'+FH+'px">';host.appendChild(pg);pages.push(pg);return pg}
   newPage(true);
   blocks.forEach(function(b){
     var pg=pages[pages.length-1],pc=pg.querySelector('.pc'),el=document.createElement('div');el.innerHTML=b;pc.appendChild(el);
