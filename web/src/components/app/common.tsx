@@ -1,10 +1,12 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { cn } from '@/lib/utils'
+import { useTheme } from 'next-themes'
 import { LH } from '@/engine/engine.js'
 
 export function Logo({ height = 40, className }: { height?: number; className?: string }) {
-  return <img src={LH.l} alt="Brihad Temple logo" style={{ height, width: 'auto' }} className={cn('select-none', className)} draggable={false} />
+  const { resolvedTheme } = useTheme()
+  return <img src={resolvedTheme === 'dark' ? LH.w : LH.l} alt="Brihad Temple logo" style={{ height, width: 'auto' }} className={cn('select-none', className)} draggable={false} />
 }
 
 export function Avatar({ name, tone = 'primary', className }: { name: string; tone?: 'primary' | 'income' | 'expense' | 'saffron' | 'info'; className?: string }) {

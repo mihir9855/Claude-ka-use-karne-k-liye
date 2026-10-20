@@ -19,7 +19,7 @@ import { INR, MON, SECTIONS, SHORT, fmt, today } from '@/engine/engine.js'
 import { newProjectForm } from '@/engine/actions.js'
 import { AnimatedBackground } from '@/motion-primitives/animated-background'
 
-const SEC_COLORS = ['var(--expense)', 'var(--saffron)', 'var(--primary)', 'var(--info)', '#9c5372', 'var(--income)']
+const SEC_COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
 
 function Kpi({ label, value, note, tone, i }: { label: string; value: number; note: string; tone: string; i: number }) {
   return (
@@ -128,7 +128,7 @@ export default function Home() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <BlurFade className="col-span-2 md:col-span-4">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#4a4e8c] to-[#2f3263] p-5 text-white shadow-lg dark:from-[#3c4080] dark:to-[#22244d]">
+          <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg dark:from-[#3c4080] dark:to-[#22244d]">
             <div className="absolute -right-12 -top-12 size-44 rounded-full bg-white/10" />
             <div className="relative flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -138,7 +138,7 @@ export default function Home() {
                 </div>
                 <span className="mt-3 inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">Received − spent</span>
               </div>
-              <div className="relative grid place-items-center text-saffron">
+              <div className="relative grid place-items-center text-[var(--hero-glow)]">
                 <Ring pct={pct} size={104} stroke={9} />
                 <div className="absolute text-center"><div className="font-display text-xl font-extrabold text-white">{pct}%</div></div>
                 <div className="mt-1 text-xs opacity-80 text-white">collected of {SHORT(D.totalValue)}</div>

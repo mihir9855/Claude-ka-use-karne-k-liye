@@ -67,62 +67,85 @@
 }
 
 :root {
-  --radius: 0.875rem;
-  --background: #f6f5f1;
-  --foreground: #1f2230;
+  --radius: 1rem;
+  /* Sandstone and saffron: warm paper, burnt-saffron actions, deep maroon hero */
+  --background: #faf6ef;
+  --foreground: #2a1d14;
   --card: #ffffff;
-  --card-foreground: #1f2230;
+  --card-foreground: #2a1d14;
   --popover: #ffffff;
-  --popover-foreground: #1f2230;
-  --primary: #4a4e8c;
+  --popover-foreground: #2a1d14;
+  --primary: #c4501a;
   --primary-foreground: #ffffff;
-  --secondary: #eceae3;
-  --secondary-foreground: #1f2230;
-  --muted: #efeee9;
-  --muted-foreground: #6a6e7c;
-  --accent: #f6ead0;
-  --accent-foreground: #7a5410;
-  --destructive: #b0584a;
-  --border: #e4e2db;
-  --input: #dedbd2;
-  --ring: #4a4e8c;
-  --income: #2e6f69;
-  --income-soft: #e0eeec;
-  --expense: #b0584a;
-  --expense-soft: #f5e5e1;
-  --saffron: #d9892b;
-  --saffron-soft: #f8ecd5;
-  --info: #3f6591;
-  --info-soft: #e3ebf4;
+  --secondary: #f3eadc;
+  --secondary-foreground: #2a1d14;
+  --muted: #f4ede2;
+  --muted-foreground: #7b6a5a;
+  --accent: #fbe9cf;
+  --accent-foreground: #8a4a0a;
+  --destructive: #c0392b;
+  --border: #ece2d3;
+  --input: #e2d6c4;
+  --ring: #c4501a;
+  --income: #1d7a60;
+  --expense: #c0392b;
+  --saffron: #b8780a;
+  --info: #2c6b9b;
+  --hero-a: #8a2f14;
+  --hero-b: #c4501a;
+  --hero-glow: #f5c26b;
+  --hero2-a: #2f5f87;
+  --hero2-b: #1f3f5e;
+  --c1: #b5472b;
+  --c2: #d49a1f;
+  --c3: #4b4f9c;
+  --c4: #2f6c9a;
+  --c5: #9b4d78;
+  --c6: #1d7a60;
 }
 
 .dark {
-  --background: #13141b;
-  --foreground: #ecebf3;
-  --card: #1c1e29;
-  --card-foreground: #ecebf3;
-  --popover: #1c1e29;
-  --popover-foreground: #ecebf3;
-  --primary: #a3a8f2;
-  --primary-foreground: #14152a;
-  --secondary: #262836;
-  --secondary-foreground: #ecebf3;
-  --muted: #232532;
-  --muted-foreground: #9a9db3;
-  --accent: #3a3020;
-  --accent-foreground: #ebc77e;
-  --destructive: #f0a89c;
-  --border: #2d3040;
-  --input: #34374a;
-  --ring: #a3a8f2;
-  --income: #7fcdc3;
-  --income-soft: #1b3331;
-  --expense: #f0a89c;
-  --expense-soft: #3a2420;
-  --saffron: #ebb66a;
-  --saffron-soft: #3a2f1c;
-  --info: #a9c8ee;
-  --info-soft: #1d2a3d;
+  /* Warm charcoal: every tint below is mixed from the same base so colours sit together */
+  --background: #15110d;
+  --foreground: #f4ece3;
+  --card: #1e1914;
+  --card-foreground: #f4ece3;
+  --popover: #231d17;
+  --popover-foreground: #f4ece3;
+  --primary: #f0883a;
+  --primary-foreground: #1c0f05;
+  --secondary: #2a231c;
+  --secondary-foreground: #f4ece3;
+  --muted: #262019;
+  --muted-foreground: #a99c8e;
+  --accent: #35271a;
+  --accent-foreground: #f2c27c;
+  --destructive: #f0836f;
+  --border: #302921;
+  --input: #3a3128;
+  --ring: #f0883a;
+  --income: #5cc4a2;
+  --expense: #f08672;
+  --saffron: #e5ae4c;
+  --info: #7fb0e0;
+  --hero-a: #4d2616;
+  --hero-b: #2c1a11;
+  --hero-glow: #f0a45a;
+  --hero2-a: #24384d;
+  --hero2-b: #17232f;
+  --c1: #d9715b;
+  --c2: #ddaa4a;
+  --c3: #9096e6;
+  --c4: #78a9db;
+  --c5: #c98baa;
+  --c6: #5cc4a2;
+}
+
+:root, .dark {
+  --income-soft: color-mix(in oklab, var(--income) 13%, var(--card));
+  --expense-soft: color-mix(in oklab, var(--expense) 13%, var(--card));
+  --saffron-soft: color-mix(in oklab, var(--saffron) 15%, var(--card));
+  --info-soft: color-mix(in oklab, var(--info) 13%, var(--card));
 }
 
 @layer base {

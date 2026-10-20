@@ -16,7 +16,7 @@ import { go } from '@/lib/router'
 import { INR, SECTIONS, SHORT, fmt } from '@/engine/engine.js'
 import { deleteProject, editProjectForm, newEntryForm, newProjectForm, toggleStage } from '@/engine/actions.js'
 
-const SEC = ['var(--expense)', 'var(--saffron)', 'var(--primary)', 'var(--info)', '#9c5372', 'var(--income)']
+const SEC = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
 
 export default function Projects({ id }: { id?: string }) {
   const { D } = useData()
@@ -59,7 +59,7 @@ function Detail({ id }: { id: string }) {
       </div>
 
       <BlurFade>
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#4a4e8c] to-[#2f3263] p-5 text-white shadow-lg dark:from-[#3c4080] dark:to-[#22244d]">
+        <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,var(--hero-a),var(--hero-b))] p-5 text-white shadow-lg dark:from-[#3c4080] dark:to-[#22244d]">
           <div className="absolute -right-12 -top-14 size-48 rounded-full bg-white/10" />
           <div className="relative">
             <div className="text-xs opacity-80">{[p.client, p.start ? 'started ' + fmt(p.start) : ''].filter(Boolean).join(' · ')}</div>
