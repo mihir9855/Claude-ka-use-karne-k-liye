@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Lottie } from "@/components/Lottie"
 import pulse from "@/pulse.json"
+import { motion } from "motion/react"
 import { Input } from "@/components/ui/input"
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
@@ -9,7 +10,12 @@ import {
 
 export default function App() {
   return (
-    <main className="mx-auto max-w-md p-6">
+    <motion.main
+      className="mx-auto max-w-md p-6"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
       <Card>
         <CardHeader>
           <CardTitle>shadcn/ui is installed</CardTitle>
@@ -29,6 +35,6 @@ export default function App() {
           </Dialog>
         </CardContent>
       </Card>
-    </main>
+    </motion.main>
   )
 }
