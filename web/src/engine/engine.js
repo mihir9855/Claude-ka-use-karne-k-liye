@@ -110,7 +110,7 @@ export function shri(n,lg){n=String(n||'').trim();if(!n)return n;if(/^(shri|shre
 export function letterBody(t,lg,html){
   var v=voucherInfo(t),L=LANG[lg],b=function(s){return html?'<b>'+esc(s)+'</b>':s},a=INR(t.amount)+'/-',w=wordsL(t.amount,lg),today_=t.date===today(),d=fmtL(t.date,lg),forName=v.trust||v.proj,who=shri(v.who,lg);
   if(lg==='hi')return (today_?'आज ':'दिनांक '+b(d)+' को ')+(forName?b(forName)+' के निमित्त ':'')+'अंकों में रुपये '+b(a)+' (शब्दों में '+w+') '+b(who)+' के हस्ते प्राप्त हुए हैं।';
-  if(lg==='gu')return (today_?'આજ રોજ ':'તા. '+b(d)+' ના રોજ ')+(forName?b(forName)+' ના પેટે ':'')+'અંકે રૂપિયા '+b(a)+' (અક્ષરે '+w+') '+b(who)+' ના હસ્તે મળેલ છે.';
+  if(lg==='gu')return (today_?'આજ રોજ ':'તા. '+b(d)+' ના રોજ ')+(forName?b(forName)+' ના પેટે ':'')+'અંકે રૂપિયા '+b(a)+' (અંકે '+w+') '+b(who)+' ના હસ્તે મળેલ છે.';
   return 'Received '+(today_?'today':'on '+b(d))+' a payment of '+b(a)+' ('+w+') from '+b(who)+(forName?', towards '+b(forName):'')+'.'}
 export function letterDetail(t,lg,html){var v=voucherInfo(t),L=LANG[lg],e=function(s){return html?esc(s):s},m=L.mode[t.mode]||t.mode,parts=[L.modeL+': '+e(m)];if(v.stage)parts.push((lg==='en'?'Stage':lg==='hi'?'चरण':'તબક્કો')+': '+e(v.stage));if(t.note)parts.push(L.forL+': '+e(t.note));return parts.join('  ·  ')}
 export function letterPlain(t){var lg=curLang(),L=LANG[lg],v=voucherInfo(t);return [DB.biz.name,L.title+' · '+t.vno,L.date+': '+fmtL(t.date,lg),'',letterBody(t,lg,false),letterDetail(t,lg,false),'',L.amt+': '+INR(t.amount)+'/-'].join('\n')}
@@ -383,7 +383,7 @@ hi:{date:'दिनांक',ref:'संदर्भ',note:'नोंध:-',fon
 gu:{date:'તારીખ',ref:'સંદર્ભ',note:'નોંધ:-',font:"'Noto Sans Gujarati','Shruti',sans-serif",
  head:function(g,l){return 'શ્રી '+g+' મંદિર'+(l?', '+l:'')},
  intro:function(g,l,v){return (l?(v?'ગામ ':'')+l+' માં ':'')+'શ્રી '+g+' ના મંદિર નું બાંધકામ કરવાનાં ભાવ નીચે પ્રમાણે છે.'},
- small:function(it,by,st,a,w){return it+' '+(by?by+' ની ':'')+'ડીસાઇન અને સાઇઝ પ્રમાણે '+st+' માં કરી આપવાના અંકે રૂપિયા '+a+'/- (અક્ષરે '+w+') નક્કી કરેલ છે.'},tem:function(s,a){return 'મંદિર '+s+' માં બનાવી આપવાના કુલ Rs. '+a+'/- થાય છે.'},ran:function(s,a){return 'રંગ-મંડપ '+s+' માં બનાવી આપવાના કુલ Rs. '+a+'/- થાય છે.'},when:function(d){return 'તા. '+d}}};
+ small:function(it,by,st,a,w){return it+' '+(by?by+' ની ':'')+'ડીસાઇન અને સાઇઝ પ્રમાણે '+st+' માં કરી આપવાના અંકે રૂપિયા '+a+'/- (અંકે '+w+') નક્કી કરેલ છે.'},tem:function(s,a){return 'મંદિર '+s+' માં બનાવી આપવાના કુલ Rs. '+a+'/- થાય છે.'},ran:function(s,a){return 'રંગ-મંડપ '+s+' માં બનાવી આપવાના કુલ Rs. '+a+'/- થાય છે.'},when:function(d){return 'તા. '+d}}};
 export function stripGod(s){return String(s||'').trim().replace(/^(શ્રી|श्री|shri|shree)\s+/i,'').replace(/\s+(મંદિર|मंदिर|mandir|temple)$/i,'').trim()}
 export function dmy(iso){if(!iso)return '';var q=iso.split('-');return q[2]+'-'+q[1]+'-'+q[0]}
 export function amtTxt(n){return Number(n).toLocaleString('en-IN')+(String(n).length?'':'')}
@@ -398,9 +398,9 @@ export function proposalPages(pr,lg){
   var blocks=[];
   blocks.push('<div style="display:flex;justify-content:space-between;gap:12px;font-size:14px;font-weight:700;margin-top:14px"><span>'+T.ref+' '+esc(pr.vno||'')+'</span><span>'+T.when(dmy(pr.date))+'</span></div>');
   blocks.push('<div style="text-align:center;font-weight:700;font-size:21px;margin:26px 0 14px;line-height:1.5">'+T.head(god,loc)+'</div>');
-  blocks.push('<div style="font-weight:700;font-size:15.5px;line-height:1.9;margin:0 0 6px">'+T.intro(god,loc,pr.pt!=='c')+'</div>');
+  blocks.push('<div style="font-weight:700;font-size:15.5px;line-height:1.9;margin:0 0 6px;text-align:center">'+T.intro(god,loc,pr.pt!=='c')+'</div>');
   var n=0;
-  if(pr.kind==='small'){var o0=(pr.options||[])[0]||{},am=num(o0.mandir);blocks.push('<div style="margin:22px 0 0;font-size:15.5px;line-height:2;font-weight:600;text-align:justify">'+T.small(esc(pr.item||''),esc(pr.by||''),esc(o0.stone||''),amtTxt(am),esc(wordsL(am,lg)))+'</div>')}
+  if(pr.kind==='small'){var o0=(pr.options||[])[0]||{},am=num(o0.mandir);blocks.push('<div style="margin:22px 0 0;font-size:15.5px;line-height:2;font-weight:600;text-align:center">'+T.small(esc(pr.item||''),esc(pr.by||''),esc(o0.stone||''),amtTxt(am),esc(wordsL(am,lg)))+'</div>')}
   else (pr.options||[]).forEach(function(o){var l1=num(o.mandir)?T.tem(esc(o.stone||''),amtTxt(num(o.mandir))):'',l2=num(o.rang)?T.ran(esc(o.stone||''),amtTxt(num(o.rang))):'';if(!l1&&!l2)return;n++;
     blocks.push('<div style="display:flex;gap:10px;margin:20px 0 0;font-size:15.5px;line-height:2;font-weight:600"><span style="width:26px;flex-shrink:0">'+n+'.</span><div>'+l1+(l1&&l2?'<br>':'')+l2+'</div></div>')});
   var notes=(pr.notes||[]).filter(function(x){return String(x).trim()});

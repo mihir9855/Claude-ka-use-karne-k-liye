@@ -115,7 +115,7 @@ export function ProjectModal({ form }: { form: any }) {
                 <button type="button" aria-label="Remove stage" onClick={() => f.stages.length > 1 && setF((p: any) => ({ ...p, stages: p.stages.filter((_: any, j: number) => j !== i) }))} className="grid size-11 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground hover:text-foreground"><X className="size-4" /></button>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                <TextInput inputMode="numeric" value={s.amount} onChange={(v) => setStage(i, 'amount', v.replace(/[^0-9]/g, ''))} placeholder="Client pays ₹" aria-label={`Amount at stage ${i + 1}`} />
+                <MoneyInput size="sm" value={s.amount} onChange={(v) => setStage(i, 'amount', v)} placeholder="Client pays" aria-label={`Amount at stage ${i + 1}`} />
                 <TextInput type="date" value={s.date} onChange={(v) => setStage(i, 'date', v)} aria-label={`Target date for stage ${i + 1}`} />
               </div>
             </div>

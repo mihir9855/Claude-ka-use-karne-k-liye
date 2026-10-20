@@ -3,7 +3,7 @@ import { Copy, Download, FileText, Pencil, Printer, Share2, Trash2 } from 'lucid
 import { Button } from '@/components/ui/button'
 import { Sheet } from '@/components/app/sheet'
 import { Paper } from '@/components/app/common'
-import { Chips, Field, FormError, TextInput } from '@/components/app/fields'
+import { Chips, Field, FormError, MoneyInput, TextInput } from '@/components/app/fields'
 import { Lottie } from '@/components/Lottie'
 import check from '@/lib/check.json'
 import { useModal } from '@/app/modal'
@@ -131,7 +131,7 @@ export function ProposalModal({ form }: { form: any }) {
           <Field label="Design and size as per (name, optional)"><TextInput value={f.by} onChange={(v) => set('by', v)} placeholder={ph('દીનેશભાઈ', 'दिनेशभाई', 'Dineshbhai')} /></Field>
           <Field label="Stone / material"><TextInput value={f.options[0].stone} onChange={(v) => setOpt(0, 'stone', v)} /></Field>
           <Chips className="mt-2" options={STONES[lg].map((s: string) => ({ value: s, label: s }))} value={f.options[0].stone} onChange={(v) => setOpt(0, 'stone', v)} />
-          <Field label="Total amount (Rs.)"><TextInput inputMode="numeric" value={f.options[0].mandir} onChange={(v) => setOpt(0, 'mandir', v.replace(/[^0-9]/g, ''))} placeholder="0" className="tn text-lg font-bold" /></Field>
+          <Field label="Total amount (Rs.)"><MoneyInput value={f.options[0].mandir} onChange={(v) => setOpt(0, 'mandir', v)} /></Field>
         </>
       ) : (
         <Field label="Rates (one card for each stone)">
@@ -142,8 +142,8 @@ export function ProposalModal({ form }: { form: any }) {
                 <TextInput value={o.stone} onChange={(v) => setOpt(i, 'stone', v)} placeholder="Stone / material" />
                 <Chips className="mt-2" options={STONES[lg].map((s: string) => ({ value: s, label: s }))} value={o.stone} onChange={(v) => setOpt(i, 'stone', v)} />
                 <div className="mt-2 grid grid-cols-2 gap-2">
-                  <label className="grid gap-1 text-xs text-muted-foreground">Temple total (Rs.)<TextInput inputMode="numeric" value={o.mandir} onChange={(v) => setOpt(i, 'mandir', v.replace(/[^0-9]/g, ''))} placeholder="0" className="tn" /></label>
-                  <label className="grid gap-1 text-xs text-muted-foreground">Rang-mandap total (Rs.)<TextInput inputMode="numeric" value={o.rang} onChange={(v) => setOpt(i, 'rang', v.replace(/[^0-9]/g, ''))} placeholder="optional" className="tn" /></label>
+                  <label className="grid gap-1 text-xs text-muted-foreground">Temple total (Rs.)<MoneyInput size="sm" value={o.mandir} onChange={(v) => setOpt(i, 'mandir', v)} /></label>
+                  <label className="grid gap-1 text-xs text-muted-foreground">Rang-mandap total (Rs.)<MoneyInput size="sm" value={o.rang} onChange={(v) => setOpt(i, 'rang', v)} placeholder="optional" /></label>
                 </div>
               </div>
             ))}

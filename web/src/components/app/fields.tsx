@@ -18,20 +18,22 @@ export function TextInput({ value, onChange, className, ...rest }: TextProps) {
   return <Input value={value ?? ''} onChange={(e) => onChange(e.target.value)} autoComplete="off" className={cn('h-11 rounded-xl bg-background', className)} {...rest} />
 }
 
-export function MoneyInput({ value, onChange, placeholder = '0', autoFocus }: { value: string; onChange: (v: string) => void; placeholder?: string; autoFocus?: boolean }) {
+export function MoneyInput({ value, onChange, placeholder = '0', autoFocus, size = 'lg', ...rest }: { value: string; onChange: (v: string) => void; placeholder?: string; autoFocus?: boolean; size?: 'lg' | 'sm' } & Omit<React.ComponentProps<'input'>, 'value' | 'onChange' | 'size'>) {
   const n = String(value ?? '').replace(/[^0-9]/g, '')
   const shown = n ? Number(n).toLocaleString('en-IN') : ''
+  const sm = size === 'sm'
   return (
     <div className="relative">
-      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-muted-foreground">₹</span>
+      <span className={cn('pointer-events-none absolute top-1/2 -translate-y-1/2 font-bold text-muted-foreground', sm ? 'left-3 text-base' : 'left-4 text-xl')}>₹</span>
       <Input
+        {...rest}
         autoFocus={autoFocus}
         inputMode="numeric"
         value={shown}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ''))}
         autoComplete="off"
-        className="tn h-14 rounded-xl bg-background pl-9 text-2xl font-extrabold tracking-tight"
+        className={cn('tn rounded-xl bg-background font-extrabold tracking-tight', sm ? 'h-11 pl-7 text-base' : 'h-14 pl-9 text-2xl')}
       />
     </div>
   )
