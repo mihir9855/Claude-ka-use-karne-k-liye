@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [claude/project-finance-app-pzfrcs]
-    paths: [www/**, desktop/**, assets/**, .github/workflows/build-exe.yml]
+    paths: [web/**, desktop/**, assets/**, .github/workflows/build-exe.yml]
 
 jobs:
   exe:
@@ -17,19 +17,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install dependencies
+      - name: Build the app (React)
+        working-directory: web
+        run: |
+          npm ci
+          npm run build:single
+      - name: Install desktop dependencies
         working-directory: desktop
         run: npm install
-      - name: Prepare app files (PDF libraries packed inside, no internet needed for them)
+      - name: Prepare app files
         working-directory: desktop
         run: |
-          mkdir -p app/lib
-          cp ../www/index.html app/index.html
-          cp node_modules/jspdf/dist/jspdf.umd.min.js app/lib/
-          cp node_modules/jspdf-autotable/dist/jspdf.plugin.autotable.min.js app/lib/
-          cp node_modules/html2canvas/dist/html2canvas.min.js app/lib/
-          sed -i 's#https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js#lib/jspdf.umd.min.js#; s#https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js#lib/jspdf.plugin.autotable.min.js#; s#https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js#lib/html2canvas.min.js#' app/index.html
-          echo "remaining cdnjs references: $(grep -c 'cdnjs.cloudflare.com' app/index.html || true)"
+          mkdir -p app
+          cp ../web/dist-single/index.html app/index.html
       - name: Build EXE (portable and installer)
         working-directory: desktop
         run: npx electron-builder --win --publish never

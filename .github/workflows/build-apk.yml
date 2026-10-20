@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [claude/project-finance-app-pzfrcs]
-    paths: [www/**, assets/**, capacitor.config.json, package.json, .github/workflows/build-apk.yml]
+    paths: [web/**, assets/**, capacitor.config.json, package.json, .github/workflows/build-apk.yml]
 
 jobs:
   apk:
@@ -18,6 +18,11 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - name: Build the app (React)
+        working-directory: web
+        run: |
+          npm ci
+          npm run build:single
       - run: npm install
       - run: npx cap add android
       - name: Make app icons

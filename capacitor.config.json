@@ -1,5 +1,5 @@
 {
   "appId": "com.brihad.templefinance",
   "appName": "Brihad Finance",
-  "webDir": "www"
+  "webDir": "web/dist-single"
 }

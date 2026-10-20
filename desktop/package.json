@@ -8,10 +8,7 @@
   "scripts": { "start": "electron ." },
   "devDependencies": {
     "electron": "31.7.7",
-    "electron-builder": "24.13.3",
-    "jspdf": "2.5.1",
-    "jspdf-autotable": "3.5.31",
-    "html2canvas": "1.4.1"
+    "electron-builder": "24.13.3"
   },
   "build": {
     "appId": "com.brihad.templefinance",
