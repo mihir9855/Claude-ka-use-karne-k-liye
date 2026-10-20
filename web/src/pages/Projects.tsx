@@ -34,7 +34,7 @@ export default function Projects({ id }: { id?: string }) {
   return <Detail id={id} />
 }
 
-function Detail({ id }: { id: string }) {
+export function Detail({ id, embedded }: { id: string; embedded?: boolean }) {
   const { D, txns } = useData()
   const { open } = useModal()
   const p = D.byId[id]
@@ -50,7 +50,7 @@ function Detail({ id }: { id: string }) {
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="icon" className="rounded-full" aria-label="All projects" onClick={() => go('projects')}><ArrowLeft className="size-4" /></Button>
+        {embedded ? null : <Button variant="outline" size="icon" className="rounded-full" aria-label="All projects" onClick={() => go('projects')}><ArrowLeft className="size-4" /></Button>}
         <span className="flex-1" />
         <Button variant="outline" size="icon" className="rounded-full" aria-label="Add payment" onClick={() => open('entry', { form: newEntryForm(id) })}><Plus className="size-4" /></Button>
         <Button variant="outline" size="icon" className="rounded-full" aria-label="Edit project" onClick={() => open('project', { form: editProjectForm(DBproj(id)) })}><Pencil className="size-4" /></Button>

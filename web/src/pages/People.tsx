@@ -50,7 +50,7 @@ function List() {
   )
 }
 
-function Ledger({ id }: { id: string }) {
+export function Ledger({ id, embedded }: { id: string; embedded?: boolean }) {
   const { D } = useData()
   const { open } = useModal()
   const x = D.pById[id]
@@ -58,7 +58,7 @@ function Ledger({ id }: { id: string }) {
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="icon" className="rounded-full" aria-label="All people" onClick={() => go('people')}><ArrowLeft className="size-4" /></Button>
+        {embedded ? null : <Button variant="outline" size="icon" className="rounded-full" aria-label="All people" onClick={() => go('people')}><ArrowLeft className="size-4" /></Button>}
         <span className="flex-1" />
         <Button variant="outline" size="icon" className="rounded-full" aria-label="Add bill (amount owed)" onClick={() => open('bill', { form: newBillForm(id) })}><FileText className="size-4" /></Button>
         <Button variant="outline" size="icon" className="rounded-full" aria-label="Pay now" onClick={() => open('entry', { form: newEntryForm(null, id) })}><Wallet className="size-4" /></Button>

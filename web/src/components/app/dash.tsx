@@ -101,14 +101,14 @@ export function DonutCard({ D }: { D: any }) {
     <Card className="h-full rounded-3xl p-5">
       <SectionTitle>Spending by section</SectionTitle>
       {donut.length ? (
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="grid justify-items-center gap-4">
           <ChartContainer config={cfg} className="size-40 shrink-0">
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent hideLabel />} />
               <Pie data={donut} dataKey="value" nameKey="name" innerRadius={44} outerRadius={70} paddingAngle={2} strokeWidth={0} />
             </PieChart>
           </ChartContainer>
-          <div className="min-w-32 flex-1 text-sm">
+          <div className="w-full text-sm">
             {donut.map((d: any) => (
               <div key={d.name} className="flex items-center justify-between gap-2 py-1"><span className="flex items-center gap-2"><i className="size-2.5 rounded-sm" style={{ background: d.fill }} />{d.name}</span><b className="tn">{Math.round((d.value / D.spent) * 100)}%</b></div>
             ))}

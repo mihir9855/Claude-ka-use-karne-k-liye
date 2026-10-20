@@ -1,13 +1,14 @@
 import { useEffect, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { toast as sonner } from 'sonner'
-import { useTheme } from 'next-themes'
-import { Cloud, CloudOff, FileText, Home as HomeIcon, Landmark, Moon, Plus, Receipt, Settings as Cog, Sun, UserPlus, Users, Wallet, FolderPlus, FilePlus2, Loader2 } from 'lucide-react'
+import { FileText, Home as HomeIcon, Landmark, Plus, Receipt, Settings as Cog, UserPlus, Users, Wallet, FolderPlus, FilePlus2 } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Toaster } from '@/components/ui/sonner'
 import { Logo } from '@/components/app/common'
 import { useData } from '@/lib/store'
-import { useSyncState } from '@/lib/sync'
+import { useDesktop } from '@/lib/media'
+import { DesktopShell } from '@/desktop/DesktopShell'
+import { SyncDot, ThemeToggle } from '@/components/app/chrome'
 import { useRoute, go } from '@/lib/router'
 import { ModalProvider, useModal } from '@/app/modal'
 import { Modals } from '@/app/Modals'
@@ -21,7 +22,7 @@ import Proposals from '@/pages/Proposals'
 import Settings from '@/pages/Settings'
 import { cn } from '@/lib/utils'
 
-const NAV = [
+export const NAV = [
   { page: 'home', label: 'Home', icon: HomeIcon },
   { page: 'projects', label: 'Projects', icon: Landmark },
   { page: 'payments', label: 'Payments', icon: Wallet },
@@ -29,27 +30,7 @@ const NAV = [
   { page: 'proposals', label: 'Proposals', icon: FileText },
 ] as const
 
-const TITLES: Record<string, string> = { home: 'Home', projects: 'Projects', payments: 'Payments', people: 'People', proposals: 'Proposals', settings: 'Settings' }
-
-function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme()
-  const dark = resolvedTheme === 'dark'
-  return (
-    <button aria-label="Switch light or dark theme" onClick={() => setTheme(dark ? 'light' : 'dark')} className="grid size-10 place-items-center rounded-full bg-muted text-foreground transition hover:bg-secondary active:scale-95">
-      {dark ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
-    </button>
-  )
-}
-
-function SyncDot() {
-  const s = useSyncState()
-  if (!s.on) return null
-  return (
-    <button aria-label="Sync status" title={s.err || (s.busy ? 'Syncing' : 'Synced')} onClick={() => go('settings')} className="grid size-10 place-items-center rounded-full bg-muted">
-      {s.busy ? <Loader2 className="size-[18px] animate-spin text-muted-foreground" /> : s.err ? <CloudOff className="size-[18px] text-expense" /> : <Cloud className="size-[18px] text-income" />}
-    </button>
-  )
-}
+export const TITLES: Record<string, string> = { home: 'Home', projects: 'Projects', payments: 'Payments', people: 'People', proposals: 'Proposals', settings: 'Settings' }
 
 function Fab() {
   const { open } = useModal()
@@ -80,7 +61,9 @@ function Fab() {
 function Body() {
   const r = useRoute()
   const { biz } = useData()
+  const desktop = useDesktop()
   const page = TITLES[r.page] ? r.page : 'home'
+  if (desktop) return <DesktopShell page={page} id={r.id} />
   const key = page + (r.id || '')
   const view = {
     home: <Home />,
