@@ -142,8 +142,8 @@ export function ProposalModal({ form }: { form: any }) {
                 <TextInput value={o.stone} onChange={(v) => setOpt(i, 'stone', v)} placeholder="Stone / material" />
                 <Chips className="mt-2" options={STONES[lg].map((s: string) => ({ value: s, label: s }))} value={o.stone} onChange={(v) => setOpt(i, 'stone', v)} />
                 <div className="mt-2 grid grid-cols-2 gap-2">
+                  <label className="grid gap-1 text-xs text-muted-foreground">Rate per sq ft (optional)<MoneyInput size="sm" value={o.sqft || ''} onChange={(v) => setOpt(i, 'sqft', v)} placeholder="optional" /></label>
                   <label className="grid gap-1 text-xs text-muted-foreground">Temple total (Rs.)<MoneyInput size="sm" value={o.mandir} onChange={(v) => setOpt(i, 'mandir', v)} /></label>
-                  <label className="grid gap-1 text-xs text-muted-foreground">Rang-mandap total (Rs.)<MoneyInput size="sm" value={o.rang} onChange={(v) => setOpt(i, 'rang', v)} placeholder="optional" /></label>
                 </div>
               </div>
             ))}

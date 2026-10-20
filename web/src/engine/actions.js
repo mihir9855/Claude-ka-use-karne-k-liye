@@ -45,12 +45,12 @@ export function newBillForm(partyId, projId) {
 }
 export function editBillForm(b) { return { editId: b.id, partyId: b.partyId, projId: b.projId, amount: String(b.amount), note: b.note || '', date: b.date } }
 export function newStage() { return { id: uid(), name: '', amount: '', date: '' } }
-export function newOption() { return { id: uid(), stone: '', mandir: '', rang: '' } }
+export function newOption() { return { id: uid(), stone: '', mandir: '', rang: '', sqft: '' } }
 
 export function proposalForm(id, copy) {
   const pr = id ? findProp(id) : null
   if (pr) {
-    const f = { editId: pr.id, kind: pr.kind || 'temple', item: pr.item || '', by: pr.by || '', god: pr.god, loc: pr.loc || '', pt: pr.pt || 'v', date: pr.date, lg: pr.lg || 'gu', signer: pr.signer || '', touched: true, options: pr.options.map((o) => ({ id: o.id, stone: o.stone || '', mandir: o.mandir ? String(o.mandir) : '', rang: o.rang ? String(o.rang) : '' })), notes: (pr.notes || []).slice() }
+    const f = { editId: pr.id, kind: pr.kind || 'temple', item: pr.item || '', by: pr.by || '', god: pr.god, loc: pr.loc || '', pt: pr.pt || 'v', date: pr.date, lg: pr.lg || 'gu', signer: pr.signer || '', touched: true, options: pr.options.map((o) => ({ id: o.id, stone: o.stone || '', mandir: o.mandir ? String(o.mandir) : '', rang: o.rang ? String(o.rang) : '', sqft: o.sqft ? String(o.sqft) : '' })), notes: (pr.notes || []).slice() }
     if (copy) { f.editId = undefined; f.god = ''; f.loc = ''; f.date = today() }
     return f
   }
@@ -152,7 +152,7 @@ export function saveProposal(f) {
     if (!String(f.item || '').trim()) return { err: 'Write what is being made (for example Sihasan).' }
   } else if (!opts.length) return { err: 'Add the rate (amount) for at least one option.' }
   const notes = f.notes.map((x) => String(x).trim()).filter(Boolean)
-  const base = { kind: f.kind || 'temple', item: String(f.item || '').trim(), by: String(f.by || '').trim(), god: stripGod(f.god), loc: String(f.loc || '').trim(), pt: f.pt, date: f.date || today(), lg: f.lg, signer: String(f.signer || '').trim(), options: opts.map((o) => ({ id: o.id, stone: String(o.stone || '').trim(), mandir: num(o.mandir), rang: num(o.rang) })), notes }
+  const base = { kind: f.kind || 'temple', item: String(f.item || '').trim(), by: String(f.by || '').trim(), god: stripGod(f.god), loc: String(f.loc || '').trim(), pt: f.pt, date: f.date || today(), lg: f.lg, signer: String(f.signer || '').trim(), options: opts.map((o) => ({ id: o.id, stone: String(o.stone || '').trim(), mandir: num(o.mandir), rang: num(o.rang), sqft: num(o.sqft) })), notes }
   DB.biz.signer = base.signer || DB.biz.signer
   DB.biz.lang = f.lg
   if (f.editId) {
