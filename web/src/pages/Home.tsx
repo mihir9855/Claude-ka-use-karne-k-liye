@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react'
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis, LabelList } from 'recharts'
+import { useState } from 'react'
 import { motion } from 'motion/react'
 import { FolderPlus, Search } from 'lucide-react'
 import { BlurFade } from '@/magicui/blur-fade'
@@ -10,16 +9,15 @@ import { ShimmerButton } from '@/magicui/shimmer-button'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
+import { DonutCard, MonthsCard, WaterfallCard } from '@/components/app/dash'
 import { Logo, SectionTitle, EmptyState, Ornament } from '@/components/app/common'
 import { ProjectCard, TxnRow } from '@/components/app/rows'
 import { useData } from '@/lib/store'
 import { useModal } from '@/app/modal'
-import { LH, SECTIONS, SHORT, fmt, today } from '@/engine/engine.js'
+import { LH, SHORT, fmt, today } from '@/engine/engine.js'
 import { newProjectForm } from '@/engine/actions.js'
 import { AnimatedBackground } from '@/motion-primitives/animated-background'
 
-const SEC_COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
 
 function Kpi({ label, value, note, tone, i }: { label: string; value: number; note: string; tone: string; i: number }) {
   return (
@@ -42,23 +40,6 @@ export default function Home() {
   const hr = new Date().getHours()
   const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'
   const pct = D.totalValue ? Math.round((D.received / D.totalValue) * 100) : 0
-
-  const monthData = D.months.map((m: any) => ({ m: m.l, inn: m.inn, out: m.out }))
-  const monthCfg: ChartConfig = { inn: { label: 'Received', color: 'var(--income)' }, out: { label: 'Spent', color: 'var(--expense)' } }
-
-  const donut = SECTIONS.map((s: string, i: number) => ({ name: s, value: D.sec[s], fill: SEC_COLORS[i] })).filter((x: any) => x.value > 0)
-  const donutCfg: ChartConfig = Object.fromEntries(SECTIONS.map((s: string, i: number) => [s, { label: s, color: SEC_COLORS[i] }]))
-
-  const waterfall = useMemo(() => {
-    if (!D.received) return []
-    const rows: any[] = [{ name: 'Received', base: 0, v: D.received, fill: 'var(--income)' }]
-    let run = D.received
-    SECTIONS.forEach((s: string, i: number) => {
-      if (D.sec[s] > 0) { rows.push({ name: s === 'Site visit' ? 'Site' : s, base: Math.max(0, run - D.sec[s]), v: D.sec[s], fill: SEC_COLORS[i], neg: true }); run -= D.sec[s] }
-    })
-    rows.push({ name: 'In hand', base: 0, v: Math.abs(run), fill: run < 0 ? 'var(--expense)' : 'var(--primary)' })
-    return rows
-  }, [D])
 
   const recent = txns().slice(0, 6)
 
@@ -143,60 +124,9 @@ export default function Home() {
       </section>
 
       <div className="grid gap-4 lg:grid-cols-12">
-        <BlurFade inView className="lg:col-span-7">
-          <Card className="h-full rounded-3xl p-5">
-            <SectionTitle>Where the money goes</SectionTitle>
-            {waterfall.length ? (
-              <ChartContainer config={{ v: { label: 'Amount' } }} className="h-60 w-full">
-                <BarChart data={waterfall} margin={{ top: 22, left: 0, right: 0 }}>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                  <YAxis hide />
-                  <Bar dataKey="base" stackId="a" fill="transparent" isAnimationActive={false} />
-                  <Bar dataKey="v" stackId="a" radius={8}>
-                    {waterfall.map((r: any, i: number) => <Cell key={i} fill={r.fill} />)}
-                    <LabelList dataKey="v" position="top" formatter={(v: any) => SHORT(v)} className="fill-foreground text-[11px] font-bold" />
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
-            ) : <div className="py-12 text-center text-sm text-muted-foreground">This chart appears once you record money received from a client.</div>}
-          </Card>
-        </BlurFade>
-        <BlurFade inView className="lg:col-span-5">
-          <Card className="h-full rounded-3xl p-5">
-            <SectionTitle>Spending by section</SectionTitle>
-            {donut.length ? (
-              <div className="flex flex-wrap items-center gap-4">
-                <ChartContainer config={donutCfg} className="size-40 shrink-0">
-                  <PieChart>
-                    <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                    <Pie data={donut} dataKey="value" nameKey="name" innerRadius={44} outerRadius={70} paddingAngle={2} strokeWidth={0} />
-                  </PieChart>
-                </ChartContainer>
-                <div className="min-w-32 flex-1 text-sm">
-                  {donut.map((d: any) => (
-                    <div key={d.name} className="flex items-center justify-between gap-2 py-1"><span className="flex items-center gap-2"><i className="size-2.5 rounded-sm" style={{ background: d.fill }} />{d.name}</span><b className="tn">{Math.round((d.value / D.spent) * 100)}%</b></div>
-                  ))}
-                </div>
-              </div>
-            ) : <div className="py-12 text-center text-sm text-muted-foreground">No spending yet.</div>}
-          </Card>
-        </BlurFade>
-        <BlurFade inView className="lg:col-span-12">
-          <Card className="h-full rounded-3xl p-5">
-            <SectionTitle right={<div className="flex gap-3 text-xs text-muted-foreground"><span className="flex items-center gap-1"><i className="size-2.5 rounded-sm bg-income" />Received</span><span className="flex items-center gap-1"><i className="size-2.5 rounded-sm bg-expense" />Spent</span></div>}>Last 6 months</SectionTitle>
-            <ChartContainer config={monthCfg} className="h-52 w-full">
-              <BarChart data={monthData} margin={{ top: 18 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey="m" tickLine={false} axisLine={false} />
-                <YAxis hide />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="inn" fill="var(--color-inn)" radius={6} />
-                <Bar dataKey="out" fill="var(--color-out)" radius={6} />
-              </BarChart>
-            </ChartContainer>
-          </Card>
-        </BlurFade>
+        <BlurFade inView className="lg:col-span-7"><WaterfallCard D={D} /></BlurFade>
+        <BlurFade inView className="lg:col-span-5"><DonutCard D={D} /></BlurFade>
+        <BlurFade inView className="lg:col-span-12"><MonthsCard D={D} /></BlurFade>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-12">

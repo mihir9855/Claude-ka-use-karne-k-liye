@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { Bar, BarChart, CartesianGrid, Cell, LabelList, Pie, PieChart, XAxis, YAxis } from 'recharts'
+import { useMemo, useState } from 'react'
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { motion } from 'motion/react'
 import { BlurFade } from '@/magicui/blur-fade'
 import { NumberTicker } from '@/magicui/number-ticker'
@@ -9,7 +9,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { SectionTitle } from '@/components/app/common'
 import { LH } from '@/engine/engine.js'
 import { TxnRow } from '@/components/app/rows'
-import { INR, MON, SECTIONS, SHORT, fmt } from '@/engine/engine.js'
+import { AnimatedBackground } from '@/motion-primitives/animated-background'
+import { DB, INR, MON, SECTIONS, SHORT, fmt } from '@/engine/engine.js'
 import { cn } from '@/lib/utils'
 
 export const SEC_COLORS = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
@@ -64,78 +65,128 @@ export function Kpis({ D }: { D: any }) {
   )
 }
 
-export function WaterfallCard({ D, h = 'h-60' }: { D: any; h?: string }) {
-  const rows = useMemo(() => {
-    if (!D.received) return []
-    const r: any[] = [{ name: 'Received', base: 0, v: D.received, fill: 'var(--income)' }]
-    let run = D.received
-    SECTIONS.forEach((s: string, i: number) => {
-      if (D.sec[s] > 0) { r.push({ name: s === 'Site visit' ? 'Site' : s, base: Math.max(0, run - D.sec[s]), v: D.sec[s], fill: SEC_COLORS[i] }); run -= D.sec[s] }
-    })
-    r.push({ name: 'In hand', base: 0, v: Math.abs(run), fill: run < 0 ? 'var(--expense)' : 'var(--primary)' })
-    return r
-  }, [D])
+export function WaterfallCard({ D }: { D: any; h?: string }) {
+  const rec = D.received
+  const parts = SECTIONS.map((s: string, i: number) => ({ name: s, v: D.sec[s] as number, c: SEC_COLORS[i] })).filter((x: any) => x.v > 0)
+  const inHand = rec - D.spent
   return (
     <Card className="h-full rounded-3xl p-5">
       <SectionTitle>Where the money goes</SectionTitle>
-      {rows.length ? (
-        <ChartContainer config={{ v: { label: 'Amount' } }} className={cn(h, 'w-full')}>
-          <BarChart data={rows} margin={{ top: 22, left: 0, right: 0 }}>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-            <YAxis hide />
-            <Bar dataKey="base" stackId="a" fill="transparent" isAnimationActive={false} />
-            <Bar dataKey="v" stackId="a" radius={8}>
-              {rows.map((r: any, i: number) => <Cell key={i} fill={r.fill} />)}
-              <LabelList dataKey="v" position="top" formatter={(v: any) => SHORT(v)} className="fill-foreground text-[11px] font-bold" />
-            </Bar>
-          </BarChart>
-        </ChartContainer>
-      ) : <div className="py-12 text-center text-sm text-muted-foreground">This chart appears once you record money received from a client.</div>}
+      {rec ? (
+        <>
+          <div className="flex items-end justify-between gap-3">
+            <div><div className="text-xs text-muted-foreground">Received</div><div className="font-display tn text-2xl font-extrabold text-income">{INR(rec)}</div></div>
+            <div className="text-right"><div className="text-xs text-muted-foreground">{inHand < 0 ? 'Overspent' : 'In hand'}</div><div className={cn('font-display tn text-2xl font-extrabold', inHand < 0 ? 'text-expense' : 'text-primary')}>{INR(Math.abs(inHand))}</div></div>
+          </div>
+          <div className="mt-3 flex h-6 gap-1 overflow-hidden rounded-full bg-muted p-1" role="img" aria-label="How the received money was spent">
+            {parts.map((p: any, i: number) => (
+              <motion.i key={p.name} title={`${p.name} ${INR(p.v)}`} className="block h-full rounded-full" style={{ background: p.c }} initial={{ width: 0 }} animate={{ width: Math.min(100, (p.v / rec) * 100) + '%' }} transition={{ duration: 0.8, delay: i * 0.08, ease: [0.2, 0.8, 0.2, 1] }} />
+            ))}
+            {inHand > 0 ? <motion.i className="block h-full flex-1 rounded-full bg-primary/25" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} /> : null}
+          </div>
+          <div className="mt-4 grid gap-1">
+            {parts.map((p: any) => (
+              <div key={p.name} className="flex items-center gap-3 rounded-xl px-1 py-1.5 text-sm">
+                <i className="size-3 shrink-0 rounded-[4px]" style={{ background: p.c }} />
+                <span className="flex-1 truncate font-semibold">{p.name}</span>
+                <span className="tn text-muted-foreground">{Math.round((p.v / rec) * 100)}%</span>
+                <b className="tn w-28 text-right">{INR(p.v)}</b>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : <div className="py-12 text-center text-sm text-muted-foreground">This appears once you record money received from a client.</div>}
     </Card>
   )
 }
 
 export function DonutCard({ D }: { D: any }) {
-  const donut = SECTIONS.map((s: string, i: number) => ({ name: s, value: D.sec[s], fill: SEC_COLORS[i] })).filter((x: any) => x.value > 0)
-  const cfg: ChartConfig = Object.fromEntries(SECTIONS.map((s: string, i: number) => [s, { label: s, color: SEC_COLORS[i] }]))
+  const tiles = SECTIONS.map((s: string, i: number) => ({ name: s, v: D.sec[s] as number, c: SEC_COLORS[i] })).filter((x: any) => x.v > 0).sort((a: any, b: any) => b.v - a.v)
   return (
     <Card className="h-full rounded-3xl p-5">
       <SectionTitle>Spending by section</SectionTitle>
-      {donut.length ? (
-        <div className="grid justify-items-center gap-4">
-          <ChartContainer config={cfg} className="size-40 shrink-0">
-            <PieChart>
-              <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-              <Pie data={donut} dataKey="value" nameKey="name" innerRadius={44} outerRadius={70} paddingAngle={2} strokeWidth={0} />
-            </PieChart>
-          </ChartContainer>
-          <div className="w-full text-sm">
-            {donut.map((d: any) => (
-              <div key={d.name} className="flex items-center justify-between gap-2 py-1"><span className="flex items-center gap-2"><i className="size-2.5 rounded-sm" style={{ background: d.fill }} />{d.name}</span><b className="tn">{Math.round((d.value / D.spent) * 100)}%</b></div>
-            ))}
-          </div>
+      {tiles.length ? (
+        <div className="grid grid-cols-2 gap-2">
+          {tiles.map((t: any, i: number) => {
+            const share = t.v / D.spent
+            return (
+              <motion.div key={t.name} initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.06 }}
+                className={cn('flex min-h-24 flex-col justify-between rounded-2xl p-3 text-white', i === 0 && 'col-span-2')}
+                style={{ background: `linear-gradient(135deg, ${t.c}, color-mix(in oklab, ${t.c} 62%, #000))` }}>
+                <span className="text-xs font-semibold opacity-90">{t.name}</span>
+                <div><div className="font-display tn text-xl font-extrabold leading-tight">{SHORT(t.v)}</div><div className="text-xs opacity-85">{Math.round(share * 100)}% of spending</div></div>
+              </motion.div>
+            )
+          })}
         </div>
       ) : <div className="py-12 text-center text-sm text-muted-foreground">No spending yet.</div>}
     </Card>
   )
 }
 
+type Range = 'week' | 'month' | 'year'
+const RANGES: [Range, string][] = [['week', 'Week'], ['month', 'Month'], ['year', 'Year']]
+const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const pad2 = (n: number) => String(n).padStart(2, '0')
+const isoOf = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+
+function series(range: Range) {
+  const now = new Date()
+  const rows: { k: string; l: string; inn: number; out: number }[] = []
+  if (range === 'week') {
+    for (let i = 6; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i); rows.push({ k: isoOf(d), l: WD[d.getDay()], inn: 0, out: 0 }) }
+  } else if (range === 'month') {
+    const last = now.getDate()
+    for (let day = 1; day <= last; day++) rows.push({ k: `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(day)}`, l: String(day), inn: 0, out: 0 })
+  } else {
+    for (let i = 11; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); rows.push({ k: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`, l: MON[d.getMonth()], inn: 0, out: 0 }) }
+  }
+  const idx: Record<string, number> = {}
+  rows.forEach((r, i) => { idx[r.k] = i })
+  DB.txns.forEach((t: any) => {
+    if (!t.date || (t.kind !== 'in' && t.kind !== 'out')) return
+    const i = idx[range === 'year' ? t.date.slice(0, 7) : t.date]
+    if (i == null) return
+    if (t.kind === 'in') rows[i].inn += t.amount
+    else rows[i].out += t.amount
+  })
+  return rows
+}
+
 export function MonthsCard({ D, h = 'h-52' }: { D: any; h?: string }) {
-  const data = D.months.map((m: any) => ({ m: m.l, inn: m.inn, out: m.out }))
+  const [range, setRange] = useState<Range>('week')
+  const data = useMemo(() => series(range), [range, D])
+  const totIn = data.reduce((a, r) => a + r.inn, 0), totOut = data.reduce((a, r) => a + r.out, 0)
   const cfg: ChartConfig = { inn: { label: 'Received', color: 'var(--income)' }, out: { label: 'Spent', color: 'var(--expense)' } }
+  const title = range === 'week' ? 'Last 7 days' : range === 'month' ? 'This month' : 'Last 12 months'
   return (
     <Card className="h-full rounded-3xl p-5">
-      <SectionTitle right={<div className="flex gap-3 text-xs text-muted-foreground"><span className="flex items-center gap-1"><i className="size-2.5 rounded-sm bg-income" />Received</span><span className="flex items-center gap-1"><i className="size-2.5 rounded-sm bg-expense" />Spent</span></div>}>Last 6 months</SectionTitle>
+      <SectionTitle right={
+        <div className="inline-flex rounded-full bg-muted p-1">
+          <AnimatedBackground defaultValue={range} onValueChange={(v) => v && setRange(v as Range)} className="rounded-full bg-card shadow" transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}>
+            {RANGES.map(([k, l]) => (
+              <button key={k} data-id={k} className="px-3 py-1 text-xs font-semibold text-muted-foreground transition data-[checked=true]:text-foreground">{l}</button>
+            ))}
+          </AnimatedBackground>
+        </div>
+      }>{title}</SectionTitle>
+      <div className="mb-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        <span className="flex items-center gap-1.5 text-muted-foreground"><i className="size-2.5 rounded-sm bg-income" />Received <b className="tn text-foreground">{SHORT(totIn)}</b></span>
+        <span className="flex items-center gap-1.5 text-muted-foreground"><i className="size-2.5 rounded-sm bg-expense" />Spent <b className="tn text-foreground">{SHORT(totOut)}</b></span>
+      </div>
       <ChartContainer config={cfg} className={cn(h, 'w-full')}>
-        <BarChart data={data} margin={{ top: 18 }}>
+        <AreaChart data={data} margin={{ top: 10, left: 4, right: 4 }}>
+          <defs>
+            <linearGradient id="gIn" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--color-inn)" stopOpacity={0.4} /><stop offset="95%" stopColor="var(--color-inn)" stopOpacity={0} /></linearGradient>
+            <linearGradient id="gOut" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--color-out)" stopOpacity={0.35} /><stop offset="95%" stopColor="var(--color-out)" stopOpacity={0} /></linearGradient>
+          </defs>
           <CartesianGrid vertical={false} strokeDasharray="3 3" />
-          <XAxis dataKey="m" tickLine={false} axisLine={false} />
+          <XAxis dataKey="l" tickLine={false} axisLine={false} interval={range === 'month' ? 'preserveStartEnd' : 0} minTickGap={8} padding={{ left: 14, right: 14 }} tick={{ fontSize: 11 }} />
           <YAxis hide />
           <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar dataKey="inn" fill="var(--color-inn)" radius={6} />
-          <Bar dataKey="out" fill="var(--color-out)" radius={6} />
-        </BarChart>
+          <Area type="monotone" dataKey="inn" stroke="var(--color-inn)" strokeWidth={2.5} fill="url(#gIn)" dot={range === 'month' ? false : { r: 3 }} activeDot={{ r: 5 }} />
+          <Area type="monotone" dataKey="out" stroke="var(--color-out)" strokeWidth={2.5} fill="url(#gOut)" dot={range === 'month' ? false : { r: 3 }} activeDot={{ r: 5 }} />
+        </AreaChart>
       </ChartContainer>
     </Card>
   )

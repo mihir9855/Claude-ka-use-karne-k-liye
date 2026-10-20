@@ -16,7 +16,7 @@ export default function Settings() {
   const { biz } = useData()
   const { open } = useModal()
   const { theme, setTheme } = useTheme()
-  const [style, setStyle] = useState(document.documentElement.dataset.style || 'vivid')
+  const [style, setStyle] = useState(document.documentElement.dataset.style || 'calm')
   const [b, setB] = useState({ name: biz.name, phone: biz.phone || '', addr: biz.addr || '' })
 
   const copyBackup = () => {
@@ -50,7 +50,7 @@ export default function Settings() {
         <div className="text-sm font-semibold text-muted-foreground">Letterhead for client receipts</div>
         <Chips className="mt-2" options={[{ value: 'c', label: 'Colour' }, { value: 'b', label: 'Black and white' }]} value={biz.lhBW ? 'b' : 'c'} onChange={(v) => setLetterheadBW(v === 'b')} />
         <div className="mt-5 text-sm font-semibold text-muted-foreground">Style</div>
-        <Chips className="mt-2" options={[{ value: 'vivid', label: 'Vivid (colourful)' }, { value: 'mandir', label: 'Mandir (gold)' }, { value: 'clean', label: 'Clean' }]} value={style} onChange={(v) => { document.documentElement.dataset.style = v; try { localStorage.setItem('bt-style', v) } catch { /* private mode */ } setStyle(v) }} />
+        <Chips className="mt-2" options={[{ value: 'calm', label: 'Calm' }, { value: 'vivid', label: 'Vivid (colourful)' }, { value: 'mandir', label: 'Mandir (gold)' }, { value: 'clean', label: 'Clean' }]} value={style} onChange={(v) => { document.documentElement.dataset.style = v; try { localStorage.setItem('bt-style', v) } catch { /* private mode */ } setStyle(v) }} />
         <div className="mt-5 text-sm font-semibold text-muted-foreground">Theme</div>
         <Chips className="mt-2" options={[{ value: 'light', label: <span className="flex items-center gap-1.5"><Sun className="size-4" /> Light</span> }, { value: 'dark', label: <span className="flex items-center gap-1.5"><Moon className="size-4" /> Dark</span> }]} value={theme === 'dark' ? 'dark' : 'light'} onChange={(v) => setTheme(v)} />
       </Card>

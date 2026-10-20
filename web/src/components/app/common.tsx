@@ -13,7 +13,7 @@ export function Logo({ height = 40, className }: { height?: number; className?: 
 export function Avatar({ name, tone, className }: { name: string; tone?: 'primary' | 'income' | 'expense' | 'saffron' | 'info'; className?: string }) {
   if (!tone) {
     const col = hashPick(name || '?')
-    return <div style={{ background: `color-mix(in oklab, ${col} 16%, var(--card))`, color: col }} className={cn('grid size-10 shrink-0 place-items-center rounded-full text-sm font-extrabold', className)}>{(name || '?').trim().charAt(0).toUpperCase()}</div>
+    return <div style={{ background: `color-mix(in oklab, ${col} 16%, var(--card))`, color: col }} className={cn('avatar-auto grid size-10 shrink-0 place-items-center rounded-full text-sm font-extrabold', className)}>{(name || '?').trim().charAt(0).toUpperCase()}</div>
   }
   const t = {
     primary: 'bg-primary/10 text-primary',

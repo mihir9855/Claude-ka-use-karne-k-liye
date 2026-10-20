@@ -425,3 +425,97 @@ html.dark[data-style="vivid"] [data-slot="card"] { box-shadow: 0 0 0 1px rgba(25
     box-shadow: 0 20px 40px -18px rgba(70, 40, 190, 0.5); padding-bottom: 0 !important;
   }
 }
+
+/* ================= "Calm" look: neutral paper, one quiet blue accent, colour only where it means money ================= */
+:root[data-style="calm"] {
+  --font-display: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --radius: 1rem;
+  --background: #f5f6f8;
+  --foreground: #12161f;
+  --card: #ffffff;
+  --card-foreground: #12161f;
+  --popover: #ffffff;
+  --primary: #33439e;
+  --primary-foreground: #ffffff;
+  --secondary: #eceef2;
+  --muted: #f0f1f4;
+  --muted-foreground: #6b7280;
+  --accent: #eaedfa;
+  --accent-foreground: #2a3680;
+  --border: #e4e6eb;
+  --input: #d9dce3;
+  --ring: #33439e;
+  --income: #0f7a5f;
+  --expense: #bf3b3b;
+  --saffron: #8a6a1f;
+  --info: #3b5b9a;
+  --hero-grad: linear-gradient(135deg, #1d2a66, #33439e);
+  --hero2-grad: linear-gradient(135deg, #2b3a63, #1f2b4a);
+  --hero-glow: #cbd5ff;
+  --c1: #33439e;
+  --c2: #6f7fd0;
+  --c3: #9aa3c8;
+  --c4: #5b6b8f;
+  --c5: #b9c0e6;
+  --c6: #44506b;
+}
+html.dark[data-style="calm"] {
+  --background: #0f1115;
+  --foreground: #eceef3;
+  --card: #171a21;
+  --card-foreground: #eceef3;
+  --popover: #1c2029;
+  --primary: #93a3ff;
+  --primary-foreground: #0d1330;
+  --secondary: #20242e;
+  --muted: #1b1f27;
+  --muted-foreground: #9aa1b2;
+  --accent: #232a4a;
+  --accent-foreground: #c9d1ff;
+  --border: #262b36;
+  --input: #2f3542;
+  --ring: #93a3ff;
+  --income: #4fc3a0;
+  --expense: #ef8080;
+  --saffron: #d6b25c;
+  --info: #8fb0e8;
+  --hero-grad: linear-gradient(135deg, #1b2354, #2a3786);
+  --hero2-grad: linear-gradient(135deg, #222a3d, #181d2b);
+  --hero-glow: #c6d0ff;
+  --c1: #93a3ff;
+  --c2: #6677d1;
+  --c3: #7e879f;
+  --c4: #b4bde3;
+  --c5: #55608a;
+  --c6: #9aa1b2;
+}
+[data-style="calm"] .font-display { font-weight: 800; letter-spacing: -0.015em; }
+[data-style="calm"] [data-slot="card"] { border-color: var(--border); border-radius: 1.25rem; box-shadow: none; }
+[data-style="calm"] button.bg-primary, [data-style="calm"] [data-slot="button"].bg-primary { box-shadow: none; }
+[data-style="calm"] .kpi-arch { border-radius: 1.25rem !important; }
+
+/* KPI tiles are plain cards; only the number carries colour */
+[data-style="calm"] [data-kpi] { background: var(--card) !important; color: var(--foreground) !important; border: 1px solid var(--border); }
+[data-style="calm"] [data-kpi] * { color: inherit !important; }
+[data-style="calm"] [data-kpi] .tn { color: var(--foreground) !important; }
+[data-style="calm"] [data-kpi="received"] .tn { color: var(--income) !important; }
+[data-style="calm"] [data-kpi="spent"] .tn { color: var(--expense) !important; }
+[data-style="calm"] [data-kpi] > div:first-child { color: var(--muted-foreground) !important; opacity: 1; }
+[data-style="calm"] [data-kpi] > div:last-child { color: var(--muted-foreground) !important; opacity: 1; }
+
+/* hero: one calm gradient with a soft highlight */
+[data-style="calm"] .jaali::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: radial-gradient(18rem 12rem at 88% -12%, rgba(255, 255, 255, 0.14), transparent 62%);
+}
+[data-style="calm"] .proj-ring { color: var(--primary); }
+[data-style="calm"] .avatar-auto { background: var(--accent) !important; color: var(--accent-foreground) !important; }
+[data-style="calm"] i.bg-primary { background-image: none; }
+
+@media (max-width: 1023px) {
+  [data-style="calm"] nav.dock {
+    left: 0.75rem; right: 0.75rem; bottom: calc(0.6rem + env(safe-area-inset-bottom));
+    border-radius: 1.5rem; border: 1px solid var(--border);
+    box-shadow: 0 12px 28px -16px rgba(15, 20, 40, 0.35); padding-bottom: 0 !important;
+  }
+}
