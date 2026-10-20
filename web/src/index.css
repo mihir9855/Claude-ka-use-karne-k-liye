@@ -188,3 +188,6 @@
 
 /* grid children may shrink below their content, so charts never stretch the page */
 main .grid > *, main .flex > * { min-width: 0; }
+
+/* The artifact viewer and some WebViews paint a white body; keep the page on the theme colour in both modes. */
+html, body { background-color: var(--background) !important; color: var(--foreground); }
