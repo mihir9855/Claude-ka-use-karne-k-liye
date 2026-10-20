@@ -12,11 +12,14 @@ import { toast, fallbackCopy } from '@/engine/engine.js'
 import { backupText, saveBiz, setLetterheadBW } from '@/engine/actions.js'
 import { useSyncState } from '@/lib/sync'
 
+const ACCENTS: [string, string, string][] = [['indigo', 'Indigo', '#33439e'], ['teal', 'Teal', '#0e7490'], ['green', 'Green', '#0f7a5f'], ['purple', 'Purple', '#6d3fd1'], ['rose', 'Rose', '#c0305a'], ['black', 'Black', '#1c2230']]
+
 export default function Settings() {
   const { biz } = useData()
   const { open } = useModal()
   const { theme, setTheme } = useTheme()
   const [style, setStyle] = useState(document.documentElement.dataset.style || 'calm')
+  const [accent, setAccent] = useState(document.documentElement.dataset.accent || 'indigo')
   const [b, setB] = useState({ name: biz.name, phone: biz.phone || '', addr: biz.addr || '' })
 
   const copyBackup = () => {
@@ -51,6 +54,15 @@ export default function Settings() {
         <Chips className="mt-2" options={[{ value: 'c', label: 'Colour' }, { value: 'b', label: 'Black and white' }]} value={biz.lhBW ? 'b' : 'c'} onChange={(v) => setLetterheadBW(v === 'b')} />
         <div className="mt-5 text-sm font-semibold text-muted-foreground">Style</div>
         <Chips className="mt-2" options={[{ value: 'calm', label: 'Calm' }, { value: 'vivid', label: 'Vivid (colourful)' }, { value: 'mandir', label: 'Mandir (gold)' }, { value: 'clean', label: 'Clean' }]} value={style} onChange={(v) => { document.documentElement.dataset.style = v; try { localStorage.setItem('bt-style', v) } catch { /* private mode */ } setStyle(v) }} />
+        <div className="mt-5 text-sm font-semibold text-muted-foreground">Accent colour</div>
+        <div className="mt-2 flex flex-wrap gap-3" role="group" aria-label="Accent colour">
+          {ACCENTS.map(([k, label, col]) => (
+            <button key={k} type="button" aria-label={label} aria-pressed={accent === k} title={label} onClick={() => { if (k === 'indigo') delete document.documentElement.dataset.accent; else document.documentElement.dataset.accent = k; try { localStorage.setItem('bt-accent', k === 'indigo' ? '' : k) } catch { /* private mode */ } setAccent(k) }}
+              className={'grid size-10 place-items-center rounded-full ring-offset-2 ring-offset-card transition ' + (accent === k ? 'ring-2 ring-foreground' : 'hover:scale-105')} style={{ background: col }}>
+              {accent === k ? <span className="size-2 rounded-full bg-white" /> : null}
+            </button>
+          ))}
+        </div>
         <div className="mt-5 text-sm font-semibold text-muted-foreground">Theme</div>
         <Chips className="mt-2" options={[{ value: 'light', label: <span className="flex items-center gap-1.5"><Sun className="size-4" /> Light</span> }, { value: 'dark', label: <span className="flex items-center gap-1.5"><Moon className="size-4" /> Dark</span> }]} value={theme === 'dark' ? 'dark' : 'light'} onChange={(v) => setTheme(v)} />
       </Card>

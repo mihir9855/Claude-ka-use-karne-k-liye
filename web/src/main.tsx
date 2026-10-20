@@ -6,6 +6,7 @@ import { Root } from '@/app/Shell'
 import { warmFonts } from '@/engine/engine.js'
 
 warmFonts()
+try { const a = localStorage.getItem('bt-accent'); if (a) document.documentElement.dataset.accent = a } catch { /* private mode */ }
 try { document.documentElement.dataset.style = localStorage.getItem('bt-style') || 'calm' } catch { document.documentElement.dataset.style = 'calm' }
 
 createRoot(document.getElementById('root')!).render(

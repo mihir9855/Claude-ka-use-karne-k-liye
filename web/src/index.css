@@ -519,3 +519,15 @@ html.dark[data-style="calm"] {
     box-shadow: 0 12px 28px -16px rgba(15, 20, 40, 0.35); padding-bottom: 0 !important;
   }
 }
+
+/* ================= Accent colour chosen in Settings (works with every style) ================= */
+:root[data-style][data-accent="teal"] { --primary: #0e7490; --ring: #0e7490; --accent: #e0f2f6; --accent-foreground: #0b5568; --hero-grad: linear-gradient(135deg, #0b3a4a, #0e7490); }
+html.dark[data-style][data-accent="teal"] { --primary: #67d1ea; --primary-foreground: #04222b; --ring: #67d1ea; --accent: #16323a; --accent-foreground: #b6ecf8; --hero-grad: linear-gradient(135deg, #0c3441, #11667f); }
+:root[data-style][data-accent="green"] { --primary: #0f7a5f; --ring: #0f7a5f; --accent: #e3f3ee; --accent-foreground: #0b5c47; --hero-grad: linear-gradient(135deg, #0b3d30, #0f7a5f); }
+html.dark[data-style][data-accent="green"] { --primary: #5ccaa6; --primary-foreground: #04261c; --ring: #5ccaa6; --accent: #1b3a32; --accent-foreground: #b5ecd7; --hero-grad: linear-gradient(135deg, #0f3a2f, #176b55); }
+:root[data-style][data-accent="purple"] { --primary: #6d3fd1; --ring: #6d3fd1; --accent: #efe8fb; --accent-foreground: #4b2a99; --hero-grad: linear-gradient(135deg, #3b1d82, #6d3fd1); }
+html.dark[data-style][data-accent="purple"] { --primary: #b79cff; --primary-foreground: #1c0b44; --ring: #b79cff; --accent: #2b2150; --accent-foreground: #ddd0ff; --hero-grad: linear-gradient(135deg, #2f1c66, #5a35b0); }
+:root[data-style][data-accent="rose"] { --primary: #c0305a; --ring: #c0305a; --accent: #fbe7ee; --accent-foreground: #8f1f42; --hero-grad: linear-gradient(135deg, #7b1a3a, #c0305a); }
+html.dark[data-style][data-accent="rose"] { --primary: #f48bab; --primary-foreground: #3a0a1b; --ring: #f48bab; --accent: #3a2029; --accent-foreground: #fcc9d9; --hero-grad: linear-gradient(135deg, #5a1730, #a02a4f); }
+:root[data-style][data-accent="black"] { --primary: #1c2230; --ring: #1c2230; --accent: #ececf0; --accent-foreground: #1c2230; --hero-grad: linear-gradient(135deg, #0f172a, #334155); }
+html.dark[data-style][data-accent="black"] { --primary: #e6e8ee; --primary-foreground: #0f1115; --ring: #e6e8ee; --accent: #262a33; --accent-foreground: #e6e8ee; --hero-grad: linear-gradient(135deg, #1b2230, #2f3a4d); }

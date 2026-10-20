@@ -10,13 +10,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { Avatar, EmptyState, SectionTitle } from '@/components/app/common'
 import { ProjectCard, TxnRow } from '@/components/app/rows'
+import { DonutCard, MonthsCard, WaterfallCard } from '@/components/app/dash'
 import { useData } from '@/lib/store'
 import { useModal } from '@/app/modal'
 import { go } from '@/lib/router'
 import { INR, LH, SECTIONS, SHORT, fmt } from '@/engine/engine.js'
 import { deleteProject, editProjectForm, newEntryForm, newProjectForm, toggleStage } from '@/engine/actions.js'
 
-const SEC = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
 
 export default function Projects({ id }: { id?: string }) {
   const { D } = useData()
@@ -45,7 +45,6 @@ export function Detail({ id, embedded }: { id: string; embedded?: boolean }) {
   const ids: Record<string, 1> = {}
   tx.forEach((t: any) => { if (t.partyId) ids[t.partyId] = 1 })
   const people = D.parties.filter((x: any) => ids[x.id])
-  const maxSec = Math.max(1, ...SECTIONS.map((s: string) => p.sec[s]))
 
   return (
     <div className="grid gap-4">
@@ -102,16 +101,11 @@ export function Detail({ id, embedded }: { id: string; embedded?: boolean }) {
             <div className="mt-3 text-xs text-muted-foreground">{p.progress}% of stages done</div>
           </Card>
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="rounded-3xl p-5">
-              <SectionTitle>Where the money went</SectionTitle>
-              {p.spent ? SECTIONS.filter((s: string) => p.sec[s] > 0).map((s: string) => (
-                <div key={s} className="mt-3 first:mt-0">
-                  <div className="flex justify-between text-sm font-semibold"><span>{s}</span><span className="tn">{INR(p.sec[s])}</span></div>
-                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted"><i className="block h-full rounded-full" style={{ width: Math.round((p.sec[s] / maxSec) * 100) + '%', background: SEC[SECTIONS.indexOf(s)] }} /></div>
-                </div>
-              )) : <div className="py-4 text-sm text-muted-foreground">No expenses yet.</div>}
-            </Card>
-            <Card className="rounded-3xl p-5">
+            <WaterfallCard D={p} />
+            <DonutCard D={p} />
+          </div>
+          <MonthsCard D={D} projId={id} />
+          <Card className="rounded-3xl p-5">
               <SectionTitle>Client payments by stage</SectionTitle>
               <ChartContainer config={stageCfg} className="h-44 w-full">
                 <BarChart data={stageData} margin={{ top: 8 }}>
@@ -124,7 +118,6 @@ export function Detail({ id, embedded }: { id: string; embedded?: boolean }) {
                 </BarChart>
               </ChartContainer>
             </Card>
-          </div>
           <Card className="rounded-3xl p-5">
             <SectionTitle>Entries</SectionTitle>
             {tx.length ? tx.slice(0, 8).map((t: any) => <TxnRow key={t.id} t={t} D={D} showProj={false} />) : <div className="py-3 text-sm text-muted-foreground">No entries in this project yet.</div>}

@@ -130,7 +130,7 @@ const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const pad2 = (n: number) => String(n).padStart(2, '0')
 const isoOf = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 
-function series(range: Range) {
+function series(range: Range, projId?: string) {
   const now = new Date()
   const rows: { k: string; l: string; inn: number; out: number }[] = []
   if (range === 'week') {
@@ -145,6 +145,7 @@ function series(range: Range) {
   rows.forEach((r, i) => { idx[r.k] = i })
   DB.txns.forEach((t: any) => {
     if (!t.date || (t.kind !== 'in' && t.kind !== 'out')) return
+    if (projId && t.projId !== projId) return
     const i = idx[range === 'year' ? t.date.slice(0, 7) : t.date]
     if (i == null) return
     if (t.kind === 'in') rows[i].inn += t.amount
@@ -153,9 +154,9 @@ function series(range: Range) {
   return rows
 }
 
-export function MonthsCard({ D, h = 'h-52' }: { D: any; h?: string }) {
+export function MonthsCard({ D, h = 'h-52', projId }: { D: any; h?: string; projId?: string }) {
   const [range, setRange] = useState<Range>('week')
-  const data = useMemo(() => series(range), [range, D])
+  const data = useMemo(() => series(range, projId), [range, D, projId])
   const totIn = data.reduce((a, r) => a + r.inn, 0), totOut = data.reduce((a, r) => a + r.out, 0)
   const cfg: ChartConfig = { inn: { label: 'Received', color: 'var(--income)' }, out: { label: 'Spent', color: 'var(--expense)' } }
   const title = range === 'week' ? 'Last 7 days' : range === 'month' ? 'This month' : 'Last 12 months'
