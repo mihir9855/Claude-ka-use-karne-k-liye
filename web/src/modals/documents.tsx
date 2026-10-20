@@ -99,8 +99,10 @@ export function ProposalModal({ form }: { form: any }) {
   const [busy, setBusy] = useState(false)
   const [attErr, setAttErr] = useState('')
   const [tm, setTm] = useState<TypeMode>('')
-  const tt = (v: string) => convertTyping(v, tm)
-  const ta = (v: string) => convertAll(v, tm)
+  const [hardD, setHardD] = useState(true)
+  const [hardT, setHardT] = useState(false)
+  const tt = (v: string) => convertTyping(v, tm, { hardD, hardT })
+  const ta = (v: string) => convertAll(v, tm, { hardD, hardT })
   const set = (k: string, v: any) => setF((p: any) => ({ ...p, [k]: v, touched: p.touched }))
   const lg = f.lg
   const setOpt = (i: number, k: string, v: string) => setF((p: any) => ({ ...p, options: p.options.map((o: any, j: number) => (j === i ? { ...o, [k]: v } : o)) }))
@@ -126,8 +128,14 @@ export function ProposalModal({ form }: { form: any }) {
         ))}
       </div>
       <Field label="Language"><Chips options={langOpts(['gu', 'hi', 'en'])} value={lg} onChange={setLg} /></Field>
-      <Field label="Typing" hint={tm ? 'Type in English letters, for example: shree khodiyaar maataa mandir. Each word turns into ' + (tm === 'gu' ? 'Gujarati' : 'Hindi') + ' when you press space. Use aa for a long vowel and a capital T, D, N for hard sounds.' : undefined}>
+      <Field label="Typing" hint={tm ? 'Type in English letters, for example: shree khodiyaar maataa mandir. Each word turns into ' + (tm === 'gu' ? 'Gujarati' : 'Hindi') + ' when you press space. Use aa for a long vowel. A capital letter gives the other sound (for example D when d is set to hard).' : undefined}>
         <Chips options={[{ value: '', label: 'Normal' }, { value: 'gu', label: 'ગુજરાતી (type in English letters)' }, { value: 'hi', label: 'हिन्दी (type in English letters)' }] as { value: TypeMode; label: string }[]} value={tm} onChange={(v) => setTm(v)} />
+        {tm ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" aria-pressed={hardD} onClick={() => setHardD((v) => !v)} className={'rounded-full border px-3 py-1.5 text-sm font-semibold ' + (hardD ? 'border-primary bg-primary/10 text-primary' : 'bg-background text-muted-foreground')}>d = {tm === 'gu' ? 'ડ' : 'ड'} {hardD ? '(on)' : '(off: d = ' + (tm === 'gu' ? 'દ' : 'द') + ')'}</button>
+            <button type="button" aria-pressed={hardT} onClick={() => setHardT((v) => !v)} className={'rounded-full border px-3 py-1.5 text-sm font-semibold ' + (hardT ? 'border-primary bg-primary/10 text-primary' : 'bg-background text-muted-foreground')}>t = {tm === 'gu' ? 'ટ' : 'ट'} {hardT ? '(on)' : '(off: t = ' + (tm === 'gu' ? 'ત' : 'त') + ')'}</button>
+          </div>
+        ) : null}
       </Field>
       <Field label="Which God's temple (e.g. Khodiyar Mata)"><TextInput value={f.god} onChange={(v) => set('god', tt(v))} onBlur={(e) => set('god', ta(e.currentTarget.value))} placeholder={ph('ખોડિયાર માતા', 'खोड़ियार माता', 'Khodiyar Mata')} /></Field>
       <Field label="Place (village or city)"><TextInput value={f.loc} onChange={(v) => set('loc', tt(v))} onBlur={(e) => set('loc', ta(e.currentTarget.value))} placeholder={ph('પુનધરા', 'पुनधरा', 'Punadhara')} /></Field>

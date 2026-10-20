@@ -2,6 +2,7 @@ import Sanscript from '@indic-transliteration/sanscript'
 
 /** Offline phonetic typing: Roman letters become Gujarati or Hindi when a word is finished. */
 export type TypeMode = '' | 'gu' | 'hi'
+export type TypeOpts = { hardD?: boolean; hardT?: boolean }
 
 // roman -> [Gujarati, Hindi]. Common temple and business words that plain rules cannot guess.
 const WORDS: Record<string, [string, string]> = {
@@ -25,9 +26,17 @@ const WORDS: Record<string, [string, string]> = {
 const SCRIPT = { gu: 'gujarati', hi: 'devanagari' } as const
 const VIRAMA = { gu: '્', hi: '्' } as const
 
-function plain(w: string, mode: 'gu' | 'hi'): string {
+// swap a <-> b, but leave dh / Dh / th / Th alone (they are never the hard-letter question)
+function swap(s: string, a: string, b: string): string {
+  return s.replace(new RegExp('[' + a + b + '](?!h)', 'g'), (c) => (c === a ? b : a))
+}
+
+function plain(w: string, mode: 'gu' | 'hi', o: TypeOpts): string {
   // Typed Hinglish -> ITRANS: lower-case unless a capital marks a retroflex letter inside the word
   let s = /^[A-Z][a-z]*$/.test(w) ? w.toLowerCase() : w
+  // optional: plain d / t mean the hard letters (ડ ટ); a capital then gives the soft one (દ ત)
+  if (o.hardD) s = swap(s, 'd', 'D')
+  if (o.hardT) s = swap(s, 't', 'T')
   s = s.replace(/n(?=[kgjtdpb]|ch|sh)/g, 'M') // n before a consonant -> anusvara
   // a lone a or i at the end of a longer word is almost always the long vowel (punadhara, aapi)
   if (s.length > 3) s = s.replace(/([b-df-hj-np-tv-z])a$/, '$1A').replace(/([b-df-hj-np-tv-z])i$/, '$1I')
@@ -38,26 +47,26 @@ function plain(w: string, mode: 'gu' | 'hi'): string {
   return out
 }
 
-export function convertWord(w: string, mode: TypeMode): string {
+export function convertWord(w: string, mode: TypeMode, o: TypeOpts = {}): string {
   if (!mode) return w
   const k = w.toLowerCase()
   const hit = WORDS[k]
   if (hit) return hit[mode === 'gu' ? 0 : 1]
   const bhai = k.match(/^(.+?)(bhai|ben)$/)
-  if (bhai && bhai[1].length > 1) return convertWord(bhai[1], mode) + (bhai[2] === 'bhai' ? (mode === 'gu' ? 'ભાઈ' : 'भाई') : mode === 'gu' ? 'બેન' : 'बेन')
-  return plain(w, mode)
+  if (bhai && bhai[1].length > 1) return convertWord(bhai[1], mode, o) + (bhai[2] === 'bhai' ? (mode === 'gu' ? 'ભાઈ' : 'भाई') : mode === 'gu' ? 'બેન' : 'बेन')
+  return plain(w, mode, o)
 }
 
 /** Convert every Roman word in the text. */
-export function convertAll(text: string, mode: TypeMode): string {
+export function convertAll(text: string, mode: TypeMode, o: TypeOpts = {}): string {
   if (!mode) return text
-  return text.replace(/[A-Za-z]+/g, (w) => convertWord(w, mode))
+  return text.replace(/[A-Za-z]+/g, (w) => convertWord(w, mode, o))
 }
 
 /** While typing: convert finished words but leave the word still being typed alone. */
-export function convertTyping(text: string, mode: TypeMode): string {
+export function convertTyping(text: string, mode: TypeMode, o: TypeOpts = {}): string {
   if (!mode) return text
   const m = text.match(/^([\s\S]*?)([A-Za-z]+)$/)
-  if (!m) return convertAll(text, mode)
-  return convertAll(m[1], mode) + m[2]
+  if (!m) return convertAll(text, mode, o)
+  return convertAll(m[1], mode, o) + m[2]
 }
