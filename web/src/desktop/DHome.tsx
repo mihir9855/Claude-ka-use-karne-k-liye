@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { CashHero, DonutCard, DueCard, HeatCard, Kpis, MonthsCard, RecentCard, WaterfallCard } from '@/components/app/dash'
+import { CashHero, DonutCard, Kpis, MonthsCard, RecentCard, WaterfallCard } from '@/components/app/dash'
 import { Ornament, SectionTitle } from '@/components/app/common'
 import Home from '@/pages/Home'
 import { useData } from '@/lib/store'
@@ -38,13 +38,7 @@ export default function DHome() {
       </div>
 
       <div className="grid grid-cols-12 gap-5">
-        <div className="col-span-5"><WaterfallCard D={D} h="h-56" /></div>
-        <div className="col-span-3"><DonutCard D={D} /></div>
-        <div className="col-span-4"><MonthsCard D={D} h="h-52" /></div>
-      </div>
-
-      <div className="grid grid-cols-12 gap-5">
-        <Card className="col-span-8 rounded-3xl p-5">
+        <Card className="col-span-12 rounded-3xl p-5">
           <SectionTitle right={
             <div className="flex items-center gap-2">
               <div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter projects" className="h-9 w-56 rounded-xl pl-9" /></div>
@@ -75,12 +69,17 @@ export default function DHome() {
             </table>
           </div>
         </Card>
-        <div className="col-span-4"><DueCard D={D} /></div>
       </div>
 
       <div className="grid grid-cols-12 gap-5">
-        <div className="col-span-8"><RecentCard D={D} list={txns().slice(0, 7)} /></div>
-        <div className="col-span-4"><HeatCard D={D} /></div>
+        <div className="col-span-5"><WaterfallCard D={D} h="h-56" /></div>
+        <div className="col-span-3"><DonutCard D={D} /></div>
+        <div className="col-span-4"><MonthsCard D={D} h="h-52" /></div>
+      </div>
+
+
+      <div className="grid grid-cols-12 gap-5">
+        <div className="col-span-12"><RecentCard D={D} list={txns().slice(0, 8)} /></div>
       </div>
     </div>
   )

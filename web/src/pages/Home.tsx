@@ -15,7 +15,7 @@ import { Logo, SectionTitle, EmptyState, Ornament } from '@/components/app/commo
 import { ProjectCard, TxnRow } from '@/components/app/rows'
 import { useData } from '@/lib/store'
 import { useModal } from '@/app/modal'
-import { INR, LH, MON, SECTIONS, SHORT, fmt, today } from '@/engine/engine.js'
+import { LH, SECTIONS, SHORT, fmt, today } from '@/engine/engine.js'
 import { newProjectForm } from '@/engine/actions.js'
 import { AnimatedBackground } from '@/motion-primitives/animated-background'
 
@@ -30,28 +30,6 @@ function Kpi({ label, value, note, tone, i }: { label: string; value: number; no
         <div className="mt-1 text-xs opacity-75">{note}</div>
       </div>
     </BlurFade>
-  )
-}
-
-function Heat({ D }: { D: any }) {
-  const now = new Date(), y = now.getFullYear(), m = now.getMonth()
-  const dim = new Date(y, m + 1, 0).getDate(), first = (new Date(y, m, 1).getDay() + 6) % 7, td = now.getDate()
-  let mx = 1
-  for (const k in D.heat) mx = Math.max(mx, D.heat[k])
-  const cells: any[] = []
-  for (let i = 0; i < first; i++) cells.push(<span key={'b' + i} />)
-  for (let d = 1; d <= dim; d++) {
-    const v = D.heat[d] || 0, l = !v ? 0 : Math.min(5, 1 + Math.floor((v / mx) * 4.99))
-    cells.push(
-      <span key={d} title={`${d} ${MON[m]}${v ? ' · ' + INR(v) : ''}`} className={`grid aspect-square place-items-center rounded-lg text-[10px] font-semibold ${d === td ? 'ring-2 ring-primary' : ''} ${d > td ? 'bg-muted/40 text-muted-foreground/50' : l === 0 ? 'bg-muted text-muted-foreground' : ''}`}
-        style={d <= td && l > 0 ? { background: `color-mix(in oklab, var(--expense) ${18 + l * 16}%, var(--card))`, color: l > 3 ? '#fff' : 'inherit' } : undefined}>{d}</span>,
-    )
-  }
-  return (
-    <div>
-      <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-muted-foreground">{['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <span key={i}>{d}</span>)}</div>
-      <div className="grid grid-cols-7 gap-1" role="img" aria-label="Calendar of spending this month">{cells}</div>
-    </div>
   )
 }
 
@@ -82,15 +60,6 @@ export default function Home() {
     return rows
   }, [D])
 
-  const pend: any[] = []
-  D.projects.forEach((p: any) => {
-    if (p.status === 'done') return
-    for (let i = 0; i < p.stages.length; i++) {
-      const s = p.stages[i], left = s.amount - (p.stageRec[s.id] || 0)
-      if (left > 0) { pend.push({ p, s, left }); break }
-    }
-  })
-  const owed = D.parties.filter((x: any) => x.bal > 0).sort((a: any, b: any) => b.bal - a.bal)
   const recent = txns().slice(0, 6)
 
   const list = D.projects.filter((p: any) => (filter === 'all' || p.status === filter) && (!q || (p.name + ' ' + (p.client || '')).toLowerCase().includes(q.toLowerCase())))
@@ -157,6 +126,22 @@ export default function Home() {
         <Kpi i={4} label="To pay" value={D.owe} note="To suppliers and workers" tone="bg-info-soft text-info" />
       </div>
 
+      <section>
+        <SectionTitle right={<Button variant="secondary" size="sm" className="rounded-full" onClick={() => open('project', { form: newProjectForm() })}><FolderPlus className="size-4" /> New project</Button>}>Projects</SectionTitle>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search project or client" className="h-11 rounded-xl bg-card pl-10" type="search" />
+        </div>
+        <div className="my-3 inline-flex rounded-full bg-muted p-1">
+          <AnimatedBackground defaultValue={filter} onValueChange={(v) => v && setFilter(v)} className="rounded-full bg-card shadow" transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}>
+            {[['all', 'All'], ['active', 'Active'], ['done', 'Completed']].map(([k, l]) => (
+              <button key={k} data-id={k} className="px-4 py-1.5 text-sm font-semibold text-muted-foreground transition data-[checked=true]:text-foreground">{l}</button>
+            ))}
+          </AnimatedBackground>
+        </div>
+        {list.length ? <div className="grid gap-3 md:grid-cols-2">{list.map((p: any) => <ProjectCard key={p.id} p={p} />)}</div> : <EmptyState text="No project matches." />}
+      </section>
+
       <div className="grid gap-4 lg:grid-cols-12">
         <BlurFade inView className="lg:col-span-7">
           <Card className="h-full rounded-3xl p-5">
@@ -197,7 +182,7 @@ export default function Home() {
             ) : <div className="py-12 text-center text-sm text-muted-foreground">No spending yet.</div>}
           </Card>
         </BlurFade>
-        <BlurFade inView className="lg:col-span-7">
+        <BlurFade inView className="lg:col-span-12">
           <Card className="h-full rounded-3xl p-5">
             <SectionTitle right={<div className="flex gap-3 text-xs text-muted-foreground"><span className="flex items-center gap-1"><i className="size-2.5 rounded-sm bg-income" />Received</span><span className="flex items-center gap-1"><i className="size-2.5 rounded-sm bg-expense" />Spent</span></div>}>Last 6 months</SectionTitle>
             <ChartContainer config={monthCfg} className="h-52 w-full">
@@ -212,48 +197,15 @@ export default function Home() {
             </ChartContainer>
           </Card>
         </BlurFade>
-        <BlurFade inView className="lg:col-span-5">
-          <Card className="h-full rounded-3xl p-5">
-            <SectionTitle right={<span className="rounded-full bg-expense-soft px-3 py-1 text-xs font-bold text-expense">{SHORT(D.month.out)}</span>}>Daily spending</SectionTitle>
-            <div className="mb-2 text-xs text-muted-foreground">This month · darker is more</div>
-            <Heat D={D} />
-          </Card>
-        </BlurFade>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-12">
-        <Card className="rounded-3xl p-5 lg:col-span-4">
-          <SectionTitle>Money due</SectionTitle>
-          <div className="text-[11px] font-bold tracking-wider text-muted-foreground">TO RECEIVE</div>
-          {pend.length ? pend.slice(0, 4).map((x) => (
-            <div key={x.p.id + x.s.id} className="flex items-center gap-3 border-b py-2.5 last:border-0"><i className="size-2.5 rounded-full bg-income" /><div className="min-w-0 flex-1"><b className="block truncate text-sm">{x.p.name}</b><span className="text-xs text-muted-foreground">{x.s.name}{x.s.date ? ' · ' + fmt(x.s.date) : ''}</span></div><b className="tn text-sm">{INR(x.left)}</b></div>
-          )) : <div className="py-3 text-sm text-muted-foreground">Nothing due.</div>}
-          <div className="mt-4 text-[11px] font-bold tracking-wider text-muted-foreground">TO PAY</div>
-          {owed.length ? owed.slice(0, 4).map((x: any) => (
-            <div key={x.id} className="flex items-center gap-3 border-b py-2.5 last:border-0"><i className="size-2.5 rounded-full bg-expense" /><div className="min-w-0 flex-1"><b className="block truncate text-sm">{x.name}</b><span className="text-xs text-muted-foreground">{x.type}</span></div><b className="tn text-sm">{INR(x.bal)}</b></div>
-          )) : <div className="py-3 text-sm text-muted-foreground">Nobody to pay.</div>}
-        </Card>
-        <Card className="rounded-3xl p-5 lg:col-span-8">
+        <Card className="rounded-3xl p-5 lg:col-span-12">
           <SectionTitle>Recent activity</SectionTitle>
           {recent.length ? recent.map((t: any) => <TxnRow key={t.id} t={t} D={D} />) : <div className="py-4 text-sm text-muted-foreground">No entries yet. Tap + to add one.</div>}
         </Card>
       </div>
 
-      <section>
-        <SectionTitle right={<Button variant="secondary" size="sm" className="rounded-full" onClick={() => open('project', { form: newProjectForm() })}><FolderPlus className="size-4" /> New project</Button>}>Projects</SectionTitle>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search project or client" className="h-11 rounded-xl bg-card pl-10" type="search" />
-        </div>
-        <div className="my-3 inline-flex rounded-full bg-muted p-1">
-          <AnimatedBackground defaultValue={filter} onValueChange={(v) => v && setFilter(v)} className="rounded-full bg-card shadow" transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}>
-            {[['all', 'All'], ['active', 'Active'], ['done', 'Completed']].map(([k, l]) => (
-              <button key={k} data-id={k} className="px-4 py-1.5 text-sm font-semibold text-muted-foreground transition data-[checked=true]:text-foreground">{l}</button>
-            ))}
-          </AnimatedBackground>
-        </div>
-        {list.length ? <div className="grid gap-3 md:grid-cols-2">{list.map((p: any) => <ProjectCard key={p.id} p={p} />)}</div> : <EmptyState text="No project matches." />}
-      </section>
     </div>
   )
 }

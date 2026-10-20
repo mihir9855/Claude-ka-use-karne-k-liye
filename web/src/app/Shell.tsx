@@ -115,9 +115,9 @@ function Body() {
           {NAV.map((n) => {
             const on = page === n.page
             return (
-              <button key={n.page} onClick={() => go(n.page)} className={cn('relative flex flex-col items-center gap-0.5 rounded-2xl py-1.5 text-[11px] font-bold transition', on ? 'text-primary' : 'text-muted-foreground')}>
-                {on ? <motion.span layoutId="tab-pill" className="absolute inset-x-2 top-0 h-8 rounded-xl bg-primary/10" transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }} /> : null}
-                <n.icon className="relative mt-1 size-[22px]" /><span className="relative">{n.label}</span>
+              <button key={n.page} onClick={() => go(n.page)} className={cn('flex flex-col items-center gap-0.5 rounded-2xl py-1.5 text-[11px] font-bold transition', on ? 'text-primary' : 'text-muted-foreground')}>
+                <span className={cn('grid h-8 w-14 place-items-center rounded-xl transition-colors', on ? 'bg-primary/12' : '')}><n.icon className="size-[22px]" /></span>
+                <span>{n.label}</span>
               </button>
             )
           })}
