@@ -390,21 +390,21 @@ en:['GST is not included in the rates of this temple. GST will have to be paid s
 'Fitting labour and material for wall panels (patiya) are not included in these rates.',
 'Labour and material for colour work are not included.',
 'Any kind of figure work (murti), throne (sinhasan), wooden doors, brass kalash, hooks (kada), light fitting and pipe fitting are not included in this estimate.']};
-export var ITEMS={gu:['મંદિર નું સિંહાસન','ઘર મંદિર'],hi:['मंदिर का सिंहासन','घर मंदिर'],en:['Temple sihasan','House temple']};
+export var ITEMS={gu:['મંદિરનું સિંહાસન','ઘર મંદિર'],hi:['मंदिर का सिंहासन','घर मंदिर'],en:['Temple sihasan','House temple']};
 export var PT={
 en:{date:'Date',ref:'Ref.',note:'Note:-',font:"Georgia,'Times New Roman',serif",
- head:function(g,l){return 'Shri '+g+' Temple'+(l?', '+l:'')},
- intro:function(g,l,v){return 'Rates for constructing the temple of Shri '+g+(l?' at '+(v?'village ':'')+l:'')+' are as follows.'},
+ head:function(g,l){return 'Shri '+g+(l?', '+l:'')},
+ intro:function(g,l,v){return 'Rates for constructing Shri '+g+(l?' at '+(v?'village ':'')+l:'')+' are as follows.'},
  introS:function(g,l,v,it){return 'Rates for making the '+(it||'sihasan')+' of Shri '+g+(l?' at '+(v?'village ':'')+l:'')+' are as follows.'},
  small:function(it,by,st,a,w){return it+' as per '+(by?by+'\'s ':'the ')+'design and size, made in '+st+': Rs. '+a+'/- ('+w+') has been fixed.'},tem:function(s,a,q){return 'Temple built in '+s+(q?' at Rs. '+q+'/- per sq. ft.,':'')+' total Rs. '+a+'/-'},ran:function(s,a){return 'Rang-mandap built in '+s+': total Rs. '+a+'/-'},when:function(d){return 'Date: '+d}},
 hi:{date:'दिनांक',ref:'संदर्भ',note:'नोंध:-',font:"'Noto Sans Devanagari','Mangal',sans-serif",
- head:function(g,l){return 'श्री '+g+' मंदिर'+(l?', '+l:'')},
- intro:function(g,l,v){return (l?(v?'ग्राम ':'')+l+' में ':'')+'श्री '+g+' के मंदिर का निर्माण कार्य करने के भाव नीचे अनुसार हैं।'},
+ head:function(g,l){return 'श्री '+g+(l?', '+l:'')},
+ intro:function(g,l,v){return (l?(v?'ग्राम ':'')+l+' में ':'')+'श्री '+g+' का निर्माण कार्य करने के भाव नीचे अनुसार हैं।'},
  introS:function(g,l,v,it){return (l?(v?'ग्राम ':'')+l+' में ':'')+'श्री '+g+' के '+(it||'सिंहासन')+' बनाने के भाव नीचे अनुसार हैं।'},
  small:function(it,by,st,a,w){return it+' '+(by?by+' के ':'')+'डिज़ाइन और साइज़ के अनुसार '+st+' में बनाकर देने के अंकों में रुपये '+a+'/- (शब्दों में '+w+') तय किए गए हैं।'},tem:function(s,a,q){return 'मंदिर '+s+' में '+(q?'रुपये '+q+'/- प्रति वर्ग फुट के भाव से ':'')+'बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},ran:function(s,a){return 'रंग-मंडप '+s+' में बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},when:function(d){return 'दिनांक: '+d}},
 gu:{date:'તારીખ',ref:'સંદર્ભ',note:'નોંધ:-',font:"'Noto Sans Gujarati','Shruti',sans-serif",
- head:function(g,l){return 'શ્રી '+g+' મંદિર'+(l?', '+l:'')},
- intro:function(g,l,v){return (l?(v?'ગામ ':'')+l+' માં ':'')+'શ્રી '+g+' ના મંદિરનું બાંધકામ કરવાના ભાવ નીચે પ્રમાણે છે.'},
+ head:function(g,l){return 'શ્રી '+g+(l?', '+l:'')},
+ intro:function(g,l,v){return (l?(v?'ગામ ':'')+l+' માં ':'')+'શ્રી '+g+'નું બાંધકામ કરવાના ભાવ નીચે પ્રમાણે છે.'},
  introS:function(g,l,v,it){return (l?(v?'ગામ ':'')+l+' માં ':'')+'શ્રી '+g+' ના '+(it||'સિંહાસન')+' બનાવવાના ભાવ નીચે પ્રમાણે છે.'},
  small:function(it,by,st,a,w){return it+' '+(by?by+' ની ':'')+'ડિઝાઇન અને સાઇઝ પ્રમાણે '+st+' માં કરી આપવાના અંકે રૂપિયા '+a+'/- (અંકે '+w+') નક્કી કરેલ છે.'},tem:function(s,a,q){return 'મંદિર '+s+' માં '+(q?'રૂપિયા '+q+'/- પ્રતિ સ્ક્વેર ફૂટના ભાવે ':'')+'બનાવી આપવાના કુલ રૂ. '+a+'/- થાય છે.'},ran:function(s,a){return 'રંગ-મંડપ '+s+' માં બનાવી આપવાના કુલ રૂ. '+a+'/- થાય છે.'},when:function(d){return 'તા. '+d}}};
 export function stripGod(s){return String(s||'').trim().replace(/^(શ્રી|श्री|shri|shree)\s+/i,'').replace(/\s+(મંદિર|मंदिर|mandir|temple)$/i,'').trim()}
@@ -412,12 +412,16 @@ export function dmy(iso){if(!iso)return '';var q=iso.split('-');return q[2]+'-'+
 export function amtTxt(n){return Number(n).toLocaleString('en-IN')+(String(n).length?'':'')}
 export function presetNotes(kind,lg){var src=kind==='small'?NOTES_S:NOTES_T,o=DB.terms&&DB.terms[kind]&&DB.terms[kind][lg];return (o&&o.length?o:src[lg]).slice()}
 export function findProp(id){for(var i=0;i<DB.proposals.length;i++)if(DB.proposals[i].id===id)return DB.proposals[i]}
-export function propTitle(pr){var T=PT[pr.lg||'gu'];return T.head(esc(stripGod(pr.god)),esc(pr.loc||''))}
+var MD={gu:'મંદિર',hi:'मंदिर',en:'Temple'};
+export function stripShri(s){return String(s||'').trim().replace(/^(શ્રી|श्री|shri|shree)\s+/i,'').trim()}
+/* the name as written; older proposals saved the name without the word Mandir, so it is added back for them */
+export function godDisp(pr,lg){return pr.raw?stripShri(pr.god):(stripGod(pr.god)+' '+(MD[lg||pr.lg||'gu']||'')).trim()}
+export function propTitle(pr){var T=PT[pr.lg||'gu'];return T.head(esc(godDisp(pr,pr.lg||'gu')),esc(pr.loc||''))}
 
 /* page blocks -> A4 pages (794 x 1123 px) */
 export function proposalPages(pr,lg){
   var T=PT[lg],bw=DB.biz.lhBW,PW=794,PH=1123,HH=Math.round(PW*285/1500),FH=Math.round(PW*185/1500),LIMIT=PH-FH-26;
-  var god=esc(stripGod(pr.god)),loc=esc(pr.loc||''),pad='padding:0 52px';
+  var god=esc(godDisp(pr,lg)),loc=esc(pr.loc||''),pad='padding:0 52px';
   var notes=(pr.notes||[]).filter(function(x){return String(x).trim()});
   /* k = how tight the spacing is (1 = roomy). A signature alone on a new page looks wrong, so tighten until it fits. */
   function layout(k,together){
@@ -482,7 +486,7 @@ export function printProposal(id){
   document.getElementById('pgstyle').textContent='@page{size:A4 portrait;margin:0}';
   var done=function(){pa.innerHTML='';window.removeEventListener('afterprint',done)};window.addEventListener('afterprint',done);
   try{window.print()}catch(e){done();toast('Print is not available here. Download the PDF and print that.')}}
-export function proposalText(pr){var lg=pr.lg||'gu',T=PT[lg],god=stripGod(pr.god),loc=pr.loc||'',r=[T.head(god,loc),T.when(dmy(pr.date)),'',pr.kind==='small'?T.introS(god,loc,pr.pt!=='c',pr.item||''):T.intro(god,loc,pr.pt!=='c'),''],n=0;
+export function proposalText(pr){var lg=pr.lg||'gu',T=PT[lg],god=godDisp(pr,lg),loc=pr.loc||'',r=[T.head(god,loc),T.when(dmy(pr.date)),'',pr.kind==='small'?T.introS(god,loc,pr.pt!=='c',pr.item||''):T.intro(god,loc,pr.pt!=='c'),''],n=0;
   if(pr.kind==='small'){var q0=(pr.options||[])[0]||{},qa=num(q0.mandir);r.push(T.small(pr.item||'',pr.by||'',q0.stone||'',amtTxt(qa),wordsL(qa,lg)))}
   else (pr.options||[]).forEach(function(o){var a=num(o.mandir)?T.tem(o.stone||'',amtTxt(num(o.mandir)),num(o.sqft)?amtTxt(num(o.sqft)):''):'',b=num(o.rang)?T.ran(o.stone||'',amtTxt(num(o.rang))):'';if(!a&&!b)return;n++;r.push(n+'. '+a);if(b)r.push('   '+b)});
   if(String(pr.extra||'').trim())r.push('',String(pr.extra).trim());

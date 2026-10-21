@@ -93,3 +93,5 @@ export declare const voucherText: any;
 export declare const warmFonts: any;
 export declare const words: any;
 export declare const wordsL: any;
+export declare const stripShri: any;
+export declare const godDisp: any;

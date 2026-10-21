@@ -9,7 +9,7 @@ import { filesToAttachments, MAX_ATTACHMENTS, type Attachment } from '@/lib/atta
 import check from '@/lib/check.json'
 import { useModal } from '@/app/modal'
 import { useData } from '@/lib/store'
-import { INR, ITEMS, LANG, PT, SHORT, STONES, curLang, findProp, findTxn, presetNotes, proposalPreview, stripGod, voucherPaper } from '@/engine/engine.js'
+import { INR, ITEMS, LANG, PT, SHORT, STONES, curLang, findProp, findTxn, presetNotes, proposalPreview, godDisp, voucherPaper } from '@/engine/engine.js'
 import {
   deleteProposal, deleteTxn, docs, editEntryForm, newOption, proposalForm, saveNotesDefault, saveProposal, setLang, setProposalLang, restoreBackup,
 } from '@/engine/actions.js'
@@ -105,7 +105,7 @@ export function ProposalModal({ form }: { form: any }) {
     const ix = ITEMS[p.lg].indexOf(p.item)
     return { ...p, lg: g, notes: p.touched ? p.notes : presetNotes(p.kind || 'temple', g), item: ix >= 0 ? ITEMS[g][ix] : p.item }
   })
-  const setKind = (k: string) => setF((p: any) => ({ ...p, kind: k, notes: p.touched ? p.notes : presetNotes(k, p.lg), item: k === 'small' && !String(p.item || '').trim() ? ITEMS[p.lg][0] : p.item }))
+  const setKind = (k: string) => setF((p: any) => ({ ...p, kind: k, notes: p.touched ? p.notes : presetNotes(k, p.lg), item: p.item }))
   const setNote = (i: number, v: string) => setF((p: any) => ({ ...p, touched: true, notes: p.notes.map((x: string, j: number) => (j === i ? v : x)) }))
   const submit = () => {
     const r = saveProposal(f)
@@ -122,7 +122,8 @@ export function ProposalModal({ form }: { form: any }) {
         ))}
       </div>
       <Field label="Language"><Chips options={langOpts(['gu', 'hi', 'en'])} value={lg} onChange={setLg} /></Field>
-      <Field label="Which God's temple (e.g. Khodiyar Mata)"><TextInput value={f.god} onChange={(v) => set('god', v)} placeholder={ph('ખોડિયાર માતા', 'खोड़ियार माता', 'Khodiyar Mata')} /></Field>
+      <Field label="Name of the temple (write it in full)" hint="Whatever you write here comes in the heading as it is. Nothing is added after it, so include the word Mandir yourself.">
+        <TextInput value={f.god} onChange={(v) => set('god', v)} placeholder={ph('ખોડિયાર માતા મંદિર', 'खोड़ियार माता मंदिर', 'Khodiyar Mata Temple')} /></Field>
       <Field label="Place (village or city)"><TextInput value={f.loc} onChange={(v) => set('loc', v)} placeholder={ph('પુનધરા', 'पुनधरा', 'Punadhara')} /></Field>
       <Chips className="mt-2" options={[{ value: 'v', label: 'Village' }, { value: 'c', label: 'Town or city' }]} value={f.pt} onChange={(v) => set('pt', v)} />
       <Field label="Date"><TextInput type="date" value={f.date} onChange={(v) => set('date', v)} /></Field>
@@ -130,7 +131,6 @@ export function ProposalModal({ form }: { form: any }) {
       {f.kind === 'small' ? (
         <>
           <Field label="What is being made"><TextInput value={f.item} onChange={(v) => set('item', v)} placeholder={ITEMS[lg][0]} /></Field>
-          <Chips className="mt-2" options={ITEMS[lg].map((s: string) => ({ value: s, label: s }))} value={f.item} onChange={(v) => set('item', v)} />
           <Field label="Design and size as per (name, optional)"><TextInput value={f.by} onChange={(v) => set('by', v)} placeholder={ph('દીનેશભાઈ', 'दिनेशभाई', 'Dineshbhai')} /></Field>
           <Field label="Stone / material"><TextInput value={f.options[0].stone} onChange={(v) => setOpt(0, 'stone', v)} /></Field>
           <Chips className="mt-2" options={STONES[lg].map((s: string) => ({ value: s, label: s }))} value={f.options[0].stone} onChange={(v) => setOpt(0, 'stone', v)} />
@@ -224,7 +224,7 @@ export function ProposalView({ id }: { id: string }) {
   if (!pr) return null
   const lg = pr.lg || 'gu'
   return (
-    <Sheet open onClose={close} wide title="Proposal" subtitle={`${PT[lg].head(stripGod(pr.god), '')} · ${pr.vno || ''}`}>
+    <Sheet open onClose={close} wide title="Proposal" subtitle={`${PT[lg].head(godDisp(pr, pr.lg || 'gu'), '')} · ${pr.vno || ''}`}>
       <Chips className="mb-3" options={langOpts(['gu', 'hi', 'en'])} value={lg} onChange={(g) => setProposalLang(id, g)} />
       <Paper html={proposalPreview(pr)} />
       <div className="mt-3 flex items-center gap-2">

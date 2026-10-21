@@ -4,7 +4,7 @@ import { Banknote, FileText, Landmark, Search, Users } from 'lucide-react'
 import { useData } from '@/lib/store'
 import { useModal } from '@/app/modal'
 import { go } from '@/lib/router'
-import { INR, PT, fmt, stripGod } from '@/engine/engine.js'
+import { INR, PT, fmt, godDisp } from '@/engine/engine.js'
 
 type Item = { key: string; icon: any; title: string; sub: string; run: () => void }
 
@@ -22,7 +22,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     D.projects.forEach((p: any) => all.push({ key: 'p' + p.id, icon: Landmark, title: p.name, sub: `Project · ${p.client || 'no client'}`, run: () => go('projects', p.id) }))
     D.parties.forEach((x: any) => all.push({ key: 'u' + x.id, icon: Users, title: x.name, sub: `Person · ${x.type}`, run: () => go('people', x.id) }))
     DB.txns.filter((t: any) => t.kind !== 'bill').forEach((t: any) => all.push({ key: 't' + t.id, icon: Banknote, title: `${t.vno} · ${t.kind === 'in' ? 'Received from' : 'Paid to'} ${t.who}`, sub: `${fmt(t.date)} · ${INR(t.amount)}`, run: () => openModal('voucher', { id: t.id }) }))
-    DB.proposals.forEach((pr: any) => all.push({ key: 'r' + pr.id, icon: FileText, title: PT[pr.lg || 'gu'].head(stripGod(pr.god), ''), sub: `Proposal · ${pr.vno || ''}`, run: () => openModal('pview', { id: pr.id }) }))
+    DB.proposals.forEach((pr: any) => all.push({ key: 'r' + pr.id, icon: FileText, title: PT[pr.lg || 'gu'].head(godDisp(pr, pr.lg || 'gu'), ''), sub: `Proposal · ${pr.vno || ''}`, run: () => openModal('pview', { id: pr.id }) }))
     const s = q.trim().toLowerCase()
     return (s ? all.filter((x) => (x.title + ' ' + x.sub).toLowerCase().includes(s)) : all.slice(0, 8)).slice(0, 12)
   }, [D, DB, q, openModal])

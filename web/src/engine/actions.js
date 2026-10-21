@@ -1,6 +1,6 @@
 import {
   DB, KEY, TYPES, DEF_STAGES, ITEMS, uid, num, pad, today, save, toast, notify, setDB, blank, findTxn,
-  derive, curLang, presetNotes, stripGod, findProp, setPdfMode, pdfVoucher, pdfLetter, pdfReport, pdfStatement,
+  derive, curLang, presetNotes, stripGod, stripShri, godDisp, findProp, setPdfMode, pdfVoucher, pdfLetter, pdfReport, pdfStatement,
   pdfProposal, attGet, attPut, voucherText, stmtText, shareText, printVoucher, printProposal, proposalText,
 } from './engine.js'
 import { loadPdfLibs } from './pdfLibs.js'
@@ -50,12 +50,12 @@ export function newOption() { return { id: uid(), stone: '', mandir: '', rang: '
 export function proposalForm(id, copy) {
   const pr = id ? findProp(id) : null
   if (pr) {
-    const f = { np: pr.np === true, extra: pr.extra || '', attach: attGet(pr.id), editId: pr.id, kind: pr.kind || 'temple', item: pr.item || '', by: pr.by || '', god: pr.god, loc: pr.loc || '', pt: pr.pt || 'v', date: pr.date, lg: pr.lg || 'gu', signer: pr.signer || '', touched: true, options: pr.options.map((o) => ({ id: o.id, stone: o.stone || '', mandir: o.mandir ? String(o.mandir) : '', rang: o.rang ? String(o.rang) : '', sqft: o.sqft ? String(o.sqft) : '' })), notes: (pr.notes || []).slice() }
+    const f = { np: pr.np === true, extra: pr.extra || '', attach: attGet(pr.id), editId: pr.id, kind: pr.kind || 'temple', item: pr.item || '', by: pr.by || '', god: godDisp(pr, pr.lg || 'gu'), loc: pr.loc || '', pt: pr.pt || 'v', date: pr.date, lg: pr.lg || 'gu', signer: pr.signer || '', touched: true, options: pr.options.map((o) => ({ id: o.id, stone: o.stone || '', mandir: o.mandir ? String(o.mandir) : '', rang: o.rang ? String(o.rang) : '', sqft: o.sqft ? String(o.sqft) : '' })), notes: (pr.notes || []).slice() }
     if (copy) { f.editId = undefined; f.god = ''; f.loc = ''; f.date = today() }
     return f
   }
   const lg = curLang()
-  return { np: false, extra: '', attach: [], kind: 'temple', item: ITEMS[lg][0], by: '', god: '', loc: '', pt: 'v', date: today(), lg, signer: DB.biz.signer || 'Manoj Vinodrai Sompura', touched: false, options: [newOption()], notes: presetNotes('temple', lg) }
+  return { np: false, extra: '', attach: [], kind: 'temple', item: '', by: '', god: '', loc: '', pt: 'v', date: today(), lg, signer: DB.biz.signer || 'Manoj Vinodrai Sompura', touched: false, options: [newOption()], notes: presetNotes('temple', lg) }
 }
 
 /* ---------- saves: return an error string, or null when saved ---------- */
@@ -144,7 +144,7 @@ export function saveBill(f) {
 }
 
 export function saveProposal(f) {
-  if (!stripGod(f.god)) return { err: "Write which God's temple it is." }
+  if (!stripShri(f.god)) return { err: "Write which God's temple it is." }
   let opts = f.options.filter((o) => num(o.mandir) || num(o.rang))
   if (f.kind === 'small') {
     opts = f.options.slice(0, 1)
@@ -152,7 +152,7 @@ export function saveProposal(f) {
     if (!String(f.item || '').trim()) return { err: 'Write what is being made (for example Sihasan).' }
   } else if (!opts.length) return { err: 'Add the rate (amount) for at least one option.' }
   const notes = f.notes.map((x) => String(x).trim()).filter(Boolean)
-  const base = { kind: f.kind || 'temple', item: String(f.item || '').trim(), by: String(f.by || '').trim(), god: stripGod(f.god), loc: String(f.loc || '').trim(), pt: f.pt, date: f.date || today(), lg: f.lg, signer: String(f.signer || '').trim(), options: opts.map((o) => ({ id: o.id, stone: String(o.stone || '').trim(), mandir: num(o.mandir), rang: num(o.rang), sqft: num(o.sqft) })), notes, np: f.np === true, extra: String(f.extra || '').trim() }
+  const base = { kind: f.kind || 'temple', item: String(f.item || '').trim(), by: String(f.by || '').trim(), god: stripShri(f.god), raw: true, loc: String(f.loc || '').trim(), pt: f.pt, date: f.date || today(), lg: f.lg, signer: String(f.signer || '').trim(), options: opts.map((o) => ({ id: o.id, stone: String(o.stone || '').trim(), mandir: num(o.mandir), rang: num(o.rang), sqft: num(o.sqft) })), notes, np: f.np === true, extra: String(f.extra || '').trim() }
   DB.biz.signer = base.signer || DB.biz.signer
   DB.biz.lang = f.lg
   if (f.editId) {
