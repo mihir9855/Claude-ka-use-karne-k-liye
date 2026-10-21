@@ -125,7 +125,6 @@ export function ProposalModal({ form }: { form: any }) {
       <Field label="Name of the temple (write it in full)" hint="Whatever you write here comes in the heading as it is. Nothing is added after it, so include the word Mandir yourself.">
         <TextInput value={f.god} onChange={(v) => set('god', v)} placeholder={ph('ખોડિયાર માતા મંદિર', 'खोड़ियार माता मंदिर', 'Khodiyar Mata Temple')} /></Field>
       <Field label="Place (village or city)"><TextInput value={f.loc} onChange={(v) => set('loc', v)} placeholder={ph('પુનધરા', 'पुनधरा', 'Punadhara')} /></Field>
-      <Chips className="mt-2" options={[{ value: 'v', label: 'Village' }, { value: 'c', label: 'Town or city' }]} value={f.pt} onChange={(v) => set('pt', v)} />
       <Field label="Date"><TextInput type="date" value={f.date} onChange={(v) => set('date', v)} /></Field>
 
       {f.kind === 'small' ? (

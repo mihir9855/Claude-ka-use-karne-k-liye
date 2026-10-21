@@ -79,7 +79,8 @@ export function saveEntry(f) {
     }
   }
   DB.vseq = (DB.vseq || 0) + 1
-  const t = { id: uid(), kind: f.kind, projId: f.projId, stageId: inn ? f.stageId : '', section: inn ? '' : f.section, partyId: inn ? '' : f.partyId || '', who, amount, mode: f.mode, ref: refOf(f), date: f.date, note: String(f.note || '').trim(), vno: 'BTC-' + pad(DB.vseq, 4) }
+  if (inn) DB.rseq = (DB.rseq || 0) + 1
+  const t = { id: uid(), kind: f.kind, projId: f.projId, stageId: inn ? f.stageId : '', section: inn ? '' : f.section, partyId: inn ? '' : f.partyId || '', who, amount, mode: f.mode, ref: refOf(f), date: f.date, note: String(f.note || '').trim(), vno: 'BTC-' + pad(DB.vseq, 4), ...(inn ? { rno: DB.rseq } : {}) }
   DB.txns.push(t)
   save()
   return { id: t.id }
