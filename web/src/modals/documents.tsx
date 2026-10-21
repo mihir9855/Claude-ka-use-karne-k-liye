@@ -122,14 +122,14 @@ export function ProposalModal({ form }: { form: any }) {
         ))}
       </div>
       <Field label="Language"><Chips options={langOpts(['gu', 'hi', 'en'])} value={lg} onChange={setLg} /></Field>
-      <Field label="Name of the temple (write it in full)" hint="Whatever you write here comes in the heading as it is. Nothing is added after it, so include the word Mandir yourself.">
+      <Field label="Name of the temple (optional, write it in full)" hint="Whatever you write here comes in the heading as it is. Nothing is added after it, so include the word Mandir yourself.">
         <TextInput value={f.god} onChange={(v) => set('god', v)} placeholder={ph('ખોડિયાર માતા મંદિર', 'खोड़ियार माता मंदिर', 'Khodiyar Mata Temple')} /></Field>
       <Field label="Place (village or city)"><TextInput value={f.loc} onChange={(v) => set('loc', v)} placeholder={ph('પુનધરા', 'पुनधरा', 'Punadhara')} /></Field>
       <Field label="Date"><TextInput type="date" value={f.date} onChange={(v) => set('date', v)} /></Field>
 
       {f.kind === 'small' ? (
         <>
-          <Field label="What is being made"><TextInput value={f.item} onChange={(v) => set('item', v)} placeholder={ITEMS[lg][0]} /></Field>
+          <Field label="What is being made (optional)"><TextInput value={f.item} onChange={(v) => set('item', v)} placeholder={ITEMS[lg][0]} /></Field>
           <Field label="Design and size as per (name, optional)"><TextInput value={f.by} onChange={(v) => set('by', v)} placeholder={ph('દીનેશભાઈ', 'दिनेशभाई', 'Dineshbhai')} /></Field>
           <Field label="Stone / material"><TextInput value={f.options[0].stone} onChange={(v) => setOpt(0, 'stone', v)} /></Field>
           <Chips className="mt-2" options={STONES[lg].map((s: string) => ({ value: s, label: s }))} value={f.options[0].stone} onChange={(v) => setOpt(0, 'stone', v)} />
@@ -223,7 +223,7 @@ export function ProposalView({ id }: { id: string }) {
   if (!pr) return null
   const lg = pr.lg || 'gu'
   return (
-    <Sheet open onClose={close} wide title="Proposal" subtitle={`${PT[lg].head(godDisp(pr, pr.lg || 'gu'), '')} · ${pr.vno || ''}`}>
+    <Sheet open onClose={close} wide title="Proposal" subtitle={`${(PT[lg].head(godDisp(pr, pr.lg || 'gu'), '') || 'Proposal')} · ${pr.vno || ''}`}>
       <Chips className="mb-3" options={langOpts(['gu', 'hi', 'en'])} value={lg} onChange={(g) => setProposalLang(id, g)} />
       <Paper html={proposalPreview(pr)} />
       <div className="mt-3 flex items-center gap-2">

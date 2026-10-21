@@ -24,7 +24,7 @@ export default function DProposals() {
             return (
               <tr key={pr.id} onClick={() => open('pview', { id: pr.id })} className="cursor-pointer border-t transition hover:bg-muted/60">
                 <td className="tn px-4 py-3 font-semibold">{pr.vno}</td>
-                <td className="px-2 py-3 font-semibold">{PT[lg].head(godDisp(pr, pr.lg || 'gu'), '')}</td>
+                <td className="px-2 py-3 font-semibold">{(PT[lg].head(godDisp(pr, pr.lg || 'gu'), '') || 'Proposal')}</td>
                 <td className="px-2 py-3 text-muted-foreground">{pr.loc || '—'}</td>
                 <td className="px-2 py-3 text-muted-foreground">{fmt(pr.date)}</td>
                 <td className="px-2 py-3 text-muted-foreground">{pr.kind === 'small' ? pr.item || 'Small sihasan' : `${n} option${n === 1 ? '' : 's'}`}</td>

@@ -145,13 +145,8 @@ export function saveBill(f) {
 }
 
 export function saveProposal(f) {
-  if (!stripShri(f.god)) return { err: "Write which God's temple it is." }
   let opts = f.options.filter((o) => num(o.mandir) || num(o.rang))
-  if (f.kind === 'small') {
-    opts = f.options.slice(0, 1)
-    if (!num(opts[0].mandir)) return { err: 'Write the amount.' }
-    if (!String(f.item || '').trim()) return { err: 'Write what is being made (for example Sihasan).' }
-  } else if (!opts.length) return { err: 'Add the rate (amount) for at least one option.' }
+  if (f.kind === 'small') opts = f.options.slice(0, 1)
   const notes = f.notes.map((x) => String(x).trim()).filter(Boolean)
   const base = { kind: f.kind || 'temple', item: String(f.item || '').trim(), by: String(f.by || '').trim(), god: stripShri(f.god), raw: true, loc: String(f.loc || '').trim(), pt: f.pt, date: f.date || today(), lg: f.lg, signer: String(f.signer || '').trim(), options: opts.map((o) => ({ id: o.id, stone: String(o.stone || '').trim(), mandir: num(o.mandir), rang: num(o.rang), sqft: num(o.sqft) })), notes, np: f.np === true, extra: String(f.extra || '').trim() }
   DB.biz.signer = base.signer || DB.biz.signer

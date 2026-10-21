@@ -25,7 +25,7 @@ export default function Proposals() {
             return (
               <BlurFade key={pr.id} delay={0.04 * i}>
                 <button onClick={() => open('pview', { id: pr.id })} className="w-full rounded-3xl border bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[.99]">
-                  <div className="flex items-start justify-between gap-2"><b className="break-words text-[15px] leading-snug">{PT[lg].head(godDisp(pr, pr.lg || 'gu'), '')}</b><Badge variant="secondary" className="rounded-full bg-primary/10 text-primary">{LANG[lg].name}</Badge></div>
+                  <div className="flex items-start justify-between gap-2"><b className="break-words text-[15px] leading-snug">{(PT[lg].head(godDisp(pr, pr.lg || 'gu'), '') || 'Proposal')}</b><Badge variant="secondary" className="rounded-full bg-primary/10 text-primary">{LANG[lg].name}</Badge></div>
                   <div className="mt-1 text-sm text-muted-foreground">{pr.loc || ''}{pr.loc ? ' · ' : ''}{fmt(pr.date)}</div>
                   <div className="mt-2 text-xs text-muted-foreground">{pr.kind === 'small' ? pr.item || 'Small sihasan' : `${n} option${n === 1 ? '' : 's'}`} · {pr.vno || ''}</div>
                 </button>

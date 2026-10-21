@@ -401,19 +401,19 @@ en:['GST is not included in the rates of this temple. GST will have to be paid s
 export var ITEMS={gu:['મંદિરનું સિંહાસન','ઘર મંદિર'],hi:['मंदिर का सिंहासन','घर मंदिर'],en:['Temple sihasan','House temple']};
 export var PT={
 en:{date:'Date',ref:'Ref.',note:'Note:-',font:"Georgia,'Times New Roman',serif",
- head:function(g,l){return 'Shri '+g+(l?', '+l:'')},
- intro:function(g,l,v){return 'Rates for constructing Shri '+g+(l?' at '+''+l:'')+' are as follows.'},
- introS:function(g,l,v,it){return 'Rates for making the '+(it||'sihasan')+' of Shri '+g+(l?' at '+''+l:'')+' are as follows.'},
+ head:function(g,l){return [g&&'Shri '+g,l].filter(Boolean).join(', ')},
+ intro:function(g,l,v){if(!g)return '';return 'Rates for constructing Shri '+g+(l?' at '+''+l:'')+' are as follows.'},
+ introS:function(g,l,v,it){if(!g)return '';return 'Rates for making the '+(it||'sihasan')+' of Shri '+g+(l?' at '+''+l:'')+' are as follows.'},
  small:function(it,by,st,a,w){return it+' as per '+(by?by+'\'s ':'the ')+'design and size, made in '+st+': Rs. '+a+'/- ('+w+') has been fixed.'},tem:function(s,a,q){return 'Temple built in '+s+(q?' at Rs. '+q+'/- per sq. ft.,':'')+' total Rs. '+a+'/-'},ran:function(s,a){return 'Rang-mandap built in '+s+': total Rs. '+a+'/-'},when:function(d){return 'Date: '+d}},
 hi:{date:'दिनांक',ref:'संदर्भ',note:'नोंध:-',font:"'Noto Sans Devanagari','Mangal',sans-serif",
- head:function(g,l){return 'श्री '+g+(l?', '+l:'')},
- intro:function(g,l,v){return (l?''+l+' में ':'')+'श्री '+g+' का निर्माण कार्य करने के भाव नीचे अनुसार हैं।'},
- introS:function(g,l,v,it){return (l?''+l+' में ':'')+'श्री '+g+' के '+(it||'सिंहासन')+' बनाने के भाव नीचे अनुसार हैं।'},
+ head:function(g,l){return [g&&'श्री '+g,l].filter(Boolean).join(', ')},
+ intro:function(g,l,v){if(!g)return '';return (l?''+l+' में ':'')+'श्री '+g+' का निर्माण कार्य करने के भाव नीचे अनुसार हैं।'},
+ introS:function(g,l,v,it){if(!g)return '';return (l?''+l+' में ':'')+'श्री '+g+' के '+(it||'सिंहासन')+' बनाने के भाव नीचे अनुसार हैं।'},
  small:function(it,by,st,a,w){return it+' '+(by?by+' के ':'')+'डिज़ाइन और साइज़ के अनुसार '+st+' में बनाकर देने के अंकों में रुपये '+a+'/- (शब्दों में '+w+') तय किए गए हैं।'},tem:function(s,a,q){return 'मंदिर '+s+' में '+(q?'रुपये '+q+'/- प्रति वर्ग फुट के भाव से ':'')+'बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},ran:function(s,a){return 'रंग-मंडप '+s+' में बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},when:function(d){return 'दिनांक: '+d}},
 gu:{date:'તારીખ',ref:'સંદર્ભ',note:'નોંધ:-',font:"'Noto Sans Gujarati','Shruti',sans-serif",
- head:function(g,l){return 'શ્રી '+g+(l?', '+l:'')},
- intro:function(g,l,v){return (l?''+l+' માં ':'')+'શ્રી '+g+'નું બાંધકામ કરવાના ભાવ નીચે પ્રમાણે છે.'},
- introS:function(g,l,v,it){return (l?''+l+' માં ':'')+'શ્રી '+g+' ના '+(it||'સિંહાસન')+' બનાવવાના ભાવ નીચે પ્રમાણે છે.'},
+ head:function(g,l){return [g&&'શ્રી '+g,l].filter(Boolean).join(', ')},
+ intro:function(g,l,v){if(!g)return '';return (l?''+l+' માં ':'')+'શ્રી '+g+'નું બાંધકામ કરવાના ભાવ નીચે પ્રમાણે છે.'},
+ introS:function(g,l,v,it){if(!g)return '';return (l?''+l+' માં ':'')+'શ્રી '+g+' ના '+(it||'સિંહાસન')+' બનાવવાના ભાવ નીચે પ્રમાણે છે.'},
  small:function(it,by,st,a,w){return it+' '+(by?by+' ની ':'')+'ડિઝાઇન અને સાઇઝ પ્રમાણે '+st+' માં કરી આપવાના અંકે રૂપિયા '+a+'/- (અંકે '+w+') નક્કી કરેલ છે.'},tem:function(s,a,q){return 'મંદિર '+s+' માં '+(q?'રૂપિયા '+q+'/- પ્રતિ સ્ક્વેર ફૂટના ભાવે ':'')+'બનાવી આપવાના કુલ રૂ. '+a+'/- થાય છે.'},ran:function(s,a){return 'રંગ-મંડપ '+s+' માં બનાવી આપવાના કુલ રૂ. '+a+'/- થાય છે.'},when:function(d){return 'તા. '+d}}};
 export function stripGod(s){return String(s||'').trim().replace(/^(શ્રી|श्री|shri|shree)\s+/i,'').replace(/\s+(મંદિર|मंदिर|mandir|temple)$/i,'').trim()}
 export function dmy(iso){if(!iso)return '';var q=iso.split('-');return q[2]+'-'+q[1]+'-'+q[0]}
@@ -436,9 +436,9 @@ export function proposalPages(pr,lg){
     var m=function(x){return Math.round(x*k)},lh=function(x){return +(x*(0.8+0.2*k)).toFixed(2)},fs=function(x){return +(x*(k<0.8?0.94:1)).toFixed(1)};
     var blocks=[],n=0;
     blocks.push('<div style="display:flex;justify-content:space-between;gap:12px;font-size:14px;font-weight:700;margin-top:'+m(14)+'px"><span>'+T.ref+' '+esc(pr.vno||'')+'</span><span>'+T.when(dmy(pr.date))+'</span></div>');
-    blocks.push('<div style="text-align:center;font-weight:700;font-size:21px;margin:'+m(26)+'px 0 '+m(14)+'px;line-height:1.5">'+T.head(god,loc)+'</div>');
-    blocks.push('<div style="font-weight:700;font-size:'+fs(15.5)+'px;line-height:'+lh(1.9)+';margin:0 0 6px;text-align:center">'+(pr.kind==='small'?T.introS(god,loc,pr.pt!=='c',esc(pr.item||'')):T.intro(god,loc,pr.pt!=='c'))+'</div>');
-    if(pr.kind==='small'){var o0=(pr.options||[])[0]||{},am=num(o0.mandir);blocks.push('<div style="margin:'+m(22)+'px 0 0;font-size:'+fs(15.5)+'px;line-height:'+lh(2)+';font-weight:600;text-align:center">'+T.small(esc(pr.item||''),esc(pr.by||''),esc(o0.stone||''),amtTxt(am),esc(wordsL(am,lg)))+'</div>')}
+    var hd=T.head(god,loc);if(hd)blocks.push('<div style="text-align:center;font-weight:700;font-size:21px;margin:'+m(26)+'px 0 '+m(14)+'px;line-height:1.5">'+hd+'</div>');
+    var itx=(pr.kind==='small'?T.introS(god,loc,pr.pt!=='c',esc(pr.item||'')):T.intro(god,loc,pr.pt!=='c'));if(itx)blocks.push('<div style="font-weight:700;font-size:'+fs(15.5)+'px;line-height:'+lh(1.9)+';margin:0 0 6px;text-align:center">'+itx+'</div>');
+    if(pr.kind==='small'){var o0=(pr.options||[])[0]||{},am=num(o0.mandir);if(am||pr.item)blocks.push('<div style="margin:'+m(22)+'px 0 0;font-size:'+fs(15.5)+'px;line-height:'+lh(2)+';font-weight:600;text-align:center">'+T.small(esc(pr.item||''),esc(pr.by||''),esc(o0.stone||''),amtTxt(am),esc(wordsL(am,lg)))+'</div>')}
     else (pr.options||[]).forEach(function(o){var l1=num(o.mandir)?T.tem(esc(o.stone||''),amtTxt(num(o.mandir)),num(o.sqft)?amtTxt(num(o.sqft)):''):'',l2=num(o.rang)?T.ran(esc(o.stone||''),amtTxt(num(o.rang))):'';if(!l1&&!l2)return;n++;
       blocks.push('<div style="margin:'+m(20)+'px 0 0;font-size:'+fs(15.5)+'px;line-height:'+lh(2)+';font-weight:600;text-align:center">'+n+'.&nbsp; '+l1+(l1&&l2?'<br>':'')+l2+'</div>')});
     if(String(pr.extra||'').trim())blocks.push('<div style="margin:'+m(20)+'px 0 0;font-size:'+fs(15)+'px;line-height:'+lh(1.9)+';white-space:pre-wrap;text-align:justify">'+esc(String(pr.extra).trim())+'</div>');
