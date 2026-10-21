@@ -158,12 +158,20 @@ export function ProposalModal({ form }: { form: any }) {
       <Field label="Extra details (optional)" hint="Write anything else you want in this proposal. It comes after the rates and before the notes.">
         <textarea value={f.extra || ''} onChange={(e) => set('extra', e.target.value)} placeholder="e.g. Size, design, delivery time, payment schedule…" className="min-h-24 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40" />
       </Field>
-      <Field label="Pictures or PDF (optional)" hint="JPG, PNG or PDF. Each picture, and each page of a PDF, is added as its own page at the end, with the letterhead on top. The whole picture is fitted inside the page with margins, nothing is cut. The small box below shows the full picture.">
+      <Field label="Pictures or PDF (optional)" hint="JPG, PNG or PDF. Each picture, and each page of a PDF, is added as its own page at the end, with the letterhead on top. Choose for each one: With letterhead (picture fitted between header and footer, good for drawings and photos) or Full A4 page (for a scan or PDF page that already has its own layout). Nothing is ever cut.">
         <div className="grid gap-2">
           {(f.attach || []).map((a: Attachment) => (
             <div key={a.id} className="flex items-center gap-3 rounded-xl border bg-background p-2">
               <img src={a.data} alt="" className="h-16 w-24 shrink-0 rounded-lg border bg-white object-contain" />
-              <span className="min-w-0 flex-1 truncate text-sm">{a.name}</span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm">{a.name}</div>
+                <div className="mt-1 flex gap-1.5">
+                  {([['letter', 'With letterhead'], ['full', 'Full A4 page']] as const).map(([m, l]) => (
+                    <button key={m} type="button" onClick={() => setF((p: any) => ({ ...p, attach: p.attach.map((x: Attachment) => (x.id === a.id ? { ...x, mode: m } : x)) }))}
+                      className={'rounded-full border px-2.5 py-1 text-xs font-semibold ' + ((a.mode || 'letter') === m ? 'border-primary bg-primary text-primary-foreground' : 'text-muted-foreground')}>{l}</button>
+                  ))}
+                </div>
+              </div>
               <button type="button" aria-label="Remove" onClick={() => setF((p: any) => ({ ...p, attach: p.attach.filter((x: Attachment) => x.id !== a.id) }))} className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">×</button>
             </div>
           ))}

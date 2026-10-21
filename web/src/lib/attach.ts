@@ -1,5 +1,8 @@
 /** Turns picked files (photos or PDFs) into compressed JPEG data URLs for the proposal. */
-export type Attachment = { id: string; name: string; data: string }
+/** 'letter' = picture between the letterhead and footer; 'full' = whole A4 page (for scans and PDFs that already have their own layout) */
+export type Attachment = { id: string; name: string; data: string; mode?: 'letter' | 'full' }
+
+const guessMode = (w: number, h: number): 'letter' | 'full' => (h / w > 1.3 && h / w < 1.55 ? 'full' : 'letter')
 
 const MAX_SIDE = 1600
 const QUALITY = 0.8
@@ -27,12 +30,12 @@ function loadImage(file: File): Promise<HTMLImageElement> {
   })
 }
 
-async function pdfPages(file: File, limit: number): Promise<string[]> {
+async function pdfPages(file: File, limit: number): Promise<{ data: string; mode: 'letter' | 'full' }[]> {
   const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf.mjs')
   const worker: any = await import('pdfjs-dist/legacy/build/pdf.worker.mjs')
   ;(globalThis as any).pdfjsWorker = worker
   const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise
-  const out: string[] = []
+  const out: { data: string; mode: 'letter' | 'full' }[] = []
   const n = Math.min(doc.numPages, limit)
   for (let i = 1; i <= n; i++) {
     const page = await doc.getPage(i)
@@ -44,7 +47,7 @@ async function pdfPages(file: File, limit: number): Promise<string[]> {
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, cv.width, cv.height)
     await page.render({ canvasContext: ctx, viewport: vp }).promise
-    out.push(canvasToJpeg(cv, cv.width, cv.height))
+    out.push({ data: canvasToJpeg(cv, cv.width, cv.height), mode: guessMode(cv.width, cv.height) })
   }
   return out
 }
@@ -59,10 +62,10 @@ export async function filesToAttachments(files: File[], room: number): Promise<{
     try {
       if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
         const pages = await pdfPages(f, room - list.length)
-        pages.forEach((data, i) => list.push({ id: uid(), name: `${f.name} · page ${i + 1}`, data }))
+        pages.forEach((pg, i) => list.push({ id: uid(), name: `${f.name} · page ${i + 1}`, data: pg.data, mode: pg.mode }))
       } else if (f.type.startsWith('image/')) {
         const img = await loadImage(f)
-        list.push({ id: uid(), name: f.name, data: canvasToJpeg(img, img.naturalWidth, img.naturalHeight) })
+        list.push({ id: uid(), name: f.name, data: canvasToJpeg(img, img.naturalWidth, img.naturalHeight), mode: guessMode(img.naturalWidth, img.naturalHeight) })
       } else error = 'Only pictures (JPG, PNG) and PDF files can be attached.'
     } catch {
       error = `Could not read ${f.name}.`
