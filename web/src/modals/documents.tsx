@@ -46,7 +46,7 @@ export function VoucherModal({ id, fresh }: { id: string; fresh?: boolean }) {
           <div className="text-sm font-bold">Saved. Your voucher is ready.</div>
         </div>
       ) : null}
-      {inn || t.kind === 'out' ? <Chips className="mb-3" options={langOpts()} value={curLang()} onChange={(v) => setLang(v)} /> : null}
+      {inn ? <Chips className="mb-3" options={langOpts()} value={curLang()} onChange={(v) => setLang(v)} /> : null}
       <Paper html={voucherPaper(t)} />
       <div className="mt-4 flex items-center gap-2">
         <IconBtn label="Download PDF" onClick={() => docs.voucherPdf(id)}><Download className="size-5" /></IconBtn>

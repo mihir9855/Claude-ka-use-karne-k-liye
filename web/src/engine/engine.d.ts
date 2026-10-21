@@ -96,3 +96,4 @@ export declare const wordsL: any;
 export declare const stripShri: any;
 export declare const godDisp: any;
 export declare const rnoOf: any;
+export declare const pdfVoucherHtml: any;
