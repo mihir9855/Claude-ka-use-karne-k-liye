@@ -150,9 +150,19 @@ export function pdfLib(){var J=window.jspdf;if(!J||!J.jsPDF){toast('PDF tool cou
 export var PDFMODE='save';
 export function finishPdf(d,name,msg){
   var mode=PDFMODE;PDFMODE='save';
-  if(mode!=='share'){try{d.save(name);toast(msg||('Saved '+name))}catch(e){toast('Could not save the PDF on this device.')}return}
+  var cap=window.Capacitor,pl=cap&&cap.Plugins,isNative=!!(cap&&cap.isNativePlatform&&cap.isNativePlatform());
+  if(mode!=='share'){
+    if(isNative&&pl&&pl.FileTools){
+      /* phone app: save into Downloads, or open Android's print dialog */
+      var b64;try{b64=d.output('datauristring').split(',')[1]}catch(e){toast('Could not make the PDF.');return}
+      if(mode==='print'){pl.FileTools.printPdf({name:name,data:b64}).catch(function(){toast('Could not open the print dialog.')})}
+      else{pl.FileTools.saveToDownloads({name:name,data:b64}).then(function(r){toast('Saved in '+(r&&r.where||'Downloads')+': '+name)}).catch(function(){toast('Could not save the PDF. Try Share instead.')})}
+      return}
+    if(isNative){toast('Update the app to save or print. Use Share for now.');return}
+    if(mode==='print'){var u=URL.createObjectURL(d.output('blob'));var w=window.open(u,'_blank');if(!w){try{d.save(name)}catch(e){}}return}
+    try{d.save(name);toast(msg||('Saved '+name))}catch(e){toast('Could not save the PDF on this device.')}return}
   var blob;try{blob=d.output('blob')}catch(e){toast('Could not make the PDF.');return}
-  var cap=window.Capacitor,pl=cap&&cap.Plugins;
+
   if(cap&&cap.isNativePlatform&&cap.isNativePlatform()&&pl&&pl.Filesystem&&pl.Share){
     var rd=new FileReader();rd.onload=function(){var b64=String(rd.result).split(',')[1];
       pl.Filesystem.writeFile({path:name,data:b64,directory:'CACHE'}).then(function(r){return pl.Share.share({title:name,dialogTitle:'Share PDF',files:[r.uri]})}).catch(function(e){if(!(e&&/cancel/i.test(String(e.message||e))))toast('Could not share the PDF.')})};

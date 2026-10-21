@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [claude/project-finance-app-pzfrcs]
-    paths: [web/**, assets/**, capacitor.config.json, package.json, .github/workflows/build-apk.yml]
+    paths: [web/**, assets/**, android-native/**, capacitor.config.json, package.json, .github/workflows/build-apk.yml]
 
 jobs:
   apk:
@@ -25,6 +25,11 @@ jobs:
           npm run build:single
       - run: npm install
       - run: npx cap add android
+      - name: Add native file tools (save to Downloads, print)
+        run: |
+          D=android/app/src/main/java/com/brihad/templefinance
+          mkdir -p $D
+          cp android-native/FileTools.java android-native/MainActivity.java $D/
       - name: Make app icons
         run: |
           npm install --no-save @capacitor/assets@3.0.5

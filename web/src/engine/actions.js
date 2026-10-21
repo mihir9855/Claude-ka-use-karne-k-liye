@@ -234,6 +234,8 @@ export function restoreBackup(text) {
 }
 
 /* ---------- documents ---------- */
+const isNative = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+
 async function pdf(mode, fn) {
   try { await loadPdfLibs() } catch (e) { toast('PDF tool could not load. Check your internet and try again.'); return }
   setPdfMode(mode)
@@ -246,10 +248,10 @@ export const docs = {
     try { await loadPdfLibs() } catch (e) { shareText(voucherText(t), 'Voucher'); return }
     setPdfMode('share'); pdfVoucher(t)
   },
-  voucherPrint: (id) => printVoucher(id),
+  voucherPrint: (id) => (isNative() ? pdf('print', () => pdfVoucher(findTxn(id))) : printVoucher(id)),
   reportPdf: (id, mode = 'save') => pdf(mode, () => pdfReport(id)),
   proposalPdf: (id, mode = 'save') => pdf(mode, () => pdfProposal(id)),
-  proposalPrint: (id) => printProposal(id),
+  proposalPrint: (id) => (isNative() ? pdf('print', () => pdfProposal(id)) : printProposal(id)),
   proposalText: (id) => proposalText(findProp(id)),
   statementPdf: (id, mode = 'save') => pdf(mode, () => pdfStatement(derive().pById[id])),
   statementShare: async (id) => {
