@@ -119,8 +119,8 @@ export function fmtL(iso,lg){if(!iso)return '';var q=iso.split('-');return (+q[2
 export function shri(n,lg){n=String(n||'').trim();if(!n)return n;if(/^(shri|shree|shri\.|mr|mrs|ms|smt|dr|m\/s|श्री|શ્રી)\b/i.test(n)||/trust|co\.|company|pvt|ltd|mandal|sangh|samaj|foundation|committee|ट्रस्ट|ટ્રસ્ટ|મંડળ|मंडल/i.test(n))return n;return (lg==='en'?'Shri ':lg==='hi'?'श्री ':'શ્રી ')+n}
 export function letterBody(t,lg,html){
   var v=voucherInfo(t),L=LANG[lg],b=function(s){return html?'<b>'+esc(s)+'</b>':s},a=INR(t.amount)+'/-',w=wordsL(t.amount,lg),today_=t.date===today(),d=fmtL(t.date,lg),forName=v.trust||v.proj,who=shri(v.who,lg);
-  if(lg==='hi')return (today_?'आज ':'दिनांक '+b(d)+' को ')+(forName?b(forName)+' के निमित्त ':'')+'अंकों में रुपये '+b(a)+' (शब्दों में '+w+') '+b(who)+' के हस्ते प्राप्त हुए हैं।';
-  if(lg==='gu')return (today_?'આજ રોજ ':'તા. '+b(d)+' ના રોજ ')+(forName?b(forName)+' ના પેટે ':'')+'અંકે રૂપિયા '+b(a)+' (અંકે '+w+') '+b(who)+' ના હસ્તે મળેલ છે.';
+  if(lg==='hi')return (today_?'आज ':'दिनांक '+b(d)+' को ')+(forName?b(forName)+' के निमित्त ':'')+'अंकों में '+b(a)+' (शब्दों में '+w+') '+b(who)+' के हस्ते प्राप्त हुए हैं।';
+  if(lg==='gu')return (today_?'આજ રોજ ':'તા. '+b(d)+' ના રોજ ')+(forName?b(forName)+' ના પેટે ':'')+'અંકે '+b(a)+' (અક્ષરે '+w+') '+b(who)+' ના હસ્તે મળેલ છે.';
   return 'Received '+(today_?'today':'on '+b(d))+' a payment of '+b(a)+' ('+w+') from '+b(who)+(forName?', towards '+b(forName):'')+'.'}
 export function letterDetail(t,lg,html){var v=voucherInfo(t),L=LANG[lg],e=function(s){return html?esc(s):s},m=L.mode[t.mode]||t.mode,parts=[L.modeL+': '+e(m+refSfx(t,lg))];if(t.note)parts.push(L.forL+': '+e(t.note));return parts.join('  ·  ')}
 export function letterPlain(t){var lg=curLang(),L=LANG[lg],v=voucherInfo(t);return [DB.biz.name,L.title+' · '+t.vno,L.date+': '+fmtL(t.date,lg),'',letterBody(t,lg,false),letterDetail(t,lg,false),'',L.amt+': '+INR(t.amount)+'/-'].join('\n')}
