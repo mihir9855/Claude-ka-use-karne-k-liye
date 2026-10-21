@@ -36,6 +36,7 @@ public class FileTools extends Plugin {
     public void saveToDownloads(PluginCall call) {
         String name = call.getString("name", "document.pdf");
         String data = call.getString("data");
+        String mime = call.getString("mime", "application/pdf");
         if (data == null) {
             call.reject("No data");
             return;
@@ -47,7 +48,7 @@ public class FileTools extends Plugin {
                 ContentResolver resolver = getContext().getContentResolver();
                 ContentValues values = new ContentValues();
                 values.put(MediaStore.Downloads.DISPLAY_NAME, name);
-                values.put(MediaStore.Downloads.MIME_TYPE, "application/pdf");
+                values.put(MediaStore.Downloads.MIME_TYPE, mime);
                 values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
                 Uri uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
                 if (uri == null) throw new IOException("Could not create the file");

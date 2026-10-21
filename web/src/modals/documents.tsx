@@ -247,7 +247,10 @@ export function RestoreModal() {
   }
   return (
     <Sheet open onClose={close} title="Restore from backup" subtitle="Paste the backup text here. This replaces the data on this device." footer={<Button size="lg" className="h-12 w-full rounded-xl text-base font-bold" onClick={go}>Restore</Button>}>
-      <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste backup here" className="mt-3 min-h-40 w-full rounded-xl border bg-background p-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40" />
+      <label className="mt-3 block"><span className="text-sm font-semibold">Choose a backup file</span>
+        <input type="file" accept=".json,application/json,text/plain" className="mt-1 block w-full text-sm" onChange={(e) => { const f = e.target.files?.[0]; if (f) f.text().then((t) => { setText(t); setErr('') }) }} />
+      </label>
+      <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Or paste backup here" className="mt-3 min-h-40 w-full rounded-xl border bg-background p-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40" />
       <FormError msg={err} />
     </Sheet>
   )

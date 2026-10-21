@@ -216,6 +216,27 @@ export function setProposalLang(id, g) {
   save()
 }
 export function backupText() { return JSON.stringify(DB) }
+export function downloadBackup() {
+  const d = new Date(), p2 = (n) => String(n).padStart(2, '0')
+  const name = 'Brihad-Backup-' + d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + '.json'
+  const text = backupText()
+  const cap = window.Capacitor, pl = cap && cap.Plugins
+  if (isNative()) {
+    if (!(pl && pl.FileTools)) { toast('Update the app to download backups. Use Copy backup for now.'); return }
+    const b64 = btoa(unescape(encodeURIComponent(text)))
+    pl.FileTools.saveToDownloads({ name, data: b64, mime: 'application/json' })
+      .then((r) => toast('Backup saved in ' + ((r && r.where) || 'Downloads') + ': ' + name))
+      .catch(() => toast('Could not save the backup. Use Copy backup instead.'))
+    return
+  }
+  try {
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
+    a.download = name
+    document.body.appendChild(a); a.click(); a.remove()
+    toast('Backup downloaded: ' + name)
+  } catch (e) { toast('Could not download. Use Copy backup instead.') }
+}
 export function restoreBackup(text) {
   try {
     const d = JSON.parse(text)

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTheme } from 'next-themes'
-import { Cloud, CloudOff, Copy, Moon, RefreshCw, RotateCcw, Sun } from 'lucide-react'
+import { Cloud, CloudOff, Copy, Download, Moon, RefreshCw, RotateCcw, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Field, TextInput, Chips } from '@/components/app/fields'
@@ -9,7 +9,7 @@ import { useData } from '@/lib/store'
 import { useModal } from '@/app/modal'
 import { SY } from '@/engine/sync.js'
 import { toast, fallbackCopy } from '@/engine/engine.js'
-import { backupText, saveBiz, setLetterheadBW } from '@/engine/actions.js'
+import { backupText, downloadBackup, saveBiz, setLetterheadBW } from '@/engine/actions.js'
 import { useSyncState } from '@/lib/sync'
 
 const ACCENTS: [string, string, string][] = [['indigo', 'Indigo', '#33439e'], ['teal', 'Teal', '#0e7490'], ['green', 'Green', '#0f7a5f'], ['purple', 'Purple', '#6d3fd1'], ['rose', 'Rose', '#c0305a'], ['black', 'Black', '#1c2230']]
@@ -43,7 +43,8 @@ export default function Settings() {
         <SectionTitle>Backup</SectionTitle>
         <p className="-mt-2 text-sm leading-relaxed text-muted-foreground">Your data is saved on this device, and online if Sync is on. Copy a backup now and then and keep it in WhatsApp notes or email. Restoring a backup replaces everything, on synced devices too.</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button className="rounded-xl" onClick={copyBackup}><Copy className="size-4" /> Copy backup</Button>
+          <Button className="rounded-xl" onClick={downloadBackup}><Download className="size-4" /> Download backup</Button>
+          <Button variant="outline" className="rounded-xl" onClick={copyBackup}><Copy className="size-4" /> Copy backup</Button>
           <Button variant="outline" className="rounded-xl" onClick={() => open('restore')}><RotateCcw className="size-4" /> Restore from backup</Button>
         </div>
       </Card>
