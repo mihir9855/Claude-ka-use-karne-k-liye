@@ -424,16 +424,25 @@ export function proposalPages(pr,lg){
     var pages=[];
     function newPage(first){var pg=document.createElement('div');pg.className='pg';pg.style.fontFamily=T.font;pg.innerHTML=(first?hdrImgHtml(bw,lg,PW,'width:100%;height:'+HH+'px;display:block'):'<div style="height:34px"></div>')+'<div class="pc" style="'+pad+'"></div><img class="pf" src="'+LH.f+'" alt="" style="position:absolute;left:0;right:0;bottom:0;width:100%;height:'+FH+'px">';host.appendChild(pg);pages.push(pg);return pg}
     newPage(true);
-    blocks.forEach(function(b){
+    blocks.forEach(function(b,bi){
       var brk=b.charAt(0)==='\u0001';if(brk)b=b.slice(1);
       var pg=pages[pages.length-1],pc=pg.querySelector('.pc');
-      if(brk&&pc.children.length){pg=newPage(false);pc=pg.querySelector('.pc')}
+      if(brk&&pc.children.length&&pr.np!==false){pg=newPage(false);pc=pg.querySelector('.pc')}
+      else if(brk&&pc.children.length){
+        /* the notes and the signature stay together: if they do not fit under the rates, they all move to a fresh page */
+        var grp=document.createElement('div');grp.innerHTML=blocks.slice(bi).map(function(x){return x.replace('\u0001','')}).join('');pc.appendChild(grp);
+        var over=grp.getBoundingClientRect().bottom-pg.getBoundingClientRect().top>LIMIT;pc.removeChild(grp);
+        if(over){pg=newPage(false);pc=pg.querySelector('.pc')}}
       var el=document.createElement('div');el.innerHTML=b;pc.appendChild(el);
       if(el.getBoundingClientRect().bottom-pg.getBoundingClientRect().top>LIMIT&&pc.children.length>1){pc.removeChild(el);var np=newPage(false);np.querySelector('.pc').appendChild(el)}});
     var lastOnly=pages.length>1&&pages[pages.length-1].querySelector('.pc').children.length===1;
     return {host:host,pages:pages,orphan:lastOnly}}
-  var res,ks=[1,0.85,0.72,0.6];
-  for(var i=0;i<ks.length;i++){res=layout(ks[i],false);if(!res.orphan||i===ks.length-1)break;document.body.removeChild(res.host)}
+  /* use the roomiest spacing that gives the fewest pages */
+  var res=null,ks=[1,0.85,0.72,0.6],sep=pr.np!==false;
+  for(var i=0;i<ks.length;i++){var r=layout(ks[i],false);
+    if(sep){/* separate notes page: keep the roomy spacing, tighten only if the signature would be alone */if(!r.orphan||i===ks.length-1){res=r;break}document.body.removeChild(r.host);continue}
+    if(!res||(r.pages.length<res.pages.length&&!(r.orphan&&!res.orphan))||(res.orphan&&!r.orphan)){if(res)document.body.removeChild(res.host);res=r}else document.body.removeChild(r.host);
+    if(res.pages.length===1)break}
   if(res.orphan){document.body.removeChild(res.host);res=layout(0.6,true)}
   var pages=res.pages,atts=attGet(pr.id),total=pages.length+atts.length;
   pages.forEach(function(pg,i){if(total>1){var s=document.createElement('div');s.style.cssText='position:absolute;right:52px;bottom:'+(FH+6)+'px;font-size:11px;color:#6E728A';s.textContent=(i+1)+' / '+total;pg.appendChild(s)}});
