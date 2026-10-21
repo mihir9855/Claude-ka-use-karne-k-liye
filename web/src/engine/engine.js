@@ -117,19 +117,27 @@ export function wordsL(n,lg){if(lg==='en')return words(n);var L=LANG[lg],p=[],cr
  return L.rs+' '+(p.join(' ')||L.n[0])+' '+L.only}
 export function fmtL(iso,lg){if(!iso)return '';var q=iso.split('-');return (+q[2])+' '+LANG[lg].mon[+q[1]-1]+' '+q[0]}
 export function shri(n,lg){n=String(n||'').trim();if(!n)return n;if(/^(shri|shree|shri\.|mr|mrs|ms|smt|dr|m\/s|श्री|શ્રી)\b/i.test(n)||/trust|co\.|company|pvt|ltd|mandal|sangh|samaj|foundation|committee|ट्रस्ट|ટ્રસ્ટ|મંડળ|मंडल/i.test(n))return n;return (lg==='en'?'Shri ':lg==='hi'?'श्री ':'શ્રી ')+n}
+var MT={
+ gu:{Cash:'રોકડા મળેલ છે.',UPI:'UPI થી મળેલ છે.',Bank:'બેંક (NEFT) થી મળેલ છે.',Cheque:'ચેક થી મળેલ છે.'},
+ hi:{Cash:'नकद प्राप्त हुए हैं।',UPI:'UPI से प्राप्त हुए हैं।',Bank:'बैंक (NEFT) से प्राप्त हुए हैं।',Cheque:'चेक से प्राप्त हुए हैं।'},
+ en:{Cash:'in cash.',UPI:'by UPI.',Bank:'by bank transfer (NEFT).',Cheque:'by cheque.'}};
+/* how it was paid, as the end of the sentence, with the cheque number or bank reference when there is one */
+function modeTail(t,lg,html){var tl=(MT[lg]||MT.en)[t.mode]||'',r=String(t.ref||'').trim();
+ if(r&&(t.mode==='Bank'||t.mode==='Cheque')){var rl=REFL[lg][t.mode];tl+=' '+rl+' '+(html?'<b>'+esc(r)+'</b>':r)+(lg==='hi'?'।':'.')}
+ return tl}
 export function letterBody(t,lg,html){
   var v=voucherInfo(t),L=LANG[lg],b=function(s){return html?'<b>'+esc(s)+'</b>':s},a=INR(t.amount)+'/-',w=wordsL(t.amount,lg),today_=t.date===today(),d=fmtL(t.date,lg),forName=v.trust||v.proj,who=shri(v.who,lg);
-  if(lg==='hi')return (today_?'आज ':'दिनांक '+b(d)+' को ')+(forName?b(forName)+' के निमित्त ':'')+'अंकों में '+b(a)+' (शब्दों में '+w+') '+b(who)+' के हस्ते प्राप्त हुए हैं।';
-  if(lg==='gu')return (today_?'આજ રોજ ':'તા. '+b(d)+' ના રોજ ')+(forName?b(forName)+' ના પેટે ':'')+'અંકે '+b(a)+' (અક્ષરે '+w+') '+b(who)+' ના હસ્તે મળેલ છે.';
-  return 'Received '+(today_?'today':'on '+b(d))+' a payment of '+b(a)+' ('+w+') from '+b(who)+(forName?', towards '+b(forName):'')+'.'}
-export function letterDetail(t,lg,html){var v=voucherInfo(t),L=LANG[lg],e=function(s){return html?esc(s):s},m=L.mode[t.mode]||t.mode,parts=[L.modeL+': '+e(m+refSfx(t,lg))];if(t.note)parts.push(L.forL+': '+e(t.note));return parts.join('  ·  ')}
-export function letterPlain(t){var lg=curLang(),L=LANG[lg],v=voucherInfo(t);return [DB.biz.name,L.title+' · '+L.rno+' '+(t.rno||t.vno),L.date+': '+fmtL(t.date,lg),'',letterBody(t,lg,false),letterDetail(t,lg,false),'',L.amt+': '+INR(t.amount)+'/-'].join('\n')}
+  if(lg==='hi')return (today_?'आज ':'दिनांक '+b(d)+' को ')+(forName?b(forName)+' के निमित्त ':'')+'अंकों में '+b(a)+' (शब्दों में '+w+') '+b(who)+' के हस्ते '+modeTail(t,lg,html);
+  if(lg==='gu')return (today_?'આજ રોજ ':'તા. '+b(d)+' ના રોજ ')+(forName?b(forName)+' ના પેટે ':'')+'અંકે '+b(a)+' (અક્ષરે '+w+') '+b(who)+' ના હસ્તે '+modeTail(t,lg,html);
+  return 'Received '+(today_?'today':'on '+b(d))+' a payment of '+b(a)+' ('+w+') from '+b(who)+(forName?', towards '+b(forName):'')+', '+modeTail(t,lg,html)}
+export function letterDetail(t,lg,html){return ''}
+export function letterPlain(t){var lg=curLang(),L=LANG[lg],v=voucherInfo(t);return [DB.biz.name,L.title+' · '+L.rno+' '+(t.rno||t.vno),L.date+': '+fmtL(t.date,lg),'',letterBody(t,lg,false),letterDetail(t,lg,false),'',L.amt+': '+INR(t.amount)+'/-'].filter(function(x,i,a){return !(x===''&&a[i-1]==='')}).join('\n')}
 export function letterPaper(t,lg){
   lg=lg||curLang();var v=voucherInfo(t),L=LANG[lg],bw=DB.biz.lhBW;
   return '<div class="vfit"><div class="vin" data-w="700" style="width:700px"><div class="paper" style="padding:0;overflow:hidden;border:1px solid #D8D6CE;border-radius:0;font-family:'+L.font+';min-height:990px;display:flex;flex-direction:column;color:#1F2230">'+hdrImgHtml(bw,lg,700,'width:100%;display:block')
   +'<div style="padding:0 6%;flex:1;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;letter-spacing:'+(lg==='en'?'.12em':'.02em')+';font-weight:700;margin-top:2px"><span>'+L.date+': <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+fmtL(t.date,lg)+'</span></span><span>'+L.rno+': <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+esc(String(t.rno||t.vno))+'</span></span></div>'
   +'<div style="text-align:center;font-size:16px;letter-spacing:'+(lg==='en'?'.3em':'.12em')+';font-weight:700;margin:30px 0 22px;text-decoration:underline;text-underline-offset:6px">'+L.title+'</div>'
-    +'<p style="font-size:15.5px;line-height:2;margin:6px 0 10px;text-align:justify">'+letterBody(t,lg,true)+'</p><div style="font-size:15px;color:#1F2230;line-height:1.8">'+letterDetail(t,lg,true)+'</div>'
+    +'<p style="font-size:15.5px;line-height:2;margin:6px 0 10px;text-align:justify">'+letterBody(t,lg,true)+'</p>'
   +'<div style="margin:18px 0 4px;display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #E4E2DB;font-size:14px"><span style="color:#62668A">'+L.amt+'</span><b class="tn">'+INR(t.amount)+'/-</b></div>'
   +'<div style="margin-top:auto;padding:46px 0 34px;text-align:right;font-size:14px"><div style="height:60px"></div><div style="display:inline-block;border-top:1.5px solid #1F2230;min-width:230px;height:1px"></div></div></div>'
   +'<img src="'+LH.f+'" alt="" style="width:100%;display:block;margin-top:auto;flex-shrink:0"></div></div></div>'}
