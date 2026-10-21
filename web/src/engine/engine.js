@@ -385,14 +385,17 @@ export var PT={
 en:{date:'Date',ref:'Ref.',note:'Note:-',font:"Georgia,'Times New Roman',serif",
  head:function(g,l){return 'Shri '+g+' Temple'+(l?', '+l:'')},
  intro:function(g,l,v){return 'Rates for constructing the temple of Shri '+g+(l?' at '+(v?'village ':'')+l:'')+' are as follows.'},
+ introS:function(g,l,v,it){return 'Rates for making the '+(it||'sihasan')+' of Shri '+g+(l?' at '+(v?'village ':'')+l:'')+' are as follows.'},
  small:function(it,by,st,a,w){return it+' as per '+(by?by+'\'s ':'the ')+'design and size, made in '+st+': Rs. '+a+'/- ('+w+') has been fixed.'},tem:function(s,a,q){return 'Temple built in '+s+(q?' at Rs. '+q+'/- per sq. ft.,':'')+' total Rs. '+a+'/-'},ran:function(s,a){return 'Rang-mandap built in '+s+': total Rs. '+a+'/-'},when:function(d){return 'Date: '+d}},
 hi:{date:'दिनांक',ref:'संदर्भ',note:'नोंध:-',font:"'Noto Sans Devanagari','Mangal',sans-serif",
  head:function(g,l){return 'श्री '+g+' मंदिर'+(l?', '+l:'')},
  intro:function(g,l,v){return (l?(v?'ग्राम ':'')+l+' में ':'')+'श्री '+g+' के मंदिर का निर्माण कार्य करने के भाव नीचे अनुसार हैं।'},
+ introS:function(g,l,v,it){return (l?(v?'ग्राम ':'')+l+' में ':'')+'श्री '+g+' के '+(it||'सिंहासन')+' बनाने के भाव नीचे अनुसार हैं।'},
  small:function(it,by,st,a,w){return it+' '+(by?by+' के ':'')+'डिज़ाइन और साइज़ के अनुसार '+st+' में बनाकर देने के अंकों में रुपये '+a+'/- (शब्दों में '+w+') तय किए गए हैं।'},tem:function(s,a,q){return 'मंदिर '+s+' में '+(q?'रुपये '+q+'/- प्रति वर्ग फुट के भाव से ':'')+'बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},ran:function(s,a){return 'रंग-मंडप '+s+' में बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},when:function(d){return 'दिनांक: '+d}},
 gu:{date:'તારીખ',ref:'સંદર્ભ',note:'નોંધ:-',font:"'Noto Sans Gujarati','Shruti',sans-serif",
  head:function(g,l){return 'શ્રી '+g+' મંદિર'+(l?', '+l:'')},
  intro:function(g,l,v){return (l?(v?'ગામ ':'')+l+' માં ':'')+'શ્રી '+g+' ના મંદિર નું બાંધકામ કરવાનાં ભાવ નીચે પ્રમાણે છે.'},
+ introS:function(g,l,v,it){return (l?(v?'ગામ ':'')+l+' માં ':'')+'શ્રી '+g+' ના '+(it||'સિંહાસન')+' બનાવવાનાં ભાવ નીચે પ્રમાણે છે.'},
  small:function(it,by,st,a,w){return it+' '+(by?by+' ની ':'')+'ડીસાઇન અને સાઇઝ પ્રમાણે '+st+' માં કરી આપવાના અંકે રૂપિયા '+a+'/- (અંકે '+w+') નક્કી કરેલ છે.'},tem:function(s,a,q){return 'મંદિર '+s+' માં '+(q?'રૂપિયા '+q+'/- પ્રતિ સ્ક્વેર ફૂટ ના ભાવે ':'')+'બનાવી આપવાના કુલ Rs. '+a+'/- થાય છે.'},ran:function(s,a){return 'રંગ-મંડપ '+s+' માં બનાવી આપવાના કુલ Rs. '+a+'/- થાય છે.'},when:function(d){return 'તા. '+d}}};
 export function stripGod(s){return String(s||'').trim().replace(/^(શ્રી|श्री|shri|shree)\s+/i,'').replace(/\s+(મંદિર|मंदिर|mandir|temple)$/i,'').trim()}
 export function dmy(iso){if(!iso)return '';var q=iso.split('-');return q[2]+'-'+q[1]+'-'+q[0]}
@@ -412,7 +415,7 @@ export function proposalPages(pr,lg){
     var blocks=[],n=0;
     blocks.push('<div style="display:flex;justify-content:space-between;gap:12px;font-size:14px;font-weight:700;margin-top:'+m(14)+'px"><span>'+T.ref+' '+esc(pr.vno||'')+'</span><span>'+T.when(dmy(pr.date))+'</span></div>');
     blocks.push('<div style="text-align:center;font-weight:700;font-size:21px;margin:'+m(26)+'px 0 '+m(14)+'px;line-height:1.5">'+T.head(god,loc)+'</div>');
-    blocks.push('<div style="font-weight:700;font-size:'+fs(15.5)+'px;line-height:'+lh(1.9)+';margin:0 0 6px;text-align:center">'+T.intro(god,loc,pr.pt!=='c')+'</div>');
+    blocks.push('<div style="font-weight:700;font-size:'+fs(15.5)+'px;line-height:'+lh(1.9)+';margin:0 0 6px;text-align:center">'+(pr.kind==='small'?T.introS(god,loc,pr.pt!=='c',esc(pr.item||'')):T.intro(god,loc,pr.pt!=='c'))+'</div>');
     if(pr.kind==='small'){var o0=(pr.options||[])[0]||{},am=num(o0.mandir);blocks.push('<div style="margin:'+m(22)+'px 0 0;font-size:'+fs(15.5)+'px;line-height:'+lh(2)+';font-weight:600;text-align:center">'+T.small(esc(pr.item||''),esc(pr.by||''),esc(o0.stone||''),amtTxt(am),esc(wordsL(am,lg)))+'</div>')}
     else (pr.options||[]).forEach(function(o){var l1=num(o.mandir)?T.tem(esc(o.stone||''),amtTxt(num(o.mandir)),num(o.sqft)?amtTxt(num(o.sqft)):''):'',l2=num(o.rang)?T.ran(esc(o.stone||''),amtTxt(num(o.rang))):'';if(!l1&&!l2)return;n++;
       blocks.push('<div style="margin:'+m(20)+'px 0 0;font-size:'+fs(15.5)+'px;line-height:'+lh(2)+';font-weight:600;text-align:center">'+n+'.&nbsp; '+l1+(l1&&l2?'<br>':'')+l2+'</div>')});
@@ -427,7 +430,7 @@ export function proposalPages(pr,lg){
     blocks.forEach(function(b,bi){
       var brk=b.charAt(0)==='\u0001';if(brk)b=b.slice(1);
       var pg=pages[pages.length-1],pc=pg.querySelector('.pc');
-      if(brk&&pc.children.length&&pr.np!==false){pg=newPage(false);pc=pg.querySelector('.pc')}
+      if(brk&&pc.children.length&&pr.np===true){pg=newPage(false);pc=pg.querySelector('.pc')}
       else if(brk&&pc.children.length){
         /* the notes and the signature stay together: if they do not fit under the rates, they all move to a fresh page */
         var grp=document.createElement('div');grp.innerHTML=blocks.slice(bi).map(function(x){return x.replace('\u0001','')}).join('');pc.appendChild(grp);
@@ -438,7 +441,7 @@ export function proposalPages(pr,lg){
     var lastOnly=pages.length>1&&pages[pages.length-1].querySelector('.pc').children.length===1;
     return {host:host,pages:pages,orphan:lastOnly}}
   /* use the roomiest spacing that gives the fewest pages */
-  var res=null,ks=[1,0.85,0.72,0.6],sep=pr.np!==false;
+  var res=null,ks=[1,0.85,0.72,0.6],sep=pr.np===true;
   for(var i=0;i<ks.length;i++){var r=layout(ks[i],false);
     if(sep){/* separate notes page: keep the roomy spacing, tighten only if the signature would be alone */if(!r.orphan||i===ks.length-1){res=r;break}document.body.removeChild(r.host);continue}
     if(!res||(r.pages.length<res.pages.length&&!(r.orphan&&!res.orphan))||(res.orphan&&!r.orphan)){if(res)document.body.removeChild(res.host);res=r}else document.body.removeChild(r.host);
@@ -469,7 +472,7 @@ export function printProposal(id){
   document.getElementById('pgstyle').textContent='@page{size:A4 portrait;margin:0}';
   var done=function(){pa.innerHTML='';window.removeEventListener('afterprint',done)};window.addEventListener('afterprint',done);
   try{window.print()}catch(e){done();toast('Print is not available here. Download the PDF and print that.')}}
-export function proposalText(pr){var lg=pr.lg||'gu',T=PT[lg],god=stripGod(pr.god),loc=pr.loc||'',r=[T.head(god,loc),T.when(dmy(pr.date)),'',T.intro(god,loc,pr.pt!=='c'),''],n=0;
+export function proposalText(pr){var lg=pr.lg||'gu',T=PT[lg],god=stripGod(pr.god),loc=pr.loc||'',r=[T.head(god,loc),T.when(dmy(pr.date)),'',pr.kind==='small'?T.introS(god,loc,pr.pt!=='c',pr.item||''):T.intro(god,loc,pr.pt!=='c'),''],n=0;
   if(pr.kind==='small'){var q0=(pr.options||[])[0]||{},qa=num(q0.mandir);r.push(T.small(pr.item||'',pr.by||'',q0.stone||'',amtTxt(qa),wordsL(qa,lg)))}
   else (pr.options||[]).forEach(function(o){var a=num(o.mandir)?T.tem(o.stone||'',amtTxt(num(o.mandir)),num(o.sqft)?amtTxt(num(o.sqft)):''):'',b=num(o.rang)?T.ran(o.stone||'',amtTxt(num(o.rang))):'';if(!a&&!b)return;n++;r.push(n+'. '+a);if(b)r.push('   '+b)});
   if(String(pr.extra||'').trim())r.push('',String(pr.extra).trim());

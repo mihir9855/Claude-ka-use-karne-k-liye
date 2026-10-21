@@ -50,12 +50,12 @@ export function newOption() { return { id: uid(), stone: '', mandir: '', rang: '
 export function proposalForm(id, copy) {
   const pr = id ? findProp(id) : null
   if (pr) {
-    const f = { np: pr.np !== false, extra: pr.extra || '', attach: attGet(pr.id), editId: pr.id, kind: pr.kind || 'temple', item: pr.item || '', by: pr.by || '', god: pr.god, loc: pr.loc || '', pt: pr.pt || 'v', date: pr.date, lg: pr.lg || 'gu', signer: pr.signer || '', touched: true, options: pr.options.map((o) => ({ id: o.id, stone: o.stone || '', mandir: o.mandir ? String(o.mandir) : '', rang: o.rang ? String(o.rang) : '', sqft: o.sqft ? String(o.sqft) : '' })), notes: (pr.notes || []).slice() }
+    const f = { np: pr.np === true, extra: pr.extra || '', attach: attGet(pr.id), editId: pr.id, kind: pr.kind || 'temple', item: pr.item || '', by: pr.by || '', god: pr.god, loc: pr.loc || '', pt: pr.pt || 'v', date: pr.date, lg: pr.lg || 'gu', signer: pr.signer || '', touched: true, options: pr.options.map((o) => ({ id: o.id, stone: o.stone || '', mandir: o.mandir ? String(o.mandir) : '', rang: o.rang ? String(o.rang) : '', sqft: o.sqft ? String(o.sqft) : '' })), notes: (pr.notes || []).slice() }
     if (copy) { f.editId = undefined; f.god = ''; f.loc = ''; f.date = today() }
     return f
   }
   const lg = curLang()
-  return { np: true, extra: '', attach: [], kind: 'temple', item: ITEMS[lg][0], by: '', god: '', loc: '', pt: 'v', date: today(), lg, signer: DB.biz.signer || 'Manoj Vinodrai Sompura', touched: false, options: [newOption()], notes: presetNotes('temple', lg) }
+  return { np: false, extra: '', attach: [], kind: 'temple', item: ITEMS[lg][0], by: '', god: '', loc: '', pt: 'v', date: today(), lg, signer: DB.biz.signer || 'Manoj Vinodrai Sompura', touched: false, options: [newOption()], notes: presetNotes('temple', lg) }
 }
 
 /* ---------- saves: return an error string, or null when saved ---------- */
@@ -152,7 +152,7 @@ export function saveProposal(f) {
     if (!String(f.item || '').trim()) return { err: 'Write what is being made (for example Sihasan).' }
   } else if (!opts.length) return { err: 'Add the rate (amount) for at least one option.' }
   const notes = f.notes.map((x) => String(x).trim()).filter(Boolean)
-  const base = { kind: f.kind || 'temple', item: String(f.item || '').trim(), by: String(f.by || '').trim(), god: stripGod(f.god), loc: String(f.loc || '').trim(), pt: f.pt, date: f.date || today(), lg: f.lg, signer: String(f.signer || '').trim(), options: opts.map((o) => ({ id: o.id, stone: String(o.stone || '').trim(), mandir: num(o.mandir), rang: num(o.rang), sqft: num(o.sqft) })), notes, np: f.np !== false, extra: String(f.extra || '').trim() }
+  const base = { kind: f.kind || 'temple', item: String(f.item || '').trim(), by: String(f.by || '').trim(), god: stripGod(f.god), loc: String(f.loc || '').trim(), pt: f.pt, date: f.date || today(), lg: f.lg, signer: String(f.signer || '').trim(), options: opts.map((o) => ({ id: o.id, stone: String(o.stone || '').trim(), mandir: num(o.mandir), rang: num(o.rang), sqft: num(o.sqft) })), notes, np: f.np === true, extra: String(f.extra || '').trim() }
   DB.biz.signer = base.signer || DB.biz.signer
   DB.biz.lang = f.lg
   if (f.editId) {
@@ -209,6 +209,8 @@ export function setProposalLang(id, g) {
   const pr = findProp(id)
   const old = pr.lg || 'gu'
   if (JSON.stringify(pr.notes) === JSON.stringify(presetNotes(pr.kind || 'temple', old))) pr.notes = presetNotes(pr.kind || 'temple', g)
+  const ix = ITEMS[old].indexOf(pr.item)
+  if (ix >= 0) pr.item = ITEMS[g][ix]
   pr.lg = g
   DB.biz.lang = g
   save()
