@@ -59,7 +59,7 @@ public class FileTools extends Plugin {
                 } finally {
                     out.close();
                 }
-                where = "Downloads";
+                where = "Internal storage › Download";
             } else {
                 File dir = getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
                 if (dir == null) throw new IOException("No storage");
