@@ -403,18 +403,18 @@ export var PT={
 en:{date:'Date',ref:'Ref.',note:'Note:-',font:"Georgia,'Times New Roman',serif",
  head:function(g,l){return [g&&'Shri '+g,l].filter(Boolean).join(', ')},
  intro:function(g,l,v){if(!g)return '';return 'Rates for constructing Shri '+g+(l?' at '+''+l:'')+' are as follows.'},
- introS:function(g,l,v,it){if(!g)return '';return 'Rates for making the '+(it||'sihasan')+' of Shri '+g+(l?' at '+''+l:'')+' are as follows.'},
- small:function(it,by,st,a,w){return it+' as per '+(by?by+'\'s ':'the ')+'design and size, made in '+st+': Rs. '+a+'/- ('+w+') has been fixed.'},tem:function(s,a,q){return 'Temple built in '+s+(q?' at Rs. '+q+'/- per sq. ft.,':'')+' total Rs. '+a+'/-'},ran:function(s,a){return 'Rang-mandap built in '+s+': total Rs. '+a+'/-'},when:function(d){return 'Date: '+d}},
+ introS:function(){return ''},
+ small:function(it,by,st,a,w){return it+(by?' as per '+by+'\'s design and size':'')+(st?', made in '+st:'')+': Rs. '+a+'/- ('+w+') has been fixed.'},tem:function(s,a,q){return 'Temple built in '+s+(q?' at Rs. '+q+'/- per sq. ft.,':'')+' total Rs. '+a+'/-'},ran:function(s,a){return 'Rang-mandap built in '+s+': total Rs. '+a+'/-'},when:function(d){return 'Date: '+d}},
 hi:{date:'दिनांक',ref:'संदर्भ',note:'नोंध:-',font:"'Noto Sans Devanagari','Mangal',sans-serif",
  head:function(g,l){return [g&&'श्री '+g,l].filter(Boolean).join(', ')},
  intro:function(g,l,v){if(!g)return '';return (l?''+l+' में ':'')+'श्री '+g+' का निर्माण कार्य करने के भाव नीचे अनुसार हैं।'},
- introS:function(g,l,v,it){if(!g)return '';return (l?''+l+' में ':'')+'श्री '+g+' के '+(it||'सिंहासन')+' बनाने के भाव नीचे अनुसार हैं।'},
- small:function(it,by,st,a,w){return it+' '+(by?by+' के ':'')+'डिज़ाइन और साइज़ के अनुसार '+st+' में बनाकर देने के अंकों में रुपये '+a+'/- (शब्दों में '+w+') तय किए गए हैं।'},tem:function(s,a,q){return 'मंदिर '+s+' में '+(q?'रुपये '+q+'/- प्रति वर्ग फुट के भाव से ':'')+'बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},ran:function(s,a){return 'रंग-मंडप '+s+' में बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},when:function(d){return 'दिनांक: '+d}},
+ introS:function(){return ''},
+ small:function(it,by,st,a,w){return it+' '+(by?by+' के डिज़ाइन और साइज़ के अनुसार ':'')+(st?st+' में ':'')+'बनाकर देने के अंकों में रुपये '+a+'/- (शब्दों में '+w+') तय किए गए हैं।'},tem:function(s,a,q){return 'मंदिर '+s+' में '+(q?'रुपये '+q+'/- प्रति वर्ग फुट के भाव से ':'')+'बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},ran:function(s,a){return 'रंग-मंडप '+s+' में बनाकर देने के कुल Rs. '+a+'/- होते हैं।'},when:function(d){return 'दिनांक: '+d}},
 gu:{date:'તારીખ',ref:'સંદર્ભ',note:'નોંધ:-',font:"'Noto Sans Gujarati','Shruti',sans-serif",
  head:function(g,l){return [g&&'શ્રી '+g,l].filter(Boolean).join(', ')},
  intro:function(g,l,v){if(!g)return '';return (l?''+l+' માં ':'')+'શ્રી '+g+'નું બાંધકામ કરવાના ભાવ નીચે પ્રમાણે છે.'},
- introS:function(g,l,v,it){if(!g)return '';return (l?''+l+' માં ':'')+'શ્રી '+g+' ના '+(it||'સિંહાસન')+' બનાવવાના ભાવ નીચે પ્રમાણે છે.'},
- small:function(it,by,st,a,w){return it+' '+(by?by+' ની ':'')+'ડિઝાઇન અને સાઇઝ પ્રમાણે '+st+' માં કરી આપવાના અંકે રૂપિયા '+a+'/- (અંકે '+w+') નક્કી કરેલ છે.'},tem:function(s,a,q){return 'મંદિર '+s+' માં '+(q?'રૂપિયા '+q+'/- પ્રતિ સ્ક્વેર ફૂટના ભાવે ':'')+'બનાવી આપવાના કુલ રૂ. '+a+'/- થાય છે.'},ran:function(s,a){return 'રંગ-મંડપ '+s+' માં બનાવી આપવાના કુલ રૂ. '+a+'/- થાય છે.'},when:function(d){return 'તા. '+d}}};
+ introS:function(){return ''},
+ small:function(it,by,st,a,w){return it+' '+(by?by+' ની ડિઝાઇન અને સાઇઝ પ્રમાણે ':'')+(st?st+'માં ':'')+'બનાવી આપવાના અંકે રૂપિયા '+a+'/- (અંકે '+w+') નક્કી થયેલ છે.'},tem:function(s,a,q){return 'મંદિર '+s+'માં '+(q?'રૂપિયા '+q+'/- પ્રતિ સ્ક્વેર ફૂટના ભાવે ':'')+'બનાવી આપવાના કુલ રૂ. '+a+'/- થાય છે.'},ran:function(s,a){return 'રંગ-મંડપ '+s+'માં બનાવી આપવાના કુલ રૂ. '+a+'/- થાય છે.'},when:function(d){return 'તા. '+d}}};
 export function stripGod(s){return String(s||'').trim().replace(/^(શ્રી|श्री|shri|shree)\s+/i,'').replace(/\s+(મંદિર|मंदिर|mandir|temple)$/i,'').trim()}
 export function dmy(iso){if(!iso)return '';var q=iso.split('-');return q[2]+'-'+q[1]+'-'+q[0]}
 export function amtTxt(n){return Number(n).toLocaleString('en-IN')+(String(n).length?'':'')}
