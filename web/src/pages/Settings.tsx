@@ -66,7 +66,7 @@ export default function Settings() {
         <div className="mt-5 text-sm font-semibold text-muted-foreground">Theme</div>
         <Chips className="mt-2" options={[{ value: 'light', label: <span className="flex items-center gap-1.5"><Sun className="size-4" /> Light</span> }, { value: 'dark', label: <span className="flex items-center gap-1.5"><Moon className="size-4" /> Dark</span> }]} value={theme === 'dark' ? 'dark' : 'light'} onChange={(v) => setTheme(v)} />
       </Card>
-      <p className="text-center text-xs text-muted-foreground lg:col-span-2">App version: {__BUILD_ID__}</p>
+      <p className="text-center text-xs text-muted-foreground lg:col-span-2">App version: v{__APP_VERSION__} · {__BUILD_ID__}</p>
     </div>
   )
 }
