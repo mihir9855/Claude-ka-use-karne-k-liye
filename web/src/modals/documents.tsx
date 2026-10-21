@@ -158,11 +158,11 @@ export function ProposalModal({ form }: { form: any }) {
       <Field label="Extra details (optional)" hint="Write anything else you want in this proposal. It comes after the rates and before the notes.">
         <textarea value={f.extra || ''} onChange={(e) => set('extra', e.target.value)} placeholder="e.g. Size, design, delivery time, payment schedule…" className="min-h-24 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40" />
       </Field>
-      <Field label="Pictures or PDF (optional)" hint="JPG, PNG or PDF. Each picture, and each page of a PDF, is added as its own page at the end of the proposal.">
+      <Field label="Pictures or PDF (optional)" hint="JPG, PNG or PDF. Each picture, and each page of a PDF, is added as its own page at the end, with the letterhead on top. The whole picture is fitted inside the page with margins, nothing is cut. The small box below shows the full picture.">
         <div className="grid gap-2">
           {(f.attach || []).map((a: Attachment) => (
             <div key={a.id} className="flex items-center gap-3 rounded-xl border bg-background p-2">
-              <img src={a.data} alt="" className="size-12 shrink-0 rounded-lg object-cover" />
+              <img src={a.data} alt="" className="h-16 w-24 shrink-0 rounded-lg border bg-white object-contain" />
               <span className="min-w-0 flex-1 truncate text-sm">{a.name}</span>
               <button type="button" aria-label="Remove" onClick={() => setF((p: any) => ({ ...p, attach: p.attach.filter((x: Attachment) => x.id !== a.id) }))} className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">×</button>
             </div>
