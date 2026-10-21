@@ -1,0 +1,22 @@
+{
+  "name": "brihad-temple-finance",
+  "version": "1.0.0",
+  "description": "Brihad Temple Construction Co. - project finance manager",
+  "author": "Brihad Temple Construction Co.",
+  "main": "main.js",
+  "private": true,
+  "scripts": { "start": "electron ." },
+  "devDependencies": {
+    "electron": "31.7.7",
+    "electron-builder": "24.13.3"
+  },
+  "build": {
+    "appId": "com.brihad.templefinance",
+    "productName": "Brihad Finance",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "app/**/*"],
+    "win": { "target": ["portable", "nsis"], "icon": "build/icon.ico" },
+    "portable": { "artifactName": "Brihad-Finance-Portable-${version}.${ext}" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "artifactName": "Brihad-Finance-Setup-${version}.${ext}" }
+  }
+}

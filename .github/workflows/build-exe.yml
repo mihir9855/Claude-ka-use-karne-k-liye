@@ -1,0 +1,39 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-finance-app-pzfrcs]
+    paths: [web/**, desktop/**, assets/**, .github/workflows/build-exe.yml]
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the app (React)
+        working-directory: web
+        run: |
+          npm ci
+          npm run build:single
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm install
+      - name: Prepare app files
+        working-directory: desktop
+        run: |
+          mkdir -p app
+          cp ../web/dist-single/index.html app/index.html
+      - name: Build EXE (portable and installer)
+        working-directory: desktop
+        run: npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Brihad-Temple-Finance-exe
+          path: desktop/dist/*.exe

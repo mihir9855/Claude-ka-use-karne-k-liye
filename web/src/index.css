@@ -1,0 +1,533 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource/noto-sans-gujarati/gujarati-400.css";
+@import "@fontsource/noto-sans-gujarati/gujarati-700.css";
+@import "@fontsource/noto-sans-devanagari/devanagari-400.css";
+@import "@fontsource/noto-sans-devanagari/devanagari-700.css";
+
+/* Latin only, so the app stays small and works offline. */
+@font-face {
+  font-family: "Manrope Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2") format("woff2-variations");
+}
+@font-face {
+  font-family: "Bricolage Grotesque Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Manrope Variable", ui-sans-serif, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-income: var(--income);
+  --color-income-soft: var(--income-soft);
+  --color-expense: var(--expense);
+  --color-expense-soft: var(--expense-soft);
+  --color-saffron: var(--saffron);
+  --color-saffron-soft: var(--saffron-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-chart-1: var(--income);
+  --color-chart-2: var(--expense);
+  --color-chart-3: var(--saffron);
+  --color-chart-4: var(--info);
+  --color-chart-5: var(--primary);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+}
+
+:root {
+  --radius: 1rem;
+  /* Clean cool paper, vivid indigo-violet actions */
+  --background: #f5f7fb;
+  --foreground: #121827;
+  --card: #ffffff;
+  --card-foreground: #121827;
+  --popover: #ffffff;
+  --popover-foreground: #121827;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --secondary: #e9edf7;
+  --secondary-foreground: #121827;
+  --muted: #eef1f8;
+  --muted-foreground: #667085;
+  --accent: #e7e9fe;
+  --accent-foreground: #3730a3;
+  --destructive: #e5484d;
+  --border: #e2e7f1;
+  --input: #d7deec;
+  --ring: #4f46e5;
+  --income: #0f9d6e;
+  --expense: #e5484d;
+  --saffron: #d97706;
+  --info: #2563eb;
+  --hero-a: #2e3ad1;
+  --hero-b: #6c4df0;
+  --hero-glow: #fcd34d;
+  --hero-grad: linear-gradient(135deg, var(--hero-a), var(--hero-b));
+  --hero2-grad: linear-gradient(135deg, var(--hero2-a), var(--hero2-b));
+  --hero2-a: #1d4ed8;
+  --hero2-b: #1e3a8a;
+  --c1: #e5484d;
+  --c2: #f5a524;
+  --c3: #6c4df0;
+  --c4: #2f80ed;
+  --c5: #d6409f;
+  --c6: #0f9d6e;
+}
+
+.dark {
+  /* Deep blue-black; every tint is mixed from the same base so colours sit together */
+  --background: #0e1220;
+  --foreground: #eef1f8;
+  --card: #151a2b;
+  --card-foreground: #eef1f8;
+  --popover: #1a2033;
+  --popover-foreground: #eef1f8;
+  --primary: #8b7cf8;
+  --primary-foreground: #0e0b26;
+  --secondary: #1e2438;
+  --secondary-foreground: #eef1f8;
+  --muted: #1b2136;
+  --muted-foreground: #98a2b8;
+  --accent: #262c55;
+  --accent-foreground: #c7c2ff;
+  --destructive: #fb7185;
+  --border: #252c42;
+  --input: #2d3550;
+  --ring: #8b7cf8;
+  --income: #34d399;
+  --expense: #fb7185;
+  --saffron: #fbbf24;
+  --info: #60a5fa;
+  --hero-a: #2b2f9a;
+  --hero-b: #4a2fb8;
+  --hero-glow: #fcd34d;
+  --hero2-a: #1f3a78;
+  --hero2-b: #14284f;
+  --c1: #fb7185;
+  --c2: #fbbf24;
+  --c3: #a294fb;
+  --c4: #60a5fa;
+  --c5: #f472b6;
+  --c6: #34d399;
+}
+
+:root, .dark {
+  --income-soft: color-mix(in oklab, var(--income) 13%, var(--card));
+  --expense-soft: color-mix(in oklab, var(--expense) 13%, var(--card));
+  --saffron-soft: color-mix(in oklab, var(--saffron) 15%, var(--card));
+  --info-soft: color-mix(in oklab, var(--info) 13%, var(--card));
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; -webkit-tap-highlight-color: transparent; }
+  html { color-scheme: light; }
+  html.dark { color-scheme: dark; }
+  body { @apply bg-background text-foreground font-sans antialiased; margin: 0; overscroll-behavior-y: none; }
+  button { cursor: pointer; }
+  input[type="date"] { min-height: 2.25rem; }
+}
+
+.font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
+.tn { font-variant-numeric: tabular-nums; }
+.safe-b { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-t { padding-top: env(safe-area-inset-top, 0px); }
+
+/* document papers (vouchers, receipts, proposals) come from the engine */
+.paper { background: #fff; color: #1f2230; border-radius: 6px; }
+.disp { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.03em; }
+.pg { width: 794px; height: 1123px; position: relative; background: #fff; overflow: hidden; color: #1f2230; box-sizing: border-box; }
+#printArea { display: none; }
+@media print {
+  body > *:not(#printArea) { display: none !important; }
+  #printArea { display: block !important; }
+  .vfit { height: auto !important; }
+  .vin { transform: none !important; margin: 0 auto; }
+  body { background: #fff !important; }
+  .paper { box-shadow: none !important; }
+}
+
+@keyframes shimmer-slide { to { transform: translate(calc(100cqw - 100%), 0); } }
+@keyframes spin-around {
+  0% { transform: translateZ(0) rotate(0); }
+  15%, 35% { transform: translateZ(0) rotate(90deg); }
+  65%, 85% { transform: translateZ(0) rotate(270deg); }
+  100% { transform: translateZ(0) rotate(360deg); }
+}
+@keyframes sheet-up { from { translate: 0 100%; } to { translate: 0 0; } }
+@keyframes sheet-pop { from { opacity: 0; scale: .97; } to { opacity: 1; scale: 1; } }
+
+/* grid children may shrink below their content, so charts never stretch the page */
+main .grid > *, main .flex > * { min-width: 0; }
+
+/* The artifact viewer and some WebViews paint a white body; keep the page on the theme colour in both modes. */
+html, body { background-color: var(--background) !important; color: var(--foreground); }
+
+/* ================= "Mandir" look: midnight indigo, gold, jaali lattice, serif numbers ================= */
+@font-face {
+  font-family: "Fraunces Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+.mandir-only { display: none; }
+[data-style="mandir"] .mandir-only { display: revert; }
+
+:root[data-style="mandir"] {
+  --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --background: #f6f4ee;
+  --foreground: #151833;
+  --card: #ffffff;
+  --card-foreground: #151833;
+  --popover: #ffffff;
+  --primary: #262b80;
+  --primary-foreground: #ffffff;
+  --secondary: #efeadb;
+  --muted: #f1eee4;
+  --muted-foreground: #6b6a7c;
+  --accent: #f5ecd0;
+  --accent-foreground: #7a5a0c;
+  --border: #e9e2cf;
+  --input: #ddd5bd;
+  --ring: #262b80;
+  --hero-a: #0d1138;
+  --hero-b: #2b3190;
+  --hero-glow: #f0cd6e;
+  --gold: #c9962b;
+}
+html.dark[data-style="mandir"] {
+  --background: #080b22;
+  --foreground: #f3f1e8;
+  --card: #101535;
+  --card-foreground: #f3f1e8;
+  --popover: #151a40;
+  --primary: #e6b84c;
+  --primary-foreground: #1a1330;
+  --secondary: #1a2048;
+  --muted: #151a3c;
+  --muted-foreground: #9a9fc4;
+  --accent: #2a2540;
+  --accent-foreground: #f0cd6e;
+  --border: #232a58;
+  --input: #2c3466;
+  --ring: #e6b84c;
+  --hero-a: #0a0e33;
+  --hero-b: #1b2160;
+  --gold: #e6b84c;
+}
+
+[data-style="mandir"] .font-display { font-weight: 700; letter-spacing: -0.01em; }
+[data-style="mandir"] .kpi-arch { border-radius: 2.6rem 2.6rem 1.1rem 1.1rem !important; }
+[data-style="mandir"] [data-slot="card"] { box-shadow: 0 1px 0 rgba(201, 150, 43, 0.14), 0 14px 30px -22px rgba(20, 24, 70, 0.35); }
+[data-style="mandir"] .dark [data-slot="card"], html.dark[data-style="mandir"] [data-slot="card"] { box-shadow: 0 1px 0 rgba(230, 184, 76, 0.12); }
+
+/* gold buttons for every filled primary action */
+[data-style="mandir"] button.bg-primary,
+[data-style="mandir"] [data-slot="button"].bg-primary {
+  background-image: linear-gradient(135deg, #f6d985, #d9a52f 55%, #c28a1f);
+  color: #1a1530;
+  box-shadow: 0 8px 20px -10px rgba(201, 150, 43, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+[data-style="mandir"] i.bg-primary { background-image: linear-gradient(90deg, #f6d985, #c9962b); }
+
+/* hero: jaali lattice + temple watermark */
+.jaali { position: relative; isolation: isolate; }
+[data-style="mandir"] .jaali::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='none' stroke='%23F0CD6E' stroke-opacity='.3' stroke-width='1'%3E%3Cpath d='M22 2 42 22 22 42 2 22Z'/%3E%3Ccircle cx='22' cy='22' r='7'/%3E%3Cpath d='M22 15 29 22 22 29 15 22Z'/%3E%3C/g%3E%3C/svg%3E");
+  -webkit-mask-image: linear-gradient(100deg, transparent 20%, #000 90%);
+  mask-image: linear-gradient(100deg, transparent 20%, #000 90%);
+}
+.hero-mark { position: absolute; right: -0.5rem; bottom: -0.25rem; height: 6.5rem; width: auto; opacity: 0.16; pointer-events: none; z-index: -1; }
+[data-style="mandir"] .gold-text { background: linear-gradient(180deg, #fff3c4, #f0cd6e 60%, #d9a52f); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* floating dock on phones */
+@media (max-width: 1023px) {
+  [data-style="mandir"] nav.dock {
+    left: 0.75rem; right: 0.75rem; bottom: calc(0.6rem + env(safe-area-inset-bottom));
+    border-radius: 1.6rem; border: 1px solid color-mix(in oklab, var(--gold) 35%, var(--border));
+    box-shadow: 0 18px 40px -16px rgba(15, 18, 60, 0.45); padding-bottom: 0 !important;
+  }
+}
+
+
+/* ================= "Vivid" look: colourful fintech, big gradients, saturated tiles ================= */
+@font-face {
+  font-family: "Outfit Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+:root[data-style="vivid"] {
+  --font-display: "Outfit Variable", "Manrope Variable", ui-sans-serif, sans-serif;
+  --radius: 1.25rem;
+  --background: #f3f4fc;
+  --foreground: #14142b;
+  --card: #ffffff;
+  --card-foreground: #14142b;
+  --popover: #ffffff;
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --secondary: #ebebf8;
+  --muted: #eeeefa;
+  --muted-foreground: #6a6a8a;
+  --accent: #efe6ff;
+  --accent-foreground: #5b21b6;
+  --border: #e4e4f4;
+  --input: #d8d8ee;
+  --ring: #7c3aed;
+  --income: #059669;
+  --expense: #e11d48;
+  --saffron: #d97706;
+  --info: #0284c7;
+  --hero-grad: linear-gradient(135deg, #4f46e5 0%, #9333ea 52%, #ec4899 100%);
+  --hero2-grad: linear-gradient(135deg, #0ea5e9 0%, #4f46e5 100%);
+  --hero-glow: #fde68a;
+  --c1: #f43f5e;
+  --c2: #f59e0b;
+  --c3: #8b5cf6;
+  --c4: #0ea5e9;
+  --c5: #ec4899;
+  --c6: #10b981;
+}
+html.dark[data-style="vivid"] {
+  --background: #0c0c1d;
+  --foreground: #f1f1fb;
+  --card: #15152c;
+  --card-foreground: #f1f1fb;
+  --popover: #1a1a35;
+  --primary: #a78bfa;
+  --primary-foreground: #150a33;
+  --secondary: #1f1f3d;
+  --muted: #1a1a34;
+  --muted-foreground: #9a9ac0;
+  --accent: #2a2150;
+  --accent-foreground: #d8c9ff;
+  --border: #26264a;
+  --input: #30305a;
+  --ring: #a78bfa;
+  --income: #34d399;
+  --expense: #fb7185;
+  --saffron: #fbbf24;
+  --info: #38bdf8;
+  --hero-grad: linear-gradient(135deg, #3730a3 0%, #7e22ce 55%, #be185d 100%);
+  --hero2-grad: linear-gradient(135deg, #0369a1 0%, #3730a3 100%);
+  --c1: #fb7185;
+  --c2: #fbbf24;
+  --c3: #a78bfa;
+  --c4: #38bdf8;
+  --c5: #f472b6;
+  --c6: #34d399;
+}
+
+/* soft colour blobs behind the page */
+[data-style="vivid"] body { background-color: transparent !important; }
+[data-style="vivid"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(42rem 30rem at -5% -8%, rgba(124, 58, 237, 0.2), transparent 62%),
+    radial-gradient(36rem 26rem at 105% 2%, rgba(236, 72, 153, 0.17), transparent 62%),
+    radial-gradient(34rem 24rem at 60% 112%, rgba(14, 165, 233, 0.14), transparent 62%);
+}
+html.dark[data-style="vivid"] body::before {
+  background:
+    radial-gradient(42rem 30rem at -5% -8%, rgba(124, 58, 237, 0.3), transparent 62%),
+    radial-gradient(36rem 26rem at 105% 2%, rgba(236, 72, 153, 0.22), transparent 62%),
+    radial-gradient(34rem 24rem at 60% 112%, rgba(14, 165, 233, 0.18), transparent 62%);
+}
+
+[data-style="vivid"] .font-display { font-weight: 800; letter-spacing: -0.02em; }
+[data-style="vivid"] [data-slot="card"] {
+  border-color: transparent;
+  border-radius: 1.75rem;
+  box-shadow: 0 14px 34px -20px rgba(80, 55, 210, 0.38);
+}
+html.dark[data-style="vivid"] [data-slot="card"] { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04); }
+
+/* every filled primary action */
+[data-style="vivid"] button.bg-primary,
+[data-style="vivid"] [data-slot="button"].bg-primary {
+  background-image: linear-gradient(135deg, #7c3aed, #ec4899);
+  color: #fff;
+  box-shadow: 0 10px 22px -10px rgba(168, 55, 220, 0.7);
+}
+[data-style="vivid"] i.bg-primary { background-image: linear-gradient(90deg, #8b5cf6, #ec4899); }
+
+/* saturated KPI tiles */
+[data-style="vivid"] [data-kpi] { color: #fff !important; box-shadow: 0 16px 28px -18px rgba(0, 0, 0, 0.5); }
+[data-style="vivid"] [data-kpi="received"] { background: linear-gradient(135deg, #34d399, #059669) !important; }
+[data-style="vivid"] [data-kpi="spent"] { background: linear-gradient(135deg, #fb7185, #e11d48) !important; }
+[data-style="vivid"] [data-kpi="toreceive"] { background: linear-gradient(135deg, #fbbf24, #f97316) !important; }
+[data-style="vivid"] [data-kpi="topay"] { background: linear-gradient(135deg, #38bdf8, #4f46e5) !important; }
+[data-style="vivid"] [data-kpi] * { color: inherit !important; }
+
+/* hero shine */
+[data-style="vivid"] .jaali::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(18rem 12rem at 88% -12%, rgba(255, 255, 255, 0.38), transparent 62%),
+    radial-gradient(14rem 10rem at 8% 125%, rgba(255, 255, 255, 0.2), transparent 62%);
+}
+
+/* every project gets its own colour */
+[data-style="vivid"] .proj-card { border-top: 4px solid var(--pc); }
+[data-style="vivid"] .proj-ring { color: var(--pc); }
+
+@media (max-width: 1023px) {
+  [data-style="vivid"] nav.dock {
+    left: 0.75rem; right: 0.75rem; bottom: calc(0.6rem + env(safe-area-inset-bottom));
+    border-radius: 1.75rem; border: 1px solid var(--border);
+    box-shadow: 0 20px 40px -18px rgba(70, 40, 190, 0.5); padding-bottom: 0 !important;
+  }
+}
+
+/* ================= "Calm" look: neutral paper, one quiet blue accent, colour only where it means money ================= */
+:root[data-style="calm"] {
+  --font-display: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --radius: 1rem;
+  --background: #f5f6f8;
+  --foreground: #12161f;
+  --card: #ffffff;
+  --card-foreground: #12161f;
+  --popover: #ffffff;
+  --primary: #33439e;
+  --primary-foreground: #ffffff;
+  --secondary: #eceef2;
+  --muted: #f0f1f4;
+  --muted-foreground: #6b7280;
+  --accent: #eaedfa;
+  --accent-foreground: #2a3680;
+  --border: #e4e6eb;
+  --input: #d9dce3;
+  --ring: #33439e;
+  --income: #0f7a5f;
+  --expense: #bf3b3b;
+  --saffron: #8a6a1f;
+  --info: #3b5b9a;
+  --hero-grad: linear-gradient(135deg, #1d2a66, #33439e);
+  --hero2-grad: linear-gradient(135deg, #2b3a63, #1f2b4a);
+  --hero-glow: #cbd5ff;
+  --c1: #33439e;
+  --c2: #6f7fd0;
+  --c3: #9aa3c8;
+  --c4: #5b6b8f;
+  --c5: #b9c0e6;
+  --c6: #44506b;
+}
+html.dark[data-style="calm"] {
+  --background: #0f1115;
+  --foreground: #eceef3;
+  --card: #171a21;
+  --card-foreground: #eceef3;
+  --popover: #1c2029;
+  --primary: #93a3ff;
+  --primary-foreground: #0d1330;
+  --secondary: #20242e;
+  --muted: #1b1f27;
+  --muted-foreground: #9aa1b2;
+  --accent: #232a4a;
+  --accent-foreground: #c9d1ff;
+  --border: #262b36;
+  --input: #2f3542;
+  --ring: #93a3ff;
+  --income: #4fc3a0;
+  --expense: #ef8080;
+  --saffron: #d6b25c;
+  --info: #8fb0e8;
+  --hero-grad: linear-gradient(135deg, #1b2354, #2a3786);
+  --hero2-grad: linear-gradient(135deg, #222a3d, #181d2b);
+  --hero-glow: #c6d0ff;
+  --c1: #93a3ff;
+  --c2: #6677d1;
+  --c3: #7e879f;
+  --c4: #b4bde3;
+  --c5: #55608a;
+  --c6: #9aa1b2;
+}
+[data-style="calm"] .font-display { font-weight: 800; letter-spacing: -0.015em; }
+[data-style="calm"] [data-slot="card"] { border-color: var(--border); border-radius: 1.25rem; box-shadow: none; }
+[data-style="calm"] button.bg-primary, [data-style="calm"] [data-slot="button"].bg-primary { box-shadow: none; }
+[data-style="calm"] .kpi-arch { border-radius: 1.25rem !important; }
+
+/* KPI tiles are plain cards; only the number carries colour */
+[data-style="calm"] [data-kpi] { background: var(--card) !important; color: var(--foreground) !important; border: 1px solid var(--border); }
+[data-style="calm"] [data-kpi] * { color: inherit !important; }
+[data-style="calm"] [data-kpi] .tn { color: var(--foreground) !important; }
+[data-style="calm"] [data-kpi="received"] .tn { color: var(--income) !important; }
+[data-style="calm"] [data-kpi="spent"] .tn { color: var(--expense) !important; }
+[data-style="calm"] [data-kpi] > div:first-child { color: var(--muted-foreground) !important; opacity: 1; }
+[data-style="calm"] [data-kpi] > div:last-child { color: var(--muted-foreground) !important; opacity: 1; }
+
+/* hero: one calm gradient with a soft highlight */
+[data-style="calm"] .jaali::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: radial-gradient(18rem 12rem at 88% -12%, rgba(255, 255, 255, 0.14), transparent 62%);
+}
+[data-style="calm"] .proj-ring { color: var(--primary); }
+[data-style="calm"] .avatar-auto { background: var(--accent) !important; color: var(--accent-foreground) !important; }
+[data-style="calm"] i.bg-primary { background-image: none; }
+
+@media (max-width: 1023px) {
+  [data-style="calm"] nav.dock {
+    left: 0.75rem; right: 0.75rem; bottom: calc(0.6rem + env(safe-area-inset-bottom));
+    border-radius: 1.5rem; border: 1px solid var(--border);
+    box-shadow: 0 12px 28px -16px rgba(15, 20, 40, 0.35); padding-bottom: 0 !important;
+  }
+}
+
+/* ================= Accent colour chosen in Settings (works with every style) ================= */
+:root[data-style][data-accent="teal"] { --primary: #0e7490; --ring: #0e7490; --accent: #e0f2f6; --accent-foreground: #0b5568; --hero-grad: linear-gradient(135deg, #0b3a4a, #0e7490); }
+html.dark[data-style][data-accent="teal"] { --primary: #67d1ea; --primary-foreground: #04222b; --ring: #67d1ea; --accent: #16323a; --accent-foreground: #b6ecf8; --hero-grad: linear-gradient(135deg, #0c3441, #11667f); }
+:root[data-style][data-accent="green"] { --primary: #0f7a5f; --ring: #0f7a5f; --accent: #e3f3ee; --accent-foreground: #0b5c47; --hero-grad: linear-gradient(135deg, #0b3d30, #0f7a5f); }
+html.dark[data-style][data-accent="green"] { --primary: #5ccaa6; --primary-foreground: #04261c; --ring: #5ccaa6; --accent: #1b3a32; --accent-foreground: #b5ecd7; --hero-grad: linear-gradient(135deg, #0f3a2f, #176b55); }
+:root[data-style][data-accent="purple"] { --primary: #6d3fd1; --ring: #6d3fd1; --accent: #efe8fb; --accent-foreground: #4b2a99; --hero-grad: linear-gradient(135deg, #3b1d82, #6d3fd1); }
+html.dark[data-style][data-accent="purple"] { --primary: #b79cff; --primary-foreground: #1c0b44; --ring: #b79cff; --accent: #2b2150; --accent-foreground: #ddd0ff; --hero-grad: linear-gradient(135deg, #2f1c66, #5a35b0); }
+:root[data-style][data-accent="rose"] { --primary: #c0305a; --ring: #c0305a; --accent: #fbe7ee; --accent-foreground: #8f1f42; --hero-grad: linear-gradient(135deg, #7b1a3a, #c0305a); }
+html.dark[data-style][data-accent="rose"] { --primary: #f48bab; --primary-foreground: #3a0a1b; --ring: #f48bab; --accent: #3a2029; --accent-foreground: #fcc9d9; --hero-grad: linear-gradient(135deg, #5a1730, #a02a4f); }
+:root[data-style][data-accent="black"] { --primary: #1c2230; --ring: #1c2230; --accent: #ececf0; --accent-foreground: #1c2230; --hero-grad: linear-gradient(135deg, #0f172a, #334155); }
+html.dark[data-style][data-accent="black"] { --primary: #e6e8ee; --primary-foreground: #0f1115; --ring: #e6e8ee; --accent: #262a33; --accent-foreground: #e6e8ee; --hero-grad: linear-gradient(135deg, #1b2230, #2f3a4d); }
