@@ -74,7 +74,7 @@ export function enrich(D,list){return list.map(function(t){var p=D.byId[t.projId
 export function findTxn(id){for(var i=0;i<DB.txns.length;i++)if(DB.txns[i].id===id)return DB.txns[i]}
 export function voucherInfo(t){var D=derive(),p=D.byId[t.projId],inn=t.kind==='in';return {t:t,inn:inn,proj:p?p.name:'',trust:p?(p.trust||''):'',stage:inn?(t.stageId?stageName(p,t.stageId):''):t.section,who:t.who||''}}
 export function voucherPaper(t){
-  if(t.kind==='in')return letterPaper(t);
+  if(t.kind==='in'||t.kind==='out')return letterPaper(t);
   var v=voucherInfo(t),b=DB.biz,INK='#1F2230',MU='#7A7E92',SF='#E08A2E',LN='#E9E6DC';
   function row(l,val){return '<div style="padding:10px 0;border-bottom:1px solid '+LN+';display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span style="font-size:12px;color:'+MU+';flex-shrink:0">'+l+'</span><b style="font-size:15px;text-align:right;overflow-wrap:anywhere">'+val+'</b></div>'}
   return '<div class="vfit"><div class="vin" data-w="720" style="width:720px"><div class="paper" style="padding:0;border-radius:6px;background:#fff;border:1px solid #DAD7CC;color:'+INK+';font-family:Manrope,system-ui,sans-serif;height:507px;display:flex;flex-direction:column;overflow:hidden">'
@@ -89,7 +89,7 @@ export function voucherPaper(t){
   +'<div style="text-align:center;font-size:10px;letter-spacing:.12em;color:#A3A6B6;padding:12px 0 12px;flex-shrink:0">'+esc(t.vno)+' · COMPUTER GENERATED</div>'
   +'<div style="height:6px;background:'+SF+';flex-shrink:0"></div></div></div></div>'}
 export function printVoucher(id){
-  var t=findTxn(id);if(!t)return;var pa=document.getElementById('printArea'),inn=t.kind==='in';
+  var t=findTxn(id);if(!t)return;var pa=document.getElementById('printArea'),inn=t.kind==='in'||t.kind==='out';
   pa.innerHTML=voucherPaper(t);
   document.getElementById('pgstyle').textContent='@page{size:'+(inn?'A4 portrait':'A5 landscape')+';margin:6mm}';
   var done=function(){pa.innerHTML='';window.removeEventListener('afterprint',done)};window.addEventListener('afterprint',done);
@@ -107,9 +107,9 @@ export var REFL={en:{Bank:'Ref. no.',Cheque:'Cheque no.'},hi:{Bank:'संदर
 export function refSfx(t,lg){lg=REFL[lg]?lg:'en';var r=String(t.ref||'').trim();if(!r||(t.mode!=='Bank'&&t.mode!=='Cheque'))return '';return ' · '+REFL[lg][t.mode]+' '+r}
 export function modeStr(t,lg){lg=REFL[lg]?lg:'en';var m=(LANG[lg]&&LANG[lg].mode&&LANG[lg].mode[t.mode])||t.mode;return m+refSfx(t,lg)}
 export var LANG={
-en:{name:'English',modeL:'Mode',forL:'Details',title:'RECEIPT',date:'DATE',ref:'REF. NO.',rno:'RECEIPT NO.',to:'To,',amt:'Amount received',sign:'For BRIHAD TEMPLE CONSTRUCTION CO.',auth:'Authorised Signatory',mode:{Cash:'Cash',UPI:'UPI',Bank:'Bank',Cheque:'Cheque'},mon:MON,font:"Georgia,'Times New Roman',serif"},
-hi:{name:'हिन्दी',title:'रसीद',date:'दिनांक',ref:'संदर्भ क्र.',rno:'रसीद क्र.',to:'प्रति,',amt:'प्राप्त राशि',sign:'कृते बृहद टेम्पल कंस्ट्रक्शन कं.',auth:'अधिकृत हस्ताक्षरकर्ता',modeL:'भुगतान का तरीका',forL:'विवरण',mode:{Cash:'नकद',UPI:'UPI',Bank:'बैंक',Cheque:'चेक'},mon:['जनवरी','फ़रवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'],font:"'Noto Sans Devanagari','Mangal',sans-serif",n:HI0,u:['सौ','हज़ार','लाख','करोड़'],rs:'रुपये',only:'मात्र'},
-gu:{name:'ગુજરાતી',title:'પહોંચ',date:'તારીખ',ref:'સંદર્ભ ક્રમાંક',rno:'પહોંચ નંબર',to:'પ્રતિ,',amt:'મળેલી રકમ',sign:'વતી બૃહદ ટેમ્પલ કન્સ્ટ્રક્શન કં.',auth:'અધિકૃત સહી',h:['','એકસો','બસો','ત્રણસો','ચારસો','પાંચસો','છસો','સાતસો','આઠસો','નવસો'],modeL:'ચુકવણીની રીત',forL:'વિગત',mode:{Cash:'રોકડ',UPI:'UPI',Bank:'બેંક',Cheque:'ચેક'},mon:['જાન્યુઆરી','ફેબ્રુઆરી','માર્ચ','એપ્રિલ','મે','જૂન','જુલાઈ','ઓગસ્ટ','સપ્ટેમ્બર','ઓક્ટોબર','નવેમ્બર','ડિસેમ્બર'],font:"'Noto Sans Gujarati','Shruti',sans-serif",n:GU0,u:['સો','હજાર','લાખ','કરોડ'],rs:'રૂપિયા',only:'પૂરા'}
+en:{name:'English',modeL:'Mode',forL:'Details',title:'RECEIPT',date:'DATE',ref:'REF. NO.',rno:'RECEIPT NO.',vtitle:'PAYMENT VOUCHER',amtP:'Amount paid',vno:'VOUCHER NO.',rsig:"Receiver's signature",to:'To,',amt:'Amount received',sign:'For BRIHAD TEMPLE CONSTRUCTION CO.',auth:'Authorised Signatory',mode:{Cash:'Cash',UPI:'UPI',Bank:'Bank',Cheque:'Cheque'},mon:MON,font:"Georgia,'Times New Roman',serif"},
+hi:{name:'हिन्दी',title:'रसीद',date:'दिनांक',ref:'संदर्भ क्र.',rno:'रसीद क्र.',vtitle:'भुगतान वाउचर',amtP:'चुकाई गई राशि',vno:'वाउचर क्र.',rsig:'प्राप्तकर्ता के हस्ताक्षर',to:'प्रति,',amt:'प्राप्त राशि',sign:'कृते बृहद टेम्पल कंस्ट्रक्शन कं.',auth:'अधिकृत हस्ताक्षरकर्ता',modeL:'भुगतान का तरीका',forL:'विवरण',mode:{Cash:'नकद',UPI:'UPI',Bank:'बैंक',Cheque:'चेक'},mon:['जनवरी','फ़रवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'],font:"'Noto Sans Devanagari','Mangal',sans-serif",n:HI0,u:['सौ','हज़ार','लाख','करोड़'],rs:'रुपये',only:'मात्र'},
+gu:{name:'ગુજરાતી',title:'પહોંચ',date:'તારીખ',ref:'સંદર્ભ ક્રમાંક',rno:'પહોંચ નંબર',vtitle:'ચુકવણી વાઉચર',amtP:'ચૂકવેલી રકમ',vno:'વાઉચર નંબર',rsig:'લેનારની સહી',to:'પ્રતિ,',amt:'મળેલી રકમ',sign:'વતી બૃહદ ટેમ્પલ કન્સ્ટ્રક્શન કં.',auth:'અધિકૃત સહી',h:['','એકસો','બસો','ત્રણસો','ચારસો','પાંચસો','છસો','સાતસો','આઠસો','નવસો'],modeL:'ચુકવણીની રીત',forL:'વિગત',mode:{Cash:'રોકડ',UPI:'UPI',Bank:'બેંક',Cheque:'ચેક'},mon:['જાન્યુઆરી','ફેબ્રુઆરી','માર્ચ','એપ્રિલ','મે','જૂન','જુલાઈ','ઓગસ્ટ','સપ્ટેમ્બર','ઓક્ટોબર','નવેમ્બર','ડિસેમ્બર'],font:"'Noto Sans Gujarati','Shruti',sans-serif",n:GU0,u:['સો','હજાર','લાખ','કરોડ'],rs:'રૂપિયા',only:'પૂરા'}
 };
 LANG.hi.R={cont:'जारी',page:'पृष्ठ',title:'प्रोजेक्ट रिपोर्ट',client:'ग्राहक',trust:'ट्रस्ट',started:'शुरू',handover:'हस्तांतरण',rdate:'रिपोर्ट दिनांक',s1:'1. सारांश',deal:'कुल सौदा राशि',rec:'प्राप्त',spent:'अब तक खर्च',cash:'हाथ में नकद (प्राप्त − खर्च)',budget:'बचा बजट (सौदा − खर्च)',toRec:'ग्राहक से लेना बाकी',due:'सप्लायर और कारीगरों को देना बाकी',prog:'प्रगति',done:'{t} में से {d} चरण पूर्ण ({p}%)',s2:'2. चरण-वार ग्राहक भुगतान',stage:'चरण',target:'लक्षित तिथि',status:'स्थिति',c1:'पूर्ण',c2:'जारी',c3:'आगामी',pays:'ग्राहक देगा',got:'प्राप्त',bal:'बाकी',total:'कुल',s3:'3. प्राप्त भुगतान',date:'दिनांक',mode:'तरीका',from:'किससे प्राप्त',vch:'वाउचर',amt:'राशि',s4:'4. विभाग-वार खर्च',sect:'विभाग',paid:'चुकाया',share:'हिस्सा',s5:'5. किए गए भुगतान',to:'किसे दिया',s6:'6. लोग और बाकी राशि',name:'नाम',type:'प्रकार',billed:'बिल',balDue:'बाकी राशि',none1:'अभी कोई भुगतान प्राप्त नहीं हुआ।',none2:'अभी कोई खर्च नहीं।',none3:'अभी कोई भुगतान नहीं किया गया।',none4:'इस प्रोजेक्ट से कोई व्यक्ति जुड़ा नहीं है।',sec:{Stone:'पत्थर',Carving:'नक्काशी',Fitting:'फिटिंग',Transport:'परिवहन','Site visit':'साइट विज़िट',Other:'अन्य'},typ:['पत्थर सप्लायर','नक्काशी कारीगर','फिटिंग टीम','दैनिक मजदूरी (सेठ द्वारा)','परिवहन','अन्य']};
 LANG.gu.R={cont:'ચાલુ',page:'પાનું',title:'પ્રોજેક્ટ રિપોર્ટ',client:'ગ્રાહક',trust:'ટ્રસ્ટ',started:'શરૂઆત',handover:'સોંપણી',rdate:'રિપોર્ટ તારીખ',s1:'1. સારાંશ',deal:'કુલ સોદાની રકમ',rec:'મળેલ',spent:'અત્યાર સુધીનો ખર્ચ',cash:'હાથ પરની રોકડ (મળેલ − ખર્ચ)',budget:'બાકી બજેટ (સોદો − ખર્ચ)',toRec:'ગ્રાહક પાસેથી લેવાના બાકી',due:'સપ્લાયર અને કારીગરોને ચૂકવવાના બાકી',prog:'પ્રગતિ',done:'{t} માંથી {d} તબક્કા પૂર્ણ ({p}%)',s2:'2. તબક્કાવાર ગ્રાહક ચુકવણી',stage:'તબક્કો',target:'લક્ષ્ય તારીખ',status:'સ્થિતિ',c1:'પૂર્ણ',c2:'ચાલુ',c3:'આવનાર',pays:'ગ્રાહક આપશે',got:'મળેલ',bal:'બાકી',total:'કુલ',s3:'3. મળેલી ચુકવણીઓ',date:'તારીખ',mode:'રીત',from:'કોની પાસેથી',vch:'વાઉચર',amt:'રકમ',s4:'4. વિભાગવાર ખર્ચ',sect:'વિભાગ',paid:'ચૂકવ્યા',share:'હિસ્સો',s5:'5. કરેલી ચુકવણીઓ',to:'કોને આપ્યા',s6:'6. વ્યક્તિઓ અને બાકી રકમ',name:'નામ',type:'પ્રકાર',billed:'બિલ',balDue:'બાકી રકમ',none1:'હજી કોઈ ચુકવણી મળી નથી.',none2:'હજી કોઈ ખર્ચ નથી.',none3:'હજી કોઈ ચુકવણી કરી નથી.',none4:'આ પ્રોજેક્ટ સાથે કોઈ વ્યક્તિ જોડાયેલ નથી.',sec:{Stone:'પથ્થર',Carving:'કોતરણી',Fitting:'ફિટિંગ',Transport:'પરિવહન','Site visit':'સાઇટ મુલાકાત',Other:'અન્ય'},typ:['પથ્થર સપ્લાયર','કોતરણી કારીગર','ફિટિંગ ટીમ','રોજમદાર (શેઠ મારફતે)','પરિવહન','અન્ય']};
@@ -127,21 +127,35 @@ var MT={
 function modeTail(t,lg,html){var tl=(MT[lg]||MT.en)[t.mode]||'',r=String(t.ref||'').trim();
  if(r&&(t.mode==='Bank'||t.mode==='Cheque')){var rl=REFL[lg][t.mode];tl+=' '+rl+' '+(html?'<b>'+esc(r)+'</b>':r)+(lg==='hi'?'।':'.')}
  return tl}
-export function letterBody(t,lg,html){
+var MP={
+ gu:{Cash:'રોકડા ચૂકવેલ છે.',UPI:'UPI થી ચૂકવેલ છે.',Bank:'બેંક (NEFT) થી ચૂકવેલ છે.',Cheque:'ચેક થી ચૂકવેલ છે.'},
+ hi:{Cash:'नकद दिए गए हैं।',UPI:'UPI से दिए गए हैं।',Bank:'बैंक (NEFT) से दिए गए हैं।',Cheque:'चेक से दिए गए हैं।'},
+ en:{Cash:'in cash.',UPI:'by UPI.',Bank:'by bank transfer (NEFT).',Cheque:'by cheque.'}};
+function payTail(t,lg,html){var tl=(MP[lg]||MP.en)[t.mode]||'',r=String(t.ref||'').trim();
+ if(r&&(t.mode==='Bank'||t.mode==='Cheque')){var rl=REFL[lg][t.mode];tl+=' '+rl+' '+(html?'<b>'+esc(r)+'</b>':r)+(lg==='hi'?'।':'.')}
+ return tl}
+/* payment voucher: what we paid, to whom and for what */
+function payBody(t,lg,html){
+  var v=voucherInfo(t),b=function(x){return html?'<b>'+esc(x)+'</b>':x},a=INR(t.amount)+'/-',w=wordsL(t.amount,lg),today_=t.date===today(),d=fmtL(t.date,lg),who=shri(v.who,lg),
+   forName=[v.proj,t.note||v.stage].filter(Boolean).join(' – ');
+  if(lg==='hi')return (today_?'आज ':'दिनांक '+b(d)+' को ')+(forName?b(forName)+' के निमित्त ':'')+'अंकों में '+b(a)+' (शब्दों में '+w+') '+b(who)+' को '+payTail(t,lg,html);
+  if(lg==='gu')return (today_?'આજ રોજ ':'તા. '+b(d)+' ના રોજ ')+(forName?b(forName)+' ના પેટે ':'')+'અંકે '+b(a)+' (અક્ષરે '+w+') '+b(who)+' ને '+payTail(t,lg,html);
+  return 'Paid '+(today_?'today':'on '+b(d))+' a sum of '+b(a)+' ('+w+') to '+b(who)+(forName?', towards '+b(forName):'')+', '+payTail(t,lg,html)}
+export function letterBody(t,lg,html){if(t.kind==='out')return payBody(t,lg,html);
   var v=voucherInfo(t),L=LANG[lg],b=function(s){return html?'<b>'+esc(s)+'</b>':s},a=INR(t.amount)+'/-',w=wordsL(t.amount,lg),today_=t.date===today(),d=fmtL(t.date,lg),forName=v.trust||v.proj,who=shri(v.who,lg);
   if(lg==='hi')return (today_?'आज ':'दिनांक '+b(d)+' को ')+(forName?b(forName)+' के निमित्त ':'')+'अंकों में '+b(a)+' (शब्दों में '+w+') '+b(who)+' के हस्ते '+modeTail(t,lg,html);
   if(lg==='gu')return (today_?'આજ રોજ ':'તા. '+b(d)+' ના રોજ ')+(forName?b(forName)+' ના પેટે ':'')+'અંકે '+b(a)+' (અક્ષરે '+w+') '+b(who)+' ના હસ્તે '+modeTail(t,lg,html);
   return 'Received '+(today_?'today':'on '+b(d))+' a payment of '+b(a)+' ('+w+') from '+b(who)+(forName?', towards '+b(forName):'')+', '+modeTail(t,lg,html)}
 export function letterDetail(t,lg,html){return ''}
-export function letterPlain(t){var lg=curLang(),L=LANG[lg],v=voucherInfo(t);return [DB.biz.name,L.title+' · '+L.rno+' '+rnoOf(t),L.date+': '+fmtL(t.date,lg),'',letterBody(t,lg,false),letterDetail(t,lg,false),'',L.amt+': '+INR(t.amount)+'/-'].filter(function(x,i,a){return !(x===''&&a[i-1]==='')}).join('\n')}
+export function letterPlain(t){var lg=curLang(),L=LANG[lg],v=voucherInfo(t);return [DB.biz.name,(t.kind==='out'?L.vtitle+' · '+L.vno+' '+t.vno:L.title+' · '+L.rno+' '+rnoOf(t)),L.date+': '+fmtL(t.date,lg),'',letterBody(t,lg,false),letterDetail(t,lg,false),'',(t.kind==='out'?L.amtP:L.amt)+': '+INR(t.amount)+'/-'].filter(function(x,i,a){return !(x===''&&a[i-1]==='')}).join('\n')}
 export function letterPaper(t,lg){
   lg=lg||curLang();var v=voucherInfo(t),L=LANG[lg],bw=DB.biz.lhBW;
   return '<div class="vfit"><div class="vin" data-w="700" style="width:700px"><div class="paper" style="padding:0;overflow:hidden;border:1px solid #D8D6CE;border-radius:0;font-family:'+L.font+';min-height:990px;display:flex;flex-direction:column;color:#1F2230">'+hdrImgHtml(bw,lg,700,'width:100%;display:block')
-  +'<div style="padding:0 6%;flex:1;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;letter-spacing:'+(lg==='en'?'.12em':'.02em')+';font-weight:700;margin-top:2px"><span>'+L.date+': <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+fmtL(t.date,lg)+'</span></span><span>'+L.rno+': <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+esc(String(rnoOf(t)))+'</span></span></div>'
-  +'<div style="text-align:center;font-size:16px;letter-spacing:'+(lg==='en'?'.3em':'.12em')+';font-weight:700;margin:30px 0 22px;text-decoration:underline;text-underline-offset:6px">'+L.title+'</div>'
+  +'<div style="padding:0 6%;flex:1;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;letter-spacing:'+(lg==='en'?'.12em':'.02em')+';font-weight:700;margin-top:2px"><span>'+L.date+': <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+fmtL(t.date,lg)+'</span></span><span>'+(t.kind==='out'?L.vno:L.rno)+': <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+esc(String(t.kind==='out'?t.vno:rnoOf(t)))+'</span></span></div>'
+  +'<div style="text-align:center;font-size:16px;letter-spacing:'+(lg==='en'?'.3em':'.12em')+';font-weight:700;margin:30px 0 22px;text-decoration:underline;text-underline-offset:6px">'+(t.kind==='out'?L.vtitle:L.title)+'</div>'
     +'<p style="font-size:15.5px;line-height:2;margin:6px 0 10px;text-align:justify">'+letterBody(t,lg,true)+'</p>'
-  +'<div style="margin:18px 0 4px;display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #E4E2DB;font-size:14px"><span style="color:#62668A">'+L.amt+'</span><b class="tn">'+INR(t.amount)+'/-</b></div>'
-  +'<div style="margin-top:auto;padding:46px 0 34px;text-align:right;font-size:14px"><div style="height:60px"></div><div style="display:inline-block;border-top:1.5px solid #1F2230;padding-top:6px;min-width:230px;text-align:center"><b style="font-family:Georgia,\'Times New Roman\',serif">'+esc(DB.biz.name)+'</b></div></div></div>'
+  +'<div style="margin:18px 0 4px;display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #E4E2DB;font-size:14px"><span style="color:#62668A">'+(t.kind==='out'?L.amtP:L.amt)+'</span><b class="tn">'+INR(t.amount)+'/-</b></div>'
+  +(t.kind==='out'?'<div style="margin-top:auto;padding:46px 0 34px;display:flex;justify-content:space-between;gap:30px;font-size:14px"><div style="width:44%"><div style="height:60px"></div><div style="border-top:1.5px solid #1F2230;padding-top:6px;text-align:center;font-size:12.5px;color:#62668A">'+L.rsig+'</div></div><div style="width:44%;text-align:center"><div style="height:60px"></div><div style="border-top:1.5px solid #1F2230;padding-top:6px"><b style="font-family:Georgia,\'Times New Roman\',serif">'+esc(DB.biz.name)+'</b></div></div></div></div>':'<div style="margin-top:auto;padding:46px 0 34px;text-align:right;font-size:14px"><div style="height:60px"></div><div style="display:inline-block;border-top:1.5px solid #1F2230;padding-top:6px;min-width:230px;text-align:center"><b style="font-family:Georgia,\'Times New Roman\',serif">'+esc(DB.biz.name)+'</b></div></div></div>')
   +'<img src="'+LH.f+'" alt="" style="width:100%;display:block;margin-top:auto;flex-shrink:0"></div></div></div>'}
 export function pdfLetterNative(t){
   var C=pdfLib();if(!C)return;var v=voucherInfo(t),D=derive(),p=D.byId[t.projId],bw=DB.biz.lhBW,d=new C({unit:'mm',format:'a4'}),L=14,R=196,y;
@@ -155,7 +169,7 @@ export function pdfLetterNative(t){
   {[['Amount received',t.amount]].forEach(function(x){d.setFontSize(10.5);d.setFont('times','normal');d.text(x[0],L,y);d.setFont('times','bold');d.text(rs(x[1]),R,y,{align:'right'});d.setDrawColor(210,208,200);d.setLineWidth(0.2);d.line(L,y+2,R,y+2);y+=8})}
   y=Math.max(y+22,248);d.setDrawColor(31,34,48);d.setLineWidth(0.4);d.line(R-62,y,R,y);d.setFont('times','bold');d.setFontSize(9.5);d.text(DB.biz.name,R-31,y+5,{align:'center'});
   finishPdf(d,t.vno+'.pdf','Saved '+t.vno+'.pdf')}
-export function voucherText(t){if(t.kind==='in')return letterPlain(t);var v=voucherInfo(t),b=DB.biz;return [b.name,(v.inn?'RECEIPT VOUCHER ':'PAYMENT VOUCHER ')+t.vno,'Date: '+fmt(t.date),(v.inn?'Received from: ':'Paid to: ')+v.who,'Project: '+v.proj+(v.stage?' ('+v.stage+')':''),'Amount: '+INR(t.amount),words(t.amount),'Mode: '+modeStr(t,'en')].concat(t.note?['Note: '+t.note]:[]).concat(b.phone?['Phone: '+b.phone]:[]).join('\n')}
+export function voucherText(t){if(t.kind==='in'||t.kind==='out')return letterPlain(t);var v=voucherInfo(t),b=DB.biz;return [b.name,(v.inn?'RECEIPT VOUCHER ':'PAYMENT VOUCHER ')+t.vno,'Date: '+fmt(t.date),(v.inn?'Received from: ':'Paid to: ')+v.who,'Project: '+v.proj+(v.stage?' ('+v.stage+')':''),'Amount: '+INR(t.amount),words(t.amount),'Mode: '+modeStr(t,'en')].concat(t.note?['Note: '+t.note]:[]).concat(b.phone?['Phone: '+b.phone]:[]).join('\n')}
 export function pdfLib(){var J=window.jspdf;if(!J||!J.jsPDF){toast('PDF tool could not load. Check your internet and try again.');return null}return J.jsPDF}
 export var PDFMODE='save';
 export function finishPdf(d,name,msg){
@@ -183,14 +197,14 @@ export function finishPdf(d,name,msg){
 export function rs(n){return 'Rs. '+Number(n).toLocaleString('en-IN')}
 export function pdfLetter(t){
   var C=pdfLib();if(!C)return;var lg=curLang();
-  if(!window.html2canvas){if(lg==='en'){pdfLetterNative(t);return}toast('Hindi and Gujarati PDF needs internet. Connect and try again.');return}
+  if(!window.html2canvas){if(t.kind==='out'){pdfVoucherRun(t);return}if(lg==='en'){pdfLetterNative(t);return}toast('Hindi and Gujarati PDF needs internet. Connect and try again.');return}
   var host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:700px;background:#fff';host.innerHTML=letterPaper(t,lg);document.body.appendChild(host);
   var done=function(){if(host.parentNode)host.parentNode.removeChild(host)};
   var go=function(){window.html2canvas(host.querySelector('.paper'),{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false}).then(function(cv){var d=new C({unit:'mm',format:'a4'});var h=Math.min(297,210*cv.height/cv.width);d.addImage(cv.toDataURL('image/jpeg',0.95),'JPEG',0,0,210,h);done();finishPdf(d,t.vno+'.pdf','Saved '+t.vno+'.pdf')}).catch(function(){done();toast('Could not make the PDF. Try again.')})};
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(go);else go()}
 export function ganeshImg(){var cv=document.createElement('canvas'),px=56,txt='॥ श्री गणेशाय नमः ॥',ctx=cv.getContext('2d');ctx.font='700 '+px+'px "Noto Sans Devanagari","Mangal",sans-serif';var w=Math.ceil(ctx.measureText(txt).width)+8;cv.width=w;cv.height=Math.round(px*1.5);ctx=cv.getContext('2d');ctx.font='700 '+px+'px "Noto Sans Devanagari","Mangal",sans-serif';ctx.fillStyle='#55597A';ctx.textBaseline='middle';ctx.fillText(txt,4,cv.height/2);return {uri:cv.toDataURL('image/png'),r:cv.width/cv.height}}
 export function pdfVoucher(t){
-  if(t.kind==='in'){pdfLetter(t);return}
+  if(t.kind==='in'||t.kind==='out'){pdfLetter(t);return}
   var run=function(){pdfVoucherRun(t)};
   if(document.fonts&&document.fonts.load)document.fonts.load('700 28px "Noto Sans Devanagari"','श्री गणेशाय नमः').then(run,run);else run()}
 export function pdfVoucherRun(t){
