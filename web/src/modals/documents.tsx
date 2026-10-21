@@ -56,7 +56,7 @@ export function VoucherModal({ id, fresh }: { id: string; fresh?: boolean }) {
         <IconBtn label="Edit entry" onClick={() => open('entry', { form: editEntryForm(t) })}><Pencil className="size-5" /></IconBtn>
         <IconBtn label="Delete entry" tone="danger" onClick={() => open('confirm', { title: 'Delete this entry?', body: 'Totals will change. You can undo for a few seconds after.', action: () => deleteTxn(id) })}><Trash2 className="size-5" /></IconBtn>
       </div>
-      <p className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">Print works from the PC browser. On a phone, tap Download and print that PDF.</p>
+      {!(window as any).Capacitor?.isNativePlatform?.() && <p className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">Print works from the PC browser. On a phone, tap Download and print that PDF.</p>}
     </Sheet>
   )
 }

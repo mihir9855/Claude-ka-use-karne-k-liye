@@ -95,3 +95,4 @@ export declare const words: any;
 export declare const wordsL: any;
 export declare const stripShri: any;
 export declare const godDisp: any;
+export declare const rnoOf: any;
