@@ -1,2 +1,4 @@
 node_modules/
 dist/
+android-app/android/
+android-app/node_modules/

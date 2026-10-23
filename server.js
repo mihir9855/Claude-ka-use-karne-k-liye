@@ -38,14 +38,16 @@ async function refresh() {
 }
 refresh(); setInterval(refresh, REFRESH_MS);
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".webmanifest": "application/manifest+json", ".png": "image/png" };
+const ALLOWED = /^(index\.html|manifest\.webmanifest|sw\.js|icons\/[\w.-]+\.png)$/;
 http.createServer((req, res) => {
   if (req.url.startsWith("/api/quotes")) {
     res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
     return res.end(JSON.stringify({ live: Date.now() - lastOk < REFRESH_MS * 3, updated: lastOk, quotes }));
   }
-  const file = req.url.split("?")[0] === "/" ? "index.html" : path.basename(req.url.split("?")[0]);
-  if (!TYPES[path.extname(file)]) { res.writeHead(404); return res.end("Not found"); }
+  const p = req.url.split("?")[0];
+  const file = p === "/" ? "index.html" : p.replace(/^\/+/, "");
+  if (!ALLOWED.test(file)) { res.writeHead(404); return res.end("Not found"); }
   fs.readFile(path.join(__dirname, file), (e, d) => {
     if (e) { res.writeHead(404); return res.end("Not found"); }
     res.writeHead(200, { "Content-Type": TYPES[path.extname(file)] }); res.end(d);

@@ -1,0 +1,7 @@
+{
+  "appId": "com.dalalstreet.arena",
+  "appName": "Dalal Street Arena",
+  "webDir": "www",
+  "backgroundColor": "#060914",
+  "server": { "url": "https://dalal-street-arena.onrender.com", "cleartext": false }
+}
