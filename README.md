@@ -13,6 +13,12 @@ node server.js        # Node 18+, no npm install needed
 - 0.03% brokerage per order. The portfolio is saved in your browser; **⚙ Settings → Reset game** starts over.
 - Opening `index.html` directly (no server) runs a simulation with a built-in list of 97 stocks.
 
+## Order types, alerts and F&O
+- **Limit orders** (buy/sell at your price) and **stop-loss orders** are checked every second and fill at the live price once triggered. They can be placed while the market is closed and fire when it opens.
+- **Price alerts** show a popup, play a beep and (if allowed) send a browser notification.
+- **Futures & Options** (simulated): NIFTY 50, SENSEX and any stock. Option prices use Black-Scholes on the live spot, futures use cost-of-carry; 15% margin, cash-settled at expiry. Positions are shown under *Futures & Options positions*.
+- Pending orders, alerts and positions are stored in your browser and are only processed while the app is open.
+
 Yahoo Finance is a free, unofficial source and may be delayed or rate-limited. This is a game, not trading advice.
 
 ## Deploy / Android app
