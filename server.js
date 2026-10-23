@@ -154,6 +154,6 @@ http.createServer(async (req, res) => {
   if (!ALLOWED.test(file)) { res.writeHead(404); return res.end("Not found"); }
   fs.readFile(path.join(__dirname, file), (e, d) => {
     if (e) { res.writeHead(404); return res.end("Not found"); }
-    res.writeHead(200, { "Content-Type": TYPES[path.extname(file)] }); res.end(d);
+    res.writeHead(200, { "Content-Type": TYPES[path.extname(file)], "Cache-Control": "no-cache" }); res.end(d);
   });
 }).listen(PORT, () => console.log(`Game running at http://localhost:${PORT}`));
