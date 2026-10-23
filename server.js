@@ -77,6 +77,13 @@ async function fetchKey(key) {
   const m = j.chart.result[0].meta;
   quotes[key] = { price: m.regularMarketPrice, prev: m.chartPreviousClose ?? m.previousClose, time: m.regularMarketTime };
 }
+// Real index levels: NIFTY 50 (^NSEI) and S&P BSE SENSEX (^BSESN), with today's intraday curve for the sparkline.
+async function fetchIndex(ex) {
+  const j = await getJSON(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ex === "NSE" ? "^NSEI" : "^BSESN")}?interval=5m&range=1d`);
+  const r = j.chart.result[0], m = r.meta, closes = (r.indicators.quote[0].close || []).filter(v => v != null);
+  const step = Math.max(1, Math.ceil(closes.length / 90));
+  quotes["IDX:" + ex] = { price: m.regularMarketPrice, prev: m.chartPreviousClose ?? m.previousClose, time: m.regularMarketTime, series: closes.filter((_, i) => i % step === 0 || i === closes.length - 1) };
+}
 async function cycle() {
   const now = Date.now(), batch = new Set();
   for (const s of Object.keys(extra)) if (now - extra[s] > EXTRA_TTL_MS) { delete extra[s]; delete quotes["NSE:" + s]; delete quotes["BSE:" + s]; }
@@ -86,7 +93,7 @@ async function cycle() {
   }
   const keys = allKeys();
   for (let i = 0; i < BATCH && keys.length; i++) batch.add(keys[rr++ % keys.length]);
-  const list = [...batch], res = await Promise.allSettled(list.map(fetchKey));
+  const list = [...batch], res = await Promise.allSettled([...list.map(fetchKey), fetchIndex("NSE"), fetchIndex("BSE")]);
   const ok = res.filter(r => r.status === "fulfilled").length;
   if (ok) lastOk = Date.now();
   console.log(`[${new Date().toISOString()}] refreshed ${ok}/${list.length}` + (ok ? "" : ` (${res[0].reason?.message})`));

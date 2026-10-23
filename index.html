@@ -422,10 +422,12 @@ function setPx(s,e,p){
 }
 const IDX={NSE:[],BSE:[]};
 const CORE=()=>STOCKS.filter(s=>s.core);
-const idxNow=e=>{const C=CORE();return C.reduce((a,s)=>a+s.px[e]/s.prev[e],0)/C.length*BASEIDX[e]};
+const REAL={NSE:null,BSE:null};   // real index quotes from the backend (NIFTY 50 / SENSEX)
+const idxPrev=e=>REAL[e]?REAL[e].prev:BASEIDX[e];
+const idxNow=e=>{if(REAL[e])return REAL[e].price;const C=CORE();return C.reduce((a,s)=>a+s.px[e]/s.prev[e],0)/C.length*BASEIDX[e]};
 // seed index history from the seeded stock histories
 for(const e of EX)for(let i=0;i<90;i++)IDX[e].push(STOCKS.reduce((a,s)=>a+s.hist[e][i]/s.prev[e],0)/STOCKS.length*BASEIDX[e]);
-function pushIdx(){for(const e of EX){IDX[e].push(idxNow(e));if(IDX[e].length>120)IDX[e].shift();}}
+function pushIdx(){for(const e of EX){if(REAL[e])continue;IDX[e].push(idxNow(e));if(IDX[e].length>120)IDX[e].shift();}}
 
 /* ---------- live data from backend ---------- */
 let synced=false;
@@ -434,6 +436,7 @@ async function pollLive(){
     if(!synced){ for(const x of state.extra) await fetch("/api/add?sym="+encodeURIComponent(x.sym)).catch(()=>{}); synced=true; }
     const want=[...new Set([...EX.map(e=>key(e,sel)),...Object.keys(state.pos),...state.extra.slice(0,12).flatMap(x=>EX.map(e=>key(e,x.sym)))])].join(",");
     const j=await (await fetch("/api/quotes?want="+encodeURIComponent(want),{cache:"no-store"})).json(); liveMode=!!j.live;
+    for(const e of EX){const q=j.quotes["IDX:"+e];if(q){if(!REAL[e])IDX[e]=[];REAL[e]=q;if(q.series&&q.series.length>1)IDX[e]=q.series.slice();}}
     const UL=new Set(j.unlisted||[]);for(const s of STOCKS)for(const e of EX)s.on[e]=!UL.has(key(e,s.sym));
     for(const x of state.extra){const q=j.quotes[key("NSE",x.sym)];if(q&&!STOCKS.some(s=>s.sym===x.sym))STOCKS.push(makeStock(x.sym,x.name,"Added",q.price,false));}
     for(const s of STOCKS)for(const e of EX){
@@ -441,7 +444,7 @@ async function pollLive(){
       if(q){ if(!s.seeded[e]){s.prev[e]=q.prev;s.hist[e]=[];s.hi[e]=q.price;s.lo[e]=q.price;s.seeded[e]=true;s.px[e]=q.price;}
         setPx(s,e,q.price); s.prev[e]=q.prev; }
     }
-  }catch(err){liveMode=false;STOCKS.forEach(s=>EX.forEach(e=>s.live[e]=false));}
+  }catch(err){liveMode=false;if(REAL.NSE||REAL.BSE){REAL.NSE=REAL.BSE=null;for(const e of EX)IDX[e]=[idxNow(e)]}STOCKS.forEach(s=>EX.forEach(e=>s.live[e]=false));}
   render();
 }
 
@@ -469,8 +472,8 @@ function render(){
 
   // indices
   for(const e of EX){
-    const v=idxNow(e),c=(v/BASEIDX[e]-1)*100;
-    $("v"+e).textContent=fmt(v);$("c"+e).innerHTML=`<span class="${c>=0?"up":"down"}">${c>=0?"▲":"▼"} ${fmt(Math.abs(v-BASEIDX[e]))} (${c>=0?"+":""}${c.toFixed(2)}%)</span>`;
+    const v=idxNow(e),c=(v/idxPrev(e)-1)*100;
+    $("v"+e).textContent=fmt(v);$("c"+e).innerHTML=`<span class="${c>=0?"up":"down"}">${c>=0?"▲":"▼"} ${fmt(Math.abs(v-idxPrev(e)))} (${c>=0?"+":""}${c.toFixed(2)}%)</span>`;
     $("s"+e).innerHTML=spark(IDX[e],300,56,colr(c),true);
     $("idx"+e).classList.toggle("act",ex===e);
   }
