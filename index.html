@@ -168,6 +168,7 @@ canvas#donut{width:200px;height:200px}
 .ex2{font-size:9px;font-weight:800;letter-spacing:.06em;padding:1px 5px;border-radius:4px;margin-left:4px}
 .fh{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);padding:10px 4px 4px;font-weight:600}
 .fr{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.05)}
+.rp{text-align:right;flex:none}.fr.sel{background:linear-gradient(90deg,rgba(255,153,51,.16),transparent)}
 .fr b{display:block;font-size:13px}.fr small{display:block;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
 .add{border:1px solid var(--saf);background:none;color:var(--saf);border-radius:8px;padding:5px 10px;font:700 11px Inter;cursor:pointer}
 .add:hover{background:var(--saf);color:#1b0d00}
@@ -219,11 +220,9 @@ canvas#donut{width:200px;height:200px}
     <aside class="glass card">
       <div class="tabs ex" id="exTabs"><button data-v="NSE">NSE</button><button data-v="BSE">BSE</button></div>
       <input class="search" id="q" placeholder="Koi bhi stock search karo (NSE/BSE)…" autocomplete="off">
-      <div class="chips" id="chips"></div>
-      <div class="chips" id="views" style="margin-bottom:6px"><button class="chip on" data-v="mine">⭐ My list</button><button class="chip" data-v="all">📚 Saare listed stocks</button></div>
-      <div id="letters" class="letters" style="display:none"></div>
-      <div class="list"><table class="w"><tbody id="watch"></tbody></table><div id="allList" style="display:none"></div></div>
-      <div id="pager" class="pager" style="display:none"></div>
+      <div id="letters" class="letters"></div>
+      <div class="list"><table class="w"><tbody id="watch"></tbody></table><div id="allList"></div></div>
+      <div id="pager" class="pager"></div>
       <small id="cnt" style="display:block;margin-top:8px"></small>
     </aside>
 
@@ -471,9 +470,15 @@ function render(){
   $("cash").textContent=inr(state.cash);$("inv").textContent=inr(inv);$("nh").textContent=H.length;
   $("nwspark").innerHTML=spark(state.nw.length>1?state.nw:[START,net],200,54,colr(pnl),true);
 
-  renderWatch();renderTape();renderDetail();renderHold(H,inv);
+  if(localOnly)renderWatch();updateAllPrices();renderTape();renderDetail();renderHold(H,inv);
 }
 
+function updateAllPrices(){
+  document.querySelectorAll("#allList [data-px]").forEach(n=>{
+    const s=STOCKS.find(x=>x.sym===n.dataset.px);n.parentElement.classList.toggle("sel",n.dataset.px===sel);if(!s)return;const p=pct(s,ex),c=p>=0?"up":"down";
+    n.innerHTML=`<div class="num" style="font-weight:700">${fmt(s.px[ex])}</div><span class="chg ${c}">${p>=0?"+":""}${p.toFixed(2)}%</span>`;
+  });
+}
 function renderWatch(){
   const q=$("q").value.trim().toLowerCase();
   const held=new Set(Object.keys(state.pos));
@@ -584,33 +589,32 @@ $("qm").onclick=()=>{$("qty").value=Math.max(1,(+$("qty").value||1)-1);renderDet
 $("qp").onclick=()=>{$("qty").value=(+$("qty").value||0)+1;renderDetail()};
 document.querySelector(".quick").onclick=e=>{const v=e.target.dataset.q;if(!v)return;$("qty").value=v==="max"?Math.max(1,maxQty()):v;renderDetail()};
 $("go").onclick=trade;
-let view="mine",letter="",apage=1,sT=0;
+let letter="",apage=1,sT=0,localOnly=false;
 const LET=["All",..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),"#"];
 $("letters").innerHTML=LET.map(l=>`<button data-l="${l==="All"?"":l}" class="${l==="All"?"on":""}">${l==="All"?"•":l}</button>`).join("");
 $("letters").onclick=e=>{const b=e.target.closest("button");if(!b)return;letter=b.dataset.l;apage=1;document.querySelectorAll("#letters button").forEach(x=>x.classList.toggle("on",x===b));loadAll()};
-$("views").onclick=e=>{const v=e.target.dataset.v;if(!v)return;view=v;document.querySelectorAll("#views .chip").forEach(c=>c.classList.toggle("on",c.dataset.v===v));applyView()};
-function applyView(){
-  const all=view==="all";
-  $("watch").parentElement.style.display=all?"none":"";$("allList").style.display=all?"":"none";
-  $("letters").style.display=all?"flex":"none";$("cnt").style.display=all?"none":"";$("pager").style.display=all?"flex":"none";$("chips").style.display=all?"none":"";
-  if(all)loadAll();else renderWatch();
+function applyView(){ // full exchange list normally; the built-in list only if the server can't be reached
+  $("watch").parentElement.style.display=localOnly?"":"none";$("allList").style.display=localOnly?"none":"";
+  $("letters").style.display=localOnly?"none":"flex";$("pager").style.display=localOnly?"none":"flex";$("cnt").style.display=localOnly?"":"none";
+  if(localOnly)renderWatch();
 }
 async function loadAll(){
   const q=$("q").value.trim();
   $("allList").innerHTML=`<div class="empty">Loading…</div>`;
   try{
     const j=await (await fetch(`/api/stocks?q=${encodeURIComponent(q)}&letter=${encodeURIComponent(q?"":letter)}&page=${apage}`)).json();
-    const rows=j.items.map(r=>`<div class="fr" data-sym="${r.sym}" data-name="${r.name.replace(/"/g,"&quot;")}" style="cursor:pointer"><div><b>${r.sym}${r.nse?`<span class="ex2 badge NSE" style="margin:0 0 0 6px">NSE</span>`:""}${r.bse?`<span class="ex2 badge BSE" style="margin:0 0 0 4px">BSE</span>`:""}</b><small>${r.name}</small></div><button class="add">${STOCKS.some(s=>s.sym===r.sym)?"Open":"+ Add"}</button></div>`).join("");
+    const rows=j.items.map(r=>`<div class="fr ${r.sym===sel?"sel":""}" data-sym="${r.sym}" data-name="${r.name.replace(/"/g,"&quot;")}" style="cursor:pointer"><div><b>${r.sym}${r.nse?`<span class="ex2 badge NSE" style="margin:0 0 0 6px">NSE</span>`:""}${r.bse?`<span class="ex2 badge BSE" style="margin:0 0 0 4px">BSE</span>`:""}</b><small>${r.name}</small></div><div class="rp" data-px="${r.sym}">${STOCKS.some(s=>s.sym===r.sym)?"":`<span class="add">Open ›</span>`}</div></div>`).join("");
+    updateAllPrices();
     $("allList").innerHTML=(j.note?`<div class="fh">${j.note}</div>`:"")+(rows||`<div class="empty">Koi stock nahi mila</div>`);
     $("pager").innerHTML=`<button id="pp" ${apage<=1?"disabled":""}>‹ Prev</button><span>${j.total.toLocaleString("en-IN")} stocks${j.all?` (kul ${j.all.toLocaleString("en-IN")})`:""} · page ${j.page}/${j.pages}</span><button id="pn" ${apage>=j.pages?"disabled":""}>Next ›</button>`;
     $("pp").onclick=()=>{apage--;loadAll()};$("pn").onclick=()=>{apage++;loadAll()};
-  }catch(e){$("allList").innerHTML=`<div class="empty">Poori list live server par milti hai.<br>Server (node server.js) se kholo.</div>`;$("pager").innerHTML=""}
+  }catch(e){localOnly=true;applyView()}
 }
-$("q").oninput=()=>{if(view==="all"){clearTimeout(sT);sT=setTimeout(()=>{apage=1;loadAll()},350)}else renderWatch()};
+$("q").oninput=()=>{if(localOnly)return renderWatch();clearTimeout(sT);sT=setTimeout(()=>{apage=1;loadAll()},350)};
 $("allList").onclick=async e=>{
   const r=e.target.closest(".fr");if(!r)return;const sym=r.dataset.sym,name=r.dataset.name;
   if(STOCKS.some(s=>s.sym===sym)){sel=sym;hoverI=-1;render();window.scrollTo({top:0,behavior:"smooth"});return}
-  const btn=r.querySelector(".add");btn.textContent="…";
+  const btn=r.querySelector(".add")||document.createElement("span");btn.textContent="…";
   try{
     const a=await (await fetch("/api/add?sym="+encodeURIComponent(sym))).json();
     const j=await (await fetch("/api/quotes?want="+encodeURIComponent("NSE:"+sym+",BSE:"+sym),{cache:"no-store"})).json();
@@ -618,16 +622,13 @@ $("allList").onclick=async e=>{
     if(!a.ok||!q)throw 0;
     state.extra.push({sym,name});save();
     STOCKS.push(makeStock(sym,name,"Listed",q.price,false));
-    sel=sym;toast(`<b>${sym}</b> khul gaya ✓`,"#ff9933");pollLive();btn.textContent="Open";window.scrollTo({top:0,behavior:"smooth"});
-  }catch(err){btn.textContent="+ Add";toast("Is stock ka live bhav abhi nahi mila (shayad trade nahi ho raha). Baad me try karo.","#ff4d6d")}
+    sel=sym;toast(`<b>${sym}</b> khul gaya ✓`,"#ff9933");pollLive();window.scrollTo({top:0,behavior:"smooth"});
+  }catch(err){btn.textContent="Open ›";toast("Is stock ka live bhav abhi nahi mila (shayad trade nahi ho raha). Baad me try karo.","#ff4d6d")}
 };
 $("always").onchange=render;
 const sheet=$("sheet");$("gear").onclick=()=>sheet.hidden=false;$("sclose").onclick=()=>sheet.hidden=true;
 sheet.onclick=e=>{if(e.target===sheet)sheet.hidden=true};
 $("reset").onclick=()=>{if(confirm("₹10,00,000 se dobara shuru karein? Saari holdings clear ho jayengi.")){state={cash:START,pos:{},orders:[],nw:[],extra:[]};save();render();toast("Game reset ✓","#ff9933")}};
-const FIL=[["all","All"],["gain","▲ Gainers"],["lose","▼ Losers"],["held","My stocks"]];
-$("chips").innerHTML=FIL.map(([v,t])=>`<button class="chip ${v==="all"?"on":""}" data-v="${v}">${t}</button>`).join("");
-$("chips").onclick=e=>{const v=e.target.dataset.v;if(!v)return;filter=v;document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c.dataset.v===v));renderWatch()};
 const cv=$("chart");
 cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),n=cur().hist[ex].length;hoverI=Math.round((e.clientX-r.left)/(r.width-64)*(n-1));if(hoverI>=n)hoverI=-1;drawChart(cur())};
 cv.onmouseleave=()=>{hoverI=-1;drawChart(cur())};
@@ -635,6 +636,7 @@ window.addEventListener("resize",()=>drawChart(cur()));
 
 setInterval(()=>{tick();render()},1000);
 setInterval(()=>{const H=holdings();state.nw.push(state.cash+H.reduce((a,h)=>a+h.val,0));if(state.nw.length>150)state.nw.shift();save()},4000);
+applyView();loadAll();
 pollLive();setInterval(pollLive,5000);
 render();
 if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("/sw.js").catch(()=>{});
