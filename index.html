@@ -146,7 +146,14 @@ canvas#donut{width:200px;height:200px}
 .legend i{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:5px}
 .ord{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
 
-#found{padding-top:6px}
+#allList{padding-top:2px}
+.letters{display:flex;flex-wrap:wrap;gap:3px;margin:4px 0 8px}
+.letters button{border:0;background:rgba(255,255,255,.05);color:var(--mut);width:24px;height:24px;border-radius:7px;font:700 11px Inter;cursor:pointer}
+.letters button.on{background:var(--saf);color:#1b0d00}
+.pager{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:var(--mut)}
+.pager button{border:1px solid var(--line);background:var(--glass2);color:var(--txt);padding:5px 12px;border-radius:8px;font:600 12px Inter;cursor:pointer}
+.pager button:disabled{opacity:.35;cursor:default}
+.ex2{font-size:9px;font-weight:800;letter-spacing:.06em;padding:1px 5px;border-radius:4px;margin-left:4px}
 .fh{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);padding:10px 4px 4px;font-weight:600}
 .fr{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.05)}
 .fr b{display:block;font-size:13px}.fr small{display:block;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
@@ -194,7 +201,10 @@ canvas#donut{width:200px;height:200px}
       <div class="tabs ex" id="exTabs"><button data-v="NSE">NSE</button><button data-v="BSE">BSE</button></div>
       <input class="search" id="q" placeholder="Koi bhi stock search karo (NSE/BSE)…" autocomplete="off">
       <div class="chips" id="chips"></div>
-      <div class="list"><table class="w"><tbody id="watch"></tbody></table><div id="found"></div></div>
+      <div class="chips" id="views" style="margin-bottom:6px"><button class="chip on" data-v="mine">⭐ My list</button><button class="chip" data-v="all">📚 Saare listed stocks</button></div>
+      <div id="letters" class="letters" style="display:none"></div>
+      <div class="list"><table class="w"><tbody id="watch"></tbody></table><div id="allList" style="display:none"></div></div>
+      <div id="pager" class="pager" style="display:none"></div>
       <small id="cnt" style="display:block;margin-top:8px"></small>
     </aside>
 
@@ -341,7 +351,7 @@ function makeStock(sym,name,sector,p,core){
   const hist={NSE:[],BSE:[]};
   for(const ex of EX){ let v=px[ex]; const a=[v]; for(let i=0;i<89;i++){v=v/(1+(Math.random()-.5)*vol*3.4);a.unshift(+v.toFixed(2));} hist[ex]=a; }
   const prev={NSE:hist.NSE[0],BSE:hist.BSE[0]}; // previous close = start of the seeded session
-  return {sym,name,sector,core,vol,px,prev,hist,last:{NSE:0,BSE:0},live:{NSE:false,BSE:false},hi:{NSE:Math.max(...hist.NSE),BSE:Math.max(...hist.BSE)},lo:{NSE:Math.min(...hist.NSE),BSE:Math.min(...hist.BSE)},seeded:{}};
+  return {sym,name,sector,core,vol,px,prev,hist,last:{NSE:0,BSE:0},live:{NSE:false,BSE:false},on:{NSE:true,BSE:true},hi:{NSE:Math.max(...hist.NSE),BSE:Math.max(...hist.BSE)},lo:{NSE:Math.min(...hist.NSE),BSE:Math.min(...hist.BSE)},seeded:{}};
 }
 const STOCKS=RAW.map(([sym,name,sector,p])=>makeStock(sym,name,sector,p,true));
 
@@ -392,8 +402,9 @@ let synced=false;
 async function pollLive(){
   try{
     if(!synced){ for(const x of state.extra) await fetch("/api/add?sym="+encodeURIComponent(x.sym)).catch(()=>{}); synced=true; }
-    const want=[...EX.map(e=>key(e,sel)),...Object.keys(state.pos)].join(",");
+    const want=[...new Set([...EX.map(e=>key(e,sel)),...Object.keys(state.pos),...state.extra.slice(0,12).flatMap(x=>EX.map(e=>key(e,x.sym)))])].join(",");
     const j=await (await fetch("/api/quotes?want="+encodeURIComponent(want),{cache:"no-store"})).json(); liveMode=!!j.live;
+    const UL=new Set(j.unlisted||[]);for(const s of STOCKS)for(const e of EX)s.on[e]=!UL.has(key(e,s.sym));
     for(const x of state.extra){const q=j.quotes[key("NSE",x.sym)];if(q&&!STOCKS.some(s=>s.sym===x.sym))STOCKS.push(makeStock(x.sym,x.name,"Added",q.price,false));}
     for(const s of STOCKS)for(const e of EX){
       const q=j.live&&j.quotes[key(e,s.sym)]; s.live[e]=!!q;
@@ -473,6 +484,7 @@ function renderDetail(){
   const hp=state.pos[key(ex,s.sym)];
   $("facts").innerHTML=[["Prev close",fmt(s.prev[ex])],["Day high",fmt(s.hi[ex])],["Day low",fmt(s.lo[ex])],["You hold",hp?hp.qty+" sh":"—"]].map(([a,b])=>`<div><span class="lbl">${a}</span><b class="num">${b}</b></div>`).join("");
   const diff=s.px[ex]-s.px[o],dp=diff/s.px[o]*100;
+  if(!s.on[ex]){$("arb").innerHTML=`⚠️ <b>${s.sym}</b> ${ex} par listed nahi hai. Upar <b>${o}</b> tab se is stock ko trade karo.`}else if(!s.on[o]){$("arb").innerHTML=`ℹ️ Ye stock sirf <b>${ex}</b> par listed hai.`}else
   $("arb").innerHTML=`⚡ <b>${o}</b> par yahi stock <b class="num">${inr(s.px[o])}</b> pe hai — ${ex} <b class="${diff<=0?"up":"down"}">${diff<=0?"sasta":"mehnga"}</b> by <span class="num">${Math.abs(dp).toFixed(3)}%</span>. Sasti jagah kharido, mehngi jagah becho!`;
   drawChart(s);
 
@@ -527,7 +539,8 @@ function trade(){
   setErr("");
   if(!isOpen())return setErr("Market band hai. Practice mode on karo ya 9:15 AM IST (Mon–Fri) ka wait karo.");
   const q=Math.floor(+$("qty").value);if(!(q>0))return setErr("Valid quantity daalo.");
-  const s=cur(),px=s.px[ex],val=q*px,fee=val*FEE,k=key(ex,s.sym);
+  const s=cur();if(!s.on[ex])return setErr(`${s.sym} ${ex} par listed nahi hai — dusre exchange par trade karo.`);
+  const px=s.px[ex],val=q*px,fee=val*FEE,k=key(ex,s.sym);
   if(side==="BUY"){
     if(val+fee>state.cash)return setErr(`Cash kam hai — ${inr(val+fee)} chahiye.`);
     const p=state.pos[k]||{qty:0,avg:0};p.avg=(p.avg*p.qty+val)/(p.qty+q);p.qty+=q;state.pos[k]=p;state.cash-=val+fee;
@@ -552,28 +565,42 @@ $("qm").onclick=()=>{$("qty").value=Math.max(1,(+$("qty").value||1)-1);renderDet
 $("qp").onclick=()=>{$("qty").value=(+$("qty").value||0)+1;renderDetail()};
 document.querySelector(".quick").onclick=e=>{const v=e.target.dataset.q;if(!v)return;$("qty").value=v==="max"?Math.max(1,maxQty()):v;renderDetail()};
 $("go").onclick=trade;
-let sT=0;
-$("q").oninput=()=>{renderWatch();clearTimeout(sT);const q=$("q").value.trim();
-  if(q.length<2){$("found").innerHTML="";return}
-  sT=setTimeout(async()=>{
-    try{
-      const j=await (await fetch("/api/search?q="+encodeURIComponent(q))).json();
-      const R=(j.results||[]).filter(r=>!STOCKS.some(s=>s.sym===r.sym));
-      $("found").innerHTML=R.length?`<div class="fh">Market se add karo</div>`+R.map(r=>`<div class="fr"><div><b>${r.sym}</b><small>${r.name}</small></div><button class="add" data-sym="${r.sym}" data-name="${r.name.replace(/"/g,"")}">+ Add</button></div>`).join(""):"";
-    }catch(e){$("found").innerHTML=`<div class="fh">Poore market ka search live server par chalta hai</div>`}
-  },450)};
-$("found").onclick=async e=>{
-  const b=e.target.closest(".add");if(!b)return;b.textContent="…";
-  const sym=b.dataset.sym,name=b.dataset.name;
+let view="mine",letter="",apage=1,sT=0;
+const LET=["All",..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),"#"];
+$("letters").innerHTML=LET.map(l=>`<button data-l="${l==="All"?"":l}" class="${l==="All"?"on":""}">${l==="All"?"•":l}</button>`).join("");
+$("letters").onclick=e=>{const b=e.target.closest("button");if(!b)return;letter=b.dataset.l;apage=1;document.querySelectorAll("#letters button").forEach(x=>x.classList.toggle("on",x===b));loadAll()};
+$("views").onclick=e=>{const v=e.target.dataset.v;if(!v)return;view=v;document.querySelectorAll("#views .chip").forEach(c=>c.classList.toggle("on",c.dataset.v===v));applyView()};
+function applyView(){
+  const all=view==="all";
+  $("watch").parentElement.style.display=all?"none":"";$("allList").style.display=all?"":"none";
+  $("letters").style.display=all?"flex":"none";$("cnt").style.display=all?"none":"";$("pager").style.display=all?"flex":"none";$("chips").style.display=all?"none":"";
+  if(all)loadAll();else renderWatch();
+}
+async function loadAll(){
+  const q=$("q").value.trim();
+  $("allList").innerHTML=`<div class="empty">Loading…</div>`;
   try{
-    await fetch("/api/add?sym="+encodeURIComponent(sym));
+    const j=await (await fetch(`/api/stocks?q=${encodeURIComponent(q)}&letter=${encodeURIComponent(q?"":letter)}&page=${apage}`)).json();
+    const rows=j.items.map(r=>`<div class="fr" data-sym="${r.sym}" data-name="${r.name.replace(/"/g,"&quot;")}" style="cursor:pointer"><div><b>${r.sym}${r.nse?`<span class="ex2 badge NSE" style="margin:0 0 0 6px">NSE</span>`:""}${r.bse?`<span class="ex2 badge BSE" style="margin:0 0 0 4px">BSE</span>`:""}</b><small>${r.name}</small></div><button class="add">${STOCKS.some(s=>s.sym===r.sym)?"Open":"+ Add"}</button></div>`).join("");
+    $("allList").innerHTML=(j.note?`<div class="fh">${j.note}</div>`:"")+(rows||`<div class="empty">Koi stock nahi mila</div>`);
+    $("pager").innerHTML=`<button id="pp" ${apage<=1?"disabled":""}>‹ Prev</button><span>${j.total.toLocaleString("en-IN")} stocks${j.all?` (kul ${j.all.toLocaleString("en-IN")})`:""} · page ${j.page}/${j.pages}</span><button id="pn" ${apage>=j.pages?"disabled":""}>Next ›</button>`;
+    $("pp").onclick=()=>{apage--;loadAll()};$("pn").onclick=()=>{apage++;loadAll()};
+  }catch(e){$("allList").innerHTML=`<div class="empty">Poori list live server par milti hai.<br>Server (node server.js) se kholo.</div>`;$("pager").innerHTML=""}
+}
+$("q").oninput=()=>{if(view==="all"){clearTimeout(sT);sT=setTimeout(()=>{apage=1;loadAll()},350)}else renderWatch()};
+$("allList").onclick=async e=>{
+  const r=e.target.closest(".fr");if(!r)return;const sym=r.dataset.sym,name=r.dataset.name;
+  if(STOCKS.some(s=>s.sym===sym)){sel=sym;hoverI=-1;render();window.scrollTo({top:0,behavior:"smooth"});return}
+  const btn=r.querySelector(".add");btn.textContent="…";
+  try{
+    const a=await (await fetch("/api/add?sym="+encodeURIComponent(sym))).json();
     const j=await (await fetch("/api/quotes?want="+encodeURIComponent("NSE:"+sym+",BSE:"+sym),{cache:"no-store"})).json();
     const q=j.quotes["NSE:"+sym]||j.quotes["BSE:"+sym];
-    if(!q)throw 0;
+    if(!a.ok||!q)throw 0;
     state.extra.push({sym,name});save();
-    STOCKS.push(makeStock(sym,name,"Added",q.price,false));
-    sel=sym;$("q").value="";$("found").innerHTML="";toast(`<b>${sym}</b> add ho gaya ✓`,"#ff9933");pollLive();
-  }catch(err){b.textContent="+ Add";toast("Abhi is stock ka live bhav nahi mila. Thodi der baad try karo.","#ff4d6d")}
+    STOCKS.push(makeStock(sym,name,"Listed",q.price,false));
+    sel=sym;toast(`<b>${sym}</b> khul gaya ✓`,"#ff9933");pollLive();btn.textContent="Open";window.scrollTo({top:0,behavior:"smooth"});
+  }catch(err){btn.textContent="+ Add";toast("Is stock ka live bhav abhi nahi mila (shayad trade nahi ho raha). Baad me try karo.","#ff4d6d")}
 };
 $("always").onchange=render;
 $("reset").onclick=()=>{if(confirm("₹10,00,000 se dobara shuru karein? Saari holdings clear ho jayengi.")){state={cash:START,pos:{},orders:[],nw:[],extra:[]};save();render();toast("Game reset ✓","#ff9933")}};

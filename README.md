@@ -17,3 +17,6 @@ node server.js        # needs Node 18+, no npm install
 # open http://localhost:3000
 ```
 The backend fetches real NSE (`.NS`) and BSE (`.BO`) prices from Yahoo Finance every 15s and serves them at `/api/quotes`. The page shows "● LIVE NSE data" when it works and falls back to the simulation (per stock) if the backend or a symbol is unavailable. Opening `index.html` directly (no server) uses the simulation only.
+
+## Saare NSE + BSE stocks
+`server.js` downloads the official listings (NSE `EQUITY_L.csv`, BSE `ListofScripData`), merges them by ISIN and refreshes every 6 hours, so newly listed companies appear automatically. In the app open **"Saare listed stocks"** to browse A–Z or search any name/symbol, then tap a stock to open it with live prices. If the exchange files can't be downloaded the server falls back to Yahoo search.
