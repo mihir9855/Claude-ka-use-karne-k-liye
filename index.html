@@ -220,6 +220,22 @@ canvas#donut{width:200px;height:200px}
 
 @media(max-width:1200px){.main{grid-template-columns:340px minmax(0,1fr)}.main>.order{grid-column:1/-1}.bottom{grid-template-columns:1fr 1fr}.bottom>:first-child{grid-column:1/-1}}
 @media(max-width:820px){.cols{grid-template-columns:1fr 84px 84px}.px,.w td[data-ex]{width:84px}.exp{font-size:17px}.dsk{display:none}.sheet{place-items:start center;padding-top:70px}.brand small{display:none}.hbar{gap:8px;flex-wrap:nowrap}.brand{min-width:0;gap:9px}.brand h1{font-size:15px;white-space:nowrap}.logo{width:34px;height:34px;flex:none}.pill{padding:4px 9px;font-size:11px;white-space:nowrap}.top,.main,.bottom{grid-template-columns:minmax(0,1fr)}.mini{grid-template-columns:repeat(3,minmax(0,1fr))}.mini b{font-size:13px}.nwrow{flex-wrap:wrap}#nwspark{width:100%!important}.facts{grid-template-columns:repeat(2,1fr)}.price{font-size:30px}.big{font-size:28px}.hbar{padding:10px 14px}.wrap{padding:14px}}
+.bnav,.qbar{display:none}
+@media(max-width:820px){
+  .qbar{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:fixed;left:12px;right:12px;bottom:calc(68px + env(safe-area-inset-bottom));z-index:39}
+  .qbar.hide{display:none}
+  .qbar button{border:0;border-radius:14px;padding:13px;font:800 14px Inter;cursor:pointer;box-shadow:0 10px 30px -8px #000}
+  .qbar .b{background:var(--up);color:#00241a}.qbar .s{background:var(--down);color:#fff}
+  .bnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(8,11,24,.94);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .bnav button{border:0;background:none;color:var(--mut);font:700 11px Inter;padding:6px 0;border-radius:12px;display:grid;gap:2px;justify-items:center;cursor:pointer}
+  .bnav button i{font-style:normal;font-size:18px;filter:grayscale(1);opacity:.7}
+  .bnav button.on{color:#fff;background:rgba(255,255,255,.08)}.bnav button.on i{filter:none;opacity:1}
+  body{padding-bottom:84px}
+  body:not([data-tab="home"]) .t-home,body:not([data-tab="market"]) .t-market,body:not([data-tab="trade"]) .t-trade,body:not([data-tab="port"]) .t-port{display:none}
+  .list{max-height:none}.letters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.letters button{flex:none}
+  canvas#chart{height:230px}.facts{grid-template-columns:repeat(4,1fr);gap:6px}.facts div{padding:7px 8px}.facts b{font-size:12px}
+  .wrap{gap:12px;padding-top:12px}
+}
 </style>
 </head>
 <body>
@@ -244,7 +260,7 @@ canvas#donut{width:200px;height:200px}
 <div class="tape"><div id="tape"></div></div>
 
 <div class="wrap">
-  <section class="top">
+  <section class="top t-home">
     <div class="glass card">
       <div class="lbl">Net worth</div>
       <div class="nwrow"><div><div class="big num" id="net">—</div><div class="num" id="pnl" style="margin-top:4px;font-weight:700"></div></div><div id="nwspark" style="width:46%"></div></div>
@@ -259,7 +275,7 @@ canvas#donut{width:200px;height:200px}
   </section>
 
   <section class="main">
-    <aside class="glass card">
+    <aside class="glass card t-market">
       <div class="cols"><span>Stock</span><span class="cx NSE">NSE</span><span class="cx BSE">BSE</span></div>
       <input class="search" id="q" placeholder="Search any NSE / BSE stock…" autocomplete="off">
       <div id="letters" class="letters"></div>
@@ -268,7 +284,7 @@ canvas#donut{width:200px;height:200px}
       <small id="cnt" style="display:block;margin-top:8px"></small>
     </aside>
 
-    <article class="glass card">
+    <article class="glass card t-trade">
       <div class="dh">
         <div><h2 id="dName"></h2><small id="dSector"></small></div>
         <div><div class="price num" id="dPrice"></div><div class="num" id="dChg" style="text-align:right;font-weight:700"></div></div>
@@ -294,7 +310,7 @@ canvas#donut{width:200px;height:200px}
       </div>
     </article>
 
-    <aside class="glass card order">
+    <aside class="glass card order t-trade" id="colOrder">
       <div class="lbl">Place order</div>
       <div class="seg" id="seg"><button class="b on" data-s="BUY">BUY</button><button class="s" data-s="SELL">SELL</button></div>
       <div class="otype" id="otype"><button data-t="MARKET" class="on">Market</button><button data-t="LIMIT">Limit</button><button data-t="SL">Stop-loss</button></div>
@@ -314,9 +330,9 @@ canvas#donut{width:200px;height:200px}
     </aside>
   </section>
 
-  <section class="glass card" id="fnoCard" hidden><div class="lbl" style="margin-bottom:8px">Futures &amp; Options positions</div>
+  <section class="glass card t-port" id="fnoCard" hidden><div class="lbl" style="margin-bottom:8px">Futures &amp; Options positions</div>
     <div class="scroll"><table class="hold fnopos"><thead><tr><th>Contract</th><th>Side</th><th>Lots</th><th>Entry</th><th>Mark</th><th>P&amp;L</th><th></th></tr></thead><tbody id="fnoPos"></tbody></table></div></section>
-  <section class="bottom">
+  <section class="bottom t-port">
     <div class="glass card"><div class="lbl" style="margin-bottom:8px">My portfolio</div>
       <div class="scroll"><table class="hold"><thead><tr><th>Stock</th><th>Qty</th><th>Avg</th><th>LTP</th><th>Value</th><th>P&amp;L</th></tr></thead><tbody id="hold"></tbody></table></div></div>
     <div class="glass card"><div class="lbl">Allocation</div>
@@ -325,6 +341,13 @@ canvas#donut{width:200px;height:200px}
     <div class="glass card"><div class="lbl" style="margin-bottom:6px">Order history</div><div class="scroll" id="hist"></div></div>
   </section>
 </div>
+<div class="qbar t-trade" id="qbar"><button class="b" data-s="BUY">BUY</button><button class="s" data-s="SELL">SELL</button></div>
+<nav class="bnav" id="bnav">
+  <button data-t="home" class="on"><i>🏠</i>Home</button>
+  <button data-t="market"><i>📈</i>Market</button>
+  <button data-t="trade"><i>⚡</i>Trade</button>
+  <button data-t="port"><i>💼</i>Portfolio</button>
+</nav>
 <div id="toasts"></div>
 
 <script>
@@ -835,8 +858,8 @@ function maxQty(){const s=cur();if(side==="BUY")return Math.floor(state.cash/(s.
 /* ---------- events ---------- */
 $("exSwitch").onclick=e=>{const c=e.target.closest("[data-ex]");if(c){ex=c.dataset.ex;render()}};
 ["NSE","BSE"].forEach(e=>$("idx"+e).onclick=()=>{ex=e;render()});
-$("watch").onclick=e=>{const r=e.target.closest("tr[data-s]");const c=e.target.closest("td[data-ex]");if(c)ex=c.dataset.ex;if(r){sel=r.dataset.s;hoverI=-1;render()}};
-$("hold").onclick=e=>{const r=e.target.closest("tr[data-s]");if(r){ex=r.dataset.e;sel=r.dataset.s;side="SELL";render();window.scrollTo({top:0,behavior:"smooth"})}};
+$("watch").onclick=e=>{const r=e.target.closest("tr[data-s]");const c=e.target.closest("td[data-ex]");if(c)ex=c.dataset.ex;if(r){sel=r.dataset.s;hoverI=-1;render();if(isMobile())go("trade")}};
+$("hold").onclick=e=>{const r=e.target.closest("tr[data-s]");if(r){ex=r.dataset.e;sel=r.dataset.s;side="SELL";render();if(isMobile())go("trade");else window.scrollTo({top:0,behavior:"smooth"})}};
 $("seg").onclick=e=>{const v=e.target.dataset.s;if(v){side=v;setPlabel();render()}};
 function setPlabel(){$("plabel").textContent=otype==="LIMIT"?(side==="BUY"?"Buy when the price falls to (or below)":"Sell when the price rises to (or above)"):(side==="SELL"?"Stop-loss: sell if the price falls to":"Buy if the price rises to")}
 $("qty").oninput=renderDetail;
@@ -868,7 +891,7 @@ async function loadAll(){
 $("q").oninput=()=>{if(localOnly)return renderWatch();clearTimeout(sT);sT=setTimeout(()=>{apage=1;loadAll()},350)};
 $("allList").onclick=async e=>{
   const r=e.target.closest(".fr");if(!r)return;const pe=e.target.closest(".px");if(pe)ex=pe.dataset.ex;const sym=r.dataset.sym,name=r.dataset.name;
-  if(STOCKS.some(s=>s.sym===sym)){sel=sym;hoverI=-1;render();window.scrollTo({top:0,behavior:"smooth"});return}
+  if(STOCKS.some(s=>s.sym===sym)){sel=sym;hoverI=-1;render();if(isMobile())go("trade");else window.scrollTo({top:0,behavior:"smooth"});return}
   const btn=r.querySelector(".add")||document.createElement("span");btn.textContent="…";
   try{
     const a=await (await fetch("/api/add?sym="+encodeURIComponent(sym))).json();
@@ -877,7 +900,7 @@ $("allList").onclick=async e=>{
     if(!a.ok||!q)throw 0;
     state.extra.push({sym,name});save();
     STOCKS.push(makeStock(sym,name,"Listed",q.price,false));
-    sel=sym;toast(`<b>${sym}</b> added ✓`,"#ff9933");pollLive();window.scrollTo({top:0,behavior:"smooth"});
+    sel=sym;toast(`<b>${sym}</b> added ✓`,"#ff9933");pollLive();if(isMobile())go("trade");else window.scrollTo({top:0,behavior:"smooth"});
   }catch(err){btn.textContent="…";toast("No live price for this stock right now (it may not be trading). Try again later.","#ff4d6d")}
 };
 try{$("always").checked=localStorage.getItem("bseg_practice")==="1"}catch(e){}
@@ -907,6 +930,12 @@ $("chain").onclick=e=>{const c=e.target.closest("td[data-k]");if(!c)return;fno.t
 $("fLots").oninput=render;
 $("fBuy").onclick=()=>fnoTrade(1);$("fSell").onclick=()=>fnoTrade(-1);
 $("fnoPos").onclick=e=>{const id=e.target.dataset.close;if(!id)return;if(!isOpen())return toast("Market is closed. Turn on Practice mode to close positions.","#ff4d6d");closeFno(+id);render()};
+function go(t){document.body.dataset.tab=t;document.querySelectorAll("#bnav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));window.scrollTo(0,0)}
+$("bnav").onclick=e=>{const b=e.target.closest("button");if(b)go(b.dataset.t)};
+document.body.dataset.tab="home";
+const isMobile=()=>matchMedia("(max-width:820px)").matches;
+$("qbar").onclick=e=>{const v=e.target.dataset.s;if(!v)return;side=v;setPlabel();render();$("colOrder").scrollIntoView({behavior:"smooth",block:"start"})};
+try{new IntersectionObserver(en=>$("qbar").classList.toggle("hide",en[0].isIntersecting),{threshold:.25}).observe($("colOrder"))}catch(e){}
 setInterval(()=>{tick();checkPending();checkAlerts();settleExpired();render()},1000);
 setInterval(()=>{state.nw.push(netWorth());if(state.nw.length>150)state.nw.shift();save()},4000);
 applyView();loadAll();
