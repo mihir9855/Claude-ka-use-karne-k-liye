@@ -61,7 +61,7 @@ def stock(symbol: str):
     except Exception:
         raise HTTPException(404, "No data for this symbol")
     t, fu = scoring.tech(h), scoring.fund(f["sales"], f["profit"], f["roe"], f["de"], f["pe"])
-    return {"symbol": sym, "name": f["name"], "candles": h.tail(160).fillna(0).to_dict("records"),
+    return {"symbol": sym, "name": f["name"], "candles": h.tail(260).fillna(0).to_dict("records"),
             "quarters": {"labels": f["labels"][-6:], "sales": f["sales"][-6:], "profit": f["profit"][-6:]},
             "tech": t, "fund": fu, "demo": data.DEMO}
 
