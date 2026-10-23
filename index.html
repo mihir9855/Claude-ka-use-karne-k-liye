@@ -146,6 +146,12 @@ canvas#donut{width:200px;height:200px}
 .legend i{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:5px}
 .ord{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
 
+#found{padding-top:6px}
+.fh{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);padding:10px 4px 4px;font-weight:600}
+.fr{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.05)}
+.fr b{display:block;font-size:13px}.fr small{display:block;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.add{border:1px solid var(--saf);background:none;color:var(--saf);border-radius:8px;padding:5px 10px;font:700 11px Inter;cursor:pointer}
+.add:hover{background:var(--saf);color:#1b0d00}
 #toasts{position:fixed;right:18px;bottom:18px;display:grid;gap:10px;z-index:50}
 .toast{padding:12px 16px;border-radius:14px;background:#10162b;border:1px solid var(--line);box-shadow:0 20px 50px -10px #000;animation:ti .35s;min-width:240px;border-left:4px solid var(--c)}
 @keyframes ti{from{transform:translateX(40px);opacity:0}}
@@ -186,9 +192,10 @@ canvas#donut{width:200px;height:200px}
   <section class="main">
     <aside class="glass card">
       <div class="tabs ex" id="exTabs"><button data-v="NSE">NSE</button><button data-v="BSE">BSE</button></div>
-      <input class="search" id="q" placeholder="Search stock, sector…" autocomplete="off">
+      <input class="search" id="q" placeholder="Koi bhi stock search karo (NSE/BSE)…" autocomplete="off">
       <div class="chips" id="chips"></div>
-      <div class="list"><table class="w"><tbody id="watch"></tbody></table></div>
+      <div class="list"><table class="w"><tbody id="watch"></tbody></table><div id="found"></div></div>
+      <small id="cnt" style="display:block;margin-top:8px"></small>
     </aside>
 
     <article class="glass card">
@@ -225,14 +232,103 @@ canvas#donut{width:200px;height:200px}
 
 <script>
 const EX=["NSE","BSE"], START=1000000, FEE=0.0003, BASEIDX={NSE:24000,BSE:80000};
-const RAW=[
- ["RELIANCE","Reliance Industries","Energy",2900],["TCS","Tata Consultancy","IT",3900],["HDFCBANK","HDFC Bank","Banking",1650],
- ["INFY","Infosys","IT",1550],["ICICIBANK","ICICI Bank","Banking",1150],["SBIN","State Bank of India","Banking",800],
- ["BHARTIARTL","Bharti Airtel","Telecom",1400],["ITC","ITC Ltd","FMCG",450],["LT","Larsen & Toubro","Infra",3600],
- ["HINDUNILVR","Hindustan Unilever","FMCG",2400],["KOTAKBANK","Kotak Mahindra Bank","Banking",1800],["AXISBANK","Axis Bank","Banking",1100],
- ["MARUTI","Maruti Suzuki","Auto",12000],["SUNPHARMA","Sun Pharma","Pharma",1600],["TATAMOTORS","Tata Motors","Auto",950],
- ["TATASTEEL","Tata Steel","Metals",150],["WIPRO","Wipro","IT",480],["ADANIENT","Adani Enterprises","Conglomerate",3000],
- ["ASIANPAINT","Asian Paints","Paints",2900],["ZOMATO","Zomato (Eternal)","Consumer Tech",220]];
+const RAW=[["RELIANCE","Reliance Industries","Energy",2900],
+ ["TCS","Tata Consultancy","IT",3900],
+ ["HDFCBANK","HDFC Bank","Banking",1650],
+ ["INFY","Infosys","IT",1550],
+ ["ICICIBANK","ICICI Bank","Banking",1150],
+ ["SBIN","State Bank of India","Banking",800],
+ ["BHARTIARTL","Bharti Airtel","Telecom",1400],
+ ["ITC","ITC Ltd","FMCG",450],
+ ["LT","Larsen & Toubro","Infra",3600],
+ ["HINDUNILVR","Hindustan Unilever","FMCG",2400],
+ ["KOTAKBANK","Kotak Mahindra Bank","Banking",1800],
+ ["AXISBANK","Axis Bank","Banking",1100],
+ ["MARUTI","Maruti Suzuki","Auto",12000],
+ ["SUNPHARMA","Sun Pharma","Pharma",1600],
+ ["TATAMOTORS","Tata Motors","Auto",950],
+ ["TATASTEEL","Tata Steel","Metals",150],
+ ["WIPRO","Wipro","IT",480],
+ ["ADANIENT","Adani Enterprises","Conglomerate",3000],
+ ["ASIANPAINT","Asian Paints","Paints",2900],
+ ["ZOMATO","Zomato (Eternal)","Consumer Tech",220],
+ ["ADANIPORTS","Adani Ports","Infra",1350],
+ ["APOLLOHOSP","Apollo Hospitals","Healthcare",7000],
+ ["BAJAJ-AUTO","Bajaj Auto","Auto",8800],
+ ["BAJFINANCE","Bajaj Finance","Finance",900],
+ ["BAJAJFINSV","Bajaj Finserv","Finance",1900],
+ ["BPCL","BPCL","Energy",320],
+ ["BRITANNIA","Britannia","FMCG",5200],
+ ["CIPLA","Cipla","Pharma",1500],
+ ["COALINDIA","Coal India","Energy",400],
+ ["DIVISLAB","Divi's Laboratories","Pharma",6000],
+ ["DRREDDY","Dr Reddy's","Pharma",1250],
+ ["EICHERMOT","Eicher Motors","Auto",5500],
+ ["GRASIM","Grasim","Materials",2600],
+ ["HCLTECH","HCL Technologies","IT",1600],
+ ["HDFCLIFE","HDFC Life","Insurance",700],
+ ["HEROMOTOCO","Hero MotoCorp","Auto",4500],
+ ["HINDALCO","Hindalco","Metals",650],
+ ["INDUSINDBK","IndusInd Bank","Banking",900],
+ ["JSWSTEEL","JSW Steel","Metals",1000],
+ ["M&M","Mahindra & Mahindra","Auto",3000],
+ ["NESTLEIND","Nestle India","FMCG",2400],
+ ["NTPC","NTPC","Power",340],
+ ["ONGC","ONGC","Energy",250],
+ ["POWERGRID","Power Grid","Power",300],
+ ["SBILIFE","SBI Life","Insurance",1700],
+ ["SHRIRAMFIN","Shriram Finance","Finance",650],
+ ["TATACONSUM","Tata Consumer","FMCG",1100],
+ ["TECHM","Tech Mahindra","IT",1500],
+ ["TITAN","Titan Company","Consumer",3500],
+ ["ULTRACEMCO","UltraTech Cement","Materials",11000],
+ ["TRENT","Trent","Retail",6000],
+ ["ADANIGREEN","Adani Green Energy","Power",1000],
+ ["ADANIPOWER","Adani Power","Power",150],
+ ["AMBUJACEM","Ambuja Cements","Materials",550],
+ ["BANKBARODA","Bank of Baroda","Banking",250],
+ ["BEL","Bharat Electronics","Defence",400],
+ ["CANBK","Canara Bank","Banking",110],
+ ["CHOLAFIN","Cholamandalam Finance","Finance",1500],
+ ["DLF","DLF","Realty",750],
+ ["GAIL","GAIL India","Energy",180],
+ ["GODREJCP","Godrej Consumer","FMCG",1200],
+ ["HAL","Hindustan Aeronautics","Defence",4500],
+ ["HAVELLS","Havells India","Consumer",1500],
+ ["ICICIPRULI","ICICI Prudential Life","Insurance",600],
+ ["IOC","Indian Oil","Energy",150],
+ ["IRCTC","IRCTC","Travel",800],
+ ["IRFC","IRFC","Finance",130],
+ ["JINDALSTEL","Jindal Steel & Power","Metals",950],
+ ["LICI","LIC of India","Insurance",900],
+ ["LODHA","Macrotech Developers","Realty",1200],
+ ["NAUKRI","Info Edge (Naukri)","Internet",1300],
+ ["NHPC","NHPC","Power",85],
+ ["PFC","Power Finance Corp","Finance",420],
+ ["PIDILITIND","Pidilite Industries","Chemicals",3000],
+ ["PNB","Punjab National Bank","Banking",105],
+ ["RECLTD","REC Ltd","Finance",400],
+ ["SIEMENS","Siemens","Capital Goods",3200],
+ ["TATAPOWER","Tata Power","Power",400],
+ ["TORNTPHARM","Torrent Pharma","Pharma",3300],
+ ["VEDL","Vedanta","Metals",450],
+ ["VBL","Varun Beverages","FMCG",500],
+ ["YESBANK","Yes Bank","Banking",20],
+ ["PAYTM","One97 Communications (Paytm)","Fintech",1000],
+ ["NYKAA","FSN E-Commerce (Nykaa)","Consumer Tech",200],
+ ["IDEA","Vodafone Idea","Telecom",8],
+ ["SUZLON","Suzlon Energy","Power",60],
+ ["IDFCFIRSTB","IDFC First Bank","Banking",70],
+ ["BHEL","BHEL","Capital Goods",230],
+ ["SAIL","SAIL","Metals",130],
+ ["POLICYBZR","PB Fintech (Policybazaar)","Fintech",1700],
+ ["DMART","Avenue Supermarts (DMart)","Retail",4000],
+ ["MUTHOOTFIN","Muthoot Finance","Finance",2300],
+ ["MRF","MRF","Auto",130000],
+ ["TVSMOTOR","TVS Motor","Auto",2600],
+ ["ABB","ABB India","Capital Goods",6000],
+ ["PETRONET","Petronet LNG","Energy",300],
+ ["COLPAL","Colgate-Palmolive India","FMCG",2700]];
 const PAL=["#ff9933","#5b8cff","#00e0a0","#ff4d6d","#b36bff","#ffd34d","#2fd0ff","#ff7ac8","#8bd450","#ff7b54"];
 const $=id=>document.getElementById(id);
 const fmt=(n,d=2)=>n.toLocaleString("en-IN",{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -240,18 +336,20 @@ const inr=n=>"₹"+fmt(n);
 const sgn=n=>(n>=0?"+":"−")+fmt(Math.abs(n));
 const hue=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h};
 
-const STOCKS=RAW.map(([sym,name,sector,p])=>{
+function makeStock(sym,name,sector,p,core){
   const px={NSE:p,BSE:+(p*(1+(Math.random()-.5)*.0008)).toFixed(2)}, vol=.0004+Math.random()*.0006;
   const hist={NSE:[],BSE:[]};
   for(const ex of EX){ let v=px[ex]; const a=[v]; for(let i=0;i<89;i++){v=v/(1+(Math.random()-.5)*vol*3.4);a.unshift(+v.toFixed(2));} hist[ex]=a; }
   const prev={NSE:hist.NSE[0],BSE:hist.BSE[0]}; // previous close = start of the seeded session
-  return {sym,name,sector,vol,px,prev,hist,last:{NSE:0,BSE:0},live:{NSE:false,BSE:false},hi:{NSE:Math.max(...hist.NSE),BSE:Math.max(...hist.BSE)},lo:{NSE:Math.min(...hist.NSE),BSE:Math.min(...hist.BSE)},seeded:{}};
-});
+  return {sym,name,sector,core,vol,px,prev,hist,last:{NSE:0,BSE:0},live:{NSE:false,BSE:false},hi:{NSE:Math.max(...hist.NSE),BSE:Math.max(...hist.BSE)},lo:{NSE:Math.min(...hist.NSE),BSE:Math.min(...hist.BSE)},seeded:{}};
+}
+const STOCKS=RAW.map(([sym,name,sector,p])=>makeStock(sym,name,sector,p,true));
+
 
 let state=load()||{cash:START,pos:{},orders:[],nw:[]};
 // migrate older saves (positions were keyed by symbol only → NSE)
 for(const k of Object.keys(state.pos)) if(!k.includes(":")){state.pos["NSE:"+k]=state.pos[k];delete state.pos[k];}
-state.nw=state.nw||[]; state.orders.forEach(o=>{o.ex=o.ex||"NSE"});
+state.nw=state.nw||[];state.extra=state.extra||[]; state.orders.forEach(o=>{o.ex=o.ex||"NSE"});
 function load(){try{return JSON.parse(localStorage.getItem("bseg"))}catch(e){return null}}
 function save(){try{localStorage.setItem("bseg",JSON.stringify(state))}catch(e){}}
 
@@ -283,15 +381,20 @@ function setPx(s,e,p){
   s.hi[e]=Math.max(s.hi[e],p); s.lo[e]=Math.min(s.lo[e],p);
 }
 const IDX={NSE:[],BSE:[]};
-const idxNow=e=>STOCKS.reduce((a,s)=>a+s.px[e]/s.prev[e],0)/STOCKS.length*BASEIDX[e];
+const CORE=()=>STOCKS.filter(s=>s.core);
+const idxNow=e=>{const C=CORE();return C.reduce((a,s)=>a+s.px[e]/s.prev[e],0)/C.length*BASEIDX[e]};
 // seed index history from the seeded stock histories
 for(const e of EX)for(let i=0;i<90;i++)IDX[e].push(STOCKS.reduce((a,s)=>a+s.hist[e][i]/s.prev[e],0)/STOCKS.length*BASEIDX[e]);
 function pushIdx(){for(const e of EX){IDX[e].push(idxNow(e));if(IDX[e].length>120)IDX[e].shift();}}
 
 /* ---------- live data from backend ---------- */
+let synced=false;
 async function pollLive(){
   try{
-    const j=await (await fetch("/api/quotes",{cache:"no-store"})).json(); liveMode=!!j.live;
+    if(!synced){ for(const x of state.extra) await fetch("/api/add?sym="+encodeURIComponent(x.sym)).catch(()=>{}); synced=true; }
+    const want=[...EX.map(e=>key(e,sel)),...Object.keys(state.pos)].join(",");
+    const j=await (await fetch("/api/quotes?want="+encodeURIComponent(want),{cache:"no-store"})).json(); liveMode=!!j.live;
+    for(const x of state.extra){const q=j.quotes[key("NSE",x.sym)];if(q&&!STOCKS.some(s=>s.sym===x.sym))STOCKS.push(makeStock(x.sym,x.name,"Added",q.price,false));}
     for(const s of STOCKS)for(const e of EX){
       const q=j.live&&j.quotes[key(e,s.sym)]; s.live[e]=!!q;
       if(q){ if(!s.seeded[e]){s.prev[e]=q.prev;s.hist[e]=[];s.hi[e]=q.price;s.lo[e]=q.price;s.seeded[e]=true;s.px[e]=q.price;}
@@ -348,6 +451,7 @@ function renderWatch(){
   if(filter==="gain")L=L.filter(s=>pct(s,ex)>=0).sort((a,b)=>pct(b,ex)-pct(a,ex));
   if(filter==="lose")L=L.filter(s=>pct(s,ex)<0).sort((a,b)=>pct(a,ex)-pct(b,ex));
   if(filter==="held")L=L.filter(s=>held.has(key(ex,s.sym)));
+  $("cnt").textContent=`${L.length} / ${STOCKS.length} stocks · ${ex}`;
   $("watch").innerHTML=L.map(s=>{const p=pct(s,ex),c=p>=0?"up":"down",f=s.last[ex]>0?"fu":s.last[ex]<0?"fd":"";
     return `<tr data-s="${s.sym}" class="${s.sym===sel?"sel":""}"><td><div class="sym"><i class="av" style="background:linear-gradient(135deg,hsl(${hue(s.sym)} 70% 50%),hsl(${(hue(s.sym)+40)%360} 70% 38%))">${s.sym[0]}</i><div><b>${s.sym}</b><small>${s.sector}</small></div></div></td>
     <td>${spark(s.hist[ex].slice(-40),64,26,colr(p))}</td>
@@ -448,9 +552,31 @@ $("qm").onclick=()=>{$("qty").value=Math.max(1,(+$("qty").value||1)-1);renderDet
 $("qp").onclick=()=>{$("qty").value=(+$("qty").value||0)+1;renderDetail()};
 document.querySelector(".quick").onclick=e=>{const v=e.target.dataset.q;if(!v)return;$("qty").value=v==="max"?Math.max(1,maxQty()):v;renderDetail()};
 $("go").onclick=trade;
-$("q").oninput=renderWatch;
+let sT=0;
+$("q").oninput=()=>{renderWatch();clearTimeout(sT);const q=$("q").value.trim();
+  if(q.length<2){$("found").innerHTML="";return}
+  sT=setTimeout(async()=>{
+    try{
+      const j=await (await fetch("/api/search?q="+encodeURIComponent(q))).json();
+      const R=(j.results||[]).filter(r=>!STOCKS.some(s=>s.sym===r.sym));
+      $("found").innerHTML=R.length?`<div class="fh">Market se add karo</div>`+R.map(r=>`<div class="fr"><div><b>${r.sym}</b><small>${r.name}</small></div><button class="add" data-sym="${r.sym}" data-name="${r.name.replace(/"/g,"")}">+ Add</button></div>`).join(""):"";
+    }catch(e){$("found").innerHTML=`<div class="fh">Poore market ka search live server par chalta hai</div>`}
+  },450)};
+$("found").onclick=async e=>{
+  const b=e.target.closest(".add");if(!b)return;b.textContent="…";
+  const sym=b.dataset.sym,name=b.dataset.name;
+  try{
+    await fetch("/api/add?sym="+encodeURIComponent(sym));
+    const j=await (await fetch("/api/quotes?want="+encodeURIComponent("NSE:"+sym+",BSE:"+sym),{cache:"no-store"})).json();
+    const q=j.quotes["NSE:"+sym]||j.quotes["BSE:"+sym];
+    if(!q)throw 0;
+    state.extra.push({sym,name});save();
+    STOCKS.push(makeStock(sym,name,"Added",q.price,false));
+    sel=sym;$("q").value="";$("found").innerHTML="";toast(`<b>${sym}</b> add ho gaya ✓`,"#ff9933");pollLive();
+  }catch(err){b.textContent="+ Add";toast("Abhi is stock ka live bhav nahi mila. Thodi der baad try karo.","#ff4d6d")}
+};
 $("always").onchange=render;
-$("reset").onclick=()=>{if(confirm("₹10,00,000 se dobara shuru karein? Saari holdings clear ho jayengi.")){state={cash:START,pos:{},orders:[],nw:[]};save();render();toast("Game reset ✓","#ff9933")}};
+$("reset").onclick=()=>{if(confirm("₹10,00,000 se dobara shuru karein? Saari holdings clear ho jayengi.")){state={cash:START,pos:{},orders:[],nw:[],extra:[]};save();render();toast("Game reset ✓","#ff9933")}};
 const FIL=[["all","All"],["gain","▲ Gainers"],["lose","▼ Losers"],["held","My stocks"]];
 $("chips").innerHTML=FIL.map(([v,t])=>`<button class="chip ${v==="all"?"on":""}" data-v="${v}">${t}</button>`).join("");
 $("chips").onclick=e=>{const v=e.target.dataset.v;if(!v)return;filter=v;document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c.dataset.v===v));renderWatch()};
