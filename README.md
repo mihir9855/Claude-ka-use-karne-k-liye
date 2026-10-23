@@ -1,6 +1,6 @@
-# Bharat Stock Exchange Game
+# Dalal Street Arena — NSE & BSE trading game
 
-A virtual Indian stock market game. Start with ₹10,00,000 of artificial money, buy and sell 20 NSE-style stocks (Reliance, TCS, HDFC Bank, Infosys…) as prices tick every second.
+A virtual Indian stock market game. Start with ₹10,00,000 of artificial money, trade 20 stocks (Reliance, TCS, HDFC Bank, Infosys…) on both **NSE** and **BSE** (NIFTY 50 and SENSEX indices) as prices tick every second. Prices differ slightly between the two exchanges, so you can buy on the cheaper one and sell on the dearer one.
 
 ## Play
 Open `index.html` in any browser (no install, no server).
@@ -16,4 +16,4 @@ Note: prices are simulated for gameplay, not real exchange data.
 node server.js        # needs Node 18+, no npm install
 # open http://localhost:3000
 ```
-The backend fetches real NSE prices (Yahoo Finance, `.NS` symbols) every 10s and serves them at `/api/quotes`. The page shows "● LIVE NSE data" when it works and falls back to the simulation (per stock) if the backend or a symbol is unavailable. Opening `index.html` directly (no server) uses the simulation only.
+The backend fetches real NSE (`.NS`) and BSE (`.BO`) prices from Yahoo Finance every 15s and serves them at `/api/quotes`. The page shows "● LIVE NSE data" when it works and falls back to the simulation (per stock) if the backend or a symbol is unavailable. Opening `index.html` directly (no server) uses the simulation only.
