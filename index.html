@@ -204,7 +204,7 @@ canvas#donut{width:200px;height:200px}
 <div id="sheet" class="sheet" hidden>
   <div class="panel glass">
     <div class="ph"><b>⚙ Settings</b><button class="btn" id="sclose">✕</button></div>
-    <label class="srow sw"><span><b>Practice mode</b><small>Market band ho tab bhi trade karo</small></span><input type="checkbox" id="always" checked><b class="tg"></b></label>
+    <label class="srow sw"><span><b>Practice mode</b><small>Market band ho tab bhi khelo (nakli movement)</small></span><input type="checkbox" id="always"><b class="tg"></b></label>
     <div class="srow"><span><b>Data source</b><small>Live = asli NSE/BSE bhav</small></span><span id="src" class="pill" style="color:var(--mut)">Simulated</span></div>
     <div class="srow"><span><b>Market time (IST)</b></span><span id="clock2" class="num mut"></span></div>
     <button class="btn danger" id="reset">↻ Game reset karo (₹10,00,000 se shuru)</button>
@@ -464,8 +464,8 @@ function holdings(){
 function render(){
   const d=istNow(),open=isOpen();
   $("clock").textContent=d.toLocaleTimeString("en-IN")+" IST";$("clock2").textContent=d.toLocaleTimeString("en-IN");
-  const m=$("mkt");m.className="pill "+(open?"open":"closed");m.lastElementChild.textContent=open?(realOpen()?"Market open":"Practice open"):"Market closed";
-  const sr=$("src");sr.textContent=liveMode?"● Live data":"Simulated";sr.style.color=liveMode?"var(--up)":"var(--mut)";
+  const m=$("mkt");m.className="pill "+(realOpen()?"open":(open?"open":"closed"));m.lastElementChild.textContent=realOpen()?"Market open":(open?"Practice mode":"Market closed");
+  const sr=$("src");sr.textContent=liveMode?(realOpen()?"● Live data":"Last close"):"Simulated";sr.style.color=liveMode&&realOpen()?"var(--up)":"var(--mut)";
 
   // indices
   for(const e of EX){
@@ -574,7 +574,7 @@ function renderHold(H,inv){
 function setErr(t){$("err").textContent=t}
 function trade(){
   setErr("");
-  if(!isOpen())return setErr("Market band hai. Practice mode on karo ya 9:15 AM IST (Mon–Fri) ka wait karo.");
+  if(!isOpen())return setErr("Market band hai (Mon–Fri, 9:15 AM–3:30 PM IST). ⚙ Settings me Practice mode on karke khel sakte ho.");
   const q=Math.floor(+$("qty").value);if(!(q>0))return setErr("Valid quantity daalo.");
   const s=cur();if(!s.on[ex])return setErr(`${s.sym} ${ex} par listed nahi hai — dusre exchange par trade karo.`);
   const px=s.px[ex],val=q*px,fee=val*FEE,k=key(ex,s.sym);
@@ -638,7 +638,8 @@ $("allList").onclick=async e=>{
     sel=sym;toast(`<b>${sym}</b> khul gaya ✓`,"#ff9933");pollLive();window.scrollTo({top:0,behavior:"smooth"});
   }catch(err){btn.textContent="Open ›";toast("Is stock ka live bhav abhi nahi mila (shayad trade nahi ho raha). Baad me try karo.","#ff4d6d")}
 };
-$("always").onchange=render;
+try{$("always").checked=localStorage.getItem("bseg_practice")==="1"}catch(e){}
+$("always").onchange=()=>{try{localStorage.setItem("bseg_practice",$("always").checked?"1":"0")}catch(e){}render()};
 const sheet=$("sheet");$("gear").onclick=()=>sheet.hidden=false;$("sclose").onclick=()=>sheet.hidden=true;
 sheet.onclick=e=>{if(e.target===sheet)sheet.hidden=true};
 $("reset").onclick=()=>{if(confirm("₹10,00,000 se dobara shuru karein? Saari holdings clear ho jayengi.")){state={cash:START,pos:{},orders:[],nw:[],extra:[]};save();render();toast("Game reset ✓","#ff9933")}};
