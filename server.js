@@ -125,7 +125,7 @@ http.createServer(async (req, res) => {
   }
   if (p === "/api/stocks") {            // browse / search the complete NSE + BSE list
     const q = (sp.get("q") || "").trim().toLowerCase().slice(0, 40), letter = (sp.get("letter") || "").toUpperCase().slice(0, 1);
-    const page = Math.max(1, +sp.get("page") || 1), per = 40;
+    const page = Math.max(1, +sp.get("page") || 1), per = 20;
     if (!master.length) {
       let items = [];
       if (q.length >= 2) try { items = await yahooSearch(q); } catch (e) {}
