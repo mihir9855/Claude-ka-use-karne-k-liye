@@ -1,0 +1,15 @@
+{
+  "name": "bharat-stock-exchange-game",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@revideo/2d": "^0.11.0",
+    "@revideo/core": "^0.11.0",
+    "@revideo/renderer": "^0.11.0",
+    "animejs": "^4.5.0",
+    "lottie-web": "^5.13.0",
+    "motion": "^14.6.0"
+  }
+}
