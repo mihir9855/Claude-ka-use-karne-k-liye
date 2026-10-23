@@ -42,9 +42,9 @@
 </head>
 <body>
 <header>
-  <div><h1>🇮🇳 Bharat Stock Exchange Game</h1><small style="color:var(--mut)">Virtual money · Simulated live NSE-style market</small></div>
+  <div><h1>🇮🇳 Bharat Stock Exchange Game</h1><small style="color:var(--mut)">Virtual money · Live NSE prices via backend (simulated if offline)</small></div>
   <div class="idx">NIFTY-X <b id="idx">—</b> <span id="idxChg"></span></div>
-  <div><span id="mkt" class="pill"></span> <span id="clock" style="color:var(--mut)"></span>
+  <div><span id="src" style="color:var(--mut);font-size:12px">● Simulated</span> <span id="mkt" class="pill"></span> <span id="clock" style="color:var(--mut)"></span>
     <label><input type="checkbox" id="always" checked> Practice mode (market always open)</label></div>
 </header>
 
@@ -110,11 +110,13 @@ function istNow(){ return new Date(new Date().toLocaleString("en-US",{timeZone:"
 function realOpen(){ const d=istNow(), m=d.getHours()*60+d.getMinutes(), wd=d.getDay();
   return wd>0 && wd<6 && m>=555 && m<930; } // 9:15–15:30 IST, Mon–Fri
 const isOpen = () => $("always").checked || realOpen();
+// In live mode prices only move when the real market moves; practice mode still allows trading anytime.
 
 function tick(){
   if(!isOpen()) return;
   mood = mood*0.95 + (Math.random()-0.5)*0.0006;            // market-wide drift
   for(const s of STOCKS){
+    if(s.live) continue; // real price comes from the backend
     const shock = (Math.random()-0.5)*2*s.vol*1.7 + mood;
     s.price = Math.max(1, +(s.price*(1+shock)).toFixed(2));
     s.last = shock;
@@ -200,6 +202,23 @@ $("sellBtn").onclick=()=>trade("SELL");
 $("qty").oninput=render;
 $("always").onchange=render;
 $("reset").onclick=()=>{ if(confirm("Reset to ₹10,00,000 and clear all holdings?")){ state={cash:START_CASH,pos:{},orders:[]}; save(); render(); } };
+// Live prices: when served by server.js, /api/quotes gives real NSE prices; otherwise we keep simulating.
+let liveMode=false;
+async function pollLive(){
+  try{
+    const r=await fetch("/api/quotes",{cache:"no-store"}); const j=await r.json();
+    liveMode=j.live;
+    for(const s of STOCKS){
+      const q=j.live&&j.quotes[s.sym];
+      s.live=!!q;
+      if(q){ if(!s.seeded){s.prev=q.prev;s.hist=[];s.seeded=true;}
+        s.last=q.price-s.price; s.price=q.price; s.prev=q.prev; s.hist.push(q.price); if(s.hist.length>120)s.hist.shift(); }
+    }
+    $("src").textContent=liveMode?"● LIVE NSE data":"● Simulated";
+  }catch(e){ liveMode=false; STOCKS.forEach(s=>s.live=false); $("src").textContent="● Simulated"; }
+  render();
+}
+pollLive(); setInterval(pollLive,5000);
 setInterval(tick,1000); setInterval(()=>{ if(!isOpen()) render(); },1000);
 render();
 </script>
