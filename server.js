@@ -120,7 +120,7 @@ async function yahooSearch(q) {
 http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x"), p = u.pathname, sp = u.searchParams;
   if (p === "/api/quotes") {
-    for (const k of (sp.get("want") || "").split(",").slice(0, 60)) if (/^(NSE|BSE):[A-Z0-9&.-]{1,20}$/.test(k)) wanted[k] = Date.now();
+    for (const k of (sp.get("want") || "").split(",").slice(0, 200)) if (/^(NSE|BSE):[A-Z0-9&.-]{1,20}$/.test(k)) wanted[k] = Date.now();
     return json(res, { live: Date.now() - lastOk < TICK_MS * 6, updated: lastOk, quotes, unlisted: Object.keys(unlisted) });
   }
   if (p === "/api/stocks") {            // browse / search the complete NSE + BSE list
@@ -129,12 +129,16 @@ http.createServer(async (req, res) => {
     if (!master.length) {
       let items = [];
       if (q.length >= 2) try { items = await yahooSearch(q); } catch (e) {}
-      return json(res, { total: items.length, page: 1, pages: 1, items, source: "yahoo", note: "Full exchange list abhi load nahi hui; Yahoo search se kaam chal raha hai." });
+      return json(res, { total: items.length, page: 1, pages: 1, items, source: "yahoo", note: "The full exchange list has not loaded yet; showing Yahoo search results." });
     }
     let L = master;
     if (q) L = L.filter(m => m.sym.toLowerCase().includes(q) || m.name.toLowerCase().includes(q));
     if (letter) L = L.filter(m => letter === "#" ? !/^[A-Z]/.test(m.sym) : m.sym[0] === letter);
     const pages = Math.max(1, Math.ceil(L.length / per));
+    for (const m of L.slice((page - 1) * per, page * per)) {       // track the stocks on screen so each one shows a price
+      if (!CORE.includes(m.sym) && (extra[m.sym] || Object.keys(extra).length < MAX_EXTRA)) extra[m.sym] = Date.now();
+      wanted["NSE:" + m.sym] = wanted["BSE:" + m.sym] = Date.now();
+    }
     return json(res, { total: L.length, all: master.length, page, pages, source: "exchange", updated: masterInfo.updated, nseOk: masterInfo.nse, bseOk: masterInfo.bse,
       items: L.slice((page - 1) * per, page * per).map(m => ({ sym: m.sym, name: m.name, nse: m.nse, bse: !!m.bse })) });
   }

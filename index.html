@@ -204,10 +204,10 @@ canvas#donut{width:200px;height:200px}
 <div id="sheet" class="sheet" hidden>
   <div class="panel glass">
     <div class="ph"><b>⚙ Settings</b><button class="btn" id="sclose">✕</button></div>
-    <label class="srow sw"><span><b>Practice mode</b><small>Market band ho tab bhi khelo (nakli movement)</small></span><input type="checkbox" id="always"><b class="tg"></b></label>
-    <div class="srow"><span><b>Data source</b><small>Live = asli NSE/BSE bhav</small></span><span id="src" class="pill" style="color:var(--mut)">Simulated</span></div>
+    <label class="srow sw"><span><b>Practice mode</b><small>Keep playing when the market is closed (simulated moves)</small></span><input type="checkbox" id="always"><b class="tg"></b></label>
+    <div class="srow"><span><b>Data source</b><small>Live = real NSE/BSE prices</small></span><span id="src" class="pill" style="color:var(--mut)">Simulated</span></div>
     <div class="srow"><span><b>Market time (IST)</b></span><span id="clock2" class="num mut"></span></div>
-    <button class="btn danger" id="reset">↻ Game reset karo (₹10,00,000 se shuru)</button>
+    <button class="btn danger" id="reset">↻ Reset game (restart with ₹10,00,000)</button>
   </div>
 </div>
 <div class="tape"><div id="tape"></div></div>
@@ -230,7 +230,7 @@ canvas#donut{width:200px;height:200px}
   <section class="main">
     <aside class="glass card">
       <div class="cols"><span>Stock</span><span class="cx NSE">NSE</span><span class="cx BSE">BSE</span></div>
-      <input class="search" id="q" placeholder="Koi bhi stock search karo (NSE/BSE)…" autocomplete="off">
+      <input class="search" id="q" placeholder="Search any NSE / BSE stock…" autocomplete="off">
       <div id="letters" class="letters"></div>
       <div class="list"><table class="w"><tbody id="watch"></tbody></table><div id="allList"></div></div>
       <div id="pager" class="pager"></div>
@@ -434,10 +434,11 @@ let synced=false;
 async function pollLive(){
   try{
     if(!synced){ for(const x of state.extra) await fetch("/api/add?sym="+encodeURIComponent(x.sym)).catch(()=>{}); synced=true; }
-    const want=[...new Set([...EX.map(e=>key(e,sel)),...Object.keys(state.pos),...state.extra.slice(0,12).flatMap(x=>EX.map(e=>key(e,x.sym)))])].join(",");
+    const want=[...new Set([...EX.map(e=>key(e,sel)),...pageItems.flatMap(r=>EX.map(e=>key(e,r.sym))),...Object.keys(state.pos),...state.extra.slice(0,12).flatMap(x=>EX.map(e=>key(e,x.sym)))])].join(",");
     const j=await (await fetch("/api/quotes?want="+encodeURIComponent(want),{cache:"no-store"})).json(); liveMode=!!j.live;
     for(const e of EX){const q=j.quotes["IDX:"+e];if(q){if(!REAL[e])IDX[e]=[];REAL[e]=q;if(q.series&&q.series.length>1)IDX[e]=q.series.slice();}}
     const UL=new Set(j.unlisted||[]);for(const s of STOCKS)for(const e of EX)s.on[e]=!UL.has(key(e,s.sym));
+    for(const r of pageItems){const q=j.quotes[key("NSE",r.sym)]||j.quotes[key("BSE",r.sym)];if(q&&!STOCKS.some(s=>s.sym===r.sym))STOCKS.push(makeStock(r.sym,r.name,"Listed",q.price,false));}
     for(const x of state.extra){const q=j.quotes[key("NSE",x.sym)];if(q&&!STOCKS.some(s=>s.sym===x.sym))STOCKS.push(makeStock(x.sym,x.name,"Added",q.price,false));}
     for(const s of STOCKS)for(const e of EX){
       const q=j.live&&j.quotes[key(e,s.sym)]; s.live[e]=!!q;
@@ -487,12 +488,12 @@ function render(){
   if(localOnly)renderWatch();updateAllPrices();renderTape();renderDetail();renderHold(H,inv);
 }
 
-function pxCell(s,e){const p=pct(s,e),c=p>=0?"up":"down",f=s.last[e]>0?"fu":s.last[e]<0?"fd":"";
+function pxCell(s,e){if(!s.on[e])return `<div class="num mut">—</div><span class="mut" style="font-size:11px">not listed</span>`;const p=pct(s,e),c=p>=0?"up":"down",f=s.last[e]>0?"fu":s.last[e]<0?"fd":"";
   return `<div class="num ${f}" style="font-weight:700;border-radius:6px;padding:0 3px">${fmt(s.px[e])}</div><span class="chg ${c}">${p>=0?"+":""}${p.toFixed(2)}%</span>`}
 function updateAllPrices(){
   document.querySelectorAll("#allList .rp").forEach(n=>{
     const s=STOCKS.find(x=>x.sym===n.dataset.px);n.parentElement.classList.toggle("sel",n.dataset.px===sel);
-    if(!s){n.innerHTML=`<span class="add">Open ›</span>`;return}
+    if(!s){n.innerHTML=`<div class="px mut num">…</div><div class="px mut num">…</div>`;return}
     n.innerHTML=EX.map(e=>`<div class="px" data-ex="${e}">${pxCell(s,e)}</div>`).join("");
   });
 }
@@ -522,10 +523,10 @@ function renderDetail(){
   const hp=state.pos[key(ex,s.sym)];
   $("facts").innerHTML=[["Prev close",fmt(s.prev[ex])],["Day high",fmt(s.hi[ex])],["Day low",fmt(s.lo[ex])],["You hold",hp?hp.qty+" sh":"—"]].map(([a,b])=>`<div><span class="lbl">${a}</span><b class="num">${b}</b></div>`).join("");
   const diff=s.px[ex]-s.px[o],dp=diff/s.px[o]*100;
-  if(!s.on[ex]){$("arb").innerHTML=`⚠️ <b>${s.sym}</b> ${ex} par listed nahi hai. Upar <b>${o}</b> tab se is stock ko trade karo.`}else if(!s.on[o]){$("arb").innerHTML=`ℹ️ Ye stock sirf <b>${ex}</b> par listed hai.`}else
-  $("arb").innerHTML=`⚡ <b>${o}</b> par yahi stock <b class="num">${inr(s.px[o])}</b> pe hai — ${ex} <b class="${diff<=0?"up":"down"}">${diff<=0?"sasta":"mehnga"}</b> by <span class="num">${Math.abs(dp).toFixed(3)}%</span>. Sasti jagah kharido, mehngi jagah becho!`;
+  if(!s.on[ex]){$("arb").innerHTML=`⚠️ <b>${s.sym}</b> is not listed on ${ex}. Trade it on <b>${o}</b> instead.`}else if(!s.on[o]){$("arb").innerHTML=`ℹ️ This stock is listed only on <b>${ex}</b>.`}else
+  $("arb").innerHTML=`⚡ The same stock trades at <b class="num">${inr(s.px[o])}</b> on <b>${o}</b> — ${ex} is <b class="${diff<=0?"up":"down"}">${diff<=0?"cheaper":"pricier"}</b> by <span class="num">${Math.abs(dp).toFixed(3)}%</span>. Buy where it is cheaper, sell where it is dearer!`;
   $("exSwitch").innerHTML=EX.map(e=>{const pp=pct(s,e),c=pp>=0?"up":"down";
-    return `<div class="exc ${e} ${e===ex?"on":""}" data-ex="${e}"><div class="exh"><span class="badge ${e}" style="margin:0">${e}</span>${s.on[e]?"":"<small>listed nahi</small>"}</div><div class="num exp ${c}">${inr(s.px[e])}</div><div class="num ${c}" style="font-size:12px;font-weight:700">${pp>=0?"▲":"▼"} ${Math.abs(pp).toFixed(2)}%</div></div>`}).join("");
+    return `<div class="exc ${e} ${e===ex?"on":""}" data-ex="${e}"><div class="exh"><span class="badge ${e}" style="margin:0">${e}</span>${s.on[e]?"":"<small>not listed</small>"}</div><div class="num exp ${c}">${inr(s.px[e])}</div><div class="num ${c}" style="font-size:12px;font-weight:700">${pp>=0?"▲":"▼"} ${Math.abs(pp).toFixed(2)}%</div></div>`}).join("");
   drawChart(s);
 
   // order panel
@@ -563,7 +564,7 @@ function drawChart(s){
 }
 
 function renderHold(H,inv){
-  $("hold").innerHTML=H.map(h=>`<tr class="r" data-e="${h.e}" data-s="${h.sym}"><td><div class="sym"><i class="av" style="width:28px;height:28px;font-size:11px;background:hsl(${hue(h.sym)} 65% 45%)">${h.sym[0]}</i><div><b>${h.sym}</b> <span class="badge ${h.e}" style="margin:0">${h.e}</span></div></div></td><td class="num">${h.qty}</td><td class="num">${fmt(h.avg)}</td><td class="num">${fmt(h.ltp)}</td><td class="num">${fmt(h.val,0)}</td><td class="num ${h.pl>=0?"up":"down"}">${sgn(h.pl)}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">Abhi koi holding nahi — pehla stock kharido! 🚀</td></tr>`;
+  $("hold").innerHTML=H.map(h=>`<tr class="r" data-e="${h.e}" data-s="${h.sym}"><td><div class="sym"><i class="av" style="width:28px;height:28px;font-size:11px;background:hsl(${hue(h.sym)} 65% 45%)">${h.sym[0]}</i><div><b>${h.sym}</b> <span class="badge ${h.e}" style="margin:0">${h.e}</span></div></div></td><td class="num">${h.qty}</td><td class="num">${fmt(h.avg)}</td><td class="num">${fmt(h.ltp)}</td><td class="num">${fmt(h.val,0)}</td><td class="num ${h.pl>=0?"up":"down"}">${sgn(h.pl)}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">No holdings yet — buy your first stock! 🚀</td></tr>`;
   $("hist").innerHTML=state.orders.slice(0,25).map(o=>`<div class="ord"><span><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b> ${o.sym} <span class="badge ${o.ex}" style="margin:0 0 0 4px">${o.ex}</span></span><span class="num mut">${o.qty} @ ${fmt(o.price)}</span></div>`).join("")||`<div class="empty">No orders yet</div>`;
   // donut
   const items=H.map(h=>({n:h.sym,v:h.val})).sort((a,b)=>b.v-a.v).slice(0,9);items.push({n:"Cash",v:state.cash});
@@ -577,15 +578,16 @@ function renderHold(H,inv){
 function setErr(t){$("err").textContent=t}
 function trade(){
   setErr("");
-  if(!isOpen())return setErr("Market band hai (Mon–Fri, 9:15 AM–3:30 PM IST). ⚙ Settings me Practice mode on karke khel sakte ho.");
-  const q=Math.floor(+$("qty").value);if(!(q>0))return setErr("Valid quantity daalo.");
-  const s=cur();if(!s.on[ex])return setErr(`${s.sym} ${ex} par listed nahi hai — dusre exchange par trade karo.`);
+  if(!isOpen())return setErr("Market is closed (Mon–Fri, 9:15 AM–3:30 PM IST). Turn on Practice mode in ⚙ Settings to keep playing.");
+  const q=Math.floor(+$("qty").value);if(!(q>0))return setErr("Enter a valid quantity.");
+  const s=cur();if(!s.on[ex])return setErr(`${s.sym} is not listed on ${ex} — trade it on the other exchange.`);
+  if(!s.core&&!state.extra.some(x=>x.sym===s.sym))state.extra.push({sym:s.sym,name:s.name});
   const px=s.px[ex],val=q*px,fee=val*FEE,k=key(ex,s.sym);
   if(side==="BUY"){
-    if(val+fee>state.cash)return setErr(`Cash kam hai — ${inr(val+fee)} chahiye.`);
+    if(val+fee>state.cash)return setErr(`Not enough cash — you need ${inr(val+fee)}.`);
     const p=state.pos[k]||{qty:0,avg:0};p.avg=(p.avg*p.qty+val)/(p.qty+q);p.qty+=q;state.pos[k]=p;state.cash-=val+fee;
   }else{
-    const p=state.pos[k];if(!p||p.qty<q)return setErr(`${ex} me aapke paas sirf ${p?p.qty:0} shares hain.`);
+    const p=state.pos[k];if(!p||p.qty<q)return setErr(`You only hold ${p?p.qty:0} shares on ${ex}.`);
     p.qty-=q;if(!p.qty)delete state.pos[k];state.cash+=val-fee;
   }
   state.orders.unshift({side,sym:s.sym,ex,qty:q,price:px});save();
@@ -605,7 +607,7 @@ $("qm").onclick=()=>{$("qty").value=Math.max(1,(+$("qty").value||1)-1);renderDet
 $("qp").onclick=()=>{$("qty").value=(+$("qty").value||0)+1;renderDetail()};
 document.querySelector(".quick").onclick=e=>{const v=e.target.dataset.q;if(!v)return;$("qty").value=v==="max"?Math.max(1,maxQty()):v;renderDetail()};
 $("go").onclick=trade;
-let letter="",apage=1,sT=0,localOnly=false;
+let letter="",apage=1,sT=0,localOnly=false,pageItems=[];
 const LET=["All",..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),"#"];
 $("letters").innerHTML=LET.map(l=>`<button data-l="${l==="All"?"":l}" class="${l==="All"?"on":""}">${l==="All"?"•":l}</button>`).join("");
 $("letters").onclick=e=>{const b=e.target.closest("button");if(!b)return;letter=b.dataset.l;apage=1;document.querySelectorAll("#letters button").forEach(x=>x.classList.toggle("on",x===b));loadAll()};
@@ -619,9 +621,9 @@ async function loadAll(){
   $("allList").innerHTML=`<div class="empty">Loading…</div>`;
   try{
     const j=await (await fetch(`/api/stocks?q=${encodeURIComponent(q)}&letter=${encodeURIComponent(q?"":letter)}&page=${apage}`)).json();
-    const rows=j.items.map(r=>`<div class="fr ${r.sym===sel?"sel":""}" data-sym="${r.sym}" data-name="${r.name.replace(/"/g,"&quot;")}" style="cursor:pointer"><div><b>${r.sym}${r.nse&&r.bse?"":`<span class="ex2 badge ${r.nse?"NSE":"BSE"}" style="margin:0 0 0 6px">${r.nse?"sirf NSE":"sirf BSE"}</span>`}</b><small>${r.name}</small></div><div class="rp" data-px="${r.sym}"></div></div>`).join("");
-    updateAllPrices();
-    $("allList").innerHTML=(j.note?`<div class="fh">${j.note}</div>`:"")+(rows||`<div class="empty">Koi stock nahi mila</div>`);
+    const rows=j.items.map(r=>`<div class="fr ${r.sym===sel?"sel":""}" data-sym="${r.sym}" data-name="${r.name.replace(/"/g,"&quot;")}" style="cursor:pointer"><div><b>${r.sym}${r.nse&&r.bse?"":`<span class="ex2 badge ${r.nse?"NSE":"BSE"}" style="margin:0 0 0 6px">${r.nse?"NSE only":"BSE only"}</span>`}</b><small>${r.name}</small></div><div class="rp" data-px="${r.sym}"></div></div>`).join("");
+    pageItems=j.items;updateAllPrices();[1200,3500,7000].forEach(t=>setTimeout(pollLive,t));
+    $("allList").innerHTML=(j.note?`<div class="fh">${j.note}</div>`:"")+(rows||`<div class="empty">No stocks found</div>`);
     $("pager").innerHTML=`<button id="pp" ${apage<=1?"disabled":""}>‹ Prev</button><span>${j.total.toLocaleString("en-IN")} stocks${j.all?` (kul ${j.all.toLocaleString("en-IN")})`:""} · page ${j.page}/${j.pages}</span><button id="pn" ${apage>=j.pages?"disabled":""}>Next ›</button>`;
     $("pp").onclick=()=>{apage--;loadAll()};$("pn").onclick=()=>{apage++;loadAll()};
   }catch(e){localOnly=true;applyView()}
@@ -638,14 +640,14 @@ $("allList").onclick=async e=>{
     if(!a.ok||!q)throw 0;
     state.extra.push({sym,name});save();
     STOCKS.push(makeStock(sym,name,"Listed",q.price,false));
-    sel=sym;toast(`<b>${sym}</b> khul gaya ✓`,"#ff9933");pollLive();window.scrollTo({top:0,behavior:"smooth"});
-  }catch(err){btn.textContent="Open ›";toast("Is stock ka live bhav abhi nahi mila (shayad trade nahi ho raha). Baad me try karo.","#ff4d6d")}
+    sel=sym;toast(`<b>${sym}</b> added ✓`,"#ff9933");pollLive();window.scrollTo({top:0,behavior:"smooth"});
+  }catch(err){btn.textContent="…";toast("No live price for this stock right now (it may not be trading). Try again later.","#ff4d6d")}
 };
 try{$("always").checked=localStorage.getItem("bseg_practice")==="1"}catch(e){}
 $("always").onchange=()=>{try{localStorage.setItem("bseg_practice",$("always").checked?"1":"0")}catch(e){}render()};
 const sheet=$("sheet");$("gear").onclick=()=>sheet.hidden=false;$("sclose").onclick=()=>sheet.hidden=true;
 sheet.onclick=e=>{if(e.target===sheet)sheet.hidden=true};
-$("reset").onclick=()=>{if(confirm("₹10,00,000 se dobara shuru karein? Saari holdings clear ho jayengi.")){state={cash:START,pos:{},orders:[],nw:[],extra:[]};save();render();toast("Game reset ✓","#ff9933")}};
+$("reset").onclick=()=>{if(confirm("Restart with ₹10,00,000? All holdings will be cleared.")){state={cash:START,pos:{},orders:[],nw:[],extra:[]};save();render();toast("Game reset ✓","#ff9933")}};
 const cv=$("chart");
 cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),n=cur().hist[ex].length;hoverI=Math.round((e.clientX-r.left)/(r.width-64)*(n-1));if(hoverI>=n)hoverI=-1;drawChart(cur())};
 cv.onmouseleave=()=>{hoverI=-1;drawChart(cur())};

@@ -1,22 +1,19 @@
 # Dalal Street Arena — NSE & BSE trading game
 
-A virtual Indian stock market game. Start with ₹10,00,000 of artificial money, trade 20 stocks (Reliance, TCS, HDFC Bank, Infosys…) on both **NSE** and **BSE** (NIFTY 50 and SENSEX indices) as prices tick every second. Prices differ slightly between the two exchanges, so you can buy on the cheaper one and sell on the dearer one.
+A virtual Indian stock market game. Start with ₹10,00,000 of artificial money and trade any stock listed on **NSE** and **BSE**, with the two exchanges shown side by side (NIFTY 50 and SENSEX on top). The same company can trade at slightly different prices on each exchange, so you can buy on the cheaper one and sell on the dearer one.
 
-## Play
-Open `index.html` in any browser (no install, no server).
-
-- Prices update live every second (simulated random walk with a market-wide mood, NIFTY-X index shown on top).
-- Market hours follow IST (Mon–Fri, 9:15–15:30). "Practice mode" keeps it open 24x7.
-- 0.03% brokerage per order. Portfolio is saved in your browser; "Reset game" starts over.
-
-Note: prices are simulated for gameplay, not real exchange data.
-
-## Live prices (backend)
+## Run it
 ```
-node server.js        # needs Node 18+, no npm install
+node server.js        # Node 18+, no npm install needed
 # open http://localhost:3000
 ```
-The backend fetches real NSE (`.NS`) and BSE (`.BO`) prices from Yahoo Finance every 15s and serves them at `/api/quotes`. The page shows "● LIVE NSE data" when it works and falls back to the simulation (per stock) if the backend or a symbol is unavailable. Opening `index.html` directly (no server) uses the simulation only.
+- **Live prices:** the backend fetches real NSE (`.NS`) and BSE (`.BO`) prices, plus the real NIFTY 50 / SENSEX, from Yahoo Finance and serves them at `/api/quotes`.
+- **Every listed stock:** it downloads the official listings (NSE `EQUITY_L.csv`, BSE `ListofScripData`), merges them by ISIN and refreshes them every 6 hours, so newly listed companies appear automatically. Browse A–Z or search by name/symbol; every stock on screen shows its live NSE and BSE price.
+- **Market hours:** Mon–Fri 9:15 AM–3:30 PM IST (exchange holidays are not handled). Outside these hours prices show the last close and trading is closed; **⚙ Settings → Practice mode** lets you keep playing.
+- 0.03% brokerage per order. The portfolio is saved in your browser; **⚙ Settings → Reset game** starts over.
+- Opening `index.html` directly (no server) runs a simulation with a built-in list of 97 stocks.
 
-## Saare NSE + BSE stocks
-`server.js` downloads the official listings (NSE `EQUITY_L.csv`, BSE `ListofScripData`), merges them by ISIN and refreshes every 6 hours, so newly listed companies appear automatically. In the app open **"Saare listed stocks"** to browse A–Z or search any name/symbol, then tap a stock to open it with live prices. If the exchange files can't be downloaded the server falls back to Yahoo search.
+Yahoo Finance is a free, unofficial source and may be delayed or rate-limited. This is a game, not trading advice.
+
+## Deploy / Android app
+`render.yaml` deploys the server to Render. `.github/workflows/build-apk.yml` builds an Android APK (a wrapper around the deployed site) and publishes it to the `apk-latest` release. See `SETUP.md` for the other tools installed in this repo.
