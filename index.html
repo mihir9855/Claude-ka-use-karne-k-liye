@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bharat Stock Exchange Game</title>
+<style>
+  :root{--bg:#0e1117;--card:#161b22;--line:#262d38;--txt:#e6edf3;--mut:#8b96a5;--up:#22c55e;--down:#ef4444;--acc:#f59e0b}
+  @media (prefers-color-scheme: light){:root{--bg:#f4f6f9;--card:#fff;--line:#e2e6ec;--txt:#1b2230;--mut:#667085}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:5}
+  h1{font-size:18px;margin:0}
+  .pill{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600}
+  .open{background:#22c55e22;color:var(--up)} .closed{background:#ef444422;color:var(--down)}
+  .idx b{font-size:16px}
+  main{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;padding:12px 16px;max-width:1300px;margin:auto}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:hidden}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:0 0 8px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+  .stat small{color:var(--mut);display:block}.stat b{font-size:17px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--mut);font-weight:600;font-size:12px}
+  tbody tr{cursor:pointer} tbody tr:hover,tr.sel{background:#8882}
+  .up{color:var(--up)}.down{color:var(--down)}
+  .flash-up{animation:fu .6s}.flash-down{animation:fd .6s}
+  @keyframes fu{from{background:#22c55e55}to{background:transparent}}
+  @keyframes fd{from{background:#ef444455}to{background:transparent}}
+  canvas{width:100%;height:180px;display:block}
+  .trade{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  input[type=number]{width:100px;padding:7px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--txt)}
+  button{border:0;border-radius:6px;padding:8px 16px;font-weight:700;cursor:pointer;color:#fff}
+  .buy{background:var(--up)}.sell{background:var(--down)}.ghost{background:var(--line);color:var(--txt);padding:5px 10px;font-weight:500}
+  .msg{min-height:20px;margin-top:6px;font-size:13px}
+  .scroll{max-height:260px;overflow:auto}
+  label{color:var(--mut);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>🇮🇳 Bharat Stock Exchange Game</h1><small style="color:var(--mut)">Virtual money · Simulated live NSE-style market</small></div>
+  <div class="idx">NIFTY-X <b id="idx">—</b> <span id="idxChg"></span></div>
+  <div><span id="mkt" class="pill"></span> <span id="clock" style="color:var(--mut)"></span>
+    <label><input type="checkbox" id="always" checked> Practice mode (market always open)</label></div>
+</header>
+
+<main>
+  <section>
+    <div class="stats">
+      <div class="stat"><small>Cash</small><b id="cash"></b></div>
+      <div class="stat"><small>Invested value</small><b id="inv"></b></div>
+      <div class="stat"><small>Net worth</small><b id="net"></b></div>
+      <div class="stat"><small>Total P&amp;L</small><b id="pnl"></b></div>
+    </div>
+    <div class="card">
+      <h2>Market watch (click a stock)</h2>
+      <div class="scroll" style="max-height:420px"><table id="watch"><thead><tr><th>Stock</th><th>LTP ₹</th><th>Change</th><th>%</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:12px;align-content:start">
+    <div class="card">
+      <h2 id="selName">Select a stock</h2>
+      <canvas id="chart" width="600" height="180"></canvas>
+      <div class="trade">
+        <input type="number" id="qty" min="1" value="10" step="1">
+        <button class="buy" id="buyBtn">BUY</button>
+        <button class="sell" id="sellBtn">SELL</button>
+        <span id="est" style="color:var(--mut)"></span>
+      </div>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div class="card">
+      <h2>My portfolio</h2>
+      <div class="scroll"><table id="hold"><thead><tr><th>Stock</th><th>Qty</th><th>Avg</th><th>LTP</th><th>P&amp;L</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>Order history <button class="ghost" id="reset" style="float:right">Reset game</button></h2>
+      <div class="scroll" style="max-height:160px"><table id="hist"><tbody></tbody></table></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const START_CASH = 1000000, BROKERAGE = 0.0003; // 0.03% per order
+// Approximate starting prices; the market is simulated (random walk), not real exchange data.
+const STOCKS = [
+  ["RELIANCE","Reliance Industries",2900],["TCS","Tata Consultancy",3900],["HDFCBANK","HDFC Bank",1650],
+  ["INFY","Infosys",1550],["ICICIBANK","ICICI Bank",1150],["SBIN","State Bank of India",800],
+  ["BHARTIARTL","Bharti Airtel",1400],["ITC","ITC Ltd",450],["LT","Larsen & Toubro",3600],
+  ["HINDUNILVR","Hindustan Unilever",2400],["KOTAKBANK","Kotak Mahindra Bank",1800],["AXISBANK","Axis Bank",1100],
+  ["MARUTI","Maruti Suzuki",12000],["SUNPHARMA","Sun Pharma",1600],["TATAMOTORS","Tata Motors",950],
+  ["TATASTEEL","Tata Steel",150],["WIPRO","Wipro",480],["ADANIENT","Adani Enterprises",3000],
+  ["ASIANPAINT","Asian Paints",2900],["ZOMATO","Zomato",220]
+].map(([sym,name,p])=>({sym,name,prev:p,price:p,vol:0.0004+Math.random()*0.0006,hist:[p]}));
+
+const inr = n => "₹" + n.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const $ = id => document.getElementById(id);
+let state = load() || {cash:START_CASH, pos:{}, orders:[]};
+let sel = STOCKS[0].sym, mood = 0;
+
+function load(){ try{return JSON.parse(localStorage.getItem("bseg"))}catch(e){return null} }
+function save(){ try{localStorage.setItem("bseg",JSON.stringify(state))}catch(e){} }
+
+function istNow(){ return new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Kolkata"})); }
+function realOpen(){ const d=istNow(), m=d.getHours()*60+d.getMinutes(), wd=d.getDay();
+  return wd>0 && wd<6 && m>=555 && m<930; } // 9:15–15:30 IST, Mon–Fri
+const isOpen = () => $("always").checked || realOpen();
+
+function tick(){
+  if(!isOpen()) return;
+  mood = mood*0.95 + (Math.random()-0.5)*0.0006;            // market-wide drift
+  for(const s of STOCKS){
+    const shock = (Math.random()-0.5)*2*s.vol*1.7 + mood;
+    s.price = Math.max(1, +(s.price*(1+shock)).toFixed(2));
+    s.last = shock;
+    s.hist.push(s.price); if(s.hist.length>120) s.hist.shift();
+  }
+  render();
+}
+
+function idxVal(){ return STOCKS.reduce((a,s)=>a+s.price/s.prev,0)/STOCKS.length*20000; }
+
+function render(){
+  const d=istNow(), open=isOpen();
+  $("clock").textContent = d.toLocaleTimeString("en-IN") + " IST";
+  $("mkt").textContent = open ? (realOpen()?"MARKET OPEN":"PRACTICE OPEN") : "MARKET CLOSED";
+  $("mkt").className = "pill " + (open?"open":"closed");
+  const iv=idxVal(), ic=(iv/20000-1)*100;
+  $("idx").textContent = iv.toLocaleString("en-IN",{maximumFractionDigits:2});
+  $("idxChg").textContent = (ic>=0?"▲ ":"▼ ")+ic.toFixed(2)+"%"; $("idxChg").className = ic>=0?"up":"down";
+
+  const tb=$("watch").tBodies[0];
+  if(!tb.rows.length) STOCKS.forEach(s=>{const r=tb.insertRow();r.dataset.sym=s.sym;r.onclick=()=>{sel=s.sym;render()};r.innerHTML="<td></td><td></td><td></td><td></td>"});
+  STOCKS.forEach((s,i)=>{
+    const r=tb.rows[i], ch=s.price-s.prev, pc=ch/s.prev*100, c=ch>=0?"up":"down";
+    r.className = s.sym===sel?"sel":"";
+    r.cells[0].innerHTML=`<b>${s.sym}</b><br><small style="color:var(--mut)">${s.name}</small>`;
+    if(r.cells[1].textContent!==s.price.toFixed(2)){ r.cells[1].className = s.last>=0?"flash-up":"flash-down"; r.cells[1].style.animation="none"; void r.cells[1].offsetWidth; r.cells[1].style.animation=""; }
+    r.cells[1].textContent=s.price.toFixed(2);
+    r.cells[2].textContent=(ch>=0?"+":"")+ch.toFixed(2); r.cells[2].className=c;
+    r.cells[3].textContent=(pc>=0?"+":"")+pc.toFixed(2)+"%"; r.cells[3].className=c;
+  });
+
+  let inv=0, hb="";
+  for(const [sym,p] of Object.entries(state.pos)){
+    const s=STOCKS.find(x=>x.sym===sym), val=p.qty*s.price, pl=val-p.qty*p.avg; inv+=val;
+    hb+=`<tr onclick="sel='${sym}';render()"><td>${sym}</td><td>${p.qty}</td><td>${p.avg.toFixed(2)}</td><td>${s.price.toFixed(2)}</td><td class="${pl>=0?"up":"down"}">${pl>=0?"+":""}${pl.toFixed(0)}</td></tr>`;
+  }
+  $("hold").tBodies[0].innerHTML = hb || `<tr><td colspan="5" style="text-align:center;color:var(--mut)">No holdings yet — buy some stocks!</td></tr>`;
+  const net=state.cash+inv, pnl=net-START_CASH;
+  $("cash").textContent=inr(state.cash); $("inv").textContent=inr(inv); $("net").textContent=inr(net);
+  $("pnl").textContent=(pnl>=0?"+":"")+inr(pnl); $("pnl").className=pnl>=0?"up":"down";
+
+  const s=STOCKS.find(x=>x.sym===sel);
+  $("selName").textContent=`${s.sym} — ${s.name}  ·  ${inr(s.price)}`;
+  const q=Math.floor(+$("qty").value)||0;
+  $("est").textContent = q>0 ? `Order value ${inr(q*s.price)}` : "";
+  $("hist").tBodies[0].innerHTML = state.orders.slice(0,30).map(o=>`<tr><td>${o.t}</td><td class="${o.side==="BUY"?"up":"down"}">${o.side}</td><td>${o.sym}</td><td>${o.qty} @ ${o.price.toFixed(2)}</td></tr>`).join("") || `<tr><td style="color:var(--mut)">No orders yet</td></tr>`;
+  draw(s);
+}
+
+function draw(s){
+  const c=$("chart"), g=c.getContext("2d"), w=c.width=c.clientWidth*devicePixelRatio, h=c.height=c.clientHeight*devicePixelRatio;
+  g.clearRect(0,0,w,h);
+  const d=s.hist, mn=Math.min(...d), mx=Math.max(...d), rg=(mx-mn)||1, up=d[d.length-1]>=s.prev;
+  g.strokeStyle=up?"#22c55e":"#ef4444"; g.lineWidth=2*devicePixelRatio; g.beginPath();
+  d.forEach((v,i)=>{const x=i/Math.max(d.length-1,1)*w, y=h-8-(v-mn)/rg*(h-16); i?g.lineTo(x,y):g.moveTo(x,y)});
+  g.stroke();
+  g.fillStyle="#8b96a5"; g.font=`${11*devicePixelRatio}px sans-serif`;
+  g.fillText(mx.toFixed(2),4,12*devicePixelRatio); g.fillText(mn.toFixed(2),4,h-2);
+}
+
+function say(t,ok){ const m=$("msg"); m.textContent=t; m.className="msg "+(ok?"up":"down"); }
+
+function trade(side){
+  if(!isOpen()) return say("Market is closed. Enable practice mode or wait for 9:15 AM IST (Mon–Fri).");
+  const q=Math.floor(+$("qty").value);
+  if(!(q>0)) return say("Enter a valid quantity.");
+  const s=STOCKS.find(x=>x.sym===sel), val=q*s.price, fee=val*BROKERAGE;
+  if(side==="BUY"){
+    if(val+fee>state.cash) return say(`Not enough cash. Need ${inr(val+fee)}.`);
+    const p=state.pos[sel]||{qty:0,avg:0};
+    p.avg=(p.avg*p.qty+val)/(p.qty+q); p.qty+=q; state.pos[sel]=p; state.cash-=val+fee;
+  } else {
+    const p=state.pos[sel];
+    if(!p||p.qty<q) return say(`You only hold ${p?p.qty:0} shares of ${sel}.`);
+    p.qty-=q; if(!p.qty) delete state.pos[sel]; state.cash+=val-fee;
+  }
+  state.orders.unshift({t:istNow().toLocaleTimeString("en-IN"),side,sym:sel,qty:q,price:s.price});
+  save(); say(`${side} ${q} ${sel} @ ${inr(s.price)} done (brokerage ${inr(fee)})`,true); render();
+}
+
+$("buyBtn").onclick=()=>trade("BUY");
+$("sellBtn").onclick=()=>trade("SELL");
+$("qty").oninput=render;
+$("always").onchange=render;
+$("reset").onclick=()=>{ if(confirm("Reset to ₹10,00,000 and clear all holdings?")){ state={cash:START_CASH,pos:{},orders:[]}; save(); render(); } };
+setInterval(tick,1000); setInterval(()=>{ if(!isOpen()) render(); },1000);
+render();
+</script>
+</body>
+</html>
