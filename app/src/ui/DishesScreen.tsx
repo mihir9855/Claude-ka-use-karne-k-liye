@@ -162,7 +162,7 @@ function DishRow({ dish }: { dish: Dish }) {
             <Chip label={tx('ateIt')} on={logging} onPress={() => setLogging(!logging)} />
             <Chip label={tx('liked')} on={pref === 'like'} onPress={() => setPref(dish.id, pref === 'like' ? undefined : 'like')} />
             <Chip label={tx('disliked')} tone="accent" on={pref === 'dislike'} onPress={() => setPref(dish.id, pref === 'dislike' ? undefined : 'dislike')} />
-            {dish.custom && <Button kind="danger" label={tx('remove')} onPress={() => removeDish(dish.id)} />}
+            {dish.custom && <Button icon="trash" kind="danger" label={tx('remove')} onPress={() => removeDish(dish.id)} />}
           </Row>
           {logging && (
             <View style={{ gap: 6 }}>

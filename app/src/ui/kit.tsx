@@ -42,7 +42,7 @@ export function Button({
       ]}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        {icon && <Icon name={icon} size={16} color={kind === 'primary' ? '#fff' : C.text} width={2.5} />}
+        {icon && <Icon name={icon} size={16} color={kind === 'primary' ? '#fff' : kind === 'danger' ? C.danger : C.text} width={2.5} />}
         <Text
           style={[
             s.btnText,

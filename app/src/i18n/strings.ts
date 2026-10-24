@@ -37,6 +37,8 @@ const S = {
   kidNote: { en: 'Under 18: approximate needs, check with a doctor.', hi: '18 se kam: andaza hai, doctor se puchho.', gu: '18 થી ઓછા: અંદાજિત, ડૉક્ટરને પૂછો.' },
   itemsHome: { en: 'items at home', hi: 'cheezein ghar mein', gu: 'વસ્તુઓ ઘરે' },
   proteinTip: { en: 'Protein low. Add curd, sprouts or a shake.', hi: 'Protein kam hai. Dahi, sprouts ya shake jodo.', gu: 'પ્રોટીન ઓછું છે. દહીં, સ્પ્રાઉટ્સ કે શેક ઉમેરો.' },
+  removed: { en: 'Removed', hi: 'Hata diya', gu: 'કાઢી નાખ્યું' },
+  undo: { en: 'Undo', hi: 'Wapas lao', gu: 'પાછું લાવો' },
   language: { en: 'Language', hi: 'Bhasha', gu: 'ભાષા' },
   addShort: { en: 'Add', hi: 'Jodo', gu: 'ઉમેરો' },
   more: { en: 'Options', hi: 'Options', gu: 'વિકલ્પો' },

@@ -10,6 +10,7 @@ import { PantryScreen } from './src/ui/PantryScreen';
 import { ProfileScreen } from './src/ui/ProfileScreen';
 import { TodayScreen } from './src/ui/TodayScreen';
 import { Icon, type IconName } from './src/ui/Icon';
+import { UndoBar } from './src/ui/UndoBar';
 import { C } from './src/ui/theme';
 
 const TABS = [
@@ -32,6 +33,7 @@ export default function App() {
       <SafeAreaView style={s.root} edges={['top', 'bottom']}>
         <StatusBar style="dark" />
         <View style={{ flex: 1 }}>{!ready ? null : onboarded ? <Active /> : <OnboardScreen />}</View>
+        <UndoBar />
         {ready && onboarded && (
         <View style={s.tabs}>
           {TABS.map((x) => {

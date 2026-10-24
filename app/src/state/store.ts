@@ -31,7 +31,14 @@ interface State {
   log: LogEntry[];
   plans: Record<string, DayPlan>;
   saltByDate: Record<string, number>;
+  /** last delete, kept briefly so it can be undone (not saved to disk) */
+  undoSnapshot:
+    | { kind: 'person'; persons: Person[]; plans: Record<string, DayPlan> }
+    | { kind: 'dish'; customDishes: Dish[] }
+    | null;
 
+  undoDelete: () => void;
+  clearUndo: () => void;
   setLang: (l: Lang) => void;
   setOnboarded: (v: boolean) => void;
   togglePantry: (ing: string) => void;
@@ -69,7 +76,17 @@ export const useStore = create<State>()(
       log: [],
       plans: {},
       saltByDate: {},
+      undoSnapshot: null,
 
+      undoDelete: () =>
+        set((s) => {
+          const u = s.undoSnapshot;
+          if (!u) return {};
+          return u.kind === 'person'
+            ? { persons: u.persons, plans: u.plans, undoSnapshot: null }
+            : { customDishes: u.customDishes, undoSnapshot: null };
+        }),
+      clearUndo: () => set({ undoSnapshot: null }),
       setLang: (lang) => set({ lang }),
       setOnboarded: (onboarded) => set({ onboarded }),
       togglePantry: (ing) =>
@@ -100,7 +117,13 @@ export const useStore = create<State>()(
       addPerson: () => get().setMemberCount(get().persons.length + 1),
       removePerson: (i) =>
         set((s) =>
-          s.persons.length <= 1 ? {} : { persons: s.persons.filter((_, k) => k !== i), plans: {} },
+          s.persons.length <= 1
+            ? {}
+            : {
+                undoSnapshot: { kind: 'person', persons: s.persons, plans: s.plans },
+                persons: s.persons.filter((_, k) => k !== i),
+                plans: {},
+              },
         ),
       setMealCount: (mealCount) => set({ mealCount }),
       setStrictPantry: (strictPantry) => set({ strictPantry }),
@@ -123,7 +146,10 @@ export const useStore = create<State>()(
         return id;
       },
       removeDish: (id) =>
-        set((s) => ({ customDishes: s.customDishes.filter((d) => d.id !== id) })),
+        set((s) => ({
+          undoSnapshot: { kind: 'dish', customDishes: s.customDishes },
+          customDishes: s.customDishes.filter((d) => d.id !== id),
+        })),
       setPref: (id, pref) =>
         set((s) => {
           const prefs = { ...s.prefs };
@@ -171,6 +197,7 @@ export const useStore = create<State>()(
     }),
     {
       name: 'our-thali-v1',
+      partialize: ({ undoSnapshot: _u, ...rest }) => rest as State,
       storage: createJSONStorage(() => AsyncStorage),
     },
   ),

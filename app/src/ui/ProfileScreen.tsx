@@ -45,7 +45,10 @@ function PersonCard({ index }: { index: number }) {
       summary={`${tx(`goal_${p.goal}` as StrKey)} · ${r(tg.kcal)} ${tx('kcal')} · ${r(tg.protein)} ${tx('g')} ${tx('proteinShort')}`}
       defaultOpen={false}
     >
-      <Field label={tx('name')} value={p.name} onChangeText={(v) => update(index, { name: v })} />
+      <Row style={{ flexWrap: 'nowrap', alignItems: 'flex-end' }}>
+        <Field label={tx('name')} value={p.name} onChangeText={(v) => update(index, { name: v })} />
+        {canRemove && <Button icon="trash" kind="danger" label={tx('removeMember')} onPress={() => removePerson(index)} />}
+      </Row>
       <Segmented
         value={p.sex}
         onChange={(v) => update(index, { sex: v })}
@@ -91,7 +94,6 @@ function PersonCard({ index }: { index: number }) {
           {r(tg.carbs)} {tx('g')} {tx('carbs')} · {r(tg.fat)} {tx('g')} {tx('fat')} · {r(tg.fiber)} {tx('g')} {tx('chk_fiber')} · {tx('water')} {tg.waterL} L
         </Muted>
       </View>
-      {canRemove && <Button kind="danger" label={tx('removeMember')} onPress={() => removePerson(index)} />}
     </Collapse>
   );
 }
