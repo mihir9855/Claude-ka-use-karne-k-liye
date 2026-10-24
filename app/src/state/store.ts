@@ -64,6 +64,32 @@ interface State {
   unlog: (id: string) => void;
 }
 
+/** Phone storage, falling back to memory when the browser blocks it, so the app still opens. */
+const memory = new Map<string, string>();
+const safeStorage = {
+  getItem: async (k: string) => {
+    try {
+      return await AsyncStorage.getItem(k);
+    } catch {
+      return memory.get(k) ?? null;
+    }
+  },
+  setItem: async (k: string, v: string) => {
+    try {
+      await AsyncStorage.setItem(k, v);
+    } catch {
+      memory.set(k, v);
+    }
+  },
+  removeItem: async (k: string) => {
+    try {
+      await AsyncStorage.removeItem(k);
+    } catch {
+      memory.delete(k);
+    }
+  },
+};
+
 const uid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 
 export const useStore = create<State>()(
@@ -206,7 +232,7 @@ export const useStore = create<State>()(
     {
       name: 'our-thali-v1',
       partialize: ({ undoSnapshot: _u, ...rest }) => rest as State,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => safeStorage),
     },
   ),
 );

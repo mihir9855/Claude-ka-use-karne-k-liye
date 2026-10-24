@@ -25,7 +25,15 @@ export default function App() {
   const lang = useStore((s) => s.lang);
   const onboarded = useStore((s) => s.onboarded);
   const [ready, setReady] = useState(useStore.persist.hasHydrated());
-  useEffect(() => useStore.persist.onFinishHydration(() => setReady(true)), []);
+  useEffect(() => {
+    const off = useStore.persist.onFinishHydration(() => setReady(true));
+    // never leave a blank screen if saved data cannot be read
+    const timer = setTimeout(() => setReady(true), 2000);
+    return () => {
+      off();
+      clearTimeout(timer);
+    };
+  }, []);
   const Active = TABS.find((x) => x.key === tab)!.Screen;
 
   return (
