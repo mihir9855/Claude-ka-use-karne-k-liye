@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { todayStr } from '../core/dates';
 import { topDishes } from '../core/habits';
 import { dishMacros } from '../core/nutrition';
 import { SLOTS_BY_COUNT } from '../core/planner';
-import type { Dish, DishItem, DishRole, MealCategory, Slot } from '../core/types';
+import type { Dish, DishItem, DishRole, MealCategory } from '../core/types';
 import { INGREDIENTS } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { allDishes, useStore } from '../state/store';
 import { dishName, ingName, r } from './helpers';
-import { Button, Card, Chip, Field, H, Label, Muted, Row } from './kit';
+import { Button, Card, Chip, Field, H, Label, Muted, Row, Search, Segmented } from './kit';
 import { C } from './theme';
 
 const ROLES: DishRole[] = ['complete', 'main', 'staple', 'side', 'snack'];
@@ -51,9 +51,7 @@ function AddDishForm({ onDone }: { onDone: () => void }) {
       role,
       meals,
       items,
-      macros: manual
-        ? { kcal: Number(kcal), protein: Number(protein) || 0, carbs: 0, fat: 0 }
-        : undefined,
+      macros: manual ? { kcal: Number(kcal), protein: Number(protein) || 0, carbs: 0, fat: 0 } : undefined,
     });
     onDone();
   };
@@ -61,41 +59,41 @@ function AddDishForm({ onDone }: { onDone: () => void }) {
   return (
     <Card>
       <Field label={tx('dishName')} value={name} onChangeText={setName} />
-      <Label>{tx('role')}</Label>
-      <Row>
-        {ROLES.map((x) => (
-          <Chip key={x} label={tx(`role_${x}` as StrKey)} on={role === x} onPress={() => setRole(x)} />
-        ))}
-      </Row>
-      <Label>{tx('mealTime')}</Label>
-      <Row>
-        {CATS.map((c) => (
-          <Chip
-            key={c}
-            label={tx(`cat_${c}` as StrKey)}
-            on={meals.includes(c)}
-            onPress={() => setMeals((m) => (m.includes(c) ? m.filter((x) => x !== c) : [...m, c]))}
-          />
-        ))}
-      </Row>
+      <View>
+        <Label>{tx('role')}</Label>
+        <Row>
+          {ROLES.map((x) => (
+            <Chip key={x} label={tx(`role_${x}` as StrKey)} on={role === x} onPress={() => setRole(x)} />
+          ))}
+        </Row>
+      </View>
+      <View>
+        <Label>{tx('mealTime')}</Label>
+        <Row>
+          {CATS.map((c) => (
+            <Chip
+              key={c}
+              label={tx(`cat_${c}` as StrKey)}
+              on={meals.includes(c)}
+              onPress={() => setMeals((m) => (m.includes(c) ? m.filter((x) => x !== c) : [...m, c]))}
+            />
+          ))}
+        </Row>
+      </View>
       <Label>{tx('ingredients')}</Label>
       {items.map((it) => (
-        <Row key={it.ing} style={{ justifyContent: 'space-between' }}>
+        <Row key={it.ing} style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
           <Text style={{ color: C.text, flex: 1 }}>{ingName(it.ing, lang)}</Text>
-          <Button small kind="ghost" label="−" onPress={() => step(it.ing, -10)} />
-          <Text style={{ width: 56, textAlign: 'center', color: C.text }}>
+          <Button kind="soft" label="−" onPress={() => step(it.ing, -10)} />
+          <Text style={{ width: 58, textAlign: 'center', color: C.text }}>
             {it.g} {tx('g')}
           </Text>
-          <Button small kind="ghost" label="+" onPress={() => step(it.ing, 10)} />
+          <Button kind="soft" label="+" onPress={() => step(it.ing, 10)} />
         </Row>
       ))}
-      <TextInput
-        value={q}
-        onChangeText={setQ}
-        placeholder={tx('search')}
-        placeholderTextColor={C.muted}
-        style={{ borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 10, fontSize: 16, color: C.text }}
-      />
+      <Row>
+        <Search value={q} onChangeText={setQ} placeholder={tx('search')} />
+      </Row>
       <Row>
         {matches.map((i) => (
           <Chip
@@ -115,7 +113,7 @@ function AddDishForm({ onDone }: { onDone: () => void }) {
       ) : (
         <>
           <Muted>{tx('orMacros')}</Muted>
-          <Row>
+          <Row style={{ flexWrap: 'nowrap' }}>
             <Field label={tx('kcal')} keyboardType="numeric" value={kcal} onChangeText={setKcal} />
             <Field label={`${tx('proteinShort')} (${tx('g')})`} keyboardType="numeric" value={protein} onChangeText={setProtein} />
           </Row>
@@ -123,7 +121,7 @@ function AddDishForm({ onDone }: { onDone: () => void }) {
       )}
       <Row>
         {canSave && <Button label={tx('save')} onPress={save} />}
-        <Button kind="ghost" label={tx('cancel')} onPress={onDone} />
+        <Button kind="soft" label={tx('cancel')} onPress={onDone} />
       </Row>
     </Card>
   );
@@ -136,51 +134,56 @@ function DishRow({ dish }: { dish: Dish }) {
   const logMeal = useStore((s) => s.logMeal);
   const removeDish = useStore((s) => s.removeDish);
   const [open, setOpen] = useState(false);
+  const [logging, setLogging] = useState(false);
   const m = dishMacros(dish);
-  const slots = SLOTS_BY_COUNT[6];
+  const tx = (k: StrKey) => t(lang, k);
 
   return (
-    <Card style={pref === 'dislike' ? { opacity: 0.5 } : undefined}>
-      <Row style={{ justifyContent: 'space-between' }}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: C.text }}>
-            {dishName(dish, lang)}
-            {dish.custom ? '  ✦' : ''}
-          </Text>
-          <Muted>
-            {t(lang, `role_${dish.role}` as StrKey)} · {r(m.kcal)} {t(lang, 'kcal')} · {r(m.protein)} {t(lang, 'g')}{' '}
-            {t(lang, 'proteinShort')}
-          </Muted>
-        </View>
-        <Pressable onPress={() => setPref(dish.id, pref === 'like' ? undefined : 'like')} accessibilityLabel={t(lang, 'liked')}>
-          <Text style={{ fontSize: 22, opacity: pref === 'like' ? 1 : 0.35 }}>👍</Text>
-        </Pressable>
-        <Pressable onPress={() => setPref(dish.id, pref === 'dislike' ? undefined : 'dislike')} accessibilityLabel={t(lang, 'dislike')}>
-          <Text style={{ fontSize: 22, opacity: pref === 'dislike' ? 1 : 0.35 }}>👎</Text>
-        </Pressable>
-      </Row>
-      <Row>
-        <Button small kind="ghost" label={t(lang, 'ateIt')} onPress={() => setOpen((o) => !o)} />
-        {dish.custom && <Button small kind="danger" label={t(lang, 'remove')} onPress={() => removeDish(dish.id)} />}
-      </Row>
+    <View style={{ borderBottomWidth: 1, borderBottomColor: C.line }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen(!open)}
+        style={{ paddingVertical: 12, gap: 2, opacity: pref === 'dislike' ? 0.45 : 1 }}
+      >
+        <Text style={{ fontSize: 16, fontWeight: '600', color: C.text }}>
+          {dishName(dish, lang)}
+          {pref === 'like' ? '  ♥' : ''}
+          {dish.custom ? '  ·  ✦' : ''}
+        </Text>
+        <Muted>
+          {tx(`role_${dish.role}` as StrKey)} · {r(m.kcal)} {tx('kcal')} · {r(m.protein)} {tx('g')} {tx('proteinShort')}
+        </Muted>
+      </Pressable>
       {open && (
-        <>
-          <Muted>{t(lang, 'logAs')}</Muted>
+        <View style={{ gap: 10, paddingBottom: 12 }}>
           <Row>
-            {slots.map((sl: Slot) => (
-              <Chip
-                key={sl}
-                label={t(lang, `slot_${sl}` as StrKey)}
-                onPress={() => {
-                  logMeal(todayStr(), sl, [dish.id]);
-                  setOpen(false);
-                }}
-              />
-            ))}
+            <Chip label={tx('ateIt')} on={logging} onPress={() => setLogging(!logging)} />
+            <Chip label={tx('liked')} on={pref === 'like'} onPress={() => setPref(dish.id, pref === 'like' ? undefined : 'like')} />
+            <Chip label={tx('disliked')} tone="accent" on={pref === 'dislike'} onPress={() => setPref(dish.id, pref === 'dislike' ? undefined : 'dislike')} />
+            {dish.custom && <Button kind="danger" label={tx('remove')} onPress={() => removeDish(dish.id)} />}
           </Row>
-        </>
+          {logging && (
+            <View style={{ gap: 6 }}>
+              <Muted>{tx('logAs')}</Muted>
+              <Row>
+                {SLOTS_BY_COUNT[6].map((sl) => (
+                  <Chip
+                    key={sl}
+                    label={tx(`slot_${sl}` as StrKey)}
+                    onPress={() => {
+                      logMeal(todayStr(), sl, [dish.id]);
+                      setLogging(false);
+                      setOpen(false);
+                    }}
+                  />
+                ))}
+              </Row>
+            </View>
+          )}
+        </View>
       )}
-    </Card>
+    </View>
   );
 }
 
@@ -191,46 +194,43 @@ export function DishesScreen() {
   const [onlyOurs, setOnlyOurs] = useState(false);
   const [adding, setAdding] = useState(false);
   const [q, setQ] = useState('');
+  const tx = (k: StrKey) => t(lang, k);
 
   const dishes = useMemo(() => allDishes(custom), [custom]);
-  const usual = useMemo(() => topDishes(log, dishes, 6), [log, dishes]);
+  const usual = useMemo(() => topDishes(log, dishes, 5), [log, dishes]);
   const shown = dishes
     .filter((d) => (onlyOurs ? d.custom : true))
     .filter((d) => !q.trim() || Object.values(d.name).some((n) => n.toLowerCase().includes(q.trim().toLowerCase())))
     .sort((a, b) => Number(!!b.custom) - Number(!!a.custom));
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} keyboardShouldPersistTaps="handled">
-      <H>{t(lang, 'dishesTitle')}</H>
-      {adding ? (
-        <AddDishForm onDone={() => setAdding(false)} />
-      ) : (
-        <Button label={t(lang, 'addDish')} onPress={() => setAdding(true)} />
-      )}
-      {usual.length > 0 && (
-        <Card>
-          <Label>{t(lang, 'usualFoods')}</Label>
-          {usual.map(({ dish, count }) => (
-            <Text key={dish.id} style={{ color: C.text }}>
-              {dishName(dish, lang)} · {count} {t(lang, 'times')}
-            </Text>
-          ))}
-        </Card>
-      )}
-      <Row>
-        <Chip label={t(lang, 'all')} on={!onlyOurs} onPress={() => setOnlyOurs(false)} />
-        <Chip label={t(lang, 'ours')} on={onlyOurs} onPress={() => setOnlyOurs(true)} />
+    <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }} keyboardShouldPersistTaps="handled">
+      <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
+        <H>{tx('dishesTitle')}</H>
+        {!adding && <Button label={tx('addShort')} onPress={() => setAdding(true)} />}
       </Row>
-      <TextInput
-        value={q}
-        onChangeText={setQ}
-        placeholder={t(lang, 'search')}
-        placeholderTextColor={C.muted}
-        style={{ borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 10, fontSize: 16, color: C.text, backgroundColor: '#fff' }}
+      {adding && <AddDishForm onDone={() => setAdding(false)} />}
+      {usual.length > 0 && (
+        <View style={{ gap: 6 }}>
+          <Label>{tx('usualFoods')}</Label>
+          <Row>
+            {usual.map(({ dish, count }) => (
+              <Chip key={dish.id} label={`${dishName(dish, lang)} · ${count}`} />
+            ))}
+          </Row>
+        </View>
+      )}
+      <Search value={q} onChangeText={setQ} placeholder={tx('search')} />
+      <Segmented
+        value={onlyOurs ? 'ours' : 'all'}
+        onChange={(v) => setOnlyOurs(v === 'ours')}
+        options={[{ value: 'all', label: tx('all') }, { value: 'ours', label: tx('ours') }]}
       />
-      {shown.map((d) => (
-        <DishRow key={d.id} dish={d} />
-      ))}
+      <View>
+        {shown.map((d) => (
+          <DishRow key={d.id} dish={d} />
+        ))}
+      </View>
     </ScrollView>
   );
 }

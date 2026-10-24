@@ -7,7 +7,10 @@ const S = {
   tabToday: { en: 'Today', hi: 'Aaj', gu: 'આજે' },
   tabPantry: { en: 'Pantry', hi: 'Ghar ka saman', gu: 'ઘરનો સામાન' },
   tabDishes: { en: 'Dishes', hi: 'Dishes', gu: 'વાનગીઓ' },
-  tabProfile: { en: 'Profile', hi: 'Profile', gu: 'પ્રોફાઇલ' },
+  tabProfile: { en: 'Settings', hi: 'Settings', gu: 'સેટિંગ્સ' },
+  language: { en: 'Language', hi: 'Bhasha', gu: 'ભાષા' },
+  addShort: { en: 'Add', hi: 'Jodo', gu: 'ઉમેરો' },
+  more: { en: 'Options', hi: 'Options', gu: 'વિકલ્પો' },
 
   makePlan: { en: 'Make today\'s plan', hi: 'Aaj ka plan banao', gu: 'આજનો પ્લાન બનાવો' },
   newPlan: { en: 'New plan', hi: 'Naya plan', gu: 'નવો પ્લાન' },
@@ -80,7 +83,7 @@ const S = {
   liked: { en: 'Liked', hi: 'Pasand', gu: 'ગમે છે' },
   disliked: { en: 'Hidden', hi: 'Chhupa hua', gu: 'છુપાવેલ' },
 
-  profileTitle: { en: 'You two', hi: 'Aap dono', gu: 'તમે બંને' },
+  profileTitle: { en: 'Settings', hi: 'Settings', gu: 'સેટિંગ્સ' },
   person: { en: 'Person', hi: 'Person', gu: 'વ્યક્તિ' },
   name: { en: 'Name', hi: 'Naam', gu: 'નામ' },
   sex: { en: 'Sex', hi: 'Male/Female', gu: 'જાતિ' },

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
 import { C, R } from './theme';
 
@@ -22,12 +22,10 @@ export function Button({
   label,
   onPress,
   kind = 'primary',
-  small,
 }: {
   label: string;
   onPress: () => void;
-  kind?: 'primary' | 'ghost' | 'danger';
-  small?: boolean;
+  kind?: 'primary' | 'soft' | 'danger';
 }) {
   return (
     <Pressable
@@ -35,13 +33,20 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         s.btn,
-        small && s.btnSmall,
-        kind === 'ghost' && s.btnGhost,
-        kind === 'danger' && s.btnDanger,
-        pressed && { opacity: 0.8 },
+        kind === 'soft' && { backgroundColor: C.surface },
+        kind === 'danger' && { backgroundColor: 'transparent' },
+        pressed && { opacity: 0.7 },
       ]}
     >
-      <Text style={[s.btnText, kind !== 'primary' && { color: kind === 'danger' ? C.danger : C.primary }]}>{label}</Text>
+      <Text
+        style={[
+          s.btnText,
+          kind === 'soft' && { color: C.text },
+          kind === 'danger' && { color: C.danger },
+        ]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -58,16 +63,69 @@ export function Chip({
   tone?: 'primary' | 'accent';
 }) {
   const color = tone === 'accent' ? C.accent : C.primary;
-  const soft = tone === 'accent' ? C.accentSoft : C.primarySoft;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: !!on }}
       onPress={onPress}
-      style={[s.chip, on && { backgroundColor: soft, borderColor: color }]}
+      style={[s.chip, on && { backgroundColor: color, borderColor: color }]}
     >
-      <Text style={[s.chipText, on && { color, fontWeight: '700' }]}>{label}</Text>
+      <Text style={[s.chipText, on && { color: '#fff', fontWeight: '600' }]}>{label}</Text>
     </Pressable>
+  );
+}
+
+/** One row of mutually exclusive options. */
+export function Segmented<T extends string | number>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <View style={s.seg}>
+      {options.map((o) => (
+        <Pressable
+          key={String(o.value)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: o.value === value }}
+          onPress={() => onChange(o.value)}
+          style={[s.segItem, o.value === value && s.segOn]}
+        >
+          <Text style={[s.segText, o.value === value && { color: C.text, fontWeight: '700' }]}>{o.label}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+/** Tap-to-open section: keeps long screens short. */
+export function Collapse({
+  title,
+  summary,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  summary?: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <View style={s.card}>
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)} style={s.collapseHead}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.collapseTitle}>{title}</Text>
+          {!!summary && <Text style={s.muted} numberOfLines={1}>{summary}</Text>}
+        </View>
+        <Text style={{ color: C.muted, fontSize: 18 }}>{open ? '–' : '+'}</Text>
+      </Pressable>
+      {open && <View style={{ gap: 12 }}>{children}</View>}
+    </View>
   );
 }
 
@@ -84,6 +142,10 @@ export function Field({ label, ...p }: TextInputProps & { label: string }) {
   );
 }
 
+export function Search(p: TextInputProps) {
+  return <TextInput placeholderTextColor={C.muted} {...p} style={[s.input, { flex: 1 }]} />;
+}
+
 export function Bar({ value, max, color = C.primary }: { value: number; max: number; color?: string }) {
   const pct = Math.max(0, Math.min(1, max > 0 ? value / max : 0));
   return (
@@ -94,19 +156,22 @@ export function Bar({ value, max, color = C.primary }: { value: number; max: num
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: C.card, borderRadius: R, borderWidth: 1, borderColor: C.border, padding: 14, gap: 8 },
-  h: { fontSize: 20, fontWeight: '800', color: C.text },
-  label: { fontSize: 12, fontWeight: '700', color: C.muted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
+  card: { backgroundColor: C.surface, borderRadius: R, padding: 14, gap: 10 },
+  h: { fontSize: 28, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
+  label: { fontSize: 11, fontWeight: '600', color: C.muted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.8 },
   muted: { fontSize: 13, color: C.muted },
-  btn: { backgroundColor: C.primary, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 12, alignItems: 'center' },
-  btnSmall: { paddingVertical: 8, paddingHorizontal: 12 },
-  btnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: C.primary },
-  btnDanger: { backgroundColor: 'transparent', borderWidth: 1, borderColor: C.danger },
-  btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: C.border, backgroundColor: C.card },
+  btn: { backgroundColor: C.primary, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 999, alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  chip: { paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: '#fff', borderWidth: 1, borderColor: C.line },
   chipText: { color: C.text, fontSize: 14 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
-  input: { borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 9, fontSize: 16, color: C.text, backgroundColor: '#fff' },
-  barBg: { height: 8, backgroundColor: C.border, borderRadius: 4, overflow: 'hidden' },
-  barFg: { height: 8, borderRadius: 4 },
+  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: C.text },
+  barBg: { height: 4, backgroundColor: C.line, borderRadius: 2, overflow: 'hidden' },
+  barFg: { height: 4, borderRadius: 2 },
+  seg: { flexDirection: 'row', backgroundColor: C.surface, borderRadius: 12, padding: 3 },
+  segItem: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 10 },
+  segOn: { backgroundColor: '#fff' },
+  segText: { fontSize: 14, color: C.muted },
+  collapseHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  collapseTitle: { fontSize: 16, fontWeight: '700', color: C.text },
 });

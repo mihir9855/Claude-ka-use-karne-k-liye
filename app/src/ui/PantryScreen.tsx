@@ -1,9 +1,9 @@
-import { ScrollView } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import type { Ingredient } from '../core/types';
 import { INGREDIENTS } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
-import { Button, Card, Chip, H, Label, Muted, Row } from './kit';
+import { Button, Chip, H, Label, Muted, Row } from './kit';
 
 const GROUPS: Ingredient['group'][] = ['grain', 'pulse', 'dairy', 'veg', 'fruit', 'nut', 'fat', 'other'];
 
@@ -16,18 +16,20 @@ export function PantryScreen() {
   const setStrict = useStore((s) => s.setStrictPantry);
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <H>{t(lang, 'pantryTitle')}</H>
+    <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
+      <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
+        <H>{t(lang, 'tabPantry')}</H>
+        <Button kind="soft" label={t(lang, 'clearPantry')} onPress={clear} />
+      </Row>
       <Muted>{t(lang, 'pantryHint')}</Muted>
       <Row>
         <Chip label={t(lang, 'strictPantry')} on={strict} onPress={() => setStrict(!strict)} />
-        <Button small kind="ghost" label={t(lang, 'clearPantry')} onPress={clear} />
       </Row>
       {GROUPS.map((g) => {
         const items = INGREDIENTS.filter((i) => i.group === g && !i.basic);
         if (items.length === 0) return null;
         return (
-          <Card key={g}>
+          <View key={g} style={{ gap: 8 }}>
             <Label>{t(lang, `group_${g}` as StrKey)}</Label>
             <Row>
               {items.map((i) => {
@@ -38,13 +40,13 @@ export function PantryScreen() {
                     key={i.id}
                     tone={soon ? 'accent' : 'primary'}
                     on={have}
-                    label={`${i.name[lang]}${soon ? ` ★` : ''}`}
+                    label={`${i.name[lang]}${soon ? ' ★' : ''}`}
                     onPress={() => cycle(i.id)}
                   />
                 );
               })}
             </Row>
-          </Card>
+          </View>
         );
       })}
       <Muted>★ = {t(lang, 'useFirst')}</Muted>

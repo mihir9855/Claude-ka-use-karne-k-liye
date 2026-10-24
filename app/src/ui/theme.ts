@@ -1,14 +1,14 @@
 export const C = {
-  bg: '#FFF8EF',
-  card: '#FFFFFF',
-  text: '#2B2118',
-  muted: '#7A6E63',
-  border: '#EADFCF',
-  primary: '#2F7D4F',
-  primarySoft: '#E3F2E8',
-  accent: '#E8890C',
-  accentSoft: '#FDEBD0',
-  danger: '#B3261E',
+  bg: '#FFFFFF',
+  surface: '#F5F5F2',
+  text: '#161614',
+  muted: '#8A8A83',
+  line: '#ECECE7',
+  primary: '#1B7F55',
+  primarySoft: '#E4F3EB',
+  accent: '#C27A12',
+  accentSoft: '#FBF0DC',
+  danger: '#C0392B',
 };
 
-export const R = 14;
+export const R = 16;
