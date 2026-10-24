@@ -119,10 +119,12 @@ export function PhotoScan({ onClose }: { onClose: () => void }) {
   const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle');
   const [ids, setIds] = useState<string[]>([]);
   const [error, setError] = useState<StrKey | null>(null);
+  const [detail, setDetail] = useState('');
   const tx = (k: StrKey) => t(lang, k);
 
   const pick = async (source: 'camera' | 'gallery') => {
     setError(null);
+    setDetail('');
     try {
       const perm = source === 'camera' ? await ImagePicker.requestCameraPermissionsAsync() : { granted: true };
       if (!perm.granted) return setError('allowCamera');
@@ -136,8 +138,9 @@ export function PhotoScan({ onClose }: { onClose: () => void }) {
       setState('done');
     } catch (e) {
       setState('idle');
-      const kind = e instanceof ScanError ? e.kind : 'network';
-      setError(kind === 'key' ? 'errKey' : kind === 'limit' ? 'errLimit' : 'errNet');
+      const kind = e instanceof ScanError ? e.kind : 'other';
+      setError(kind === 'key' ? 'errKey' : kind === 'limit' ? 'errLimit' : kind === 'network' ? 'errNet' : 'errOther');
+      setDetail(String((e as Error)?.message ?? e).slice(0, 200));
     }
   };
 
@@ -181,6 +184,7 @@ export function PhotoScan({ onClose }: { onClose: () => void }) {
           </View>
         )}
         {error && <Text style={{ color: C.danger }}>{tx(error)}</Text>}
+        {!!detail && <Muted>{detail}</Muted>}
       </View>
     </ScrollView>
   );

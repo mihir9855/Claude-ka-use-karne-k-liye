@@ -37,6 +37,16 @@ export class ScanError extends Error {
   }
 }
 
+/** Short text from Google's error body, so a failure says what really happened. */
+async function reason(res: Response): Promise<string> {
+  try {
+    const j = (await res.json()) as { error?: { message?: string } };
+    return (j.error?.message ?? '').slice(0, 160);
+  } catch {
+    return '';
+  }
+}
+
 /** Ask Gemini (free tier) which pantry items are visible in a photo or listed on a bill. */
 export async function detectItemsFromImage(
   opts: { base64: string; mime?: string; apiKey: string },
@@ -61,15 +71,20 @@ export async function detectItemsFromImage(
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': opts.apiKey },
         body,
       });
-    } catch {
-      throw new ScanError('network', 'network');
+    } catch (e) {
+      throw new ScanError('network', String((e as Error)?.message ?? 'network'));
     }
     if (res.status !== 404) break; // 404 = model name retired, try the next one
   }
   if (!res) throw new ScanError('network', 'network');
-  if (res.status === 400 || res.status === 401 || res.status === 403) throw new ScanError('key', `key ${res.status}`);
-  if (res.status === 429) throw new ScanError('limit', 'limit');
-  if (!res.ok) throw new ScanError('bad', `status ${res.status}`);
+  if (res.status === 429) throw new ScanError('limit', `429 ${await reason(res)}`);
+  if (res.status === 401 || res.status === 403) throw new ScanError('key', `${res.status} ${await reason(res)}`);
+  if (res.status === 400) {
+    const why = await reason(res);
+    // 400 is also used for an invalid key, but other 400s are about the request itself
+    throw new ScanError(/api key|API_KEY/i.test(why) ? 'key' : 'bad', `400 ${why}`);
+  }
+  if (!res.ok) throw new ScanError('bad', `${res.status} ${await reason(res)}`);
 
   const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
   const text = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';

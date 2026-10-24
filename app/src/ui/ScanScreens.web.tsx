@@ -13,7 +13,7 @@ function Unavailable({ title, onClose }: { title: string; onClose: () => void })
         <H>{title}</H>
         <Button kind="soft" icon="close" label={t(lang, 'close')} onPress={onClose} />
       </Row>
-      <Muted>{t(lang, 'errNet')}</Muted>
+      <Muted>{t(lang, 'needApp')}</Muted>
     </View>
   );
 }
