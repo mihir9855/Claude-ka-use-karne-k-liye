@@ -9,17 +9,18 @@ import { DishesScreen } from './src/ui/DishesScreen';
 import { PantryScreen } from './src/ui/PantryScreen';
 import { ProfileScreen } from './src/ui/ProfileScreen';
 import { TodayScreen } from './src/ui/TodayScreen';
+import { Icon, type IconName } from './src/ui/Icon';
 import { C } from './src/ui/theme';
 
 const TABS = [
-  { key: 'today', label: 'tabToday', Screen: TodayScreen },
-  { key: 'pantry', label: 'tabPantry', Screen: PantryScreen },
-  { key: 'dishes', label: 'tabDishes', Screen: DishesScreen },
-  { key: 'profile', label: 'tabProfile', Screen: ProfileScreen },
-] as const;
+  { key: 'today', label: 'tabToday', icon: 'today', Screen: TodayScreen },
+  { key: 'pantry', label: 'tabPantry', icon: 'pantry', Screen: PantryScreen },
+  { key: 'dishes', label: 'tabDishes', icon: 'dishes', Screen: DishesScreen },
+  { key: 'profile', label: 'tabProfile', icon: 'settings', Screen: ProfileScreen },
+] as { key: string; label: string; icon: IconName; Screen: () => React.JSX.Element }[];
 
 export default function App() {
-  const [tab, setTab] = useState<(typeof TABS)[number]['key']>('today');
+  const [tab, setTab] = useState('today');
   const lang = useStore((s) => s.lang);
   const onboarded = useStore((s) => s.onboarded);
   const [ready, setReady] = useState(useStore.persist.hasHydrated());
@@ -37,7 +38,7 @@ export default function App() {
             const on = tab === x.key;
             return (
               <Pressable key={x.key} onPress={() => setTab(x.key)} accessibilityRole="tab" accessibilityState={{ selected: on }} style={s.tab}>
-                <View style={[s.dot, on && { backgroundColor: C.primary }]} />
+                <Icon name={x.icon} size={22} color={on ? C.primary : C.muted} />
                 <Text style={[s.tabText, on && { color: C.text, fontWeight: '700' }]}>{t(lang, x.label as StrKey)}</Text>
               </Pressable>
             );
@@ -52,7 +53,6 @@ export default function App() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   tabs: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.bg },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: 10, gap: 4 },
-  dot: { width: 18, height: 3, borderRadius: 2, backgroundColor: 'transparent' },
+  tab: { flex: 1, alignItems: 'center', paddingVertical: 8, gap: 3 },
   tabText: { fontSize: 13, color: C.muted },
 });

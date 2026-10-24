@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
+import { Icon, type IconName } from './Icon';
 import { C, R } from './theme';
 
 export function Card({ children, style }: { children: ReactNode; style?: ViewStyle }) {
@@ -22,7 +23,9 @@ export function Button({
   label,
   onPress,
   kind = 'primary',
+  icon,
 }: {
+  icon?: IconName;
   label: string;
   onPress: () => void;
   kind?: 'primary' | 'soft' | 'danger';
@@ -38,15 +41,18 @@ export function Button({
         pressed && { opacity: 0.7 },
       ]}
     >
-      <Text
-        style={[
-          s.btnText,
-          kind === 'soft' && { color: C.text },
-          kind === 'danger' && { color: C.danger },
-        ]}
-      >
-        {label}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        {icon && <Icon name={icon} size={16} color={kind === 'primary' ? '#fff' : C.text} width={2.5} />}
+        <Text
+          style={[
+            s.btnText,
+            kind === 'soft' && { color: C.text },
+            kind === 'danger' && { color: C.danger },
+          ]}
+        >
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -106,10 +112,12 @@ export function Segmented<T extends string | number>({
 export function Collapse({
   title,
   summary,
+  icon,
   children,
   defaultOpen = false,
 }: {
   title: string;
+  icon?: IconName;
   summary?: string;
   children: ReactNode;
   defaultOpen?: boolean;
@@ -118,11 +126,12 @@ export function Collapse({
   return (
     <View style={s.card}>
       <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)} style={s.collapseHead}>
+        {icon && <Icon name={icon} size={20} color={C.primary} />}
         <View style={{ flex: 1 }}>
           <Text style={s.collapseTitle}>{title}</Text>
           {!!summary && <Text style={s.muted} numberOfLines={1}>{summary}</Text>}
         </View>
-        <Text style={{ color: C.muted, fontSize: 18 }}>{open ? '–' : '+'}</Text>
+        <Icon name={open ? 'up' : 'down'} size={18} color={C.muted} />
       </Pressable>
       {open && <View style={{ gap: 12 }}>{children}</View>}
     </View>

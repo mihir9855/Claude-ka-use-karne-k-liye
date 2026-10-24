@@ -9,6 +9,7 @@ import { INGREDIENTS } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { allDishes, useStore } from '../state/store';
 import { dishName, ingName, r } from './helpers';
+import { Icon } from './Icon';
 import { Button, Card, Chip, Field, H, Label, Muted, Row, Search, Segmented } from './kit';
 import { C } from './theme';
 
@@ -146,11 +147,11 @@ function DishRow({ dish }: { dish: Dish }) {
         onPress={() => setOpen(!open)}
         style={{ paddingVertical: 12, gap: 2, opacity: pref === 'dislike' ? 0.45 : 1 }}
       >
-        <Text style={{ fontSize: 16, fontWeight: '600', color: C.text }}>
-          {dishName(dish, lang)}
-          {pref === 'like' ? '  ♥' : ''}
-          {dish.custom ? '  ·  ✦' : ''}
-        </Text>
+        <Row style={{ flexWrap: 'nowrap', gap: 6 }}>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: C.text, flexShrink: 1 }}>{dishName(dish, lang)}</Text>
+          {pref === 'like' && <Icon name="heart" size={14} color={C.danger} />}
+          {dish.custom && <Icon name="user" size={14} color={C.primary} />}
+        </Row>
         <Muted>
           {tx(`role_${dish.role}` as StrKey)} · {r(m.kcal)} {tx('kcal')} · {r(m.protein)} {tx('g')} {tx('proteinShort')}
         </Muted>
@@ -207,7 +208,7 @@ export function DishesScreen() {
     <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }} keyboardShouldPersistTaps="handled">
       <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
         <H>{tx('dishesTitle')}</H>
-        {!adding && <Button label={tx('addShort')} onPress={() => setAdding(true)} />}
+        {!adding && <Button icon="plus" label={tx('addShort')} onPress={() => setAdding(true)} />}
       </Row>
       {adding && <AddDishForm onDone={() => setAdding(false)} />}
       {usual.length > 0 && (

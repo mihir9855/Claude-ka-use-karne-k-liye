@@ -38,6 +38,7 @@ function PersonCard({ index }: { index: 0 | 1 }) {
 
   return (
     <Collapse
+      icon="user"
       title={p.name || `${tx('person')} ${index + 1}`}
       summary={`${tx(`goal_${p.goal}` as StrKey)} · ${r(tg.kcal)} ${tx('kcal')} · ${r(tg.protein)} ${tx('g')} ${tx('proteinShort')}`}
       defaultOpen={index === 0}

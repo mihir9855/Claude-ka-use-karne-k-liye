@@ -7,6 +7,7 @@ import type { MealOption } from '../core/types';
 import { t, type StrKey } from '../i18n/strings';
 import { allDishes, useStore } from '../state/store';
 import { dishName, ingName, r } from './helpers';
+import { Icon, SLOT_ICON } from './Icon';
 import { Bar, Button, Collapse, H, Muted, Row } from './kit';
 import { C, R } from './theme';
 
@@ -50,7 +51,7 @@ export function TodayScreen() {
             {plan ? ` · ${plan.mealCount} ${tx('mealsToday')}` : ''}
           </Muted>
         </View>
-        <Button label={plan ? tx('newPlan') : tx('makePlan')} onPress={() => makePlan(date)} />
+        <Button icon="refresh" label={plan ? tx('newPlan') : tx('makePlan')} onPress={() => makePlan(date)} />
       </Row>
 
       {!plan && <Muted>{tx('noPlan')}</Muted>}
@@ -79,10 +80,13 @@ export function TodayScreen() {
         return (
           <View key={sp.slot} style={{ gap: 8 }}>
             <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: C.text }}>{tx(`slot_${sp.slot}` as StrKey)}</Text>
+              <Row style={{ flexWrap: 'nowrap', gap: 8 }}>
+                <Icon name={SLOT_ICON[sp.slot]} size={18} color={C.primary} />
+                <Text style={{ fontSize: 16, fontWeight: '700', color: C.text }}>{tx(`slot_${sp.slot}` as StrKey)}</Text>
+              </Row>
               <Row style={{ flexWrap: 'nowrap' }}>
                 <Pressable accessibilityRole="button" accessibilityLabel={tx('reshuffle')} onPress={() => reshuffleSlot(date, si)} hitSlop={8}>
-                  <Text style={{ fontSize: 18, color: C.muted }}>↻</Text>
+                  <Icon name="refresh" size={18} color={C.muted} />
                 </Pressable>
                 {sp.chosen === undefined && !eaten ? (
                   <Text style={{ fontSize: 13, color: C.accent, fontWeight: '600' }}>{tx('pickOne')}</Text>
@@ -100,9 +104,10 @@ export function TodayScreen() {
                       backgroundColor: eaten ? C.primary : C.surface,
                     }}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: eaten ? '#fff' : C.text }}>
-                      {eaten ? '✓' : '☐'} {tx('ate')}
-                    </Text>
+                    <Row style={{ flexWrap: 'nowrap', gap: 4 }}>
+                      {eaten && <Icon name="check" size={14} color="#fff" width={3} />}
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: eaten ? '#fff' : C.text }}>{tx('ate')}</Text>
+                    </Row>
                   </Pressable>
                 )}
               </Row>
@@ -166,6 +171,7 @@ export function TodayScreen() {
 
       {plan && (
         <Collapse
+          icon="cart"
           title={tx('shopping')}
           summary={gap.length === 0 ? tx('shoppingNone') : gap.map((g) => ingName(g.ing, lang)).join(', ')}
         >
