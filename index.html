@@ -267,6 +267,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 .dlg{background:var(--card);color:var(--ink);border-radius:22px;padding:18px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
 .btn.danger{background:var(--debit)!important;color:#fff!important}
 
+.lkrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}.lkrow:last-child{border-bottom:0}.lkrow input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--brand)}
 #lock{position:fixed;inset:0;z-index:10000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
 #lock.on{display:flex}#lock .lk{width:72px;height:72px;border-radius:20px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
 #intro{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#6a402d,#2b170f);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;transition:opacity .45s ease,transform .45s ease}
@@ -310,7 +311,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 72 · 24 Oct 2026';
+const APP_VER='version 1.4 · build 73 · 24 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -1858,10 +1859,10 @@ function khata(){
     const card=(id,name)=>{const st=srcStats(id);const n=S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(t.pool&&t.kind==='expense'&&(t.poolSrc||'')===id)).length;
       return `<div class="card row sp" style="margin-bottom:10px" data-a="source" data-id="${esc(id)}"><div class="row"><div class="dot" style="color:var(--credit)">${ic('wallet',19)}</div><div><b>${esc(name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'} · earned ${inr(st.inc)}</div></div></div><div style="text-align:right"><b class="num ${st.left<0?'debit':'credit'}">${inr(st.left)}</b><div class="small mute">left to use</div></div></div>`};
     body=otherSummary()+`
-    <h2>Income sources</h2>
+    <h2>Projects / income sources</h2>
     ${S.sources.map(x=>card(x.id,x.name)).join('')}
-    <button class="btn ghost" data-a="addsource">+ Add income source</button>
-    <p class="small mute">Make one source per client or kind of side income. Open it and tap <b>Earned</b> when money comes in, <b>Used</b> when you spend from it. This money is kept apart from your salary and normal spending.</p>`;
+    <button class="btn ghost" data-a="addsource">+ Add project</button>
+    <p class="small mute">Make one project per client or side work. Open it and tap <b>Earned</b> when money comes in, <b>Used</b> when you spend from it. This money is kept apart from your salary and normal spending.</p>`;
   }
   return `<h1>Ledger</h1><div class="seg" style="margin:14px 0"><button data-a="seg" data-id="people" class="${seg==='people'?'on':''}">People</button><button data-a="seg" data-id="other" class="${seg==='other'?'on':''}">Other income</button><button data-a="seg" data-id="emi" class="${seg==='emi'?'on':''}">EMI</button></div>${body}`;
 }
@@ -2271,7 +2272,7 @@ document.addEventListener('click',e=>{
     S.emis=S.emis.filter(x=>x.id!==id);S.tx=S.tx.filter(t=>t.emiId!==id);save();closeSheet();render();
     if(em)undoToast('EMI deleted',()=>{S.emis.push(em);gone.forEach(t=>S.tx.push(t));save();render()});
   }})}
-  else if(a==='addsource'){askText('Income source name','','e.g. a client or project').then(n=>{if(n&&n.trim()){S.sources.push({id:uid(),name:n.trim()});save();render()}})}
+  else if(a==='addsource'){askText('Project name','','e.g. a client, shop or side work').then(n=>{if(n&&n.trim()){S.sources.push({id:uid(),name:n.trim()});save();render()}})}
   else if(a==='source')sourceSheet(id);
   else if(a==='srcadd'){closeSheet();txSheet(null,{type:'credit',kind:'other',source:id})}
   else if(a==='srcren'){
@@ -2284,8 +2285,21 @@ document.addEventListener('click',e=>{
     openSheet(`<div class="row sp"><h1>All other income</h1><button class="icon-btn" data-a="close">✕</button></div><div class="small mute" style="margin:8px 0">Tap an entry to edit or delete it.</div><div class="card" style="padding:4px 16px">${l.length?l.map(txRow).join(''):'<div class="empty">No entries yet</div>'}</div>`);
   }
   else if(a==='srcdel'){
-    if(S.tx.some(t=>t.source===id||t.poolSrc===id)){toast('Has entries. Edit or delete them first.');return}
-    S.sources=S.sources.filter(y=>y.id!==id);save();closeSheet();render()}
+    const x=S.sources.find(y=>y.id===id);if(!x)return;const gone=srcTx(id),n=gone.length;
+    askConfirm(n?`Delete project "${x.name}" and its ${n} entr${n===1?'y':'ies'}? Account balances and totals change, because these entries are removed.`:`Delete project "${x.name}"?`,'Delete',true).then(ok=>{if(!ok)return;
+      const i=S.sources.indexOf(x),added=!S.sources.some(y=>y!==x);S.sources.splice(i,1);S.tx=S.tx.filter(t=>!gone.includes(t));
+      if(added)S.sources.push({id:'src_other',name:'Other income'});
+      save();closeSheet();render();
+      undoToast('"'+x.name+'" deleted',()=>{if(added)S.sources=S.sources.filter(y=>y.id!=='src_other');S.sources.splice(Math.min(i,S.sources.length),0,x);gone.forEach(t=>S.tx.push(t));save();render()})})}
+  else if(a==='srclink')srcLinkSheet(id);
+  else if(a==='srclinkgo'){
+    const prev=[];document.querySelectorAll('#lk input[type=checkbox]').forEach(c=>{const t=S.tx.find(x=>x.id===c.dataset.id);if(!t)return;
+      const linked=t.kind==='other'?(t.source||'')===id:!!t.pool&&(t.poolSrc||'')===id;if(c.checked===linked)return;
+      prev.push([t,{kind:t.kind,source:t.source,pool:t.pool,poolSrc:t.poolSrc}]);
+      if(t.type==='credit'){if(c.checked){t.kind='other';t.source=id}else{t.kind='income';delete t.source}}
+      else{if(c.checked){t.pool=true;t.poolSrc=id}else{t.pool=false;delete t.poolSrc}}});
+    save();render();sourceSheet(id);
+    if(prev.length)undoToast(prev.length+' entr'+(prev.length===1?'y':'ies')+' updated',()=>{prev.forEach(([t,o])=>{Object.assign(t,o);if(o.source===undefined)delete t.source;if(o.poolSrc===undefined)delete t.poolSrc});save();render()});else toast('No change')}
   else if(a==='copydbg'){const t=$('#pdfdbg');t.select();try{navigator.clipboard.writeText(t.value).then(()=>toast('Copied. Paste it in the chat.'),()=>{document.execCommand('copy');toast('Copied. Paste it in the chat.')})}catch(e){document.execCommand('copy');toast('Copied. Paste it in the chat.')}}
   else if(a==='stmt')pickStatement(id);
   else if(a==='stmtpick')pickStatement($('#st-acc').value);
@@ -2375,7 +2389,7 @@ document.addEventListener('click',e=>{
     else{$('#f-via').value=id;partyChips()}
   }
   else if(a==='poolsrc'){
-    if(id==='__new'){askText('Income source name','','e.g. a client or project').then(n=>{if(n&&n.trim()){const nid=uid();S.sources.push({id:nid,name:n.trim()});save();const sel=$('#f-poolsrc');if(sel){sel.innerHTML=srcOptions(nid);sel.value=nid}if($('#pool-chips'))poolChips()}})}
+    if(id==='__new'){askText('Project name','','e.g. a client, shop or side work').then(n=>{if(n&&n.trim()){const nid=uid();S.sources.push({id:nid,name:n.trim()});save();const sel=$('#f-poolsrc');if(sel){sel.innerHTML=srcOptions(nid);sel.value=nid}if($('#pool-chips'))poolChips()}})}
     else{$('#f-poolsrc').value=id;poolChips()}
   }
   else if(a==='smson')enableSms();
@@ -2431,7 +2445,7 @@ document.addEventListener('change',e=>{
   if(e.target.id==='f-pool')$('#w-poolsrc').hidden=!e.target.checked;
   if((e.target.id==='f-source'||e.target.id==='f-poolsrc')&&e.target.value==='__new'){
     const sel=e.target;
-    askText('Income source name','','e.g. a client or project').then(n=>{
+    askText('Project name','','e.g. a client, shop or side work').then(n=>{
       if(n&&n.trim()){const id=uid();S.sources.push({id,name:n.trim()});save();['f-source','f-poolsrc'].forEach(i=>{const el=$('#'+i);if(el)el.innerHTML=srcOptions(id)})}
       else sel.value=S.sources[0]?S.sources[0].id:'';
     });
@@ -2486,7 +2500,7 @@ function sourceSheet(id){
   let line='';
   if(list.length>=2){const asc=list.slice().reverse();let run=0;const vals=asc.map(t=>run+=othIn(t)-othOut(t)),dl=t=>new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'}),lab=asc.map((t,i)=>i===0||i===asc.length-1?dl(t):'');
     line=`<h2>Left over time</h2><div class="card">${lc2([{vals,color:'var(--brand)',area:true,peak:false,tips:asc.map((t,i)=>dl(t)+' · '+inr(vals[i]))}],lab,{h:150})}</div>`}
-  openSheet(`<div class="row sp"><h1>${esc(name)}</h1><div class="row" style="gap:8px"><button class="icon-btn" data-a="srcpdfmenu" data-id="${esc(id)}" aria-label="Statement PDF" title="Statement PDF">${ic('doc',18)}</button>${id?delBtn('srcdel',id,'Delete source'):''}<button class="icon-btn" data-a="close">✕</button></div></div>
+  openSheet(`<div class="row sp"><h1>${esc(name)}</h1><div class="row" style="gap:8px"><button class="icon-btn" data-a="srcpdfmenu" data-id="${esc(id)}" aria-label="Statement PDF" title="Statement PDF">${ic('doc',18)}</button>${id?delBtn('srcdel',id,'Delete project'):''}<button class="icon-btn" data-a="close">✕</button></div></div>
    <div class="card" style="margin-top:14px"><div class="small mute">${st.left>=0?'Left to use':'Used more than earned'}</div><div class="big num ${st.left<0?'debit':'credit'}">${inr(Math.abs(st.left))}</div>
    <div class="grid2" style="margin-top:12px"><div class="mini"><span class="small mute">Earned</span><b class="num credit">${inr(st.inc)}</b></div><div class="mini"><span class="small mute">Used</span><b class="num debit">${inr(st.used)}</b></div></div></div>
    <div class="pq"><button class="r" data-a="sform" data-id="credit">↙ Earned</button><button class="g" data-a="sform" data-id="debit">↗ Used</button></div>
@@ -2498,9 +2512,23 @@ function sourceSheet(id){
    <label>Note</label><input id="sa-note">
    <button class="btn" data-a="srcsave" data-id="${esc(id)}">Save</button></div>
    ${line}
-   <button class="btn ghost" data-a="srcren" data-id="${esc(id)}">${id?'Edit name':'Give this a name'}</button>
+   <div class="row" style="gap:8px;margin-top:12px"><button class="btn ghost" data-a="srclink" data-id="${esc(id)}" style="margin:0;flex:1">🔗 Link entries</button><button class="btn ghost" data-a="srcren" data-id="${esc(id)}" style="margin:0;flex:1">${id?'Edit name':'Give a name'}</button></div>
    <h2>History</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries yet.</div>'}</div>`);
   saDir='credit';refreshDates();
+}
+/* pick existing transactions and link them to (or unlink from) a project */
+function srcLinkSheet(id){
+  const idx=new Map(S.tx.map((t,i)=>[t,i]));
+  const pool=S.tx.filter(t=>(t.type==='credit'&&(t.kind==='income'||t.kind==='other'))||(t.type==='debit'&&t.kind==='expense')).sort((a,b)=>b.date.localeCompare(a.date)||idx.get(b)-idx.get(a)).slice(0,150);
+  const linked=t=>t.kind==='other'?(t.source||'')===id:!!t.pool&&(t.poolSrc||'')===id;
+  const other=t=>t.kind==='other'?srcName(t.source||''):t.pool?srcName(t.poolSrc||''):'';
+  const row=t=>{const o=other(t),on=linked(t);return `<label class="lkrow"><input type="checkbox" data-id="${t.id}" ${on?'checked':''}><div class="grow" style="min-width:0"><div class="t">${esc(t.note||cname(t.cat))}</div><div class="small mute tm">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${t.type==='credit'?'income':esc(cname(t.cat))}${o&&!on?' · now in '+esc(o):''}</div></div><b class="num ${t.type}">${t.type==='credit'?'+':'−'}${inr(t.amt)}</b></label>`};
+  const inc=pool.filter(t=>t.type==='credit'),exp=pool.filter(t=>t.type==='debit');
+  openSheet(`<div class="row sp"><h1>Link entries</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <div class="small mute" style="margin:6px 0 10px">Tick entries that belong to <b>${esc(srcName(id))}</b>. Ticked income becomes this project's earning; ticked spending is paid from this project. Untick to remove.</div>
+  <div id="lk"><h2>Money in</h2><div class="card" style="padding:2px 14px;max-height:34vh;overflow:auto">${inc.map(row).join('')||'<div class="empty">No income entries</div>'}</div>
+  <h2>Money out</h2><div class="card" style="padding:2px 14px;max-height:34vh;overflow:auto">${exp.map(row).join('')||'<div class="empty">No spending entries</div>'}</div></div>
+  <button class="btn" data-a="srclinkgo" data-id="${esc(id)}">Save links</button>`);
 }
 function srcPdfMenu(id){
   openSheet(`<div class="row sp"><h1>Statement PDF</h1><button class="icon-btn" data-a="close">✕</button></div><div class="small mute" style="margin:8px 0 4px">${esc(srcName(id))}</div>
