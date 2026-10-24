@@ -106,6 +106,8 @@ export function ProfileScreen() {
   const setOnboarded = useStore((s) => s.setOnboarded);
   const count = useStore((s) => s.persons.length);
   const addPerson = useStore((s) => s.addPerson);
+  const geminiKey = useStore((s) => s.geminiKey);
+  const setGeminiKey = useStore((s) => s.setGeminiKey);
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }} keyboardShouldPersistTaps="handled">
       <H>{t(lang, 'profileTitle')}</H>
@@ -135,6 +137,10 @@ export function ProfileScreen() {
         ))}
         {count < MAX_MEMBERS && <Button icon="plus" kind="soft" label={t(lang, 'addMember')} onPress={addPerson} />}
       </View>
+      <Collapse icon="camera" title={t(lang, 'smartScan')} summary={geminiKey ? '••••' + geminiKey.slice(-4) : undefined}>
+        <Field label={t(lang, 'geminiKey')} value={geminiKey} onChangeText={setGeminiKey} autoCapitalize="none" autoCorrect={false} secureTextEntry />
+        <Muted>{t(lang, 'keyHint')}</Muted>
+      </Collapse>
       <Button kind="soft" label={t(lang, 'redoSetup')} onPress={() => setOnboarded(false)} />
       <Muted>{t(lang, 'disclaimer')}</Muted>
     </ScrollView>

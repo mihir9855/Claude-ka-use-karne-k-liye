@@ -22,6 +22,8 @@ const newPerson = (name: string, sex: Person['sex']): Person => ({
 interface State {
   lang: Lang;
   onboarded: boolean;
+  /** Google Gemini key for photo detection, kept only on this device */
+  geminiKey: string;
   persons: Person[];
   mealCount: number | 'auto';
   strictPantry: boolean;
@@ -41,6 +43,8 @@ interface State {
   clearUndo: () => void;
   setLang: (l: Lang) => void;
   setOnboarded: (v: boolean) => void;
+  setGeminiKey: (k: string) => void;
+  addToPantry: (ids: string[]) => void;
   togglePantry: (ing: string) => void;
   updatePerson: (i: number, patch: Partial<Person>) => void;
   setMemberCount: (n: number) => void;
@@ -67,6 +71,7 @@ export const useStore = create<State>()(
     (set, get) => ({
       lang: 'hi',
       onboarded: false,
+      geminiKey: '',
       persons: [newPerson('', 'male'), newPerson('', 'female')],
       mealCount: 'auto',
       strictPantry: true,
@@ -89,6 +94,9 @@ export const useStore = create<State>()(
       clearUndo: () => set({ undoSnapshot: null }),
       setLang: (lang) => set({ lang }),
       setOnboarded: (onboarded) => set({ onboarded }),
+      setGeminiKey: (geminiKey) => set({ geminiKey: geminiKey.trim() }),
+      addToPantry: (ids) =>
+        set((s) => ({ pantry: { ...s.pantry, have: { ...s.pantry.have, ...Object.fromEntries(ids.map((id) => [id, true])) } } })),
       togglePantry: (ing) =>
         set((s) => {
           const have = { ...s.pantry.have };

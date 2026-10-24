@@ -146,3 +146,49 @@ test('over a week every member gets most of their protein, plus dal and dairy da
     });
   }
 });
+
+import { matchIngredients } from '../src/core/match';
+import { detectItemsFromImage, lookupBarcode, parseItems, ScanError } from '../src/core/scan';
+
+test('product and bill text maps to pantry items', () => {
+  assert.deepEqual(matchIngredients('Aashirvaad Whole Wheat Atta 5kg'), ['atta']);
+  assert.deepEqual(matchIngredients('Tata Sampann Toor Dal'), ['toor_dal']);
+  assert.deepEqual(matchIngredients('Amul Fresh Paneer'), ['paneer']);
+  assert.deepEqual(matchIngredients('Chana dal 1kg'), ['chana_dal']);
+  assert.deepEqual(matchIngredients('Kabuli chana'), ['chole']);
+  assert.deepEqual(matchIngredients('Poha thick flattened rice'), ['poha']);
+  assert.deepEqual(matchIngredients('Dark Chocolate with almonds'), []);
+  assert.deepEqual(matchIngredients('Tomatoes 500g').sort(), ['tomato']);
+  assert.ok(matchIngredients('Onion, potato, green peas').length === 3);
+});
+
+test('barcode lookup uses Open Food Facts and maps the name', async () => {
+  const calls: string[] = [];
+  const fake = (async (url: string) => {
+    calls.push(url);
+    return { ok: true, status: 200, json: async () => ({ status: 1, product: { product_name: 'Fortune Besan', categories_tags: ['en:flours'] } }) };
+  }) as unknown as typeof fetch;
+  const r = await lookupBarcode('8901234567890', fake);
+  assert.deepEqual(r, { found: true, name: 'Fortune Besan', ids: ['besan'] });
+  assert.match(calls[0], /world\.openfoodfacts\.org\/api\/v2\/product\/8901234567890\.json/);
+  const none = (async () => ({ ok: true, status: 200, json: async () => ({ status: 0 }) })) as unknown as typeof fetch;
+  assert.deepEqual(await lookupBarcode('8901234567890', none), { found: false, ids: [] });
+  assert.deepEqual(await lookupBarcode('12', none), { found: false, ids: [] });
+});
+
+test('photo detection keeps only valid ids and reports errors clearly', async () => {
+  assert.deepEqual(parseItems('```json\n{"items":["tomato","unicorn","paneer","tomato"]}\n```'), ['tomato', 'paneer']);
+  assert.deepEqual(parseItems('no json here'), []);
+  let seen: { headers: Record<string, string>; body: string } | undefined;
+  const ok = (async (_u: string, init: { headers: Record<string, string>; body: string }) => {
+    seen = init;
+    return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: '{"items":["aloo","matar"]}' }] } }] }) };
+  }) as unknown as typeof fetch;
+  assert.deepEqual(await detectItemsFromImage({ base64: 'AAA', apiKey: 'k' }, ok), ['aloo', 'matar']);
+  assert.equal(seen!.headers['x-goog-api-key'], 'k');
+  assert.ok(!seen!.body.includes('"oil"'));
+  const bad = (async () => ({ ok: false, status: 403, json: async () => ({}) })) as unknown as typeof fetch;
+  await assert.rejects(detectItemsFromImage({ base64: 'AAA', apiKey: 'x' }, bad), (e: ScanError) => e.kind === 'key');
+  const limit = (async () => ({ ok: false, status: 429, json: async () => ({}) })) as unknown as typeof fetch;
+  await assert.rejects(detectItemsFromImage({ base64: 'AAA', apiKey: 'x' }, limit), (e: ScanError) => e.kind === 'limit');
+});

@@ -14,7 +14,10 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.hamarithali.app"
+      "package": "com.hamarithali.app",
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "scheme": "hamarithali",
     "platforms": [
@@ -25,6 +28,22 @@
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Hamari Thali uses the camera to scan barcodes and groceries.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Hamari Thali uses the camera to photograph groceries.",
+          "photosPermission": "Hamari Thali reads a photo to find the groceries in it."
+        }
+      ]
+    ]
   }
 }
