@@ -6,6 +6,8 @@ import { generateDayPlan, regenerateSlot, type PlanInput } from '../core/planner
 import type { DayPlan, Dish, DishPref, Lang, LogEntry, Pantry, Person, Slot } from '../core/types';
 import { BUILTIN_DISHES } from '../data/dishes';
 
+export const MAX_MEMBERS = 6;
+
 const newPerson = (name: string, sex: Person['sex']): Person => ({
   name,
   sex,
@@ -20,7 +22,7 @@ const newPerson = (name: string, sex: Person['sex']): Person => ({
 interface State {
   lang: Lang;
   onboarded: boolean;
-  persons: [Person, Person];
+  persons: Person[];
   mealCount: number | 'auto';
   strictPantry: boolean;
   pantry: Pantry;
@@ -33,7 +35,10 @@ interface State {
   setLang: (l: Lang) => void;
   setOnboarded: (v: boolean) => void;
   togglePantry: (ing: string) => void;
-  updatePerson: (i: 0 | 1, patch: Partial<Person>) => void;
+  updatePerson: (i: number, patch: Partial<Person>) => void;
+  setMemberCount: (n: number) => void;
+  addPerson: () => void;
+  removePerson: (i: number) => void;
   setMealCount: (n: number | 'auto') => void;
   setStrictPantry: (v: boolean) => void;
   cyclePantry: (ing: string) => void;
@@ -55,7 +60,7 @@ export const useStore = create<State>()(
     (set, get) => ({
       lang: 'hi',
       onboarded: false,
-      persons: [newPerson('Me', 'male'), newPerson('Wife', 'female')],
+      persons: [newPerson('', 'male'), newPerson('', 'female')],
       mealCount: 'auto',
       strictPantry: true,
       pantry: { have: {}, soon: {} },
@@ -79,10 +84,24 @@ export const useStore = create<State>()(
         }),
       updatePerson: (i, patch) =>
         set((s) => {
-          const persons = [...s.persons] as State['persons'];
+          const persons = [...s.persons];
           persons[i] = { ...persons[i], ...patch };
           return { persons };
         }),
+      // plans store one entry per member, so they are rebuilt when the family size changes
+      setMemberCount: (n) =>
+        set((s) => {
+          const count = Math.min(MAX_MEMBERS, Math.max(1, n));
+          if (count === s.persons.length) return {};
+          const persons = s.persons.slice(0, count);
+          while (persons.length < count) persons.push(newPerson('', persons.length % 2 === 0 ? 'male' : 'female'));
+          return { persons, plans: {} };
+        }),
+      addPerson: () => get().setMemberCount(get().persons.length + 1),
+      removePerson: (i) =>
+        set((s) =>
+          s.persons.length <= 1 ? {} : { persons: s.persons.filter((_, k) => k !== i), plans: {} },
+        ),
       setMealCount: (mealCount) => set({ mealCount }),
       setStrictPantry: (strictPantry) => set({ strictPantry }),
       cyclePantry: (ing) =>
@@ -116,7 +135,19 @@ export const useStore = create<State>()(
       makePlan: (date = todayStr()) => {
         const s = get();
         const salt = (s.saltByDate[date] ?? -1) + 1;
-        const plan = generateDayPlan(planInput(s, date, salt));
+        const fresh = generateDayPlan(planInput(s, date, salt));
+        // meals already eaten today stay as they were
+        const old = s.plans[date];
+        const eatenSlots = new Set(s.log.filter((e) => e.date === date).map((e) => e.slot));
+        const plan = old
+          ? {
+              ...fresh,
+              slots: fresh.slots.map((sp) => {
+                const prev = old.slots.find((o) => o.slot === sp.slot);
+                return prev && eatenSlots.has(sp.slot) ? prev : sp;
+              }),
+            }
+          : fresh;
         set({ plans: { ...s.plans, [date]: plan }, saltByDate: { ...s.saltByDate, [date]: salt } });
       },
       reshuffleSlot: (date, slotIndex) => {

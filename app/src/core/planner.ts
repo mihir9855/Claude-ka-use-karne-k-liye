@@ -1,6 +1,6 @@
 import { INGREDIENT_BY_ID } from '../data/ingredients';
 import { habitScore, habitStats, pairCounts, pairKey } from './habits';
-import { autoMealCount, computeTargets, dishFlags, dishMacros, excludedFlags, softFlags } from './nutrition';
+import { autoMealCount, computeTargets, dishFlags, dishMacros, excludedFlags, giShare, softFlags } from './nutrition';
 import type {
   DayPlan,
   Dish,
@@ -110,6 +110,24 @@ function coverage(dishes: Dish[], pantry: Pantry): { cov: number; soon: number }
 
 const KEY_ROLES: Dish['role'][] = ['complete', 'main', 'snack'];
 
+export type FoodTag = 'dairy' | 'fruit' | 'leafy' | 'pulse';
+
+const TAG_WEIGHT: Record<FoodTag, number> = { fruit: 1.2, leafy: 0.6, dairy: 0.5, pulse: 0.5 };
+
+/** Food groups a dish contributes, used to cover the whole day (calcium, vitamins, iron). */
+export function dishTags(dish: Dish): Set<FoodTag> {
+  const tags = new Set<FoodTag>();
+  for (const it of dish.items) {
+    const ing = INGREDIENT_BY_ID[it.ing];
+    if (!ing) continue;
+    if (ing.group === 'dairy' && ing.id !== 'ghee' && ing.id !== 'whey') tags.add('dairy');
+    if (ing.group === 'fruit') tags.add('fruit');
+    if (ing.group === 'leafy' && it.g >= 40) tags.add('leafy');
+    if (ing.group === 'pulse' && it.g >= 30) tags.add('pulse');
+  }
+  return tags;
+}
+
 interface Scored {
   dishes: Dish[];
   option: MealOption;
@@ -121,12 +139,19 @@ function planSlot(
   slot: Slot,
   share: number,
   usedToday: Set<string>,
+  covered: Set<FoodTag>,
   salt: number,
+  /** protein already delivered earlier today, and the share of the day still to come (incl. this slot) */
+  carry: { delivered: number[]; remainingShare: number },
 ): SlotPlan {
   const { persons, pantry } = input;
-  const targets = persons.map((p) => {
+  const targets = persons.map((p, i) => {
     const t = computeTargets(p);
-    return { kcal: t.kcal * share, protein: t.protein * share };
+    // spread any protein shortfall so far over the meals that are left
+    const base = t.protein * share;
+    const left = (t.protein - carry.delivered[i]) * (share / Math.max(carry.remainingShare, share));
+    const protein = Math.min(base * 1.5, Math.max(base * 0.6, left));
+    return { kcal: t.kcal * share, protein };
   });
   const banned = excludedFlags(persons);
   const soft = softFlags(persons);
@@ -134,6 +159,8 @@ function planSlot(
   const pairs = pairCounts(input.log);
   const rng = mulberry32(hash(`${input.date}|${slot}|${salt}`));
   const hasPantry = pantryHas(pantry);
+  // dishes already eaten today are not suggested again
+  const eatenToday = new Set(input.log.filter((e) => e.date === input.date).flatMap((e) => e.dishIds));
 
   const flagCache = new Map<string, Set<Flag>>();
   const flagsOf = (d: Dish) => {
@@ -160,6 +187,7 @@ function planSlot(
     const kc: number[] = [];
     const pr: number[] = [];
     let protErr = 0;
+    let worstProt = 0;
     let kcalErr = 0;
     persons.forEach((_, i) => {
       const raw = targets[i].kcal / Math.max(kcal, 1);
@@ -167,15 +195,33 @@ function planSlot(
       servings.push(m);
       kc.push(m * kcal);
       pr.push(m * protein);
-      protErr += Math.abs(m * protein - targets[i].protein) / Math.max(targets[i].protein, 1);
+      // falling short of protein costs more than overshooting it
+      const tp = Math.max(targets[i].protein, 1);
+      const gap = (m * protein - targets[i].protein) / tp;
+      const err = gap < 0 ? -gap : gap * 0.4;
+      protErr += err;
+      worstProt = Math.max(worstProt, err);
       kcalErr += Math.abs(m * kcal - targets[i].kcal) / Math.max(targets[i].kcal, 1);
     });
-    protErr /= persons.length;
+    protErr = 0.5 * (protErr / persons.length) + 0.5 * worstProt;
     kcalErr /= persons.length;
 
+    // steady energy: fibre per meal, and no big spike from fast carbs
+    const mealFiber = dishes.reduce((a, d) => a + dishMacros(d).fiber, 0);
+    let fiberScore = 0;
+    persons.forEach((_, i) => {
+      const need = (14 * targets[i].kcal) / 1000;
+      fiberScore += Math.min(1, (servings[i] * mealFiber) / Math.max(need, 1));
+    });
+    fiberScore /= persons.length;
+    const spike = slotCategory(slot) === 'snack' ? 0 : Math.max(0, giShare(dishes) - 0.4) * 2.5;
+
     const { cov, soon } = hasPantry ? coverage(dishes, pantry) : { cov: 1, soon: 0 };
-    let s = 4 * (1 - Math.min(1, protErr)) - 2 * kcalErr;
-    s += 2 * cov + 0.8 * soon;
+    let s = 6 * (1 - Math.min(1, protErr)) - 2 * kcalErr;
+    s += 2 * cov + 0.8 * soon + 1.0 * fiberScore - spike;
+    const tags = new Set<FoodTag>();
+    for (const d of dishes) for (const tg of dishTags(d)) tags.add(tg);
+    for (const tg of tags) if (!covered.has(tg)) s += TAG_WEIGHT[tg];
 
     for (const d of dishes) {
       s += habitScore(stats.get(d.id));
@@ -200,6 +246,10 @@ function planSlot(
     const strict = scored.filter((c) => c.option.coverage >= 0.75);
     if (strict.length >= 2) scored = strict;
   }
+  const fresh = scored.filter(
+    (c) => !c.dishes.some((d) => KEY_ROLES.includes(d.role) && eatenToday.has(d.id)),
+  );
+  if (fresh.length >= 2) scored = fresh;
   scored.sort((a, b) => b.score - a.score);
 
   const options: MealOption[] = [];
@@ -229,10 +279,23 @@ export function generateDayPlan(input: PlanInput): DayPlan {
   const slots = SLOTS_BY_COUNT[count];
   const shares = SHARE[count];
   const used = new Set<string>();
+  const covered = new Set<FoodTag>();
+  const byId = new Map(input.dishes.map((d) => [d.id, d]));
+  const markCovered = (ids: string[]) => {
+    for (const id of ids) {
+      const d = byId.get(id);
+      if (d) for (const tg of dishTags(d)) covered.add(tg);
+    }
+  };
+  for (const e of input.log) if (e.date === input.date) markCovered(e.dishIds);
   const out: SlotPlan[] = [];
+  const delivered = input.persons.map(() => 0);
   slots.forEach((slot, i) => {
-    const sp = planSlot(input, slot, shares[i], used, input.salt ?? 0);
+    const remainingShare = shares.slice(i).reduce((a, b) => a + b, 0);
+    const sp = planSlot(input, slot, shares[i], used, covered, input.salt ?? 0, { delivered: delivered.slice(), remainingShare });
+    sp.options[0]?.protein.forEach((p, k) => (delivered[k] += p));
     for (const o of sp.options) for (const id of keyIdsOf(o, input.dishes)) used.add(id);
+    if (sp.options[0]) markCovered(sp.options[0].dishIds);
     out.push(sp);
   });
   return { date: input.date, mealCount: count, slots: out };
@@ -246,7 +309,19 @@ export function regenerateSlot(plan: DayPlan, slotIndex: number, input: PlanInpu
     for (const o of sp.options) for (const id of keyIdsOf(o, input.dishes)) used.add(id);
   });
   const shares = SHARE[plan.mealCount];
-  const sp = planSlot(input, plan.slots[slotIndex].slot, shares[slotIndex], used, salt);
+  const byId = new Map(input.dishes.map((d) => [d.id, d]));
+  const covered = new Set<FoodTag>();
+  plan.slots.forEach((sp, i) => {
+    if (i === slotIndex || !sp.options[0]) return;
+    for (const id of sp.options[0].dishIds) {
+      const d = byId.get(id);
+      if (d) for (const tg of dishTags(d)) covered.add(tg);
+    }
+  });
+  const delivered = input.persons.map(() => 0);
+  plan.slots.slice(0, slotIndex).forEach((sp) => sp.options[0]?.protein.forEach((p, k) => (delivered[k] += p)));
+  const remainingShare = shares.slice(slotIndex).reduce((a, b) => a + b, 0);
+  const sp = planSlot(input, plan.slots[slotIndex].slot, shares[slotIndex], used, covered, salt, { delivered, remainingShare });
   const slots = plan.slots.slice();
   slots[slotIndex] = sp;
   return { ...plan, slots };

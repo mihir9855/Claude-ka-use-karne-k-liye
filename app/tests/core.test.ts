@@ -5,6 +5,7 @@ import { INGREDIENT_BY_ID } from '../src/data/ingredients';
 import { habitStats } from '../src/core/habits';
 import { autoMealCount, computeTargets, dishFlags, dishMacros } from '../src/core/nutrition';
 import { generateDayPlan, shoppingGap, type PlanInput } from '../src/core/planner';
+import { dayChecks } from '../src/core/dayCheck';
 import type { Person } from '../src/core/types';
 
 const him: Person = { name: 'A', sex: 'male', age: 32, heightCm: 172, weightKg: 78, activity: 'moderate', goal: 'muscle_gain', conditions: [] };
@@ -30,8 +31,8 @@ test('every dish references known ingredients', () => {
 test('targets follow goal', () => {
   const a = computeTargets(him);
   const b = computeTargets(her);
-  assert.ok(a.protein >= 150 && a.protein <= 160, String(a.protein));
-  assert.ok(b.protein >= 105 && b.protein <= 115, String(b.protein));
+  assert.ok(a.protein >= 138 && a.protein <= 142, String(a.protein));
+  assert.ok(b.protein >= 97 && b.protein <= 101, String(b.protein));
   assert.ok(b.kcal < 2000 && b.kcal >= 1200);
   assert.ok(computeTargets({ ...him, conditions: ['kidney'] }).protein <= 63);
 });
@@ -93,4 +94,55 @@ test('eaten dishes are held back next day and counted', () => {
   const plan = generateDayPlan(base({ log, mealCount: 3 }));
   const lunch = plan.slots[1].options[0].dishIds;
   assert.ok(!lunch.includes('aloo_matar'));
+});
+
+test('a dish eaten today is not suggested again later today', () => {
+  const log = [{ id: '1', date: '2026-10-24', slot: 'breakfast' as const, dishIds: ['paneer_paratha'] }];
+  const plan = generateDayPlan(base({ log, mealCount: 5 }));
+  for (const sp of plan.slots) for (const o of sp.options) assert.ok(!o.dishIds.includes('paneer_paratha'));
+});
+
+test('family of four, with children, gets one plan with per-member portions', () => {
+  const kid: Person = { name: 'K', sex: 'male', age: 8, heightCm: 125, weightKg: 26, activity: 'light', goal: 'maintain', conditions: [] };
+  const elder: Person = { name: 'E', sex: 'female', age: 64, heightCm: 155, weightKg: 60, activity: 'sedentary', goal: 'maintain', conditions: ['diabetes'] };
+  const persons = [him, her, kid, elder];
+  const plan = generateDayPlan(base({ persons, mealCount: 4 }));
+  for (const sp of plan.slots) {
+    assert.equal(sp.targets.length, 4);
+    for (const o of sp.options) {
+      assert.equal(o.servings.length, 4);
+      assert.ok(o.servings[2] <= o.servings[0]);
+    }
+  }
+  // diabetes in the family removes fast-carb dishes for everyone
+  const byId = new Map(BUILTIN_DISHES.map((d) => [d.id, d]));
+  for (const sp of plan.slots) for (const o of sp.options) for (const id of o.dishIds) assert.ok(!dishFlags(byId.get(id)!).has('high_gi'), id);
+});
+
+test('child targets are age-based and ignore weight-loss goals', () => {
+  const kid: Person = { name: 'K', sex: 'female', age: 10, heightCm: 135, weightKg: 32, activity: 'light', goal: 'fat_loss', conditions: [] };
+  const t = computeTargets(kid);
+  assert.equal(t.kcal, 2000);
+  assert.equal(t.protein, 32);
+});
+
+test('day checks flag a full day and a thin one', () => {
+  const plan = generateDayPlan(base({ mealCount: 5 }));
+  const checks = dayChecks(plan, BUILTIN_DISHES, [him, her]);
+  assert.equal(typeof checks.protein, 'boolean');
+  const emptied = { ...plan, slots: plan.slots.map((s) => ({ ...s, options: [] })) };
+  const none = dayChecks(emptied, BUILTIN_DISHES, [him, her]);
+  assert.ok(!none.protein && !none.dairy && !none.fruit);
+});
+
+test('over a week every member gets most of their protein, plus dal and dairy daily', () => {
+  for (let d = 1; d <= 7; d++) {
+    const plan = generateDayPlan(base({ date: `2026-10-0${d}`, mealCount: 5 }));
+    const c = dayChecks(plan, BUILTIN_DISHES, [him, her]);
+    assert.ok(c.pulse && c.dairy, `day ${d}`);
+    [him, her].forEach((p, i) => {
+      const got = plan.slots.reduce((a, sp) => a + sp.options[0].protein[i], 0);
+      assert.ok(got >= computeTargets(p).protein * 0.8, `day ${d} member ${i}: ${got}`);
+    });
+  }
 });

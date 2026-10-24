@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { todayStr } from '../core/dates';
+import { dayChecks, type CheckKey } from '../core/dayCheck';
 import { computeTargets } from '../core/nutrition';
 import { shoppingGap } from '../core/planner';
 import type { MealOption } from '../core/types';
@@ -17,7 +18,9 @@ export function TodayScreen() {
   const date = todayStr();
   const lang = useStore((s) => s.lang);
   const persons = useStore((s) => s.persons);
-  const plan = useStore((s) => s.plans[date]);
+  const rawPlan = useStore((s) => s.plans[date]);
+  // a plan built for a different family size is stale
+  const plan = rawPlan && rawPlan.slots[0]?.targets.length === persons.length ? rawPlan : undefined;
   const custom = useStore((s) => s.customDishes);
   const pantry = useStore((s) => s.pantry);
   const log = useStore((s) => s.log);
@@ -30,6 +33,9 @@ export function TodayScreen() {
   const todayLog = log.filter((e) => e.date === date);
   const names = (ids: string[]) => ids.map((id) => dishName(byId.get(id), lang)).join(' + ');
   const who = (i: number) => persons[i].name || `${tx('person')} ${i + 1}`;
+  // short tag in the portion line: first letter of the name, or the member number
+  const initial = (i: number) => (persons[i].name.trim() ? Array.from(persons[i].name.trim())[0].toUpperCase() : String(i + 1));
+  const checks = plan ? dayChecks(plan, dishes, persons) : undefined;
 
   const picked = (sp: { options: MealOption[]; chosen?: number }) => sp.options[sp.chosen ?? 0];
   const totals = plan
@@ -57,9 +63,9 @@ export function TodayScreen() {
       {!plan && <Muted>{tx('noPlan')}</Muted>}
 
       {plan && (
-        <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
           {persons.map((_, i) => (
-            <View key={i} style={{ flex: 1, gap: 6 }}>
+            <View key={i} style={{ flexBasis: persons.length === 1 ? '100%' : '46%', flexGrow: 1, gap: 6 }}>
               <Text style={{ fontSize: 13, color: C.muted }} numberOfLines={1}>{who(i)}</Text>
               <Text style={{ fontSize: 18, fontWeight: '700', color: C.text }}>
                 {r(totals[i].protein)}
@@ -71,6 +77,26 @@ export function TodayScreen() {
               <Muted>{r(totals[i].kcal)} / {r(targets[i].kcal)} {tx('kcal')}</Muted>
             </View>
           ))}
+        </View>
+      )}
+
+      {checks && (
+        <View style={{ gap: 8 }}>
+          <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+              {tx('energyCheck')}
+            </Text>
+            <Muted>{tx('water')} {Math.max(...targets.map((x) => x.waterL))} L</Muted>
+          </Row>
+          <Row>
+            {(['protein', 'fiber', 'veg', 'pulse', 'dairy', 'fruit'] as CheckKey[]).map((k) => (
+              <Row key={k} style={{ flexWrap: 'nowrap', gap: 4, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 999, backgroundColor: checks[k] ? C.primarySoft : C.accentSoft }}>
+                {checks[k] && <Icon name="check" size={13} color={C.primary} width={3} />}
+                <Text style={{ fontSize: 13, color: checks[k] ? C.primary : C.accent, fontWeight: '600' }}>{tx(`chk_${k}` as StrKey)}</Text>
+              </Row>
+            ))}
+          </Row>
+          {checks && !checks.protein && <Muted>{tx('proteinTip')}</Muted>}
         </View>
       )}
 
@@ -146,7 +172,9 @@ export function TodayScreen() {
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={{ fontSize: 15, fontWeight: '600', color: C.text }}>{names(opt.dishIds)}</Text>
                     <Muted>
-                      {persons.map((_, i) => `${who(i)} ×${opt.servings[i]} · ${r(opt.protein[i])}${tx('g')}`).join('   ')}
+                      {persons.length === 1
+                        ? `${r(opt.kcal[0])} ${tx('kcal')} · ${r(opt.protein[0])}${tx('g')} ${tx('proteinShort')}`
+                        : persons.map((_, i) => `${initial(i)} ×${opt.servings[i]}`).join('   ')}
                     </Muted>
                   </View>
                 </Pressable>

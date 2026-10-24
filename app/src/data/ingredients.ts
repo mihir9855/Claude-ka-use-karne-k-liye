@@ -76,15 +76,35 @@ const rows: Row[] = [
   ['papad', 'Papad', 'Papad', 'પાપડ', 'other', 371, 25, 60, 3, ['high_sodium']],
 ];
 
+// dietary fibre, g per 100 g
+const FIBER: Record<string, number> = {
+  atta: 11, rice: 0.4, bajra: 11.5, jowar: 10, oats: 10, poha: 1, suji: 3, bread: 7,
+  moong_dal: 16, toor_dal: 15, chana_dal: 13, masoor_dal: 11, rajma: 25, chole: 17, besan: 11,
+  sprouts: 1.8, roasted_chana: 17, sattu: 18, soya_chunks: 13, tofu: 0.3,
+  paneer: 0, curd: 0, milk: 0, whey: 0, ghee: 0, oil: 0, masala: 20,
+  peanuts: 8.5, almonds: 12.5, makhana: 14,
+  aloo: 2.2, matar: 5.7, tomato: 1.2, onion: 1.7, garlic: 2.1, palak: 2.2, methi: 4.9, cauliflower: 2,
+  cabbage: 2.5, brinjal: 3, bhindi: 3.2, lauki: 0.5, carrot: 2.8, capsicum: 1.7, cucumber: 0.5, beans: 2.7,
+  banana: 2.6, apple: 2.4, papad: 5,
+};
+
+// finer shelf categories than the raw `group` column
+const GROUP: Record<string, Ingredient['group']> = {
+  atta: 'flour', bajra: 'flour', jowar: 'flour', besan: 'flour', suji: 'flour', sattu: 'flour',
+  palak: 'leafy', methi: 'leafy', cabbage: 'leafy',
+  aloo: 'root', carrot: 'root', onion: 'root', garlic: 'root',
+};
+
 export const INGREDIENTS: Ingredient[] = rows.map(
   ([id, en, hi, gu, group, kcal, protein, carbs, fat, flags, basic]) => ({
     id,
     name: { en, hi, gu },
-    group,
+    group: GROUP[id] ?? group,
     kcal,
     protein,
     carbs,
     fat,
+    fiber: FIBER[id] ?? 0,
     flags,
     basic,
   }),

@@ -2,7 +2,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { computeTargets } from '../core/nutrition';
 import type { Activity, Condition, Goal, Lang, Person } from '../core/types';
 import { LANG_LABEL, t, type StrKey } from '../i18n/strings';
-import { useStore } from '../state/store';
+import { MAX_MEMBERS, useStore } from '../state/store';
 import { Bar, Button, Chip, Collapse, Field, H, Label, Muted, Row, Segmented } from './kit';
 import { C } from './theme';
 import { r } from './helpers';
@@ -17,10 +17,12 @@ const LANGS: Lang[] = ['en', 'hi', 'gu'];
 
 const num = (v: string) => Number(v.replace(/[^0-9]/g, '')) || 0;
 
-function PersonCard({ index }: { index: 0 | 1 }) {
+function PersonCard({ index }: { index: number }) {
   const lang = useStore((s) => s.lang);
   const p = useStore((s) => s.persons[index]);
   const update = useStore((s) => s.updatePerson);
+  const removePerson = useStore((s) => s.removePerson);
+  const canRemove = useStore((s) => s.persons.length > 1);
   const tg = computeTargets(p);
   const tx = (k: StrKey) => t(lang, k);
   const toggle = (c: Condition) =>
@@ -41,7 +43,7 @@ function PersonCard({ index }: { index: 0 | 1 }) {
       icon="user"
       title={p.name || `${tx('person')} ${index + 1}`}
       summary={`${tx(`goal_${p.goal}` as StrKey)} · ${r(tg.kcal)} ${tx('kcal')} · ${r(tg.protein)} ${tx('g')} ${tx('proteinShort')}`}
-      defaultOpen={index === 0}
+      defaultOpen={false}
     >
       <Field label={tx('name')} value={p.name} onChangeText={(v) => update(index, { name: v })} />
       <Segmented
@@ -54,6 +56,7 @@ function PersonCard({ index }: { index: 0 | 1 }) {
         {numField(tx('height'), 'heightCm')}
         {numField(tx('weight'), 'weightKg')}
       </Row>
+      {p.age > 0 && p.age < 18 && <Muted>{tx('kidNote')}</Muted>}
       <View>
         <Label>{tx('goal')}</Label>
         <Row>
@@ -85,9 +88,10 @@ function PersonCard({ index }: { index: 0 | 1 }) {
         </Text>
         <Bar value={tg.protein * 4} max={tg.kcal} color={C.primary} />
         <Muted>
-          {r(tg.carbs)} {tx('g')} {tx('carbs')} · {r(tg.fat)} {tx('g')} {tx('fat')} · {tx('water')} {tg.waterL} L
+          {r(tg.carbs)} {tx('g')} {tx('carbs')} · {r(tg.fat)} {tx('g')} {tx('fat')} · {r(tg.fiber)} {tx('g')} {tx('chk_fiber')} · {tx('water')} {tg.waterL} L
         </Muted>
       </View>
+      {canRemove && <Button kind="danger" label={tx('removeMember')} onPress={() => removePerson(index)} />}
     </Collapse>
   );
 }
@@ -98,6 +102,8 @@ export function ProfileScreen() {
   const mealCount = useStore((s) => s.mealCount);
   const setMealCount = useStore((s) => s.setMealCount);
   const setOnboarded = useStore((s) => s.setOnboarded);
+  const count = useStore((s) => s.persons.length);
+  const addPerson = useStore((s) => s.addPerson);
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }} keyboardShouldPersistTaps="handled">
       <H>{t(lang, 'profileTitle')}</H>
@@ -120,8 +126,13 @@ export function ProfileScreen() {
           }))}
         />
       </View>
-      <PersonCard index={0} />
-      <PersonCard index={1} />
+      <View style={{ gap: 10 }}>
+        <Label>{t(lang, 'members')}</Label>
+        {Array.from({ length: count }, (_, i) => (
+          <PersonCard key={i} index={i} />
+        ))}
+        {count < MAX_MEMBERS && <Button icon="plus" kind="soft" label={t(lang, 'addMember')} onPress={addPerson} />}
+      </View>
       <Button kind="soft" label={t(lang, 'redoSetup')} onPress={() => setOnboarded(false)} />
       <Muted>{t(lang, 'disclaimer')}</Muted>
     </ScrollView>

@@ -9,8 +9,8 @@ const ACTIVITY: Record<Person['activity'], number> = {
 };
 
 const PROTEIN_PER_KG: Record<Person['goal'], number> = {
-  fat_loss: 1.8,
-  muscle_gain: 2.0,
+  fat_loss: 1.6,
+  muscle_gain: 1.8,
   maintain: 1.2,
 };
 
@@ -28,7 +28,32 @@ export function bmr(p: Person): number {
   return p.sex === 'male' ? base + 5 : base - 161;
 }
 
+/** Approximate growing-child needs (kcal by age band); protein about 1 g per kg. */
+function childKcal(p: Person): number {
+  const boy = p.sex === 'male';
+  if (p.age <= 3) return 1000;
+  if (p.age <= 6) return 1350;
+  if (p.age <= 9) return 1800;
+  if (p.age <= 12) return boy ? 2200 : 2000;
+  if (p.age <= 15) return boy ? 2500 : 2200;
+  return boy ? 2700 : 2200;
+}
+
 export function computeTargets(p: Person): Targets {
+  if (p.age > 0 && p.age < 18) {
+    const kcal = childKcal(p);
+    const weight = Math.max(p.weightKg, 8);
+    const protein = Math.round(weight * 1.0);
+    const fat = Math.round((kcal * 0.3) / 9);
+    return {
+      kcal,
+      protein,
+      carbs: Math.round((kcal - protein * 4 - fat * 9) / 4),
+      fat,
+      fiber: Math.round((kcal * 14) / 1000),
+      waterL: Math.round(weight * 0.04 * 10) / 10,
+    };
+  }
   const tdee = bmr(p) * ACTIVITY[p.activity];
   const floor = p.sex === 'male' ? 1500 : 1200;
   let kcal = tdee;
@@ -51,6 +76,7 @@ export function computeTargets(p: Person): Targets {
     protein: Math.round(protein),
     carbs,
     fat,
+    fiber: Math.round((kcal * 14) / 1000),
     waterL: Math.round((weight * 0.035) * 10) / 10,
   };
 }
@@ -65,7 +91,7 @@ export function autoMealCount(targets: Targets[]): number {
 
 export function dishMacros(dish: Dish, ingredients = INGREDIENT_BY_ID): Macros {
   if (dish.macros && dish.items.length === 0) return dish.macros;
-  const m: Macros = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  const m: Macros = { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
   for (const it of dish.items) {
     const ing = ingredients[it.ing];
     if (!ing) continue;
@@ -74,6 +100,7 @@ export function dishMacros(dish: Dish, ingredients = INGREDIENT_BY_ID): Macros {
     m.protein += ing.protein * f;
     m.carbs += ing.carbs * f;
     m.fat += ing.fat * f;
+    m.fiber += ing.fiber * f;
   }
   return m;
 }
@@ -136,4 +163,19 @@ export function softFlags(persons: Person[]): Set<Flag> {
       if (f) out.add(f);
     }
   return out;
+}
+
+/** Share of a meal's calories that come from fast-digesting (high-GI) ingredients. */
+export function giShare(dishes: Dish[], ingredients = INGREDIENT_BY_ID): number {
+  let total = 0;
+  let gi = 0;
+  for (const d of dishes)
+    for (const it of d.items) {
+      const ing = ingredients[it.ing];
+      if (!ing) continue;
+      const kcal = (ing.kcal * it.g) / 100;
+      total += kcal;
+      if (ing.flags?.includes('high_gi')) gi += kcal;
+    }
+  return total > 0 ? gi / total : 0;
 }

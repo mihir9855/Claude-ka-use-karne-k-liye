@@ -55,6 +55,12 @@ export const BUILTIN_DISHES: Dish[] = [
   d('paneer_cubes', 'Grilled paneer cubes', 'Grilled paneer', 'શેકેલું પનીર', 'snack', [S], ['paneer:60', 'capsicum:30', 'oil:3', 'masala:2']),
   d('haldi_milk', 'Haldi doodh', 'Haldi doodh', 'હળદરવાળું દૂધ', 'snack', [S], ['milk:250']),
 
+  d('soya_stirfry', 'Soya chunk stir-fry', 'Soya chunk fry', 'સોયા ચંક્સ સ્ટર-ફ્રાય', 'snack', [S], ['soya_chunks:30', 'capsicum:40', 'oil:4', 'masala:3']),
+  d('tofu_tikka', 'Tofu tikka', 'Tofu tikka', 'ટોફુ ટિક્કા', 'snack', [S], ['tofu:150', 'capsicum:40', 'oil:4', 'masala:3']),
+  d('dal_soup', 'Moong dal soup', 'Moong dal soup', 'મગની દાળનો સૂપ', 'snack', [S], ['moong_dal:40', 'tomato:40', 'masala:2']),
+  d('chana_chaat', 'Chana chaat', 'Chana chaat', 'ચણા ચાટ', 'snack', [S], ['chole:50', 'tomato:40', 'cucumber:40', 'masala:2']),
+  d('protein_lassi', 'Protein lassi', 'Protein lassi', 'પ્રોટીન લસ્સી', 'snack', [S], ['curd:200', 'whey:20']),
+
   // ---- mains (sabji / dal) ----
   d('aloo_matar', 'Aloo matar sabji', 'Aloo matar ki sabji', 'બટાકા વટાણાનું શાક', 'main', [L, D], ['aloo:100', 'matar:80', 'tomato:60', 'onion:40', 'oil:10', 'masala:5']),
   d('matar_paneer', 'Matar paneer', 'Matar paneer', 'વટાણા પનીર', 'main', [L, D], ['matar:80', 'paneer:80', 'tomato:80', 'onion:40', 'oil:10', 'masala:5']),

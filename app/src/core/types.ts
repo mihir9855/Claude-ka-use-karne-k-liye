@@ -50,17 +50,20 @@ export interface Macros {
   protein: number;
   carbs: number;
   fat: number;
+  fiber: number;
 }
 
 export interface Ingredient {
   id: string;
   name: L10n;
-  group: 'grain' | 'pulse' | 'dairy' | 'veg' | 'fruit' | 'fat' | 'nut' | 'other';
+  group: 'grain' | 'flour' | 'pulse' | 'dairy' | 'leafy' | 'root' | 'veg' | 'fruit' | 'nut' | 'fat' | 'other';
   /** per 100 g, raw */
   kcal: number;
   protein: number;
   carbs: number;
   fat: number;
+  /** g per 100 g */
+  fiber: number;
   flags?: Flag[];
   /** assumed always in the kitchen (oil, masala) */
   basic?: boolean;

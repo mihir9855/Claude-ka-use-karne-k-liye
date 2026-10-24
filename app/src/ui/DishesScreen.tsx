@@ -52,7 +52,7 @@ function AddDishForm({ onDone }: { onDone: () => void }) {
       role,
       meals,
       items,
-      macros: manual ? { kcal: Number(kcal), protein: Number(protein) || 0, carbs: 0, fat: 0 } : undefined,
+      macros: manual ? { kcal: Number(kcal), protein: Number(protein) || 0, carbs: 0, fat: 0, fiber: 0 } : undefined,
     });
     onDone();
   };

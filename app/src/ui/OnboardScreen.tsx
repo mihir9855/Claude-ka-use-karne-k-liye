@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import type { Condition, Goal, Lang, Person } from '../core/types';
-import { INGREDIENT_BY_ID } from '../data/ingredients';
 import { LANG_LABEL, t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
 import { Button, Chip, Field, H, Label, Muted, Row, Segmented } from './kit';
+import { PantryShelves } from './PantryPicker';
 import { C } from './theme';
 
 const LANGS: Lang[] = ['hi', 'en', 'gu'];
@@ -18,9 +18,8 @@ const COMMON = [
   'aloo', 'matar', 'tomato', 'onion', 'palak', 'cauliflower', 'bhindi', 'lauki', 'carrot', 'banana', 'peanuts',
 ];
 const num = (v: string) => Number(v.replace(/[^0-9]/g, '')) || 0;
-const LAST = 3;
 
-function PersonStep({ index }: { index: 0 | 1 }) {
+function PersonStep({ index }: { index: number }) {
   const lang = useStore((s) => s.lang);
   const p = useStore((s) => s.persons[index]);
   const update = useStore((s) => s.updatePerson);
@@ -50,6 +49,7 @@ function PersonStep({ index }: { index: 0 | 1 }) {
         {numField(tx('height'), 'heightCm')}
         {numField(tx('weight'), 'weightKg')}
       </Row>
+      {p.age > 0 && p.age < 18 && <Muted>{tx('kidNote')}</Muted>}
       <View>
         <Label>{tx('goal')}</Label>
         <Row>
@@ -73,15 +73,24 @@ function PersonStep({ index }: { index: 0 | 1 }) {
 export function OnboardScreen() {
   const lang = useStore((s) => s.lang);
   const setLang = useStore((s) => s.setLang);
-  const pantry = useStore((s) => s.pantry);
-  const toggle = useStore((s) => s.togglePantry);
+  const count = useStore((s) => s.persons.length);
+  const setMemberCount = useStore((s) => s.setMemberCount);
   const setOnboarded = useStore((s) => s.setOnboarded);
   const makePlan = useStore((s) => s.makePlan);
   const [step, setStep] = useState(0);
   const tx = (k: StrKey) => t(lang, k);
 
+  // 0 language, 1 family size, 2..count+1 each member, then the pantry
+  const LAST = count + 2;
+  const isPerson = step >= 2 && step <= count + 1;
   const title =
-    step === 0 ? tx('obChooseLang') : step === 3 ? tx('obHome') : `${tx('obAbout')} ${step}/2`;
+    step === 0
+      ? tx('obChooseLang')
+      : step === 1
+        ? tx('howMany')
+        : isPerson
+          ? `${tx('obAbout')} ${step - 1}/${count}`
+          : tx('obHome');
 
   const finish = () => {
     makePlan();
@@ -95,7 +104,7 @@ export function OnboardScreen() {
           <Muted>{step + 1} / {LAST + 1}</Muted>
           <H>{title}</H>
           {step === 0 && <Muted>{tx('obWelcome')}</Muted>}
-          {step === 3 && <Muted>{tx('obHomeHint')}</Muted>}
+          {step === LAST && <Muted>{tx('obHomeHint')}</Muted>}
         </View>
 
         {step === 0 && (
@@ -105,20 +114,20 @@ export function OnboardScreen() {
             ))}
           </View>
         )}
-        {step === 1 && <PersonStep index={0} />}
-        {step === 2 && <PersonStep index={1} />}
-        {step === 3 && (
-          <Row>
-            {COMMON.map((id) => (
-              <Chip key={id} label={INGREDIENT_BY_ID[id].name[lang]} on={!!pantry.have[id]} onPress={() => toggle(id)} />
-            ))}
-          </Row>
+        {step === 1 && (
+          <Segmented
+            value={count}
+            onChange={setMemberCount}
+            options={[1, 2, 3, 4, 5, 6].map((n) => ({ value: n, label: String(n) }))}
+          />
         )}
+        {isPerson && <PersonStep key={step} index={step - 2} />}
+        {step === LAST && <PantryShelves ids={COMMON} />}
       </ScrollView>
       <View style={{ flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: C.line, justifyContent: 'space-between' }}>
         {step > 0 ? <Button kind="soft" label={tx('back')} onPress={() => setStep(step - 1)} /> : <View />}
         <Row style={{ flexWrap: 'nowrap' }}>
-          {step === 3 && <Button kind="soft" label={tx('skip')} onPress={finish} />}
+          {step === LAST && <Button kind="soft" label={tx('skip')} onPress={finish} />}
           {step < LAST ? (
             <Button label={tx('next')} onPress={() => setStep(step + 1)} />
           ) : (
