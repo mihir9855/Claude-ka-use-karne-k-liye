@@ -1,9 +1,9 @@
-name: Build Android APK
+name: Build Hamari Thali APK
 
 on:
   push:
     branches: [ccr-c05281a1-0o8b90]
-    paths: ['app/**', '.github/workflows/build-apk.yml']
+    paths: ['app/**', '.github/workflows/build-thali-apk.yml']
   workflow_dispatch:
 
 permissions:
@@ -59,7 +59,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "apk-${{ github.run_number }}" hamari-thali.apk \
+          gh release create "thali-${{ github.run_number }}" hamari-thali.apk \
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
             --title "Hamari Thali build ${{ github.run_number }}" \
