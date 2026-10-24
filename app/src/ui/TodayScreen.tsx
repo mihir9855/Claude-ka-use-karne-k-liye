@@ -54,7 +54,6 @@ export function TodayScreen() {
       </Row>
 
       {!plan && <Muted>{tx('noPlan')}</Muted>}
-      {plan && <Muted>{tx('howToToday')}</Muted>}
 
       {plan && (
         <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -85,22 +84,27 @@ export function TodayScreen() {
                 <Pressable accessibilityRole="button" accessibilityLabel={tx('reshuffle')} onPress={() => reshuffleSlot(date, si)} hitSlop={8}>
                   <Text style={{ fontSize: 18, color: C.muted }}>↻</Text>
                 </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() =>
-                    eaten ? slotLog.forEach((e) => unlog(e.id)) : logMeal(date, sp.slot, picked(sp).dishIds)
-                  }
-                  style={{
-                    paddingVertical: 5,
-                    paddingHorizontal: 12,
-                    borderRadius: 999,
-                    backgroundColor: eaten ? C.primary : C.surface,
-                  }}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: eaten ? '#fff' : C.text }}>
-                    {eaten ? `✓ ${tx('ate')}` : tx('ateIt')}
-                  </Text>
-                </Pressable>
+                {sp.chosen === undefined && !eaten ? (
+                  <Text style={{ fontSize: 13, color: C.accent, fontWeight: '600' }}>{tx('pickOne')}</Text>
+                ) : (
+                  <Pressable
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: eaten }}
+                    onPress={() =>
+                      eaten ? slotLog.forEach((e) => unlog(e.id)) : logMeal(date, sp.slot, picked(sp).dishIds)
+                    }
+                    style={{
+                      paddingVertical: 5,
+                      paddingHorizontal: 12,
+                      borderRadius: 999,
+                      backgroundColor: eaten ? C.primary : C.surface,
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: eaten ? '#fff' : C.text }}>
+                      {eaten ? '✓' : '☐'} {tx('ate')}
+                    </Text>
+                  </Pressable>
+                )}
               </Row>
             </Row>
             {sp.options.map((opt, oi) => {
@@ -143,11 +147,6 @@ export function TodayScreen() {
                 </Pressable>
               );
             })}
-            {eaten && (
-              <Muted>
-                ✓ {slotLog.map((e) => names(e.dishIds)).join(', ')}
-              </Muted>
-            )}
           </View>
         );
       })}
