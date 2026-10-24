@@ -54,6 +54,7 @@ export function TodayScreen() {
       </Row>
 
       {!plan && <Muted>{tx('noPlan')}</Muted>}
+      {plan && <Muted>{tx('howToToday')}</Muted>}
 
       {plan && (
         <View style={{ flexDirection: 'row', gap: 12 }}>

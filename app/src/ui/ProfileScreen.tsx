@@ -3,7 +3,7 @@ import { computeTargets } from '../core/nutrition';
 import type { Activity, Condition, Goal, Lang, Person } from '../core/types';
 import { LANG_LABEL, t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
-import { Bar, Chip, Collapse, Field, H, Label, Muted, Row, Segmented } from './kit';
+import { Bar, Button, Chip, Collapse, Field, H, Label, Muted, Row, Segmented } from './kit';
 import { C } from './theme';
 import { r } from './helpers';
 
@@ -96,6 +96,7 @@ export function ProfileScreen() {
   const setLang = useStore((s) => s.setLang);
   const mealCount = useStore((s) => s.mealCount);
   const setMealCount = useStore((s) => s.setMealCount);
+  const setOnboarded = useStore((s) => s.setOnboarded);
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }} keyboardShouldPersistTaps="handled">
       <H>{t(lang, 'profileTitle')}</H>
@@ -120,6 +121,7 @@ export function ProfileScreen() {
       </View>
       <PersonCard index={0} />
       <PersonCard index={1} />
+      <Button kind="soft" label={t(lang, 'redoSetup')} onPress={() => setOnboarded(false)} />
       <Muted>{t(lang, 'disclaimer')}</Muted>
     </ScrollView>
   );

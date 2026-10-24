@@ -1,9 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { t, type StrKey } from './src/i18n/strings';
 import { useStore } from './src/state/store';
+import { OnboardScreen } from './src/ui/OnboardScreen';
 import { DishesScreen } from './src/ui/DishesScreen';
 import { PantryScreen } from './src/ui/PantryScreen';
 import { ProfileScreen } from './src/ui/ProfileScreen';
@@ -20,15 +21,17 @@ const TABS = [
 export default function App() {
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('today');
   const lang = useStore((s) => s.lang);
+  const onboarded = useStore((s) => s.onboarded);
+  const [ready, setReady] = useState(useStore.persist.hasHydrated());
+  useEffect(() => useStore.persist.onFinishHydration(() => setReady(true)), []);
   const Active = TABS.find((x) => x.key === tab)!.Screen;
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={s.root} edges={['top', 'bottom']}>
         <StatusBar style="dark" />
-        <View style={{ flex: 1 }}>
-          <Active />
-        </View>
+        <View style={{ flex: 1 }}>{!ready ? null : onboarded ? <Active /> : <OnboardScreen />}</View>
+        {ready && onboarded && (
         <View style={s.tabs}>
           {TABS.map((x) => {
             const on = tab === x.key;
@@ -40,6 +43,7 @@ export default function App() {
             );
           })}
         </View>
+        )}
       </SafeAreaView>
     </SafeAreaProvider>
   );

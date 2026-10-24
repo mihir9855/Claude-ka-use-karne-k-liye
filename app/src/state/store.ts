@@ -19,6 +19,7 @@ const newPerson = (name: string, sex: Person['sex']): Person => ({
 
 interface State {
   lang: Lang;
+  onboarded: boolean;
   persons: [Person, Person];
   mealCount: number | 'auto';
   strictPantry: boolean;
@@ -30,6 +31,8 @@ interface State {
   saltByDate: Record<string, number>;
 
   setLang: (l: Lang) => void;
+  setOnboarded: (v: boolean) => void;
+  togglePantry: (ing: string) => void;
   updatePerson: (i: 0 | 1, patch: Partial<Person>) => void;
   setMealCount: (n: number | 'auto') => void;
   setStrictPantry: (v: boolean) => void;
@@ -51,6 +54,7 @@ export const useStore = create<State>()(
   persist(
     (set, get) => ({
       lang: 'hi',
+      onboarded: false,
       persons: [newPerson('Me', 'male'), newPerson('Wife', 'female')],
       mealCount: 'auto',
       strictPantry: true,
@@ -62,6 +66,17 @@ export const useStore = create<State>()(
       saltByDate: {},
 
       setLang: (lang) => set({ lang }),
+      setOnboarded: (onboarded) => set({ onboarded }),
+      togglePantry: (ing) =>
+        set((s) => {
+          const have = { ...s.pantry.have };
+          const soon = { ...s.pantry.soon };
+          if (have[ing]) {
+            delete have[ing];
+            delete soon[ing];
+          } else have[ing] = true;
+          return { pantry: { have, soon } };
+        }),
       updatePerson: (i, patch) =>
         set((s) => {
           const persons = [...s.persons] as State['persons'];
