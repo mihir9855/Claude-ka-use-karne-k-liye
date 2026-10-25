@@ -2,7 +2,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { lookupBarcode, detectItemsFromImage, ScanError, type BarcodeResult } from '../core/scan';
+import { lookupBarcode, detectItemsFromImage, ScanError, type BarcodeResult, type PhotoResult } from '../core/scan';
 import { INGREDIENT_BY_ID } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
@@ -40,9 +40,49 @@ function Found({ ids, onAdd, onSkip, skipLabel }: { ids: string[]; onAdd: (ids: 
   );
 }
 
+/** Photo results: known items and new ones, all ticked so one tap adds them. */
+function PhotoFound({ found, onAdd, onSkip }: { found: PhotoResult; onAdd: (ids: string[], extras: PhotoResult['extras']) => void; onSkip: () => void }) {
+  const lang = useStore((s) => s.lang);
+  const [ids, setIds] = useState(found.ids);
+  const [extra, setExtra] = useState(found.extras.map((x) => x.name));
+  const tog = (list: string[], set: (v: string[]) => void, v: string) => set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+  const count = ids.length + extra.length;
+  return (
+    <View style={{ gap: 14 }}>
+      {found.ids.length > 0 && (
+        <View style={{ gap: 8 }}>
+          <Muted>{t(lang, 'knownItems')}</Muted>
+          <Row>
+            {found.ids.map((id) => (
+              <Chip key={id} label={INGREDIENT_BY_ID[id].name[lang]} on={ids.includes(id)} onPress={() => tog(ids, setIds, id)} />
+            ))}
+          </Row>
+        </View>
+      )}
+      {found.extras.length > 0 && (
+        <View style={{ gap: 8 }}>
+          <Muted>{t(lang, 'newItems')}</Muted>
+          <Row>
+            {found.extras.map((x) => (
+              <Chip key={x.name} tone="accent" label={x.name} on={extra.includes(x.name)} onPress={() => tog(extra, setExtra, x.name)} />
+            ))}
+          </Row>
+        </View>
+      )}
+      <Row>
+        {count > 0 && (
+          <Button icon="plus" label={`${t(lang, 'addCount')} (${count})`} onPress={() => onAdd(ids, found.extras.filter((x) => extra.includes(x.name)))} />
+        )}
+        <Button kind="soft" label={t(lang, 'scanNext')} onPress={onSkip} />
+      </Row>
+    </View>
+  );
+}
+
 export function BarcodeScan({ onClose }: { onClose: () => void }) {
   const lang = useStore((s) => s.lang);
   const addToPantry = useStore((s) => s.addToPantry);
+  const addIngredient = useStore((s) => s.addIngredient);
   const [perm, requestPerm] = useCameraPermissions();
   const [result, setResult] = useState<(BarcodeResult & { code: string }) | null>(null);
   const [error, setError] = useState<StrKey | null>(null);
@@ -101,7 +141,20 @@ export function BarcodeScan({ onClose }: { onClose: () => void }) {
                 onSkip={next}
               />
             ) : (
-              <Button kind="soft" label={tx('scanNext')} onPress={next} />
+              <Row>
+                {result.found && !!result.name && (
+                  <Button
+                    icon="plus"
+                    label={`${tx('addCount')}: ${result.name}`}
+                    onPress={() => {
+                      const n = result.nutrition;
+                      addIngredient(result.name!, n?.group ?? 'other', n ? { kcal: n.kcal, protein: n.protein, carbs: n.carbs, fat: n.fat, fiber: n.fiber } : undefined);
+                      next();
+                    }}
+                  />
+                )}
+                <Button kind="soft" label={tx('scanNext')} onPress={next} />
+              </Row>
             )}
           </>
         )}
@@ -117,7 +170,8 @@ export function PhotoScan({ onClose }: { onClose: () => void }) {
   const addToPantry = useStore((s) => s.addToPantry);
   const [draftKey, setDraftKey] = useState('');
   const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle');
-  const [ids, setIds] = useState<string[]>([]);
+  const [found, setFound] = useState<PhotoResult>({ ids: [], extras: [] });
+  const addIngredient = useStore((s) => s.addIngredient);
   const [error, setError] = useState<StrKey | null>(null);
   const [detail, setDetail] = useState('');
   const tx = (k: StrKey) => t(lang, k);
@@ -133,8 +187,7 @@ export function PhotoScan({ onClose }: { onClose: () => void }) {
       const asset = res.canceled ? undefined : res.assets[0];
       if (!asset?.base64) return;
       setState('busy');
-      const found = await detectItemsFromImage({ base64: asset.base64, mime: asset.mimeType ?? 'image/jpeg', apiKey: key });
-      setIds(found);
+      setFound(await detectItemsFromImage({ base64: asset.base64, mime: asset.mimeType ?? 'image/jpeg', apiKey: key }));
       setState('done');
     } catch (e) {
       setState('idle');
@@ -161,20 +214,23 @@ export function PhotoScan({ onClose }: { onClose: () => void }) {
             <Muted>{tx('detecting')}</Muted>
           </Row>
         ) : state === 'done' ? (
-          ids.length === 0 ? (
+          found.ids.length + found.extras.length === 0 ? (
             <View style={{ gap: 10 }}>
               <Muted>{tx('nothingFound')}</Muted>
               <Button kind="soft" label={tx('scanNext')} onPress={() => setState('idle')} />
             </View>
           ) : (
-            <Found
-              ids={ids}
-              onAdd={(picked) => {
-                addToPantry(picked);
+            <PhotoFound
+              found={found}
+              onAdd={(ids, extras) => {
+                addToPantry(ids);
+                for (const x of extras) {
+                  const { name, group, ...nutrition } = x;
+                  addIngredient(name, group, nutrition);
+                }
                 onClose();
               }}
               onSkip={() => setState('idle')}
-              skipLabel={tx('scanNext')}
             />
           )
         ) : (

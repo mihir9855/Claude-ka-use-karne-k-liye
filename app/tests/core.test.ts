@@ -184,7 +184,7 @@ test('photo detection keeps only valid ids and reports errors clearly', async ()
     seen = init;
     return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: '{"items":["aloo","matar"]}' }] } }] }) };
   }) as unknown as typeof fetch;
-  assert.deepEqual(await detectItemsFromImage({ base64: 'AAA', apiKey: 'k' }, ok), ['aloo', 'matar']);
+  assert.deepEqual(await detectItemsFromImage({ base64: 'AAA', apiKey: 'k' }, ok), { ids: ['aloo', 'matar'], extras: [] });
   assert.equal(seen!.headers['x-goog-api-key'], 'k');
   assert.ok(!seen!.body.includes('"oil"'));
   const bad = (async () => ({ ok: false, status: 403, json: async () => ({}) })) as unknown as typeof fetch;
@@ -209,4 +209,60 @@ test('custom pantry items feed dish nutrition and can be removed again', () => {
   assert.equal(INGREDIENT_BY_ID.x_a, undefined);
   // planner and shopping gap ignore unknown ids instead of crashing
   assert.doesNotThrow(() => generateDayPlan(base({ dishes: [...BUILTIN_DISHES, dish] })));
+});
+
+
+import { lookupNutrition, normalizeNutrition, parseExtras } from '../src/core/scan';
+
+const geminiReply = (text: string) =>
+  (async () => ({ ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text }] } }] }) })) as unknown as typeof fetch;
+
+test('typed name gets nutrition from Gemini and implausible numbers are rejected', async () => {
+  const good = geminiReply('{"group":"flour","kcal":328,"protein":7.3,"carbs":72,"fat":1.3,"fiber":11}');
+  assert.deepEqual(await lookupNutrition('Ragi atta', 'key', good), { group: 'flour', kcal: 328, protein: 7.3, carbs: 72, fat: 1.3, fiber: 11, source: 'ai' });
+  assert.equal(normalizeNutrition({ group: 'veg', kcal: 5000, protein: 1, carbs: 1, fat: 1 }), null); // kcal impossible
+  assert.equal(normalizeNutrition({ group: 'veg', kcal: 100, protein: 60, carbs: 50, fat: 10 }), null); // macros exceed 100 g
+  assert.equal(normalizeNutrition({ group: 'bogus', kcal: 50, protein: 1, carbs: 10, fat: 0.5 })!.group, 'other');
+  assert.equal(normalizeNutrition({ kcal: 'many' }), null);
+});
+
+test('without a key, or when Gemini fails, name lookup falls back to Open Food Facts', async () => {
+  const calls: string[] = [];
+  const off = (async (url: string) => {
+    calls.push(url);
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        products: [
+          { nutriments: { 'energy-kcal_100g': 330, proteins_100g: 7, carbohydrates_100g: 72, fat_100g: 1.5, fiber_100g: 11 } },
+          { nutriments: { 'energy-kcal_100g': 340, proteins_100g: 8, carbohydrates_100g: 70, fat_100g: 2, fiber_100g: 10 } },
+          { nutriments: { 'energy-kcal_100g': 9999, proteins_100g: 1, carbohydrates_100g: 1, fat_100g: 1 } },
+        ],
+      }),
+    };
+  }) as unknown as typeof fetch;
+  const r = await lookupNutrition('ragi flour', undefined, off);
+  assert.equal(r?.source, 'web');
+  assert.equal(r?.kcal, 340);
+  assert.match(calls[0], /search_terms=ragi%20flour/);
+  const down = (async () => { throw new Error('offline'); }) as unknown as typeof fetch;
+  assert.equal(await lookupNutrition('ragi flour', undefined, down), null);
+  const noKey = (async () => ({ ok: false, status: 403, json: async () => ({}) })) as unknown as typeof fetch;
+  await assert.rejects(lookupNutrition('ragi', 'bad', noKey), (e: ScanError) => e.kind === 'key');
+});
+
+test('photo extras keep only plausible, de-duplicated, named items', () => {
+  const text = JSON.stringify({
+    items: ['tomato'],
+    others: [
+      { name: 'Ragi', group: 'flour', kcal: 328, protein: 7, carbs: 72, fat: 1.3, fiber: 11 },
+      { name: 'ragi', group: 'flour', kcal: 328, protein: 7, carbs: 72, fat: 1.3 },
+      { name: 'Magic', group: 'veg', kcal: 99999, protein: 1, carbs: 1, fat: 1 },
+      { group: 'veg', kcal: 30, protein: 1, carbs: 5, fat: 0.2 },
+    ],
+  });
+  const extras = parseExtras(text);
+  assert.equal(extras.length, 1);
+  assert.equal(extras[0].name, 'Ragi');
 });

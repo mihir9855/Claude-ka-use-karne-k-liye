@@ -56,7 +56,7 @@ interface State {
   setStrictPantry: (v: boolean) => void;
   cyclePantry: (ing: string) => void;
   clearPantry: () => void;
-  addIngredient: (name: string, group: Ingredient['group'], protein?: number, kcal?: number) => void;
+  addIngredient: (name: string, group: Ingredient['group'], nutrition?: Partial<Pick<Ingredient, 'kcal' | 'protein' | 'carbs' | 'fat' | 'fiber'>>) => void;
   removeIngredient: (id: string) => void;
   addDish: (d: Omit<Dish, 'id' | 'custom'>) => string;
   removeDish: (id: string) => void;
@@ -179,19 +179,11 @@ export const useStore = create<State>()(
           return { pantry: { have, soon } };
         }),
       clearPantry: () => set({ pantry: { have: {}, soon: {} } }),
-      addIngredient: (name, group, protein, kcal) => {
+      addIngredient: (name, group, nutrition) => {
         const n = name.trim();
         if (!n) return;
-        const base = GROUP_DEFAULTS[group];
         const id = `x_${uid()}`;
-        const ing: Ingredient = {
-          id,
-          name: { en: n, hi: n, gu: n },
-          group,
-          ...base,
-          kcal: kcal && kcal > 0 ? kcal : base.kcal,
-          protein: protein !== undefined && protein >= 0 ? protein : base.protein,
-        };
+        const ing: Ingredient = { id, name: { en: n, hi: n, gu: n }, group, ...GROUP_DEFAULTS[group], ...nutrition };
         const customIngredients = [...get().customIngredients, ing];
         setCustomIngredients(customIngredients);
         set((s) => ({ customIngredients, pantry: { ...s.pantry, have: { ...s.pantry.have, [id]: true } } }));

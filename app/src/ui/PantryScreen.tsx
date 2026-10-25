@@ -1,45 +1,86 @@
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { lookupNutrition, type NutritionResult } from '../core/scan';
 import type { Ingredient } from '../core/types';
+import { GROUP_DEFAULTS } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
 import { Button, Card, Chip, Field, H, Label, Muted, Row } from './kit';
 import { GROUP_ORDER } from './PantryPicker';
+import { C } from './theme';
 import { PantryShelves } from './PantryPicker';
 import { BarcodeScan, PhotoScan } from './ScanScreens';
 
 function AddItem({ onDone }: { onDone: () => void }) {
   const lang = useStore((s) => s.lang);
+  const key = useStore((s) => s.geminiKey);
   const add = useStore((s) => s.addIngredient);
   const [name, setName] = useState('');
-  const [group, setGroup] = useState<Ingredient['group']>('veg');
+  const [group, setGroup] = useState<Ingredient['group'] | 'auto'>('auto');
+  const [manual, setManual] = useState(false);
   const [protein, setProtein] = useState('');
   const [kcal, setKcal] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
   const tx = (k: StrKey) => t(lang, k);
-  const save = () => {
-    add(name, group, protein === '' ? undefined : Number(protein), kcal === '' ? undefined : Number(kcal));
+
+  const save = async () => {
+    const n = name.trim();
+    if (!n || busy) return;
+    setNote('');
+    if (manual && kcal !== '') {
+      add(n, group === 'auto' ? 'other' : group, { protein: Number(protein) || 0, kcal: Number(kcal) });
+      setNote(`${tx('addedWith')}: ${n}`);
+    } else {
+      setBusy(true);
+      let found: NutritionResult | null = null;
+      try {
+        found = await lookupNutrition(n, key || undefined);
+      } catch {
+        found = null; // no internet, bad key or limit: fall back to the shelf average
+      }
+      setBusy(false);
+      const g = group === 'auto' ? found?.group ?? 'other' : group;
+      add(n, g, found ? { kcal: found.kcal, protein: found.protein, carbs: found.carbs, fat: found.fat, fiber: found.fiber } : undefined);
+      const src = found ? (found.source === 'ai' ? tx('srcAi') : tx('srcWeb')) : tx('srcEstimate');
+      const d = found ?? GROUP_DEFAULTS[g];
+      setNote(`${tx('addedWith')}: ${n} · ${d.kcal} ${tx('kcal')} · ${d.protein} ${tx('g')} ${tx('proteinShort')} ${tx('perHundred')} (${tx('approx')}, ${src})`);
+    }
     setName('');
     setProtein('');
     setKcal('');
   };
+
   return (
     <Card>
-      <Field label={tx('itemName')} value={name} onChangeText={setName} />
+      <Field label={tx('itemName')} value={name} onChangeText={setName} onSubmitEditing={save} returnKeyType="done" />
       <View>
         <Label>{tx('chooseShelf')}</Label>
         <Row>
+          <Chip label={tx('shelfAuto')} on={group === 'auto'} onPress={() => setGroup('auto')} />
           {GROUP_ORDER.map((g) => (
             <Chip key={g} label={tx(`group_${g}` as StrKey)} on={group === g} onPress={() => setGroup(g)} />
           ))}
         </Row>
       </View>
-      <Label>{tx('optNutrition')}</Label>
-      <Row style={{ flexWrap: 'nowrap' }}>
-        <Field label={`${tx('proteinShort')} (${tx('g')})`} keyboardType="numeric" value={protein} onChangeText={setProtein} />
-        <Field label={tx('kcal')} keyboardType="numeric" value={kcal} onChangeText={setKcal} />
-      </Row>
       <Row>
-        {name.trim().length > 0 && <Button icon="plus" label={tx('addShort')} onPress={save} />}
+        <Chip label={tx('editNumbers')} on={manual} onPress={() => setManual(!manual)} />
+      </Row>
+      {manual && (
+        <Row style={{ flexWrap: 'nowrap' }}>
+          <Field label={`${tx('proteinShort')} (${tx('g')})`} keyboardType="numeric" value={protein} onChangeText={setProtein} />
+          <Field label={tx('kcal')} keyboardType="numeric" value={kcal} onChangeText={setKcal} />
+        </Row>
+      )}
+      {busy && (
+        <Row>
+          <ActivityIndicator color={C.primary} />
+          <Muted>{tx('lookingUp')}</Muted>
+        </Row>
+      )}
+      {!!note && <Muted style={{ color: C.primary }}>{note}</Muted>}
+      <Row>
+        {name.trim().length > 0 && !busy && <Button icon="plus" label={tx('addShort')} onPress={save} />}
         <Button kind="soft" label={tx('close')} onPress={onDone} />
       </Row>
     </Card>
