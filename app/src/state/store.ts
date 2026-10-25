@@ -58,6 +58,8 @@ interface State {
   setMealCount: (n: number | 'auto') => void;
   setStrictPantry: (v: boolean) => void;
   cyclePantry: (ing: string) => void;
+  finishItem: (id: string) => void;
+  resetAll: () => void;
   addToShopping: (items: { id: string; g?: number }[]) => void;
   removeFromShopping: (id: string) => void;
   markBought: (id: string) => void;
@@ -190,6 +192,32 @@ export const useStore = create<State>()(
           delete soon[ing];
           return { pantry: { have, soon }, shopping: { ...s.shopping, [ing]: s.shopping[ing] ?? 0 } };
         }),
+      // ran out: leaves the pantry, goes on the shopping list
+      finishItem: (id) =>
+        set((s) => {
+          const have = { ...s.pantry.have };
+          const soon = { ...s.pantry.soon };
+          delete have[id];
+          delete soon[id];
+          return { pantry: { have, soon }, shopping: { ...s.shopping, [id]: s.shopping[id] ?? 0 } };
+        }),
+      resetAll: () => {
+        setCustomIngredients([]);
+        set({
+          onboarded: false,
+          persons: [newPerson('', 'male'), newPerson('', 'female')],
+          mealCount: 'auto',
+          pantry: { have: {}, soon: {} },
+          shopping: {},
+          customDishes: [],
+          customIngredients: [],
+          prefs: {},
+          log: [],
+          plans: {},
+          saltByDate: {},
+          undoSnapshot: null,
+        });
+      },
       addToShopping: (items) =>
         set((s) => {
           const shopping = { ...s.shopping };

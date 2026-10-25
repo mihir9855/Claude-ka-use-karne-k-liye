@@ -27,7 +27,6 @@ export function PantryShelves({
 }) {
   const lang = useStore((s) => s.lang);
   const pantry = useStore((s) => s.pantry);
-  const cycle = useStore((s) => s.cyclePantry);
   const toggle = useStore((s) => s.togglePantry);
   useStore((s) => s.customIngredients); // re-render when the user adds or removes their own items
 
@@ -40,14 +39,12 @@ export function PantryShelves({
           <Row>
             {items.map((i) => {
               const on = !!pantry.have[i.id];
-              const soon = !!pantry.soon[i.id];
               return (
                 <Chip
                   key={i.id}
-                  tone={soon ? 'accent' : 'primary'}
                   on={on}
-                  label={`${i.name[lang]}${soon ? ' ★' : ''}`}
-                  onPress={() => (collapsible ? cycle(i.id) : toggle(i.id))}
+                  label={i.name[lang]}
+                  onPress={() => toggle(i.id)}
                 />
               );
             })}

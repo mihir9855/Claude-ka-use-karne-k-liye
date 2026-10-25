@@ -293,3 +293,9 @@ test('printable list escapes text and carries categories, items and quantities',
   assert.match(html, /<li><i><\/i>Spinach \(palak\)<\/li>/);
   assert.ok(!html.includes('<script'));
 });
+
+import { portionText } from '../src/core/portion';
+
+test('portions read as plain fractions', () => {
+  assert.deepEqual([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5].map(portionText), ['½', '¾', '1', '1¼', '1½', '1¾', '2', '2¼', '2½']);
+});

@@ -189,7 +189,7 @@ function DishRow({ dish }: { dish: Dish }) {
   );
 }
 
-export function DishesScreen() {
+export function DishesScreen({ onClose }: { onClose?: () => void } = {}) {
   const lang = useStore((s) => s.lang);
   const custom = useStore((s) => s.customDishes);
   const log = useStore((s) => s.log);
@@ -209,7 +209,10 @@ export function DishesScreen() {
     <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }} keyboardShouldPersistTaps="handled">
       <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
         <H>{tx('dishesTitle')}</H>
-        {!adding && <Button icon="plus" label={tx('addShort')} onPress={() => setAdding(true)} />}
+        <Row style={{ flexWrap: 'nowrap' }}>
+          {!adding && <Button icon="plus" label={tx('addShort')} onPress={() => setAdding(true)} />}
+          {onClose && <Button icon="close" kind="soft" label={tx('close')} onPress={onClose} />}
+        </Row>
       </Row>
       {adding && <AddDishForm onDone={() => setAdding(false)} />}
       {usual.length > 0 && (

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { lookupNutrition, type NutritionResult } from '../core/scan';
 import type { Ingredient } from '../core/types';
-import { GROUP_DEFAULTS } from '../data/ingredients';
+import { GROUP_DEFAULTS, INGREDIENTS } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
 import { Button, Card, Chip, Field, H, Label, Muted, Row, Segmented } from './kit';
@@ -88,64 +88,111 @@ function AddItem({ onDone, to = 'have' }: { onDone: () => void; to?: 'have' | 'b
   );
 }
 
+/** Only what is at home, shelf by shelf; one tap sends an item to the buy list. */
+function FinishPicker({ onDone }: { onDone: () => void }) {
+  const lang = useStore((s) => s.lang);
+  const have = useStore((s) => s.pantry.have);
+  const finish = useStore((s) => s.finishItem);
+  const mine = useStore((s) => s.customIngredients);
+  const [note, setNote] = useState('');
+  const tx = (k: StrKey) => t(lang, k);
+  const ids = Object.keys(have).filter((id) => have[id]);
+  const shelves = GROUP_ORDER.map((g) => ({
+    g,
+    items: INGREDIENTS.filter((i) => i.group === g && have[i.id]),
+  })).filter((x) => x.items.length > 0);
+  void mine;
+  return (
+    <Card>
+      <Muted>{tx('finishHint')}</Muted>
+      {ids.length === 0 && <Muted>{tx('nothingHome')}</Muted>}
+      {shelves.map(({ g, items }) => (
+        <View key={g} style={{ gap: 6 }}>
+          <Label>{tx(`group_${g}` as StrKey)}</Label>
+          <Row>
+            {items.map((i) => (
+              <Chip
+                key={i.id}
+                tone="accent"
+                label={i.name[lang]}
+                onPress={() => {
+                  finish(i.id);
+                  setNote(`${i.name[lang]}: ${tx('moved')}`);
+                }}
+              />
+            ))}
+          </Row>
+        </View>
+      ))}
+      {!!note && <Muted style={{ color: C.primary }}>{note}</Muted>}
+      <Button label={tx('doneBtn')} onPress={onDone} />
+    </Card>
+  );
+}
+
 export function PantryScreen() {
   const lang = useStore((s) => s.lang);
   const have = useStore((s) => s.pantry.have);
-  const clear = useStore((s) => s.clearPantry);
-  const strict = useStore((s) => s.strictPantry);
-  const setStrict = useStore((s) => s.setStrictPantry);
-  const count = Object.values(have).filter(Boolean).length;
-  const [adding, setAdding] = useState(false);
-  const [view, setView] = useState<'home' | 'buy'>('home');
-  const buyCount = useStore((s) => Object.keys(s.shopping).length);
   const mine = useStore((s) => s.customIngredients);
   const removeIngredient = useStore((s) => s.removeIngredient);
+  const count = Object.values(have).filter(Boolean).length;
+  const buyCount = useStore((s) => Object.keys(s.shopping).length);
+  const [view, setView] = useState<'home' | 'buy'>('home');
+  const [panel, setPanel] = useState<'none' | 'add' | 'name' | 'finish'>('none');
   const [scan, setScan] = useState<'barcode' | 'photo' | null>(null);
+  const tx = (k: StrKey) => t(lang, k);
   if (scan === 'barcode') return <BarcodeScan onClose={() => setScan(null)} />;
   if (scan === 'photo') return <PhotoScan onClose={() => setScan(null)} />;
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
-      <H>{t(lang, 'tabPantry')}</H>
+      <H>{tx('tabPantry')}</H>
       <Segmented
         value={view}
-        onChange={setView}
+        onChange={(v) => {
+          setView(v);
+          setPanel('none');
+        }}
         options={[
-          { value: 'home', label: `${t(lang, 'tabHome')} · ${count}` },
-          { value: 'buy', label: `${t(lang, 'tabBuy')}${buyCount ? ` · ${buyCount}` : ''}` },
+          { value: 'home', label: `${tx('tabHome')} · ${count}` },
+          { value: 'buy', label: `${tx('tabBuy')}${buyCount ? ` · ${buyCount}` : ''}` },
         ]}
       />
-      {adding && <AddItem to={view === 'buy' ? 'buy' : 'have'} onDone={() => setAdding(false)} />}
+
+      {panel === 'name' && <AddItem to={view === 'buy' ? 'buy' : 'have'} onDone={() => setPanel('none')} />}
+
       {view === 'buy' ? (
-        <ShoppingList onAddOwn={() => setAdding(true)} />
+        <ShoppingList onAddOwn={() => setPanel('name')} />
+      ) : panel === 'finish' ? (
+        <FinishPicker onDone={() => setPanel('none')} />
       ) : (
         <>
-          <Row style={{ flexWrap: 'nowrap' }}>
-            <View style={{ flex: 1 }}>
-              <Button icon="barcode" label={t(lang, 'scanBarcode')} onPress={() => setScan('barcode')} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button icon="camera" label={t(lang, 'scanPhoto')} onPress={() => setScan('photo')} />
-            </View>
-          </Row>
-          <Row>
-            {!adding && <Button icon="plus" kind="soft" label={t(lang, 'addOwnItem')} onPress={() => setAdding(true)} />}
-            {count > 0 && <Button kind="soft" label={t(lang, 'clearPantry')} onPress={clear} />}
-          </Row>
-          <Row>
-            <Chip label={t(lang, 'strictPantry')} on={strict} onPress={() => setStrict(!strict)} />
-          </Row>
-          <Muted>{t(lang, 'pantryHint')}</Muted>
+          {panel === 'add' ? (
+            <Card>
+              <Button icon="plus" label={tx('typeName')} onPress={() => setPanel('name')} />
+              <Button icon="barcode" kind="soft" label={tx('scanBarcode')} onPress={() => setScan('barcode')} />
+              <Button icon="camera" kind="soft" label={tx('scanPhoto')} onPress={() => setScan('photo')} />
+              <Button kind="soft" label={tx('close')} onPress={() => setPanel('none')} />
+            </Card>
+          ) : (
+            panel === 'none' && (
+              <Row>
+                <Button icon="plus" label={tx('addMenu')} onPress={() => setPanel('add')} />
+                {count > 0 && <Button kind="soft" label={tx('finishedQ')} onPress={() => setPanel('finish')} />}
+              </Row>
+            )
+          )}
+          <Muted>{tx('pantryHint')}</Muted>
           <PantryShelves collapsible />
           {mine.length > 0 && (
             <View style={{ gap: 8 }}>
-              <Label>{t(lang, 'yourItems')}</Label>
+              <Label>{tx('yourItems')}</Label>
               {mine.map((i) => (
                 <Row key={i.id} style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
                   <Muted style={{ flex: 1, color: C.text }}>
-                    {i.name[lang]} · {t(lang, `group_${i.group}` as StrKey)}
+                    {i.name[lang]} · {tx(`group_${i.group}` as StrKey)}
                   </Muted>
-                  <Button icon="trash" kind="danger" label={t(lang, 'remove')} onPress={() => removeIngredient(i.id)} />
+                  <Button icon="trash" kind="danger" label={tx('remove')} onPress={() => removeIngredient(i.id)} />
                 </Row>
               ))}
             </View>

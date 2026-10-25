@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { computeTargets } from '../core/nutrition';
 import type { Activity, Condition, Goal, Lang, Person } from '../core/types';
@@ -98,7 +99,7 @@ function PersonCard({ index }: { index: number }) {
   );
 }
 
-export function ProfileScreen() {
+export function ProfileScreen({ onOpenDishes }: { onOpenDishes?: () => void } = {}) {
   const lang = useStore((s) => s.lang);
   const setLang = useStore((s) => s.setLang);
   const mealCount = useStore((s) => s.mealCount);
@@ -106,6 +107,8 @@ export function ProfileScreen() {
   const setOnboarded = useStore((s) => s.setOnboarded);
   const count = useStore((s) => s.persons.length);
   const addPerson = useStore((s) => s.addPerson);
+  const resetAll = useStore((s) => s.resetAll);
+  const [confirmReset, setConfirmReset] = useState(false);
   const geminiKey = useStore((s) => s.geminiKey);
   const setGeminiKey = useStore((s) => s.setGeminiKey);
   return (
@@ -141,7 +144,19 @@ export function ProfileScreen() {
         <Field label={t(lang, 'geminiKey')} value={geminiKey} onChangeText={setGeminiKey} autoCapitalize="none" autoCorrect={false} secureTextEntry />
         <Muted>{t(lang, 'keyHint')}</Muted>
       </Collapse>
+      {onOpenDishes && <Button icon="dishes" kind="soft" label={t(lang, 'ourDishes')} onPress={onOpenDishes} />}
       <Button kind="soft" label={t(lang, 'redoSetup')} onPress={() => setOnboarded(false)} />
+      {confirmReset ? (
+        <View style={{ gap: 8 }}>
+          <Muted>{t(lang, 'sure')}</Muted>
+          <Row>
+            <Button kind="danger" icon="trash" label={t(lang, 'yesDelete')} onPress={() => resetAll()} />
+            <Button kind="soft" label={t(lang, 'no')} onPress={() => setConfirmReset(false)} />
+          </Row>
+        </View>
+      ) : (
+        <Button kind="danger" label={t(lang, 'resetAll')} onPress={() => setConfirmReset(true)} />
+      )}
       <Muted>{t(lang, 'disclaimer')}</Muted>
     </ScrollView>
   );

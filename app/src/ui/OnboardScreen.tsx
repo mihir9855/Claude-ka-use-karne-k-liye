@@ -23,6 +23,7 @@ function PersonStep({ index }: { index: number }) {
   const lang = useStore((s) => s.lang);
   const p = useStore((s) => s.persons[index]);
   const update = useStore((s) => s.updatePerson);
+  const [showHealth, setShowHealth] = useState(p.conditions.length > 0);
   const tx = (k: StrKey) => t(lang, k);
   const toggle = (c: Condition) =>
     update(index, {
@@ -58,14 +59,20 @@ function PersonStep({ index }: { index: number }) {
           ))}
         </Row>
       </View>
-      <View>
-        <Label>{tx('obLimitsHint')}</Label>
+      {showHealth ? (
+        <View>
+          <Label>{tx('obLimitsHint')}</Label>
+          <Row>
+            {CONDITIONS.map((c) => (
+              <Chip key={c} tone="accent" label={tx(`cond_${c}` as StrKey)} on={p.conditions.includes(c)} onPress={() => toggle(c)} />
+            ))}
+          </Row>
+        </View>
+      ) : (
         <Row>
-          {CONDITIONS.map((c) => (
-            <Chip key={c} tone="accent" label={tx(`cond_${c}` as StrKey)} on={p.conditions.includes(c)} onPress={() => toggle(c)} />
-          ))}
+          <Chip label={tx('obLimitsHint')} onPress={() => setShowHealth(true)} />
         </Row>
-      </View>
+      )}
     </View>
   );
 }

@@ -30,3 +30,19 @@ test('finishing an item moves it to the shopping list, buying moves it back', as
   s().removeIngredient(id);
   assert.equal(s().shopping[id], undefined);
 });
+
+test('finishing sends an item to the buy list and reset clears everything', async () => {
+  const { useStore } = await import('../src/state/store');
+  const s = () => useStore.getState();
+  s().togglePantry('curd');
+  assert.ok(s().pantry.have.curd);
+  s().finishItem('curd');
+  assert.equal(s().pantry.have.curd, undefined);
+  assert.equal(s().shopping.curd, 0);
+  s().addIngredient('Ragi', 'flour');
+  s().resetAll();
+  assert.equal(s().onboarded, false);
+  assert.deepEqual(s().shopping, {});
+  assert.deepEqual(s().customIngredients, []);
+  assert.equal(s().persons.length, 2);
+});
