@@ -311,7 +311,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 73 · 24 Oct 2026';
+const APP_VER='version 1.4 · build 74 · 25 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -1182,8 +1182,8 @@ function accountStatement(aid,per,src){   // src: an income-source id instead of
   const eff=t=>!isSrc&&t.to===aid&&t.acc!==aid?t.amt:signed(t);
   let bal=a.open+mine.filter(t=>from&&t.date<from).reduce((s,t)=>s+eff(t),0);
   const open=bal,rows=mine.filter(t=>(!from||t.date>=from)&&(!to||t.date<=to)).map(t=>{const e=eff(t);bal+=e;
-    const other=t.to===aid&&t.acc!==aid?'Transfer from '+(acc(t.acc)?acc(t.acc).name:'account'):t.kind==='transfer'?'Transfer to '+(acc(t.to)?acc(t.to).name:'account'):t.kind==='pass'&&person(t.party)?person(t.party).name:t.kind==='expense'?cname(t.cat):t.cat&&t.cat!=='Other'?t.cat:'';
-    return {t,bal,debit:e<0?-e:0,credit:e>0?e:0,txt:(t.note&&other&&!t.note.includes(other)?t.note+'  ('+other+')':t.note||other||'Entry')}});
+    const other=t.to===aid&&t.acc!==aid?'Transfer from '+(acc(t.acc)?acc(t.acc).name:'account'):t.kind==='transfer'?'Transfer to '+(acc(t.to)?acc(t.to).name:'account'):t.kind==='pass'&&person(t.party)?person(t.party).name:t.kind==='expense'?cname(t.cat):t.kind==='other'?srcName(t.source||''):t.cat&&t.cat!=='Other'?t.cat:t.type==='credit'?'Income':'';
+    return {t,bal,debit:e<0?-e:0,credit:e>0?e:0,txt:t.note||other||'Entry',head:t.note?other:''}});
   const dr=rows.reduce((x,r)=>x+r.debit,0),cr=rows.reduce((x,r)=>x+r.credit,0),close=open+cr-dr;
   const fd=iso=>new Date(iso+'T00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const period=from?fd(from)+' to '+fd(to):'All time';
@@ -1192,9 +1192,9 @@ function accountStatement(aid,per,src){   // src: an income-source id instead of
   const T=(x,y,t,sz,b,right,clr)=>{const w=right?pdfW(t,sz):0;c+=`${col(clr||K)} rg BT /${b?'F2':'F1'} ${sz} Tf ${(x-w).toFixed(1)} ${y.toFixed(1)} Td (${pdfTxt(t)}) Tj ET\n`};
   const R=(x,y,w,h,f)=>{c+=`${col(f)} rg ${x} ${y.toFixed(1)} ${w} ${h} re f\n`};
   const Ln=(x1,y1,x2,y2,wd,st)=>{c+=`${col(st)} RG ${wd} w ${x1} ${y1.toFixed(1)} m ${x2} ${y2.toFixed(1)} l S\n`};
-  const L0=36,R0=559,CD=[36,104,306,384,462,559],RH=19;
+  const L0=36,R0=559,CD=[36,98,236,334,407,480,559],RH=19;
   const label=isSrc?'Income source':(ty==='card'?'Credit card':ty==='cash'?'Cash':'Bank account')+(a.last4?'  xx'+a.last4:'');
-  const colHead=()=>{R(L0,yy-5,R0-L0,20,HD);T(CD[0]+7,yy,'DATE',7.5,1,0,GR);T(CD[1]+4,yy,'DETAILS',7.5,1,0,GR);T(CD[3]-7,yy,'DEBIT',7.5,1,1,GR);T(CD[4]-7,yy,'CREDIT',7.5,1,1,GR);T(CD[5]-7,yy,'BALANCE',7.5,1,1,GR);yy-=RH};
+  const colHead=()=>{R(L0,yy-5,R0-L0,20,HD);T(CD[0]+7,yy,'DATE',7.5,1,0,GR);T(CD[1]+4,yy,'DETAILS',7.5,1,0,GR);T(CD[2]+4,yy,isSrc?'HEAD':'ACCOUNT',7.5,1,0,GR);T(CD[4]-7,yy,'DEBIT',7.5,1,1,GR);T(CD[5]-7,yy,'CREDIT',7.5,1,1,GR);T(CD[6]-7,yy,'BALANCE',7.5,1,1,GR);yy-=RH};
   const head=()=>{pn++;c='';
     if(pn===1){
       T(36,806,'ARTHALY',8.5,1,0,A);T(36,776,'Account statement',21,1);T(36,756,a.name+'   |   '+label,11,0,0,GR);
@@ -1209,18 +1209,18 @@ function accountStatement(aid,per,src){   // src: an income-source id instead of
   const cut=(t,sz,wd)=>{let d=t;while(d.length>3&&pdfW(d,sz)>wd)d=d.slice(0,-1);return d===t?d:d.slice(0,-1)+'...'};
   const bt=b=>(b<0?'-':'')+money(b);
   head();
-  if(from){T(CD[1]+4,yy,'Opening balance',8.5,0,0,GR);T(CD[5]-7,yy,bt(open),8.5,1,1);yy-=RH}
+  if(from){T(CD[1]+4,yy,'Opening balance',8.5,0,0,GR);T(CD[6]-7,yy,bt(open),8.5,1,1);yy-=RH}
   rows.forEach((r,i)=>{
     if(yy<86){foot();head()}
     Ln(L0,yy-6,R0,yy-6,.4,[.88,.9,.92]);
-    T(CD[0]+7,yy,fd(r.t.date),8.3,0);T(CD[1]+4,yy,cut(r.txt,8.3,CD[2]-CD[1]-10),8.3,0);
-    if(r.debit)T(CD[3]-7,yy,money(r.debit),8.3,0,1,RED);
-    if(r.credit)T(CD[4]-7,yy,money(r.credit),8.3,0,1,EM);
-    T(CD[5]-7,yy,bt(r.bal),8.3,1,1);yy-=RH});
+    T(CD[0]+7,yy,fd(r.t.date),8.3,0);T(CD[1]+4,yy,cut(r.txt,8,CD[2]-CD[1]-8),8,0);if(r.head)T(CD[2]+4,yy,cut(r.head,8,CD[3]-CD[2]-8),8,0,0,GR);
+    if(r.debit)T(CD[4]-7,yy,money(r.debit),8.3,0,1,RED);
+    if(r.credit)T(CD[5]-7,yy,money(r.credit),8.3,0,1,EM);
+    T(CD[6]-7,yy,bt(r.bal),8.3,1,1);yy-=RH});
   if(!rows.length){T(CD[1]+4,yy,'No entries in this period',9,0,0,GR);yy-=RH}
   if(yy<96){foot();head()}
   Ln(L0,yy+RH-5,R0,yy+RH-5,1.4,K);
-  T(CD[1]+4,yy,'Closing balance',9,1);T(CD[3]-7,yy,money(dr),9,1,1,RED);T(CD[4]-7,yy,money(cr),9,1,1,EM);T(CD[5]-7,yy,bt(close),9,1,1);
+  T(CD[1]+4,yy,'Closing balance',9,1);T(CD[4]-7,yy,money(dr),9,1,1,RED);T(CD[5]-7,yy,money(cr),9,1,1,EM);T(CD[6]-7,yy,bt(close),9,1,1);
   foot();
   const total=String(pages.length);
   return {pdf:pdfFile(pages.map(x=>x.replace(/%%T%%/g,total))),name:'Statement-'+a.name.replace(/[^A-Za-z0-9]+/g,'_')+'-'+todayISO()+'.pdf',n:rows.length};
@@ -1342,11 +1342,13 @@ function lineChart(vals,labels,o={}){
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" width="100%"><line x1="6" x2="${W-6}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)" stroke-dasharray="3 3"/><path d="${area}" fill="var(--brand)" opacity=".12"/><path d="${line}" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round"/>${dots}</svg></div>`;
 }
 const hbars=items=>`<div>${items.map(it=>`<div class="hb"><div class="hl">${it.label}</div><div class="htr"><i style="width:${Math.max(1,Math.min(100,it.v/it.max*100))}%;background:${it.color||'var(--brand)'}"></i>${it.mark!=null&&it.mark>0?`<u style="left:${Math.min(99,it.mark/it.max*100)}%"></u>`:''}</div><b class="num">${it.right}</b></div>`).join('')}</div>`;
+/* centre amount must stay inside the ring: shrink long numbers like ₹1,04,798.75 */
+const donutFs=(t,max)=>Math.min(max,22/(String(t).length*.6)).toFixed(2);
 function miniDonut(data,lbl){lbl=lbl||'Spent';
   const tot=data.reduce((s,d)=>s+d.v,0);if(!tot)return '<div class="empty">No spending yet</div>';
   let off=0;const R=15.9155,top=data.slice(0,5),mx=top[0].v;
   const segs=data.map(d=>{const p=d.v/tot*100;const e=`<circle class="sg" r="${R}" cx="21" cy="21" fill="none" stroke="${d.c}" stroke-width="4.2" stroke-dasharray="${Math.max(p-1,.1)} ${100-p+1}" stroke-dashoffset="${-off}" data-tip="${esc(cname(d.k)+' · '+inr(d.v)+' ('+Math.round(p)+'%)')}"/>`;off+=p;return e}).join('');
-  return `<div class="row" style="gap:16px;align-items:center"><div class="chart" style="flex:none"><svg viewBox="0 0 42 42" width="118" height="118"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="4.2"/>${segs}</g><text x="21" y="19.6" text-anchor="middle" style="font-size:3px">${lbl}</text><text x="21" y="25" text-anchor="middle" style="font-size:5.2px;font-weight:800;fill:var(--ink)">${inr(tot)}</text></svg></div>
+  return `<div class="row" style="gap:16px;align-items:center"><div class="chart" style="flex:none"><svg viewBox="0 0 42 42" width="118" height="118"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="4.2"/>${segs}</g><text x="21" y="19.6" text-anchor="middle" style="font-size:3px">${lbl}</text><text x="21" y="25" text-anchor="middle" style="font-size:${donutFs(inr(tot),5.2)}px;font-weight:800;fill:var(--ink)">${inr(tot)}</text></svg></div>
   <div class="grow" style="display:grid;gap:9px">${top.map(d=>`<div><div class="row sp small"><span class="row" style="gap:6px"><i style="width:8px;height:8px;border-radius:2px;background:${d.c};display:inline-block"></i>${esc(cname(d.k))}</span><b class="num">${Math.round(d.v/tot*100)}%</b></div><div class="ctr" style="margin-top:4px"><i style="width:${Math.max(3,d.v/mx*100)}%;background:${d.c}"></i></div></div>`).join('')}</div></div>`;
 }
 document.addEventListener('pointerdown',showTip);document.addEventListener('pointermove',showTip);
@@ -1723,7 +1725,7 @@ function donut(data){
   const tot=data.reduce((s,d)=>s+d.v,0);if(!tot)return '<div class="empty">No spending yet</div>';
   let off=0;const R=15.9155,mx=data[0].v;
   const segs=data.map((d,i)=>{const p=d.v/tot*100;const e=`<circle class="sg" data-a="slice" data-id="${i}" data-sl="${i}" data-k="${esc(cname(d.k))}" data-v="${inr(d.v)}" r="${R}" cx="21" cy="21" fill="none" stroke="${d.c}" stroke-width="4.4" stroke-dasharray="${Math.max(p-1,.1)} ${100-p+1}" stroke-dashoffset="${-off}" style="cursor:pointer"/>`;off+=p;return e}).join('');
-  return `<div style="display:grid;place-items:center;padding:4px 0 16px"><svg viewBox="0 0 42 42" width="190" height="190"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="4.4"/>${segs}</g><text id="dn1" x="21" y="19.2" text-anchor="middle" style="font-size:2.8px">Total spent</text><text id="dn2" x="21" y="25" text-anchor="middle" style="font-size:5.4px;font-weight:800;fill:var(--ink)" data-tot="${inr(tot)}">${inr(tot)}</text></svg><div class="small mute" style="margin-top:-2px">Tap a slice or a row to focus</div></div>
+  return `<div style="display:grid;place-items:center;padding:4px 0 16px"><svg viewBox="0 0 42 42" width="190" height="190"><g transform="rotate(-90 21 21)"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--line)" stroke-width="4.4"/>${segs}</g><text id="dn1" x="21" y="19.2" text-anchor="middle" style="font-size:2.8px">Total spent</text><text id="dn2" x="21" y="25" text-anchor="middle" style="font-size:${donutFs(inr(tot),5.4)}px;font-weight:800;fill:var(--ink)" data-tot="${inr(tot)}">${inr(tot)}</text></svg><div class="small mute" style="margin-top:-2px">Tap a slice or a row to focus</div></div>
   <div class="crows">${data.map((d,i)=>`<div class="crow" data-a="slice" data-id="${i}" data-sl="${i}" style="cursor:pointer"><span class="cic" style="background:${d.c}1f;color:${d.c}">${ic(CATS[d.k]||'receipt',16)}</span><div class="grow"><div class="row sp"><b>${esc(cname(d.k))}</b><span class="num"><b>${inr(d.v)}</b> <span class="mute small">${Math.round(d.v/tot*100)}%</span></span></div><div class="ctr"><i style="width:${Math.max(2,d.v/mx*100)}%;background:${d.c}"></i></div></div></div>`).join('')}</div>`;
 }
 /* spending calendar: one cell per day, darker = more spent */
@@ -2370,7 +2372,7 @@ document.addEventListener('click',e=>{
     document.querySelectorAll('circle[data-sl]').forEach(c=>c.style.opacity=sliceSel<0||+c.dataset.sl===sliceSel?1:.22);
     document.querySelectorAll('.crow[data-sl]').forEach(r=>r.style.opacity=sliceSel<0||+r.dataset.sl===sliceSel?1:.35);
     const c=document.querySelector('circle[data-sl="'+i+'"]'),t1=$('#dn1'),t2=$('#dn2');
-    if(sliceSel<0){t1.textContent='Total spent';t2.textContent=t2.dataset.tot}else{t1.textContent=c.dataset.k;t2.textContent=c.dataset.v}
+    if(sliceSel<0){t1.textContent='Total spent';t2.textContent=t2.dataset.tot}else{t1.textContent=c.dataset.k;t2.textContent=c.dataset.v}t2.style.fontSize=donutFs(t2.textContent,5.4)+'px'
   }
   else if(a==='undo'){if(undoFn){const f=undoFn;undoFn=null;f()}document.querySelectorAll('.toast.ut').forEach(x=>x.remove())}
   else if(a==='ck')calcKey(el.dataset.k)
