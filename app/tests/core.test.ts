@@ -192,3 +192,21 @@ test('photo detection keeps only valid ids and reports errors clearly', async ()
   const limit = (async () => ({ ok: false, status: 429, json: async () => ({}) })) as unknown as typeof fetch;
   await assert.rejects(detectItemsFromImage({ base64: 'AAA', apiKey: 'x' }, limit), (e: ScanError) => e.kind === 'limit');
 });
+
+import { INGREDIENTS, setCustomIngredients, GROUP_DEFAULTS } from '../src/data/ingredients';
+
+test('custom pantry items feed dish nutrition and can be removed again', () => {
+  const before = INGREDIENTS.length;
+  setCustomIngredients([
+    { id: 'x_a', name: { en: 'Ragi', hi: 'Ragi', gu: 'Ragi' }, group: 'flour', ...GROUP_DEFAULTS.flour, protein: 7.3, kcal: 328 },
+  ]);
+  assert.equal(INGREDIENTS.length, before + 1);
+  assert.equal(INGREDIENT_BY_ID.x_a.protein, 7.3);
+  const dish = { id: 'c1', name: { en: 'Ragi roti', hi: '', gu: '' }, role: 'staple' as const, meals: ['lunch' as const], items: [{ ing: 'x_a', g: 100 }] };
+  assert.equal(Math.round(dishMacros(dish).protein * 10), 73);
+  setCustomIngredients([]);
+  assert.equal(INGREDIENTS.length, before);
+  assert.equal(INGREDIENT_BY_ID.x_a, undefined);
+  // planner and shopping gap ignore unknown ids instead of crashing
+  assert.doesNotThrow(() => generateDayPlan(base({ dishes: [...BUILTIN_DISHES, dish] })));
+});

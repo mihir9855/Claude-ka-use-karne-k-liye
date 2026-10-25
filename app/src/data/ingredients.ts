@@ -113,3 +113,29 @@ export const INGREDIENTS: Ingredient[] = rows.map(
 export const INGREDIENT_BY_ID: Record<string, Ingredient> = Object.fromEntries(
   INGREDIENTS.map((i) => [i.id, i]),
 );
+
+const BUILTIN_COUNT = INGREDIENTS.length;
+
+/** Rough per-100 g values used when a custom item has no numbers of its own. */
+export const GROUP_DEFAULTS: Record<Ingredient['group'], Pick<Ingredient, 'kcal' | 'protein' | 'carbs' | 'fat' | 'fiber'>> = {
+  grain: { kcal: 350, protein: 8, carbs: 72, fat: 2, fiber: 3 },
+  flour: { kcal: 350, protein: 10, carbs: 70, fat: 2, fiber: 5 },
+  pulse: { kcal: 340, protein: 22, carbs: 58, fat: 2, fiber: 14 },
+  dairy: { kcal: 100, protein: 6, carbs: 5, fat: 6, fiber: 0 },
+  leafy: { kcal: 25, protein: 3, carbs: 4, fat: 0.4, fiber: 2.5 },
+  root: { kcal: 60, protein: 1.5, carbs: 13, fat: 0.2, fiber: 2.5 },
+  veg: { kcal: 30, protein: 1.5, carbs: 6, fat: 0.3, fiber: 2.5 },
+  fruit: { kcal: 60, protein: 0.6, carbs: 14, fat: 0.3, fiber: 2 },
+  nut: { kcal: 550, protein: 20, carbs: 20, fat: 45, fiber: 8 },
+  fat: { kcal: 900, protein: 0, carbs: 0, fat: 100, fiber: 0 },
+  other: { kcal: 200, protein: 5, carbs: 30, fat: 5, fiber: 2 },
+};
+
+/** Replace the user's own pantry items. Planner, pantry and dish editor read the same lists. */
+export function setCustomIngredients(list: Ingredient[]): void {
+  for (const i of INGREDIENTS.splice(BUILTIN_COUNT)) delete INGREDIENT_BY_ID[i.id];
+  for (const i of list) {
+    INGREDIENTS.push(i);
+    INGREDIENT_BY_ID[i.id] = i;
+  }
+}

@@ -3,7 +3,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { todayStr } from '../core/dates';
 import { generateDayPlan, regenerateSlot, type PlanInput } from '../core/planner';
-import type { DayPlan, Dish, DishPref, Lang, LogEntry, Pantry, Person, Slot } from '../core/types';
+import { setCustomIngredients, GROUP_DEFAULTS } from '../data/ingredients';
+import type { DayPlan, Dish, Ingredient, DishPref, Lang, LogEntry, Pantry, Person, Slot } from '../core/types';
 import { BUILTIN_DISHES } from '../data/dishes';
 
 export const MAX_MEMBERS = 6;
@@ -29,6 +30,7 @@ interface State {
   strictPantry: boolean;
   pantry: Pantry;
   customDishes: Dish[];
+  customIngredients: Ingredient[];
   prefs: Record<string, DishPref>;
   log: LogEntry[];
   plans: Record<string, DayPlan>;
@@ -54,6 +56,8 @@ interface State {
   setStrictPantry: (v: boolean) => void;
   cyclePantry: (ing: string) => void;
   clearPantry: () => void;
+  addIngredient: (name: string, group: Ingredient['group'], protein?: number, kcal?: number) => void;
+  removeIngredient: (id: string) => void;
   addDish: (d: Omit<Dish, 'id' | 'custom'>) => string;
   removeDish: (id: string) => void;
   setPref: (id: string, pref: DishPref | undefined) => void;
@@ -103,6 +107,7 @@ export const useStore = create<State>()(
       strictPantry: true,
       pantry: { have: {}, soon: {} },
       customDishes: [],
+      customIngredients: [],
       prefs: {},
       log: [],
       plans: {},
@@ -174,6 +179,34 @@ export const useStore = create<State>()(
           return { pantry: { have, soon } };
         }),
       clearPantry: () => set({ pantry: { have: {}, soon: {} } }),
+      addIngredient: (name, group, protein, kcal) => {
+        const n = name.trim();
+        if (!n) return;
+        const base = GROUP_DEFAULTS[group];
+        const id = `x_${uid()}`;
+        const ing: Ingredient = {
+          id,
+          name: { en: n, hi: n, gu: n },
+          group,
+          ...base,
+          kcal: kcal && kcal > 0 ? kcal : base.kcal,
+          protein: protein !== undefined && protein >= 0 ? protein : base.protein,
+        };
+        const customIngredients = [...get().customIngredients, ing];
+        setCustomIngredients(customIngredients);
+        set((s) => ({ customIngredients, pantry: { ...s.pantry, have: { ...s.pantry.have, [id]: true } } }));
+      },
+      removeIngredient: (id) => {
+        const customIngredients = get().customIngredients.filter((i) => i.id !== id);
+        setCustomIngredients(customIngredients);
+        set((s) => {
+          const have = { ...s.pantry.have };
+          const soon = { ...s.pantry.soon };
+          delete have[id];
+          delete soon[id];
+          return { customIngredients, pantry: { have, soon } };
+        });
+      },
       addDish: (d) => {
         const id = `c_${uid()}`;
         set((s) => ({ customDishes: [...s.customDishes, { ...d, id, custom: true }] }));
@@ -231,6 +264,10 @@ export const useStore = create<State>()(
     }),
     {
       name: 'our-thali-v1',
+      // custom pantry items must be registered before any screen reads the ingredient lists
+      onRehydrateStorage: () => (state) => {
+        if (state?.customIngredients) setCustomIngredients(state.customIngredients);
+      },
       partialize: ({ undoSnapshot: _u, ...rest }) => rest as State,
       storage: createJSONStorage(() => safeStorage),
     },

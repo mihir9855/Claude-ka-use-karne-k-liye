@@ -19,6 +19,7 @@ const CATS: MealCategory[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 function AddDishForm({ onDone }: { onDone: () => void }) {
   const lang = useStore((s) => s.lang);
   const addDish = useStore((s) => s.addDish);
+  const mineCount = useStore((s) => s.customIngredients.length);
   const [name, setName] = useState('');
   const [role, setRole] = useState<DishRole>('main');
   const [meals, setMeals] = useState<MealCategory[]>(['lunch', 'dinner']);
@@ -34,7 +35,7 @@ function AddDishForm({ onDone }: { onDone: () => void }) {
     return INGREDIENTS.filter(
       (i) => !items.some((x) => x.ing === i.id) && Object.values(i.name).some((n) => n.toLowerCase().includes(needle)),
     ).slice(0, 8);
-  }, [q, items]);
+  }, [q, items, mineCount]);
 
   const preview = dishMacros({ id: 'x', name: { en: '', hi: '', gu: '' }, role, meals, items });
   const manual = items.length === 0 && Number(kcal) > 0;

@@ -29,6 +29,7 @@ export function PantryShelves({
   const pantry = useStore((s) => s.pantry);
   const cycle = useStore((s) => s.cyclePantry);
   const toggle = useStore((s) => s.togglePantry);
+  useStore((s) => s.customIngredients); // re-render when the user adds or removes their own items
 
   return (
     <View style={{ gap: collapsible ? 10 : 18 }}>
