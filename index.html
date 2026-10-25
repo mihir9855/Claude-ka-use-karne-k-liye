@@ -311,7 +311,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 75 · 25 Oct 2026';
+const APP_VER='version 1.4 · build 76 · 25 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -884,7 +884,7 @@ let editId='';
 function updateBHint(){
   const h=$('#bhint');if(!h)return;h.innerHTML='';
   if(!$('#f-kind')||$('#f-kind').value!=='expense'||tt!=='debit')return;
-  const k=$('#f-cat').value,lim=S.budgets[k]||0,amt=parseFloat($('#f-amt').value)||0;if(!lim)return;
+  const k=$('#f-cat').value,lim=S.budgets[k]||0,amt=pnum($('#f-amt').value)||0;if(!lim)return;
   const mk=($('#f-date').value||'').slice(0,7)||month,used=catUsed(k,mk,editId),after=used+amt,pct=Math.round(after/lim*100);
   const cls=pct>100?'over':pct>=80?'warn':'ok';
   h.innerHTML=`<div class="bh ${cls}">${esc(cname(k))}: ${inr(used)} of ${inr(lim)} used${amt?` → after this ${pct}%${after>lim?' · over by '+inr(after-lim):''}`:''}</div>`;
@@ -1528,7 +1528,7 @@ function ownSheet(t){
   const dir=t?(t.kind==='capital'||(t.kind==='biz'&&t.type==='debit')?'in':'out'):'in';
   openSheet(`<div class="row sp"><h1>${t?'Edit':'Personal ↔ Business'}</h1><button class="icon-btn" data-a="close">✕</button></div>
   ${t?'':`<div class="seg" id="ownseg" style="margin-top:10px"><button data-a="owndir" data-id="in" class="on">Put into business<br><span class="small">Capital</span></button><button data-a="owndir" data-id="out">Take from business<br><span class="small">Drawings</span></button></div>`}
-  <label>Amount</label><input id="ow-amt" type="number" inputmode="decimal" value="${t?t.amt:''}">
+  <label>Amount</label><input id="ow-amt" readonly data-calc inputmode="decimal" placeholder="₹ 0" value="${t?t.amt:''}">
   ${t?'':`<label>Business account</label><select id="ow-biz">${opt(bizAccs)}</select><label>Personal account</label><select id="ow-per">${opt(perAccs)}</select>`}
   <label>Date</label><input id="ow-date" type="date" value="${t?t.date:todayISO()}"><label>Note</label><input id="ow-note" value="${t?esc(t.note||''):''}">
   ${t?`<div class="small mute" style="margin-top:8px">The matching entry in the other book is not changed; edit it there too.</div>`:''}
@@ -1536,7 +1536,7 @@ function ownSheet(t){
   window.__owndir=dir;
 }
 function ownSave(id){
-  const amt=parseFloat($('#ow-amt').value)||0,date=$('#ow-date').value||todayISO(),note=$('#ow-note').value.trim();
+  const amt=pnum($('#ow-amt').value)||0,date=$('#ow-date').value||todayISO(),note=$('#ow-note').value.trim();
   if(amt<=0){toast('Enter an amount');return}
   if(id){const t=S.tx.find(x=>x.id===id);if(t){t.amt=amt;t.date=date;t.note=note}save();closeSheet();render();return}
   const inB=window.__owndir!=='out',biz=BOOK==='business',bAcc=$('#ow-biz').value,pAcc=$('#ow-per').value;
@@ -1900,7 +1900,7 @@ const hrep=(s,u)=>{try{history.replaceState(s,'',u)}catch(e){}};
 let dlgDone=null;
 const dlgIsOpen=()=>!!$('#dlg').innerHTML;
 const sheetIsOpen=()=>!!$('#layer').innerHTML;
-function openSheet(html){$('#layer').innerHTML=`<div class="sheet-bg" data-a="close"><div class="sheet" data-stop>${html}</div></div>`;refreshDates()}
+function openSheet(html){$('#layer').innerHTML=`<div class="sheet-bg" data-a="close"><div class="sheet" data-stop>${html}</div></div>`;refreshDates();formatAmtInputs($('#layer'))}
 /* under every date box, show the full date with the weekday, e.g. Thursday, 8 October 2026 */
 function refreshDates(){
   document.querySelectorAll('#layer input[type=date]').forEach(i=>{
@@ -2026,7 +2026,14 @@ function calcEval(str){
   for(let i=1;i<a.length;i+=2){const n=a[i+1],x=n.p?r*n.v/100:n.v;r=a[i]==='+'?r+x:r-x}
   return Math.round(r*100)/100;
 }
-const calcShow=n=>String(Math.round(n*100)/100);
+const calcShow=n=>(Math.round(n*100)/100).toLocaleString('en-IN',{maximumFractionDigits:2});   // 105000 -> 1,05,000
+/* amounts in input boxes are shown with Indian commas; read them back without the commas */
+const pnum=v=>parseFloat(String(v==null?'':v).replace(/[,\s₹]/g,''));
+function commaAmt(el){const raw=String(el.value).replace(/[^\d.\-]/g,'');if(raw===''||raw==='-'||isNaN(+raw))return;const [i,d]=raw.split('.');el.value=(+i||0).toLocaleString('en-IN')+(d!==undefined?'.'+d.slice(0,2):'')}
+function formatAmtInputs(root){(root||document).querySelectorAll('input[inputmode=decimal]').forEach(commaAmt)}
+document.addEventListener('input',e=>{const el=e.target;if(!el.matches||!el.matches('input[inputmode=decimal]')||el.readOnly)return;
+  const pos=el.selectionStart,digitsBefore=el.value.slice(0,pos).replace(/[^\d.]/g,'').length;commaAmt(el);
+  let k=0,p=0;while(p<el.value.length&&k<digitsBefore){if(/[\d.]/.test(el.value[p]))k++;p++}try{el.setSelectionRange(p,p)}catch(x){}},true);
 function calcRefresh(){
   if(!calcEl)return;
   const hasOp=/[+−×÷%]/.test(calcExpr.replace(/^−/,'')),v=calcEval(calcExpr);
@@ -2035,7 +2042,7 @@ function calcRefresh(){
   $('#cok').textContent=isNaN(v)&&calcExpr!==''?'Use amount':'Use ₹'+(calcExpr===''?'0':calcShow(isNaN(v)?0:v));
 }
 function openCalc(input){
-  if(calcEl)return;calcTarget=input;calcExpr=(input.value||'').trim();if(calcExpr==='0')calcExpr='';
+  if(calcEl)return;calcTarget=input;calcExpr=(input.value||'').replace(/,/g,'').trim();if(calcExpr==='0')calcExpr='';
   calcEl=document.createElement('div');calcEl.className='calc-bg';calcEl.dataset.a='calcbg';
   const K=[['C','C'],['⌫','⌫'],['%','%'],['÷','÷'],['7'],['8'],['9'],['×','×'],['4'],['5'],['6'],['−','−'],['1'],['2'],['3'],['+','+'],['00'],['0'],['.'],['=','=']];
   calcEl.innerHTML=`<div class="calc" data-stop><div class="cdisp"><div class="cexp" id="cexp"></div><div class="cres num" id="cres">0</div></div>
@@ -2137,6 +2144,7 @@ function syncKind(){
 function render(){
   applyEmis();
   $('#app').innerHTML={home,stats,people:khata,accounts,budget:budgetView,sms:smsView,txns:txView}[view]();
+  formatAmtInputs($('#app'));
   const nav=[['home','home','Home'],['txns','wallet','Accounts'],...(SMS_ON?[['sms','msg','SMS']]:[]),['budget','target','Budget'],['add','+',''],['stats','chart','Insights'],['people','users','Ledger'],['accounts','gear','Settings']];
   {const L=nav.findIndex(x=>x[0]==='add'),R=nav.length-L-1;   // one column per tab, evenly spaced across the bar
    $('#nav').style.gridTemplateColumns=`repeat(${L},1fr) 54px repeat(${R},1fr)`}
@@ -2180,11 +2188,11 @@ document.addEventListener('click',e=>{
   else if(a==='addbudget'){newIcon='star';budgetSheet()}
   else if(a==='pickicon'){newIcon=id;document.querySelectorAll('#b-icons button').forEach(b=>b.classList.toggle('on',b.dataset.id===id))}
   else if(a==='seticon'){const [ck,ik]=id.split('|');S.icons[ck]=ik;CATS[ck]=ik;save();render();catSheet(ck)}
-  else if(a==='savelim'){const v=parseFloat($('#f-lim').value)||0;if(v>0)S.budgets[id]=v;else delete S.budgets[id];save();closeSheet();render()}
+  else if(a==='savelim'){const v=pnum($('#f-lim').value)||0;if(v>0)S.budgets[id]=v;else delete S.budgets[id];save();closeSheet();render()}
   else if(a==='rmlim'){const old=S.budgets[id];delete S.budgets[id];save();closeSheet();render();undoToast('Budget removed',()=>{S.budgets[id]=old;save();render()})}
   else if(a==='addin'){closeSheet();txSheet(null,{cat:id})}
   else if(a==='savebudget'){
-    const sel=$('#b-cat').value,lim=parseFloat($('#b-lim').value);
+    const sel=$('#b-cat').value,lim=pnum($('#b-lim').value);
     const k=sel==='__new'?addCategory($('#b-name').value,newIcon):sel;
     if(!k||!(lim>0)){toast('Pick a category and enter a limit');return}
     S.budgets[k]=lim;save();closeSheet();render();
@@ -2219,11 +2227,11 @@ document.addEventListener('click',e=>{
   else if(a==='type'){tt=id;document.querySelectorAll('#typeseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));const k=$('#f-kind'),cur=k.value;k.innerHTML=opts(kindsFor(id),cur);if(!kindsFor(id).some(x=>x[0]===cur))k.value=id==='credit'?'income':'expense';syncKind()}
   else if(a==='emipick'){
     const p=S.emis.find(x=>x.id===id);if(!p)return;const s=emiState(p),no=s.paid+1;
-    $('#f-amt').value=p.monthly;$('#f-acc').value=p.card;$('#f-note').value=`${p.name} EMI ${no}/${p.months}`;$('#f-date').value=s.next;
+    $('#f-amt').value=calcShow(p.monthly);$('#f-acc').value=p.card;$('#f-note').value=`${p.name} EMI ${no}/${p.months}`;$('#f-date').value=s.next;
     emiPick={id:p.id,no};toast(`${p.name}: EMI ${no} of ${p.months} filled in`);
   }
   else if(a==='savetx'){
-    const amt=parseFloat($('#f-amt').value);if(!(amt>0)){toast('Enter an amount');return}
+    const amt=pnum($('#f-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     const kind=$('#f-kind').value;
     if(kind==='pass'&&!$('#f-party').value){toast('Add a person first: Ledger → People → Add person');return}
     if(kind==='transfer'&&(!$('#f-acc').value||!$('#f-to').value||$('#f-acc').value===$('#f-to').value)){toast('Pick two different accounts');return}
@@ -2254,7 +2262,7 @@ document.addEventListener('click',e=>{
   else if(a==='addemi')emiSheet();
   else if(a==='gocards'){closeSheet();navTo('accounts')}
   else if(a==='saveemi'){
-    const name=$('#e-name').value.trim(),card=$('#e-card').value,amount=parseFloat($('#e-amt').value),months=parseInt($('#e-mo').value,10),monthly=parseFloat($('#e-mon').value),first=$('#e-first').value;
+    const name=$('#e-name').value.trim(),card=$('#e-card').value,amount=pnum($('#e-amt').value),months=parseInt($('#e-mo').value,10),monthly=pnum($('#e-mon').value),first=$('#e-first').value;
     let before=parseInt($('#e-before').value,10)||0;
     if(!name||!card||!(amount>0)||!(months>=1)||!(monthly>0)||!first){toast('Fill the name, card, amount, months and monthly EMI');return}
     before=Math.max(0,Math.min(before,months));
@@ -2314,11 +2322,11 @@ document.addEventListener('click',e=>{
   else if(a==='fix')fixSheet(id);
   else if(a==='fxmove'){
     const [k,from]=id.split('|'),st=mstats(month),left=(S.budgets[from]||0)-(st.cat[from]||0);
-    const amt=Math.min(parseFloat($('#fx-amt').value)||0,left);if(!(amt>0)){toast('Enter an amount');return}
+    const amt=Math.min(pnum($('#fx-amt').value)||0,left);if(!(amt>0)){toast('Enter an amount');return}
     S.budgets[from]-=amt;S.budgets[k]=(S.budgets[k]||0)+amt;save();closeSheet();render();toast(`Moved ${inr(amt)} from ${cname(from)} to ${cname(k)}`);
   }
   else if(a==='fxbuf'){
-    const buf=bufferLeft(month),amt=Math.min(parseFloat($('#fx-amt').value)||0,buf);
+    const buf=bufferLeft(month),amt=Math.min(pnum($('#fx-amt').value)||0,buf);
     if(!(amt>0)){toast(buf>0?'Enter an amount':'No buffer left');return}
     S.budgets[id]=(S.budgets[id]||0)+amt;save();closeSheet();render();toast(`Added ${inr(amt)} from buffer to ${cname(id)}`);
   }
@@ -2363,7 +2371,7 @@ document.addEventListener('click',e=>{
       undoToast(p.name+' deleted',()=>{S.people.splice(Math.min(i,S.people.length),0,removed);gone.forEach(t=>S.tx.push(t));save();render()})})
   }
   else if(a==='personadd'){
-    const amt=parseFloat($('#pa-amt').value);if(!(amt>0)){toast('Enter an amount');return}
+    const amt=pnum($('#pa-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     S.tx.push({id:uid(),date:$('#pa-date').value||todayISO(),type:paDir,amt,acc:$('#pa-acc').value,to:'',kind:'pass',cat:'Other',note:$('#pa-note').value.trim(),party:id,pool:false});
     save();render();personSheet(id);toast('Entry added');
   }
@@ -2406,7 +2414,7 @@ document.addEventListener('click',e=>{
     $('#sf-title').textContent=id==='credit'?'Earned':'Used';$('#sa-acc-l').textContent=id==='credit'?'Received in which account':'Paid from which account';$('#sa-cat-w').hidden=id==='credit';f.scrollIntoView({block:'center',behavior:'smooth'});
   }
   else if(a==='srcsave'){
-    const amt=parseFloat($('#sa-amt').value);if(!(amt>0)){toast('Enter an amount');return}
+    const amt=pnum($('#sa-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     const base={id:uid(),date:$('#sa-date').value||todayISO(),amt,acc:$('#sa-acc').value,to:'',note:$('#sa-note').value.trim(),party:''};
     if(!base.note&&saDir==='credit')base.note='Income from '+srcName(id);
     S.tx.push(saDir==='credit'?{...base,type:'credit',kind:'other',cat:'Other',source:id,pool:false}:{...base,type:'debit',kind:'expense',cat:$('#sa-cat').value,pool:true,poolSrc:id});
@@ -2426,8 +2434,8 @@ document.addEventListener('change',e=>{if(e.target.type==='date')refreshDates()}
 document.addEventListener('input',e=>{if(e.target.type==='date')refreshDates();
   if(e.target.id==='e-mon')emiMonTouched=true;
   if((e.target.id==='e-amt'||e.target.id==='e-mo')&&!emiMonTouched){
-    const am=parseFloat($('#e-amt').value),mo=parseInt($('#e-mo').value,10);
-    if(am>0&&mo>0)$('#e-mon').value=Math.round(am/mo);
+    const am=pnum($('#e-amt').value),mo=parseInt($('#e-mo').value,10);
+    if(am>0&&mo>0)$('#e-mon').value=calcShow(Math.round(am/mo));
   }
   if(e.target.id==='f-amt')updateBHint();
   if(e.target.id==='q'){q=e.target.value;txLimit=15;$('#txlist').innerHTML=txListHTML();$('#txsum').innerHTML=txSummary()}
@@ -2459,10 +2467,10 @@ document.addEventListener('change',e=>{
     syncKind();
   }
   const f=e.target.dataset.f;if(!f)return;
-  if(f==='budget'){S.budget=parseFloat(e.target.value)||0}
-  else if(f==='salary'){S.salary=parseFloat(e.target.value)||0}
+  if(f==='budget'){S.budget=pnum(e.target.value)||0}
+  else if(f==='salary'){S.salary=pnum(e.target.value)||0}
   else if(f==='yourname'){S.name=e.target.value.trim()}
-  else{const a=acc(e.target.dataset.id),v=e.target.value;if(f==='opendue')a.open=-(parseFloat(v)||0);else if(f==='open'||f==='limit')a[f]=parseFloat(v)||0;else a[f]=v.trim()}
+  else{const a=acc(e.target.dataset.id),v=e.target.value;if(f==='opendue')a.open=-(pnum(v)||0);else if(f==='open'||f==='limit')a[f]=pnum(v)||0;else a[f]=v.trim()}
   save();render();
 });
 /* ---------- Other income: same look as People ---------- */
@@ -2514,7 +2522,7 @@ function sourceSheet(id){
    <label>Note</label><input id="sa-note">
    <button class="btn" data-a="srcsave" data-id="${esc(id)}">Save</button></div>
    ${line}
-   <div class="row" style="gap:8px;margin-top:12px"><button class="btn ghost" data-a="srclink" data-id="${esc(id)}" style="margin:0;flex:1">🔗 Link entries</button><button class="btn ghost" data-a="srcren" data-id="${esc(id)}" style="margin:0;flex:1">${id?'Edit name':'Give a name'}</button></div>
+   <div class="row" style="gap:8px;margin-top:12px"><button class="btn ghost" data-a="srclink" data-id="${esc(id)}" style="margin:0;flex:1">🔗 Link old entries</button><button class="btn ghost" data-a="srcren" data-id="${esc(id)}" style="margin:0;flex:1">${id?'Edit name':'Give a name'}</button></div>
    <h2>History</h2><div class="card" style="padding:4px 16px">${list.length?list.map(txRow).join(''):'<div class="empty">No entries yet.</div>'}</div>`);
   saDir='credit';refreshDates();
 }
@@ -2525,10 +2533,14 @@ function srcLinkSheet(id){
   const linked=t=>t.kind==='other'?(t.source||'')===id:!!t.pool&&(t.poolSrc||'')===id;
   const other=t=>t.kind==='other'?srcName(t.source||''):t.pool?srcName(t.poolSrc||''):'';
   const row=t=>{const o=other(t),on=linked(t);return `<label class="lkrow"><input type="checkbox" data-id="${t.id}" ${on?'checked':''}><div class="grow" style="min-width:0"><div class="t">${esc(t.note||cname(t.cat))}</div><div class="small mute tm">${new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${t.type==='credit'?'income':esc(cname(t.cat))}${o&&!on?' · now in '+esc(o):''}</div></div><b class="num ${t.type}">${t.type==='credit'?'+':'−'}${inr(t.amt)}</b></label>`};
-  const inc=pool.filter(t=>t.type==='credit'),exp=pool.filter(t=>t.type==='debit');
+  /* suggestions: unlinked entries whose note mentions the project's name are ticked for you */
+  const words=srcName(id).toLowerCase().split(/[^a-z0-9\u0900-\u0fff]+/).filter(w=>w.length>=3&&!['income','other','from','the'].includes(w));
+  const sug=pool.filter(t=>!linked(t)&&!other(t)&&words.length&&words.some(w=>(t.note||'').toLowerCase().includes(w)));
+  const row2=t=>row(t).replace('<input type="checkbox"','<input type="checkbox" checked');
+  const rest=pool.filter(t=>!sug.includes(t)),inc=rest.filter(t=>t.type==='credit'),exp=rest.filter(t=>t.type==='debit');
   openSheet(`<div class="row sp"><h1>Link entries</h1><button class="icon-btn" data-a="close">✕</button></div>
   <div class="small mute" style="margin:6px 0 10px">Tick entries that belong to <b>${esc(srcName(id))}</b>. Ticked income becomes this project's earning; ticked spending is paid from this project. Untick to remove.</div>
-  <div id="lk"><h2>Money in</h2><div class="card" style="padding:2px 14px;max-height:34vh;overflow:auto">${inc.map(row).join('')||'<div class="empty">No income entries</div>'}</div>
+  <div id="lk">${sug.length?`<h2>Suggested (${sug.length})</h2><div class="small mute" style="margin:-4px 0 6px">Their note mentions "${esc(srcName(id))}". Already ticked, untick any that don't belong.</div><div class="card" style="padding:2px 14px;max-height:30vh;overflow:auto">${sug.map(row2).join('')}</div>`:''}<h2>Money in</h2><div class="card" style="padding:2px 14px;max-height:34vh;overflow:auto">${inc.map(row).join('')||'<div class="empty">No income entries</div>'}</div>
   <h2>Money out</h2><div class="card" style="padding:2px 14px;max-height:34vh;overflow:auto">${exp.map(row).join('')||'<div class="empty">No spending entries</div>'}</div></div>
   <button class="btn" data-a="srclinkgo" data-id="${esc(id)}">Save links</button>`);
 }
