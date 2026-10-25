@@ -1,9 +1,7 @@
 name: Build Hamari Thali APK
 
+# Manual only: a build starts when someone presses "Run workflow", never on push.
 on:
-  push:
-    branches: [ccr-c05281a1-0o8b90]
-    paths: ['app/**', '.github/workflows/build-thali-apk.yml']
   workflow_dispatch:
 
 permissions:
