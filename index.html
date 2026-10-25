@@ -268,10 +268,10 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 .btn.danger{background:var(--debit)!important;color:#fff!important}
 
 .lkrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}.lkrow:last-child{border-bottom:0}.lkrow input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--brand)}
-.wcards{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wcard{text-align:left;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--field);color:var(--ink);font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0}
-.wcard small{font-size:12px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcard b{font-size:16px}.wcard.on{border-color:var(--brand);background:var(--brand-soft)}
-.wdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--mute);margin-bottom:4px}.wcard.on .wdot{border-color:var(--brand);box-shadow:inset 0 0 0 3px var(--card);background:var(--brand)}
-.wbar{display:flex;height:8px;border-radius:5px;overflow:hidden;background:var(--field);margin-top:10px}.wbar i{display:block;height:100%}.wlink{color:var(--brand);font-weight:700;cursor:pointer}
+.wcards{display:grid;grid-template-columns:1fr 1fr;gap:8px}.wcard{text-align:left;border:1.5px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--field);color:var(--ink);font:inherit;cursor:pointer;display:grid;grid-template-columns:auto 1fr;column-gap:8px;align-items:center;min-width:0}.wcard>*:not(.wdot){grid-column:2}.wcard .wdot{grid-row:1/span 2}.wcard.one .wdot{grid-row:auto}.wcard.one small{font-size:13px;color:var(--ink);padding:3px 0}
+.wcard small{font-size:11px;line-height:1.2;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcard b{font-size:14px;line-height:1.25}.wcard.on{border-color:var(--brand);background:var(--brand-soft)}
+.wdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--mute)}.wcard.on .wdot{border-color:var(--brand);box-shadow:inset 0 0 0 3px var(--card);background:var(--brand)}
+.wbar{display:flex;height:5px;border-radius:3px;overflow:hidden;background:var(--field);margin-top:8px}.wbar i{display:block;height:100%}.wlink{color:var(--brand);font-weight:700;cursor:pointer}
 #lock{position:fixed;inset:0;z-index:10000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
 #lock.on{display:flex}#lock .lk{width:72px;height:72px;border-radius:20px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
 #intro{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#6a402d,#2b170f);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;transition:opacity .45s ease,transform .45s ease}
@@ -315,7 +315,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 79 · 25 Oct 2026';
+const APP_VER='version 1.4 · build 80 · 25 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -2135,7 +2135,7 @@ function projSync(){
   const held=out&&ac?S.sources.map(x=>({x,v:projHeld(x.id,ac)})).filter(o=>o.v>0):[];
   const pv=held.reduce((s2,o)=>s2+o.v,0),bal=a?accBal(a.id):0,mine=Math.max(0,bal-pv);
   const shown=inc?S.sources.slice():held.map(o=>o.x);if(cur&&!shown.some(x=>x.id===cur)){const x=S.sources.find(y=>y.id===cur);if(x)shown.push(x)}
-  const card=(id,name,amt,sub)=>`<button type="button" class="wcard ${cur===id?'on':''}" data-a="projpick" data-id="${esc(id)}"><span class="wdot"></span><small>${esc(name)}</small>${amt!=null?`<b class="num">${inr(amt)}</b>`:''}${sub?`<small class="mute">${sub}</small>`:''}</button>`;
+  const card=(id,name,amt,sub)=>`<button type="button" class="wcard ${cur===id?'on':''}${amt==null&&!sub?' one':''}" data-a="projpick" data-id="${esc(id)}"><span class="wdot"></span><small>${esc(name)}</small>${amt!=null?`<b class="num">${inr(amt)}</b>`:''}${sub?`<small class="mute">${sub}</small>`:''}</button>`;
   $('#proj-label').textContent=inc?'Whose money is this?':'Whose money in '+an+'?';
   let html=`<div class="wcards">${card('',inc?'My income':'My money',out&&a?mine:null,out&&!a?'pick an account':'')}${shown.map(x=>{const h=held.find(o=>o.x===x);return card(x.id,x.name,out?(h?h.v:0):null,out&&!h?'none in this account':'')}).join('')}</div>`;
   if(out&&a&&pv>0&&bal>0){const pm=Math.round(mine/bal*100);html+=`<div class="wbar"><i style="width:${pm}%;background:#5b82bf"></i><i style="width:${100-pm}%;background:var(--brand)"></i></div><div class="small mute" style="margin-top:5px">${esc(an)} = ${inr(bal)} · ${pm}% mine · ${100-pm}% project</div>`}
