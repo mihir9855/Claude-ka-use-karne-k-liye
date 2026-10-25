@@ -28,7 +28,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "tsx --test tests/core.test.ts",
+    "test": "tsx --test tests/core.test.ts tests/store.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "private": true

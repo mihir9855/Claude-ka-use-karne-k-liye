@@ -266,3 +266,20 @@ test('photo extras keep only plausible, de-duplicated, named items', () => {
   assert.equal(extras.length, 1);
   assert.equal(extras[0].name, 'Ragi');
 });
+
+import { AISLES, aisleOf, groupShopping, shoppingText } from '../src/core/shopping';
+import { INGREDIENT_BY_ID as ING } from '../src/data/ingredients';
+
+test('shopping list is grouped by store aisle, in walking order', () => {
+  const list = { aloo: 500, palak: 0, banana: 0, paneer: 200, atta: 0, toor_dal: 0, almonds: 0, ghee: 0, papad: 0, tomato: 0 };
+  const groups = groupShopping(list, ING, 'en');
+  assert.deepEqual(groups.map((g) => g.aisle), ['veg', 'fruit', 'dairy', 'pulse', 'staple', 'dry', 'oil', 'other']);
+  assert.deepEqual(groups[0].items.map((i) => i.name), ['Potato', 'Spinach (palak)', 'Tomato']);
+  assert.equal(aisleOf(ING.palak), 'veg');
+  assert.equal(aisleOf(ING.ghee), 'oil');
+  assert.deepEqual(groupShopping({}, ING, 'en'), []);
+  assert.deepEqual(groupShopping({ nope: 0 }, ING, 'en'), []); // unknown ids are skipped
+  assert.ok(AISLES.length === 8);
+  const text = shoppingText(groups.slice(0, 1), (a) => a.toUpperCase(), 'Shopping list', 'g');
+  assert.equal(text, 'Shopping list\n\nVEG\n• Potato – 500 g\n• Spinach (palak)\n• Tomato');
+});

@@ -5,13 +5,14 @@ import type { Ingredient } from '../core/types';
 import { GROUP_DEFAULTS } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
-import { Button, Card, Chip, Field, H, Label, Muted, Row } from './kit';
+import { Button, Card, Chip, Field, H, Label, Muted, Row, Segmented } from './kit';
 import { GROUP_ORDER } from './PantryPicker';
+import { ShoppingList } from './ShoppingList';
 import { C } from './theme';
 import { PantryShelves } from './PantryPicker';
 import { BarcodeScan, PhotoScan } from './ScanScreens';
 
-function AddItem({ onDone }: { onDone: () => void }) {
+function AddItem({ onDone, to = 'have' }: { onDone: () => void; to?: 'have' | 'buy' }) {
   const lang = useStore((s) => s.lang);
   const key = useStore((s) => s.geminiKey);
   const add = useStore((s) => s.addIngredient);
@@ -29,7 +30,7 @@ function AddItem({ onDone }: { onDone: () => void }) {
     if (!n || busy) return;
     setNote('');
     if (manual && kcal !== '') {
-      add(n, group === 'auto' ? 'other' : group, { protein: Number(protein) || 0, kcal: Number(kcal) });
+      add(n, group === 'auto' ? 'other' : group, { protein: Number(protein) || 0, kcal: Number(kcal) }, to);
       setNote(`${tx('addedWith')}: ${n}`);
     } else {
       setBusy(true);
@@ -41,7 +42,7 @@ function AddItem({ onDone }: { onDone: () => void }) {
       }
       setBusy(false);
       const g = group === 'auto' ? found?.group ?? 'other' : group;
-      add(n, g, found ? { kcal: found.kcal, protein: found.protein, carbs: found.carbs, fat: found.fat, fiber: found.fiber } : undefined);
+      add(n, g, found ? { kcal: found.kcal, protein: found.protein, carbs: found.carbs, fat: found.fat, fiber: found.fiber } : undefined, to);
       const src = found ? (found.source === 'ai' ? tx('srcAi') : tx('srcWeb')) : tx('srcEstimate');
       const d = found ?? GROUP_DEFAULTS[g];
       setNote(`${tx('addedWith')}: ${n} · ${d.kcal} ${tx('kcal')} · ${d.protein} ${tx('g')} ${tx('proteinShort')} ${tx('perHundred')} (${tx('approx')}, ${src})`);
@@ -95,6 +96,8 @@ export function PantryScreen() {
   const setStrict = useStore((s) => s.setStrictPantry);
   const count = Object.values(have).filter(Boolean).length;
   const [adding, setAdding] = useState(false);
+  const [view, setView] = useState<'home' | 'buy'>('home');
+  const buyCount = useStore((s) => Object.keys(s.shopping).length);
   const mine = useStore((s) => s.customIngredients);
   const removeIngredient = useStore((s) => s.removeIngredient);
   const [scan, setScan] = useState<'barcode' | 'photo' | null>(null);
@@ -102,46 +105,52 @@ export function PantryScreen() {
   if (scan === 'photo') return <PhotoScan onClose={() => setScan(null)} />;
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
-      <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
-        <View style={{ flex: 1 }}>
-          <H>{t(lang, 'tabPantry')}</H>
-          <Muted>
-            {count} {t(lang, 'itemsHome')}
-          </Muted>
-        </View>
-        {count > 0 && <Button kind="soft" label={t(lang, 'clearPantry')} onPress={clear} />}
-      </Row>
-      <Row style={{ flexWrap: 'nowrap' }}>
-        <View style={{ flex: 1 }}>
-          <Button icon="barcode" label={t(lang, 'scanBarcode')} onPress={() => setScan('barcode')} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Button icon="camera" label={t(lang, 'scanPhoto')} onPress={() => setScan('photo')} />
-        </View>
-      </Row>
-      {adding ? (
-        <AddItem onDone={() => setAdding(false)} />
+    <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
+      <H>{t(lang, 'tabPantry')}</H>
+      <Segmented
+        value={view}
+        onChange={setView}
+        options={[
+          { value: 'home', label: `${t(lang, 'tabHome')} · ${count}` },
+          { value: 'buy', label: `${t(lang, 'tabBuy')}${buyCount ? ` · ${buyCount}` : ''}` },
+        ]}
+      />
+      {adding && <AddItem to={view === 'buy' ? 'buy' : 'have'} onDone={() => setAdding(false)} />}
+      {view === 'buy' ? (
+        <ShoppingList onAddOwn={() => setAdding(true)} />
       ) : (
-        <Button icon="plus" kind="soft" label={t(lang, 'addOwnItem')} onPress={() => setAdding(true)} />
-      )}
-      <Row>
-        <Chip label={t(lang, 'strictPantry')} on={strict} onPress={() => setStrict(!strict)} />
-      </Row>
-      <Muted>{t(lang, 'pantryHint')}</Muted>
-      <PantryShelves collapsible />
-      {mine.length > 0 && (
-        <View style={{ gap: 8 }}>
-          <Label>{t(lang, 'yourItems')}</Label>
-          {mine.map((i) => (
-            <Row key={i.id} style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
-              <Muted style={{ flex: 1, color: '#161614' }}>
-                {i.name[lang]} · {t(lang, `group_${i.group}` as StrKey)}
-              </Muted>
-              <Button icon="trash" kind="danger" label={t(lang, 'remove')} onPress={() => removeIngredient(i.id)} />
-            </Row>
-          ))}
-        </View>
+        <>
+          <Row style={{ flexWrap: 'nowrap' }}>
+            <View style={{ flex: 1 }}>
+              <Button icon="barcode" label={t(lang, 'scanBarcode')} onPress={() => setScan('barcode')} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button icon="camera" label={t(lang, 'scanPhoto')} onPress={() => setScan('photo')} />
+            </View>
+          </Row>
+          <Row>
+            {!adding && <Button icon="plus" kind="soft" label={t(lang, 'addOwnItem')} onPress={() => setAdding(true)} />}
+            {count > 0 && <Button kind="soft" label={t(lang, 'clearPantry')} onPress={clear} />}
+          </Row>
+          <Row>
+            <Chip label={t(lang, 'strictPantry')} on={strict} onPress={() => setStrict(!strict)} />
+          </Row>
+          <Muted>{t(lang, 'pantryHint')}</Muted>
+          <PantryShelves collapsible />
+          {mine.length > 0 && (
+            <View style={{ gap: 8 }}>
+              <Label>{t(lang, 'yourItems')}</Label>
+              {mine.map((i) => (
+                <Row key={i.id} style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
+                  <Muted style={{ flex: 1, color: C.text }}>
+                    {i.name[lang]} · {t(lang, `group_${i.group}` as StrKey)}
+                  </Muted>
+                  <Button icon="trash" kind="danger" label={t(lang, 'remove')} onPress={() => removeIngredient(i.id)} />
+                </Row>
+              ))}
+            </View>
+          )}
+        </>
       )}
     </ScrollView>
   );

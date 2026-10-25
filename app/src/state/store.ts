@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { todayStr } from '../core/dates';
 import { generateDayPlan, regenerateSlot, type PlanInput } from '../core/planner';
+import type { ShoppingList } from '../core/shopping';
 import { setCustomIngredients, GROUP_DEFAULTS } from '../data/ingredients';
 import type { DayPlan, Dish, Ingredient, DishPref, Lang, LogEntry, Pantry, Person, Slot } from '../core/types';
 import { BUILTIN_DISHES } from '../data/dishes';
@@ -29,6 +30,8 @@ interface State {
   mealCount: number | 'auto';
   strictPantry: boolean;
   pantry: Pantry;
+  /** things to buy: id -> grams (0 = unknown) */
+  shopping: ShoppingList;
   customDishes: Dish[];
   customIngredients: Ingredient[];
   prefs: Record<string, DishPref>;
@@ -55,8 +58,11 @@ interface State {
   setMealCount: (n: number | 'auto') => void;
   setStrictPantry: (v: boolean) => void;
   cyclePantry: (ing: string) => void;
+  addToShopping: (items: { id: string; g?: number }[]) => void;
+  removeFromShopping: (id: string) => void;
+  markBought: (id: string) => void;
   clearPantry: () => void;
-  addIngredient: (name: string, group: Ingredient['group'], nutrition?: Partial<Pick<Ingredient, 'kcal' | 'protein' | 'carbs' | 'fat' | 'fiber'>>) => void;
+  addIngredient: (name: string, group: Ingredient['group'], nutrition?: Partial<Pick<Ingredient, 'kcal' | 'protein' | 'carbs' | 'fat' | 'fiber'>>, to?: 'have' | 'buy') => void;
   removeIngredient: (id: string) => void;
   addDish: (d: Omit<Dish, 'id' | 'custom'>) => string;
   removeDish: (id: string) => void;
@@ -106,6 +112,7 @@ export const useStore = create<State>()(
       mealCount: 'auto',
       strictPantry: true,
       pantry: { have: {}, soon: {} },
+      shopping: {},
       customDishes: [],
       customIngredients: [],
       prefs: {},
@@ -166,27 +173,55 @@ export const useStore = create<State>()(
         ),
       setMealCount: (mealCount) => set({ mealCount }),
       setStrictPantry: (strictPantry) => set({ strictPantry }),
+      // tap: have -> use first -> finished (leaves the pantry and goes on the shopping list)
       cyclePantry: (ing) =>
         set((s) => {
           const have = { ...s.pantry.have };
           const soon = { ...s.pantry.soon };
-          if (!have[ing]) have[ing] = true;
-          else if (!soon[ing]) soon[ing] = true;
-          else {
-            delete have[ing];
-            delete soon[ing];
+          if (!have[ing]) {
+            have[ing] = true;
+            return { pantry: { have, soon } };
           }
-          return { pantry: { have, soon } };
+          if (!soon[ing]) {
+            soon[ing] = true;
+            return { pantry: { have, soon } };
+          }
+          delete have[ing];
+          delete soon[ing];
+          return { pantry: { have, soon }, shopping: { ...s.shopping, [ing]: s.shopping[ing] ?? 0 } };
+        }),
+      addToShopping: (items) =>
+        set((s) => {
+          const shopping = { ...s.shopping };
+          for (const { id, g } of items) shopping[id] = Math.max(shopping[id] ?? 0, g ?? 0);
+          return { shopping };
+        }),
+      removeFromShopping: (id) =>
+        set((s) => {
+          const shopping = { ...s.shopping };
+          delete shopping[id];
+          return { shopping };
+        }),
+      // bought: off the list, into the pantry
+      markBought: (id) =>
+        set((s) => {
+          const shopping = { ...s.shopping };
+          delete shopping[id];
+          return { shopping, pantry: { ...s.pantry, have: { ...s.pantry.have, [id]: true } } };
         }),
       clearPantry: () => set({ pantry: { have: {}, soon: {} } }),
-      addIngredient: (name, group, nutrition) => {
+      addIngredient: (name, group, nutrition, to = 'have') => {
         const n = name.trim();
         if (!n) return;
         const id = `x_${uid()}`;
         const ing: Ingredient = { id, name: { en: n, hi: n, gu: n }, group, ...GROUP_DEFAULTS[group], ...nutrition };
         const customIngredients = [...get().customIngredients, ing];
         setCustomIngredients(customIngredients);
-        set((s) => ({ customIngredients, pantry: { ...s.pantry, have: { ...s.pantry.have, [id]: true } } }));
+        set((s) =>
+          to === 'buy'
+            ? { customIngredients, shopping: { ...s.shopping, [id]: 0 } }
+            : { customIngredients, pantry: { ...s.pantry, have: { ...s.pantry.have, [id]: true } } },
+        );
       },
       removeIngredient: (id) => {
         const customIngredients = get().customIngredients.filter((i) => i.id !== id);
@@ -196,7 +231,9 @@ export const useStore = create<State>()(
           const soon = { ...s.pantry.soon };
           delete have[id];
           delete soon[id];
-          return { customIngredients, pantry: { have, soon } };
+          const shopping = { ...s.shopping };
+          delete shopping[id];
+          return { customIngredients, shopping, pantry: { have, soon } };
         });
       },
       addDish: (d) => {

@@ -23,6 +23,8 @@ export function TodayScreen() {
   const plan = rawPlan && rawPlan.slots[0]?.targets.length === persons.length ? rawPlan : undefined;
   const custom = useStore((s) => s.customDishes);
   const pantry = useStore((s) => s.pantry);
+  const shopping = useStore((s) => s.shopping);
+  const addToShopping = useStore((s) => s.addToShopping);
   const log = useStore((s) => s.log);
   const { makePlan, reshuffleSlot, choose, logMeal, unlog } = useStore.getState();
 
@@ -208,6 +210,12 @@ export function TodayScreen() {
               {ingName(g.ing, lang)} · {g.grams} {tx('g')}
             </Text>
           ))}
+          {gap.length > 0 &&
+            (gap.every((g) => shopping[g.ing] !== undefined) ? (
+              <Muted>{tx('inList')}</Muted>
+            ) : (
+              <Button icon="plus" kind="soft" label={tx('addToList')} onPress={() => addToShopping(gap.map((g) => ({ id: g.ing, g: g.grams })))} />
+            ))}
         </Collapse>
       )}
     </ScrollView>
