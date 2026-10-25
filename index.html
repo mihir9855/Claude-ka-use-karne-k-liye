@@ -311,7 +311,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 77 · 25 Oct 2026';
+const APP_VER='version 1.4 · build 78 · 25 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -1712,7 +1712,7 @@ function lc2(series,labels,o={}){
 function flowBars(groups,names){names=names||['Income','Spent'];
   const W=320,H=170,L=38,R=8,T=12,B=24,mx=Math.max(...groups.flatMap(g=>[g.a,g.b]),1)*1.1,Y=v=>T+(1-v/mx)*(H-T-B),gw=(W-L-R)/groups.length,bw=Math.min(18,gw*.34);
   let g='';
-  [0,mx/2,mx].forEach(t=>{g+=`<line x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" stroke="var(--line)" stroke-width=".8"/><text x="${L-6}" y="${(Y(t)+3).toFixed(1)}" text-anchor="end">${kfmt(t)}</text>`});
+  (groups.some(g=>g.a||g.b)?[0,mx/2,mx]:[0]).forEach(t=>{g+=`<line x1="${L}" x2="${W-R}" y1="${Y(t).toFixed(1)}" y2="${Y(t).toFixed(1)}" stroke="var(--line)" stroke-width=".8"/><text x="${L-6}" y="${(Y(t)+3).toFixed(1)}" text-anchor="end">${kfmt(t)}</text>`});
   groups.forEach((m,i)=>{
     const cx=L+gw*i+gw/2,y1=Y(m.a),y2=Y(m.b),b0=Y(0);
     g+=`<rect class="g" style="--i:${i*2}" x="${(cx-bw-1.5).toFixed(1)}" y="${y1.toFixed(1)}" width="${bw}" height="${Math.max(0,b0-y1).toFixed(1)}" rx="4" fill="var(--credit)" data-tip="${esc(m.ta)}"/>`;
@@ -1821,8 +1821,8 @@ function otherBlock(){
    <div class="row sp" style="margin-top:10px"><span class="small mute">Left to use (all time)</span><b class="num ${pl.left<0?'debit':'credit'}">${inrH(pl.left)}</b></div>
    <div style="margin-top:8px">${flowBars(g,['Money in','Money out'])}</div></div>`;
 }
-function ledgerSummary(){
-  const pass=S.tx.filter(inLedger);
+function ledgerSummary(pid){   // pid: one person's profile (charts only); none: the People tab (totals only)
+  const pass=S.tx.filter(t=>inLedger(t)&&(!pid||t.party===pid));
   if(!pass.length)return '<div class="card empty">No ledger entries yet.<br>Open a person and add what you gave or received.</div>';
   const sum=(l,ty)=>l.filter(t=>ledType(t)===ty).reduce((x,t)=>x+t.amt,0),given=sum(pass,'debit'),rec=sum(pass,'credit'),net=given-rec;
   const cm=month,pm=shiftMonth(month,-1),inM=m=>pass.filter(t=>t.date.startsWith(m)),g1=sum(inM(cm),'debit'),r1=sum(inM(cm),'credit'),g0=sum(inM(pm),'debit');
@@ -1843,11 +1843,11 @@ function ledgerSummary(){
   const bals=S.people.map(p=>({p,b:personBal(p.id)})).filter(x=>x.b!==0).sort((x,y)=>Math.abs(y.b)-Math.abs(x.b));
   const mx=bals.length?Math.abs(bals[0].b):1;
   const tops=pass.slice().sort((x,y)=>y.amt-x.amt).slice(0,5);
+  if(pid)return `  <h2>Given vs received</h2><div class="card"><div class="ctitle"><b>${PT[ledPer]}</b></div>${perSeg}${flowBars(gr,['Received','Given'])}</div>
+  <h2>Outstanding over time</h2><div class="card">${lc2([{vals:run,color:'var(--brand)',area:true,peak:false,tips:run.map((v,i)=>lab[i]+' · '+inr(v))}],lab,{h:150})}<div class="small mute" style="margin-top:6px">Above the line: they owe you. Below: you owe them.</div></div>`;
   return `<div class="card ins-hero"><div class="small mute">${net>0?'People owe you':net<0?'You owe people':'All settled'}</div><div class="big num ${net>0?'debit':net<0?'credit':''}">${inrH(Math.abs(net))}</div>
    <div class="grid2" style="margin-top:12px"><div class="mini"><span class="small mute">Given</span><b class="num debit">${inrH(given)}</b></div><div class="mini"><span class="small mute">Received</span><b class="num credit">${inrH(rec)}</b></div></div>
-   <div class="small mute" style="margin-top:10px">${mlabel(month)}: given ${inrH(g1)}, received ${inrH(r1)}${g0>0?` · given ${g1>=g0?'up':'down'} ${Math.abs(Math.round((g1-g0)/g0*100))}% vs last month`:''}</div></div>
-  <h2>Given vs received</h2><div class="card"><div class="ctitle"><b>${PT[ledPer]}</b></div>${perSeg}${flowBars(gr,['Received','Given'])}</div>
-  <h2>Outstanding over time</h2><div class="card">${lc2([{vals:run,color:'var(--brand)',area:true,peak:false,tips:run.map((v,i)=>lab[i]+' · '+inr(v))}],lab,{h:150})}<div class="small mute" style="margin-top:6px">Above the line: people owe you. Below: you owe them.</div></div>`;
+   <div class="small mute" style="margin-top:10px">${mlabel(month)}: given ${inrH(g1)}, received ${inrH(r1)}${g0>0?` · given ${g1>=g0?'up':'down'} ${Math.abs(Math.round((g1-g0)/g0*100))}% vs last month`:''}</div></div>`;
 }
 function khata(){
   let body='';
@@ -1911,7 +1911,7 @@ function refreshDates(){
   });
 }
 
-function closeSheet(){$('#layer').innerHTML=''}
+function closeSheet(){$('#layer').innerHTML='';curSheet=null}
 /* in-app dialogs: window.confirm/prompt do not work in every webview, so Arthaly draws its own */
 function dlgShow(html,done){$('#dlg').innerHTML=`<div class="dlg-bg" data-a="dlgcancel"><div class="dlg" data-stop>${html}</div></div>`;dlgDone=done}
 function dlgClose(val){const d=dlgDone;dlgDone=null;$('#dlg').innerHTML='';if(d)d(val)}
@@ -2425,7 +2425,7 @@ document.addEventListener('click',e=>{
   }
   else if(a==='smson')enableSms();
   else if(a==='smsflt'){smsFilter=id;render()}
-  else if(a==='othper'){othPer=id;render()}
+  else if(a==='othper'){othPer=id;if(curSheet&&sheetIsOpen()){const y=$('.sheet').scrollTop;sourceSheet(curSheet.id);$('.sheet').scrollTop=y}else render()}
   else if(a==='srcpdfmenu')srcPdfMenu(id);
   else if(a==='srcpdf'){const r=accountStatement(null,el.dataset.per||'all',id);sharePdf(r.name,r.pdf)}
   else if(a==='sform'){
@@ -2441,7 +2441,7 @@ document.addEventListener('click',e=>{
     S.tx.push(saDir==='credit'?{...base,type:'credit',kind:'other',cat:'Other',source:id,pool:false}:{...base,type:'debit',kind:'expense',cat:$('#sa-cat').value,pool:true,poolSrc:id});
     save();render();sourceSheet(id);toast('Entry added');
   }
-  else if(a==='ledper'){ledPer=id;render()}
+  else if(a==='ledper'){ledPer=id;if(curSheet&&sheetIsOpen()){const y=$('.sheet').scrollTop;curSheet.t==='person'?personSheet(curSheet.id):sourceSheet(curSheet.id);$('.sheet').scrollTop=y}else render()}
   else if(a==='smsscan')importInbox(parseInt(id,10)||30);
   else if(a==='pendx'){S.smsPending=S.smsPending.filter(x=>x.id!==id);save();render()}
   else if(a==='pendas'){const pd=S.smsPending.find(x=>x.id===id);if(pd){const cr=el.dataset.d==='credit';txSheet(null,{type:cr?'credit':'debit',kind:cr?'income':'expense',amt:pd.amt,note:pd.text.slice(0,60),date:pd.date,resolve:pd})}}
@@ -2507,8 +2507,8 @@ function periodBuckets(per){
 }
 const srcTx=id=>S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(projUse(t)&&(t.poolSrc||'')===id));
 const othIn=t=>t.kind==='other'?(t.type==='credit'?t.amt:-t.amt):0,othOut=t=>projUse(t)?(t.type==='debit'?t.amt:-t.amt):0;
-function otherSummary(){
-  const all=S.tx.filter(t=>t.kind==='other'||(projUse(t)));
+function otherSummary(sid){   // sid: one project's profile (charts only)
+  const all=S.tx.filter(t=>(t.kind==='other'||projUse(t))&&(sid==null||(t.kind==='other'?(t.source||''):(t.poolSrc||''))===sid));
   if(!all.length)return '<div class="card empty">No other income yet.<br>Open a source below and add what you earned.</div>';
   const earned=all.reduce((x,t)=>x+othIn(t),0),used=all.reduce((x,t)=>x+othOut(t),0),left=earned-used;
   const inM=m=>all.filter(t=>t.date.startsWith(m)),e1=inM(month).reduce((x,t)=>x+othIn(t),0),u1=inM(month).reduce((x,t)=>x+othOut(t),0);
@@ -2518,20 +2518,18 @@ function otherSummary(){
     run.push(all.filter(t=>t.date<=k.to).reduce((x,t)=>x+othIn(t)-othOut(t),0));lab.push(k.short)});
   const PT={w:'This week (Mon to Sun)',m:'This month (from the 1st)',y:'This year (from January)'};
   const perSeg=`<div class="seg" style="margin:12px 0">${[['w','Week'],['m','Month'],['y','Year']].map(([k,l])=>`<button data-a="othper" data-id="${k}" class="${othPer===k?'on':''}">${l}</button>`).join('')}</div>`;
+  if(sid!=null)return `  <h2>Earned vs used</h2><div class="card"><div class="ctitle"><b>${PT[othPer]}</b></div>${perSeg}${flowBars(gr,['Earned','Used'])}</div>
+  <h2>Left over time</h2><div class="card">${lc2([{vals:run,color:'var(--brand)',area:true,peak:false,tips:run.map((v,i)=>lab[i]+' · '+inr(v))}],lab,{h:150})}<div class="small mute" style="margin-top:6px">How much of your other income is still unused.</div></div>`;
   return `<div class="card ins-hero"><div class="small mute">${left>=0?'Other income left to use':'Used more than earned'}</div><div class="big num ${left<0?'debit':'credit'}">${inrH(Math.abs(left))}</div>
    <div class="grid2" style="margin-top:12px"><div class="mini"><span class="small mute">Earned</span><b class="num credit">${inrH(earned)}</b></div><div class="mini"><span class="small mute">Used</span><b class="num debit">${inrH(used)}</b></div></div>
-   <div class="small mute" style="margin-top:10px">${mlabel(month)}: earned ${inrH(e1)}, used ${inrH(u1)}</div></div>
-  <h2>Earned vs used</h2><div class="card"><div class="ctitle"><b>${PT[othPer]}</b></div>${perSeg}${flowBars(gr,['Earned','Used'])}</div>
-  <h2>Left over time</h2><div class="card">${lc2([{vals:run,color:'var(--brand)',area:true,peak:false,tips:run.map((v,i)=>lab[i]+' · '+inr(v))}],lab,{h:150})}<div class="small mute" style="margin-top:6px">How much of your other income is still unused.</div></div>`;
+   <div class="small mute" style="margin-top:10px">${mlabel(month)}: earned ${inrH(e1)}, used ${inrH(u1)}</div></div>`;
 }
 let saDir='credit';
 function sourceSheet(id){
   const name=srcName(id),st=srcStats(id),idx=new Map(S.tx.map((t,i)=>[t,i]));
   const list=srcTx(id).sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0)||idx.get(b)-idx.get(a));
   const catOpts=Object.keys(CATS).filter(k=>k!=='EMI').map(k=>[k,cname(k)]);
-  let line='';
-  if(list.length>=2){const asc=list.slice().reverse();let run=0;const vals=asc.map(t=>run+=othIn(t)-othOut(t)),dl=t=>new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'}),lab=asc.map((t,i)=>i===0||i===asc.length-1?dl(t):'');
-    line=`<h2>Left over time</h2><div class="card">${lc2([{vals,color:'var(--brand)',area:true,peak:false,tips:asc.map((t,i)=>dl(t)+' · '+inr(vals[i]))}],lab,{h:150})}</div>`}
+  const line=list.length?otherSummary(id):'';curSheet={t:'src',id};
   openSheet(`<div class="row sp"><h1>${esc(name)}</h1><div class="row" style="gap:8px"><button class="icon-btn" data-a="srcpdfmenu" data-id="${esc(id)}" aria-label="Statement PDF" title="Statement PDF">${ic('doc',18)}</button>${id?delBtn('srcdel',id,'Delete project'):''}<button class="icon-btn" data-a="close">✕</button></div></div>
    <div class="card" style="margin-top:14px"><div class="small mute">${st.left>=0?'Left to use':'Used more than earned'}</div><div class="big num ${st.left<0?'debit':'credit'}">${inr(Math.abs(st.left))}</div>
    <div class="grid2" style="margin-top:12px"><div class="mini"><span class="small mute">Earned</span><b class="num credit">${inr(st.inc)}</b></div><div class="mini"><span class="small mute">Used</span><b class="num debit">${inr(st.used)}</b></div></div></div>
@@ -2594,13 +2592,11 @@ function unassignedSheet(){
   ${keys.map(grp).join('')}
   <div class="row" style="gap:8px;margin-top:14px"><button class="btn ghost" data-a="uahide" style="margin:0;flex:1">Hide this reminder</button><button class="btn ghost" data-a="uadel" style="margin:0;flex:1;color:var(--debit)">Delete all ${list.length}</button></div>`);
 }
-let paDir='debit';
+let paDir='debit',curSheet=null;
 function personSheet(id){
   const p=person(id),idx=new Map(S.tx.map((t,i)=>[t,i])),list=S.tx.filter(t=>inLedger(t)&&t.party===id).sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0)||idx.get(b)-idx.get(a)),b=personBal(id);
   const given=list.filter(t=>ledType(t)==='debit').reduce((x,t)=>x+t.amt,0),rec=list.filter(t=>ledType(t)==='credit').reduce((x,t)=>x+t.amt,0);
-  let line='';
-  if(list.length>=2){const asc=list.slice().reverse();let run=0;const vals=asc.map(t=>run+=ledType(t)==='debit'?t.amt:-t.amt),lab=asc.map((t,i)=>i===0||i===asc.length-1?new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'');
-    line=`<h2>Balance over time</h2><div class="card">${lc2([{vals,color:'var(--brand)',area:true,peak:false,tips:asc.map((t,i)=>new Date(t.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' · '+inr(vals[i]))}],lab,{h:150})}</div>`}
+  const line=list.length?ledgerSummary(id):'';curSheet={t:'person',id};
   openSheet(`<div class="row sp"><h1>${esc(p.name)}</h1><div class="row" style="gap:8px"><button class="icon-btn" data-a="pdfmenu" data-id="${p.id}" aria-label="Statement PDF" title="Statement PDF">${ic('doc',18)}</button>${delBtn('persondel',p.id,'Delete person')}<button class="icon-btn" data-a="close">✕</button></div></div>
    <div class="card" style="margin-top:14px"><div class="small mute">${b>0?'Owes you':b<0?'You owe':'All settled'}</div><div class="big num ${b>0?'debit':b<0?'credit':''}">${inr(Math.abs(b))}</div>
    <div class="grid2" style="margin-top:12px"><div class="mini"><span class="small mute">Given</span><b class="num debit">${inr(given)}</b></div><div class="mini"><span class="small mute">Received</span><b class="num credit">${inr(rec)}</b></div></div></div>
