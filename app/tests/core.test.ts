@@ -267,7 +267,7 @@ test('photo extras keep only plausible, de-duplicated, named items', () => {
   assert.equal(extras[0].name, 'Ragi');
 });
 
-import { AISLES, aisleOf, groupShopping, shoppingText } from '../src/core/shopping';
+import { AISLES, aisleOf, groupShopping, shoppingHtml, shoppingText } from '../src/core/shopping';
 import { INGREDIENT_BY_ID as ING } from '../src/data/ingredients';
 
 test('shopping list is grouped by store aisle, in walking order', () => {
@@ -282,4 +282,14 @@ test('shopping list is grouped by store aisle, in walking order', () => {
   assert.ok(AISLES.length === 8);
   const text = shoppingText(groups.slice(0, 1), (a) => a.toUpperCase(), 'Shopping list', 'g');
   assert.equal(text, 'Shopping list\n\nVEG\n• Potato – 500 g\n• Spinach (palak)\n• Tomato');
+});
+
+test('printable list escapes text and carries categories, items and quantities', () => {
+  const groups = groupShopping({ aloo: 500, palak: 0 }, ING, 'en');
+  const html = shoppingHtml(groups, (a) => (a === 'veg' ? 'Veg <b>' : a), 'Shopping & list', 'g', '2026-10-25');
+  assert.match(html, /<h1>Shopping &amp; list<\/h1>/);
+  assert.match(html, /Veg &lt;b&gt;/);
+  assert.match(html, /<li><i><\/i>Potato<b>500 g<\/b><\/li>/);
+  assert.match(html, /<li><i><\/i>Spinach \(palak\)<\/li>/);
+  assert.ok(!html.includes('<script'));
 });

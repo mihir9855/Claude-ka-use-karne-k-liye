@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
+import * as Clipboard from 'expo-clipboard';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { Pressable, Share, Text, View } from 'react-native';
-import { AISLES, aisleOf, groupShopping, shoppingText } from '../core/shopping';
+import { todayStr } from '../core/dates';
+import { AISLES, aisleOf, type Aisle, groupShopping, shoppingHtml, shoppingText } from '../core/shopping';
 import { INGREDIENT_BY_ID, INGREDIENTS } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
@@ -49,17 +53,44 @@ export function ShoppingList({ onAddOwn }: { onAddOwn: () => void }) {
   const remove = useStore((s) => s.removeFromShopping);
   const mine = useStore((s) => s.customIngredients);
   const [picking, setPicking] = useState(false);
+  const [notice, setNotice] = useState('');
   const tx = (k: StrKey) => t(lang, k);
 
   const groups = useMemo(() => groupShopping(shopping, INGREDIENT_BY_ID, lang), [shopping, lang, mine]);
   const count = groups.reduce((n, g) => n + g.items.length, 0);
 
-  const share = async () => {
-    const message = shoppingText(groups, (a) => tx(`aisle_${a}` as StrKey), tx('listTitle'), tx('g'));
+  const aisleName = (a: Aisle) => tx(`aisle_${a}` as StrKey);
+  const text = () => shoppingText(groups, aisleName, tx('listTitle'), tx('g'));
+  const say = (m: string) => {
+    setNotice(m);
+    setTimeout(() => setNotice(''), 3000);
+  };
+
+  const copy = async () => {
     try {
-      await Share.share({ message });
+      await Clipboard.setStringAsync(text());
+      say(tx('copied'));
+    } catch {
+      say(tx('copyFailed'));
+    }
+  };
+
+  const share = async () => {
+    try {
+      await Share.share({ message: text() });
     } catch {
       /* sharing is not available here */
+    }
+  };
+
+  const pdf = async () => {
+    try {
+      const html = shoppingHtml(groups, aisleName, tx('listTitle'), tx('g'), todayStr());
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: tx('listTitle') });
+      else say(uri);
+    } catch {
+      say(tx('pdfFailed'));
     }
   };
 
@@ -70,8 +101,15 @@ export function ShoppingList({ onAddOwn }: { onAddOwn: () => void }) {
       <Row>
         <Button icon="plus" kind="soft" label={tx('addItemBuy')} onPress={() => setPicking(true)} />
         <Button icon="plus" kind="soft" label={tx('addOwnItem')} onPress={onAddOwn} />
-        {count > 0 && <Button icon="share" kind="soft" label={tx('shareList')} onPress={share} />}
       </Row>
+      {count > 0 && (
+        <Row>
+          <Button icon="copy" kind="soft" label={tx('copyList')} onPress={copy} />
+          <Button icon="file" kind="soft" label={tx('pdfList')} onPress={pdf} />
+          <Button icon="share" kind="soft" label={tx('shareList')} onPress={share} />
+        </Row>
+      )}
+      {!!notice && <Muted style={{ color: C.primary }}>{notice}</Muted>}
       {count === 0 ? (
         <Muted>{tx('buyEmpty')}</Muted>
       ) : (
