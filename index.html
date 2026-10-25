@@ -311,7 +311,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 76 · 25 Oct 2026';
+const APP_VER='version 1.4 · build 77 · 25 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -384,6 +384,8 @@ function applyTheme(){
 }
 if(mqDark)mqDark.addEventListener('change',()=>{if(S.appearance==='auto')applyTheme()});
 /* fills in anything missing (old backups, reset) and re-applies saved look */
+/* money taken out of a project: an expense paid from it, or money given to a person from it */
+const projUse=t=>!!t.pool&&(t.kind==='expense'||(t.kind==='pass'&&t.type==='debit'));
 let smsPurged=0;
 /* SMS is off: entries that came from SMS and never got an account are dropped (also from imported backups);
    SMS entries that were fixed stay as ordinary transactions */
@@ -401,7 +403,7 @@ function normalize(){
   S.emis=S.emis||[];S.smsPending=S.smsPending||[];S.salary=0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
   S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[];
   if(!S.sources.length)S.sources.push({id:'src_other',name:'Other income'});
-  {const d=S.sources[0].id;S.tx.forEach(t=>{if(t.kind==='other'&&!t.source)t.source=d;if(t.pool&&t.kind==='expense'&&!t.poolSrc)t.poolSrc=d})}S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
+  {const d=S.sources[0].id;S.tx.forEach(t=>{if(t.kind==='other'&&!t.source)t.source=d;if(projUse(t)&&!t.poolSrc)t.poolSrc=d})}S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
   if(!S.budgets)S.budgets=defaults().budgets;
   S.cats.forEach(c=>{CATS[c.k]=c.e;CATCOL[c.k]=c.c});
   Object.entries(S.icons).forEach(([k,v])=>{if(CATS[k])CATS[k]=v});
@@ -1178,7 +1180,7 @@ function accountStatement(aid,per,src){   // src: an income-source id instead of
   if(per==='m'){from=y+'-'+pad(mo+1)+'-01';to=isoDay(new Date(y,mo+1,0).getTime())}
   else if(per==='3'){from=isoDay(new Date(y,mo-2,1).getTime());to=isoDay(new Date(y,mo+1,0).getTime())}
   else if(per==='y'){from=y+'-01-01';to=y+'-12-31'}
-  const idx=new Map(S.tx.map((t,i)=>[t,i])),mine=S.tx.filter(t=>isSrc?((t.kind==='other'&&(t.source||'')===src)||(t.pool&&t.kind==='expense'&&(t.poolSrc||'')===src)):!t.prepaid&&(t.acc===aid||t.to===aid)).sort((x,z)=>x.date.localeCompare(z.date)||(x.ts||0)-(z.ts||0)||idx.get(x)-idx.get(z));
+  const idx=new Map(S.tx.map((t,i)=>[t,i])),mine=S.tx.filter(t=>isSrc?((t.kind==='other'&&(t.source||'')===src)||(projUse(t)&&(t.poolSrc||'')===src)):!t.prepaid&&(t.acc===aid||t.to===aid)).sort((x,z)=>x.date.localeCompare(z.date)||(x.ts||0)-(z.ts||0)||idx.get(x)-idx.get(z));
   const eff=t=>!isSrc&&t.to===aid&&t.acc!==aid?t.amt:signed(t);
   let bal=a.open+mine.filter(t=>from&&t.date<from).reduce((s,t)=>s+eff(t),0);
   const open=bal,rows=mine.filter(t=>(!from||t.date>=from)&&(!to||t.date<=to)).map(t=>{const e=eff(t);bal+=e;
@@ -1314,11 +1316,11 @@ const srcName=id=>(S.sources.find(x=>x.id===id)||{name:'Other income'}).name;
 const srcStats=id=>{
   const sid=id||'';const own=t=>(t.source||'')===sid,ps=t=>(t.poolSrc||'')===sid;
   const inc=S.tx.filter(t=>t.kind==='other'&&own(t)).reduce((s,t)=>s+(t.type==='credit'?t.amt:-t.amt),0);
-  const used=S.tx.filter(t=>t.pool&&t.kind==='expense'&&ps(t)).reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0);
+  const used=S.tx.filter(t=>projUse(t)&&ps(t)).reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0);
   return{inc,used,left:inc-used};
 };
 const srcOptions=sel=>S.sources.map(x=>`<option value="${esc(x.id)}" ${x.id===sel?'selected':''}>${esc(x.name)}</option>`).join('')+`<option value="__new">＋ New income source…</option>`;
-const pool=()=>{const inc=S.tx.filter(t=>t.kind==='other').reduce((s,t)=>s+(t.type==='credit'?t.amt:-t.amt),0);const used=S.tx.filter(t=>t.pool&&t.kind==='expense').reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0);return{inc,used,left:inc-used}};
+const pool=()=>{const inc=S.tx.filter(t=>t.kind==='other').reduce((s,t)=>s+(t.type==='credit'?t.amt:-t.amt),0);const used=S.tx.filter(t=>projUse(t)).reduce((s,t)=>s+(t.type==='debit'?t.amt:-t.amt),0);return{inc,used,left:inc-used}};
 
 /* ---------- charts (inline SVG) ---------- */
 function barChart(vals,labels,o={}){
@@ -1811,7 +1813,7 @@ function statsExtra(st){
   return out;
 }
 function otherBlock(){
-  const mk=k=>({inn:S.tx.filter(t=>t.kind==='other'&&t.date.startsWith(k)).reduce((x,t)=>x+(t.type==='credit'?t.amt:-t.amt),0),out:S.tx.filter(t=>t.pool&&t.kind==='expense'&&t.date.startsWith(k)).reduce((x,t)=>x+(t.type==='debit'?t.amt:-t.amt),0)});
+  const mk=k=>({inn:S.tx.filter(t=>t.kind==='other'&&t.date.startsWith(k)).reduce((x,t)=>x+(t.type==='credit'?t.amt:-t.amt),0),out:S.tx.filter(t=>projUse(t)&&t.date.startsWith(k)).reduce((x,t)=>x+(t.type==='debit'?t.amt:-t.amt),0)});
   const m=mk(month),pl=pool(),g=[];
   for(let i=5;i>=0;i--){const k=shiftMonth(month,-i),x=mk(k);g.push({l:mlabel(k).slice(0,3),a:x.inn,b:x.out,ta:mlabel(k)+' money in · '+inr(x.inn),tb:mlabel(k)+' money out · '+inr(x.out)})}
   return `<div class="card"><div class="small mute">Other income · ${mlabel(month)}</div>
@@ -1857,8 +1859,8 @@ function khata(){
       +`<button class="btn ghost" data-a="addperson">+ Add person / party</button>
       <p class="small mute">Money you send from your account for someone (e.g. a business UPI) is a <b>debit</b> on that person; when they pay it back it is a <b>credit</b>. These never count as your income or spending.</p>`;
   }else if(seg==='emi'){body=emiBody()}else{
-    const pl=pool(),noSrc=S.tx.some(t=>(t.kind==='other'&&!t.source)||(t.pool&&t.kind==='expense'&&!t.poolSrc));
-    const card=(id,name)=>{const st=srcStats(id);const n=S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(t.pool&&t.kind==='expense'&&(t.poolSrc||'')===id)).length;
+    const pl=pool(),noSrc=S.tx.some(t=>(t.kind==='other'&&!t.source)||(projUse(t)&&!t.poolSrc));
+    const card=(id,name)=>{const st=srcStats(id);const n=S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(projUse(t)&&(t.poolSrc||'')===id)).length;
       return `<div class="card row sp" style="margin-bottom:10px" data-a="source" data-id="${esc(id)}"><div class="row"><div class="dot" style="color:var(--credit)">${ic('wallet',19)}</div><div><b>${esc(name)}</b><div class="small mute">${n} ${n===1?'entry':'entries'} · earned ${inr(st.inc)}</div></div></div><div style="text-align:right"><b class="num ${st.left<0?'debit':'credit'}">${inr(st.left)}</b><div class="small mute">left to use</div></div></div>`};
     body=otherSummary()+`
     <h2>Projects / income sources</h2>
@@ -2105,11 +2107,12 @@ function txSheet(t,preset){
   <div id="w-to" hidden><label>To account (card bill: pick the credit card · ATM: pick Cash)</label><select id="f-to">${opts(S.accounts.map(a=>[a.id,a.name+(a.last4?' ••'+a.last4:'')]),t.to||'')}</select></div>
   <div style="display:none"><label>Type</label><select id="f-kind">${opts(kindsFor(tt),t.kind)}</select></div>
   <div id="w-cat"><label id="cat-label">Category</label><input type="hidden" id="f-cat" value="${esc(t.cat)}"><div class="chips2" id="f-cats">${chips}</div><div id="smart"></div><div id="bhint"></div>
-  <div id="w-pool"><label>Paid from</label><div class="seg" id="poolseg"><button type="button" data-a="poolmode" data-id="0" class="${t.fromParty?'':t.pool?'':'on'}">My account</button><button type="button" data-a="poolmode" data-id="1" class="${t.pool&&!t.fromParty?'on':''}">Other income</button><button type="button" data-a="poolmode" data-id="2" class="${t.fromParty?'on':''}">Person</button></div><input type="checkbox" id="f-pool" hidden ${t.pool&&!t.fromParty?'checked':''}><input type="hidden" id="f-via" value="${t.fromParty?esc(t.party):''}"></div>
+  <div id="w-pool"><label>Paid from</label><div class="seg" id="poolseg"><button type="button" data-a="poolmode" data-id="0" class="${t.fromParty?'':'on'}">My account</button><button type="button" data-a="poolmode" data-id="2" class="${t.fromParty?'on':''}">Person</button></div><input type="checkbox" id="f-pool" hidden ${t.pool&&!t.fromParty?'checked':''}><input type="hidden" id="f-via" value="${t.fromParty?esc(t.party):''}"></div>
   <div id="w-poolsrc" hidden><label>Which income</label><div class="chips2" id="pool-chips"></div><select id="f-poolsrc" hidden>${srcOptions(t.poolSrc||(S.sources[0]?S.sources[0].id:''))}</select></div>
   <div id="w-viaparty" hidden><label>Whose money</label><div class="chips2" id="party-chips"></div><div class="small mute" style="margin-top:6px">Counts as your expense, and you owe this person that amount.</div></div></div>
   <div id="w-source"><label>Income source</label><select id="f-source">${srcOptions(t.source||(S.sources[0]?S.sources[0].id:''))}</select></div>
   <div id="w-party"><label>Which person</label><select id="f-party">${opts(S.people.map(p=>[p.id,p.name]),t.party)}<option value="__np">＋ New person…</option></select></div>
+  <div id="w-proj"><label id="proj-label">Project money?</label><div id="proj-hint"></div><div class="chips2" id="proj-chips"></div><input type="hidden" id="f-proj" value="${esc(t.kind==='other'?(t.source||''):t.pool?(t.poolSrc||''):'')}"></div>
   <label>Note</label><input id="f-note" value="${esc(t.note)}" placeholder="e.g. DMart groceries">
   <label>Date</label><input id="f-date" type="date" value="${t.date}">
   <button class="btn" data-a="savetx" data-id="${t.id}">Save</button></div>
@@ -2118,6 +2121,17 @@ function txSheet(t,preset){
   <button class="btn" data-a="stmtpick">Choose statement (PDF or CSV)</button></div>`);
   syncKind();
   if(isNew)setTimeout(()=>{const a=$('#f-amt');a&&a.focus()},60);
+}
+/* project money held in one account: what came into it for the project minus what went out of it from the project */
+function projHeld(src,accId){let v=0;S.tx.forEach(t=>{if(t.acc!==accId)return;if(t.kind==='other'&&(t.source||'')===src)v+=t.type==='credit'?t.amt:-t.amt;else if(projUse(t)&&(t.poolSrc||'')===src)v-=t.type==='debit'?t.amt:-t.amt});return v}
+function projSync(){
+  const w=$('#w-proj');if(!w)return;const k=$('#f-kind').value,inc=k==='income'||k==='other',out=(k==='expense'&&payMode()!=='2')||(k==='pass'&&tt==='debit');
+  w.style.display=inc||out?'':'none';if(!(inc||out))return;
+  const cur=$('#f-proj').value,ac=$('#f-acc').value,an=(acc(ac)||{}).name||'this account';
+  const held=out&&ac?S.sources.map(x=>({x,v:projHeld(x.id,ac)})).filter(o=>o.v>0):[];
+  $('#proj-label').textContent=inc?'Is this project money?':'Paid from project money?';
+  $('#proj-hint').innerHTML=held.length?`<div class="small" style="background:var(--brand-soft);border-radius:10px;padding:8px 10px;margin-bottom:8px">${esc(an)} holds project money: ${held.map(o=>`<b>${esc(o.x.name)}</b> ${inr(o.v)}`).join(' · ')}. Is this spend from it?</div>`:'';
+  $('#proj-chips').innerHTML=`<button type="button" class="chip ${cur?'':'on'}" data-a="projpick" data-id="">${inc?'No, my income':'No, my own money'}</button>`+S.sources.map(x=>{const h=held.find(o=>o.x===x);return `<button type="button" class="chip ${cur===x.id?'on':''}" data-a="projpick" data-id="${esc(x.id)}">${esc(x.name)}${h?' · '+inrH(h.v):''}</button>`}).join('')+`<button type="button" class="chip" data-a="projpick" data-id="__new">+ New project</button>`;
 }
 const payMode=()=>{const b=document.querySelector('#poolseg .on');return b?b.dataset.id:'0'};
 function partyChips(){
@@ -2129,11 +2143,11 @@ function poolChips(){
   $('#pool-chips').innerHTML=items.map(([id,n])=>`<button type="button" class="chip ${cur===id?'on':''}" data-a="poolsrc" data-id="${esc(id)}">${esc(n)}</button>`).join('')+'<button type="button" class="chip" data-a="poolsrc" data-id="__new">+ New</button>';
 }
 function syncKind(){
-  const k=$('#f-kind');if(!k)return;const v=k.value;
+  const k=$('#f-kind');if(!k)return;const v=k.value;setTimeout(projSync,0);
   $('#w-cat').style.display=(v==='pass'||v==='transfer')?'none':'';$('#w-party').style.display=v==='pass'?'':'none';
   $('#w-to').hidden=v!=='transfer';$('#acc-label').textContent=v==='transfer'?'From account':'Account';
   $('#w-pool').style.display=v==='expense'?'':'none';$('#cat-label').textContent=v==='expense'?'Category':'Income type';
-  $('#w-source').style.display=v==='other'?'':'none';$('#w-poolsrc').hidden=!(v==='expense'&&$('#f-pool').checked);if($('#pool-chips'))poolChips();
+  $('#w-source').style.display='none';$('#w-poolsrc').hidden=true;if($('#pool-chips'))poolChips();
   {const pm=payMode(),vp=v==='expense'&&pm==='2';$('#w-viaparty').hidden=!vp;$('#acc-label').style.display=$('#f-acc').style.display=vp?'none':'';if(vp)partyChips()}
   const list=v==='expense'?CATS:ICATS,cur=$('#f-cat').value;
   if(!(cur in list))$('#f-cat').value=v==='expense'?'Other':v==='other'?'Freelance':'Salary';
@@ -2236,6 +2250,10 @@ document.addEventListener('click',e=>{
     if(kind==='pass'&&!$('#f-party').value){toast('Add a person first: Ledger → People → Add person');return}
     if(kind==='transfer'&&(!$('#f-acc').value||!$('#f-to').value||$('#f-acc').value===$('#f-to').value)){toast('Pick two different accounts');return}
     const t={id:id||uid(),date:$('#f-date').value,type:kind==='transfer'?'debit':tt,to:kind==='transfer'?$('#f-to').value:'',amt,acc:$('#f-acc').value,kind,cat:kind==='pass'?'Other':$('#f-cat').value,source:kind==='other'?$('#f-source').value:'',poolSrc:(kind==='expense'&&$('#f-pool').checked)?$('#f-poolsrc').value:'',note:$('#f-note').value.trim(),party:kind==='pass'?$('#f-party').value:'',pool:kind==='expense'&&$('#f-pool').checked,src:'manual'};
+    {const pj=$('#f-proj')?$('#f-proj').value:'';
+     if(kind==='income'||kind==='other'){t.kind=pj?'other':'income';t.source=pj||'';if(pj&&t.cat==='Salary')t.cat='Other'}
+     else if(kind==='expense'||(kind==='pass'&&tt==='debit')){t.pool=!!pj;t.poolSrc=pj||''}
+     else{t.pool=false;t.poolSrc=''}}
     if(kind==='expense'&&payMode()==='2'){const v=$('#f-via').value;if(!v){toast('Pick whose money it was');return}t.acc='';t.fromParty=true;t.party=v;t.pool=false;t.poolSrc=''}
     const i=S.tx.findIndex(x=>x.id===id);if(i>=0){const o=S.tx[i];t.src=o.src;if(o.hint4){if(t.acc)learnAcc(t.acc,o.hint4);else t.hint4=o.hint4}if(o.emiId){t.emiId=o.emiId;t.emiNo=o.emiNo}if(o.prepaid)t.prepaid=true;if(o.raw)t.raw=o.raw;if(o.ts)t.ts=o.ts;S.tx[i]=t}else{if(emiPick&&t.cat==='EMI'){t.emiId=emiPick.id;t.emiNo=emiPick.no;t.src='emi'}if(smsResolve){const r=smsResolve;smsResolve=null;S.smsPending=S.smsPending.filter(x=>x.id!==r.id);S.seen.push(r.key);t.raw=r.text;t.src='sms'}S.tx.push(t)}
     save();closeSheet();render();
@@ -2288,7 +2306,7 @@ document.addEventListener('click',e=>{
   else if(a==='srcren'){
     const x=S.sources.find(y=>y.id===id);
     if(x)askText('Edit source name',x.name).then(n=>{if(n&&n.trim()){x.name=n.trim();save();closeSheet();render()}});
-    else askText('Name for the entries without a source','','e.g. a client or project').then(n=>{if(n&&n.trim()){const nid=uid();S.sources.push({id:nid,name:n.trim()});S.tx.forEach(t=>{if(t.kind==='other'&&!t.source)t.source=nid;if(t.pool&&t.kind==='expense'&&!t.poolSrc)t.poolSrc=nid});save();closeSheet();render()}});
+    else askText('Name for the entries without a source','','e.g. a client or project').then(n=>{if(n&&n.trim()){const nid=uid();S.sources.push({id:nid,name:n.trim()});S.tx.forEach(t=>{if(t.kind==='other'&&!t.source)t.source=nid;if(projUse(t)&&!t.poolSrc)t.poolSrc=nid});save();closeSheet();render()}});
   }
   else if(a==='allother'){
     const l=S.tx.filter(t=>t.kind==='other').sort((a,b)=>b.date.localeCompare(a.date));
@@ -2386,6 +2404,9 @@ document.addEventListener('click',e=>{
   else if(a==='ck')calcKey(el.dataset.k)
   else if(a==='calcok')calcDone()
   else if(a==='calcbg'){if(e.target===el)closeCalc()}
+  else if(a==='projpick'){
+    if(id==='__new'){askText('Project name','','e.g. a client, shop or side work').then(n=>{if(n&&n.trim()){const nid=uid();S.sources.push({id:nid,name:n.trim()});save();$('#f-proj').value=nid;projSync()}});return}
+    $('#f-proj').value=id;projSync()}
   else if(a==='poolmode'){
     const cb=$('#f-pool');cb.checked=id==='1';
     document.querySelectorAll('#poolseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
@@ -2440,6 +2461,7 @@ document.addEventListener('input',e=>{if(e.target.type==='date')refreshDates();
   if(e.target.id==='f-amt')updateBHint();
   if(e.target.id==='q'){q=e.target.value;txLimit=15;$('#txlist').innerHTML=txListHTML();$('#txsum').innerHTML=txSummary()}
   if(e.target.id==='tx-month'){txMonth=e.target.value;txLimit=15;render()}
+  if(e.target.id==='f-acc')projSync();
   if(e.target.id==='tx-acc'){accFilter=e.target.value;txLimit=15;render()}
   else if(e.target.id==='f-note'&&!catTouched&&$('#f-kind').value==='expense'){
     const g=guessCat(e.target.value);
@@ -2483,10 +2505,10 @@ function periodBuckets(per){
   else{const n=new Date(Y,M+1,0).getDate();for(let i=1;i<=n;i++)dayB(new Date(Y,M,i),(i===1||i%5===0)?String(i):'')}
   return bk;
 }
-const srcTx=id=>S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(t.pool&&t.kind==='expense'&&(t.poolSrc||'')===id));
-const othIn=t=>t.kind==='other'?(t.type==='credit'?t.amt:-t.amt):0,othOut=t=>t.kind==='expense'&&t.pool?(t.type==='debit'?t.amt:-t.amt):0;
+const srcTx=id=>S.tx.filter(t=>(t.kind==='other'&&(t.source||'')===id)||(projUse(t)&&(t.poolSrc||'')===id));
+const othIn=t=>t.kind==='other'?(t.type==='credit'?t.amt:-t.amt):0,othOut=t=>projUse(t)?(t.type==='debit'?t.amt:-t.amt):0;
 function otherSummary(){
-  const all=S.tx.filter(t=>t.kind==='other'||(t.pool&&t.kind==='expense'));
+  const all=S.tx.filter(t=>t.kind==='other'||(projUse(t)));
   if(!all.length)return '<div class="card empty">No other income yet.<br>Open a source below and add what you earned.</div>';
   const earned=all.reduce((x,t)=>x+othIn(t),0),used=all.reduce((x,t)=>x+othOut(t),0),left=earned-used;
   const inM=m=>all.filter(t=>t.date.startsWith(m)),e1=inM(month).reduce((x,t)=>x+othIn(t),0),u1=inM(month).reduce((x,t)=>x+othOut(t),0);
