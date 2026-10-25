@@ -268,6 +268,10 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 .btn.danger{background:var(--debit)!important;color:#fff!important}
 
 .lkrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}.lkrow:last-child{border-bottom:0}.lkrow input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--brand)}
+.wcards{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wcard{text-align:left;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--field);color:var(--ink);font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0}
+.wcard small{font-size:12px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcard b{font-size:16px}.wcard.on{border-color:var(--brand);background:var(--brand-soft)}
+.wdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--mute);margin-bottom:4px}.wcard.on .wdot{border-color:var(--brand);box-shadow:inset 0 0 0 3px var(--card);background:var(--brand)}
+.wbar{display:flex;height:8px;border-radius:5px;overflow:hidden;background:var(--field);margin-top:10px}.wbar i{display:block;height:100%}.wlink{color:var(--brand);font-weight:700;cursor:pointer}
 #lock{position:fixed;inset:0;z-index:10000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
 #lock.on{display:flex}#lock .lk{width:72px;height:72px;border-radius:20px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
 #intro{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#6a402d,#2b170f);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;transition:opacity .45s ease,transform .45s ease}
@@ -311,7 +315,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 78 · 25 Oct 2026';
+const APP_VER='version 1.4 · build 79 · 25 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -2112,7 +2116,7 @@ function txSheet(t,preset){
   <div id="w-viaparty" hidden><label>Whose money</label><div class="chips2" id="party-chips"></div><div class="small mute" style="margin-top:6px">Counts as your expense, and you owe this person that amount.</div></div></div>
   <div id="w-source"><label>Income source</label><select id="f-source">${srcOptions(t.source||(S.sources[0]?S.sources[0].id:''))}</select></div>
   <div id="w-party"><label>Which person</label><select id="f-party">${opts(S.people.map(p=>[p.id,p.name]),t.party)}<option value="__np">＋ New person…</option></select></div>
-  <div id="w-proj"><label id="proj-label">Project money?</label><div id="proj-hint"></div><div class="chips2" id="proj-chips"></div><input type="hidden" id="f-proj" value="${esc(t.kind==='other'?(t.source||''):t.pool?(t.poolSrc||''):'')}"></div>
+  <div id="w-proj"><label id="proj-label">Project money?</label><div id="proj-hint"></div><div id="proj-chips"></div><input type="hidden" id="f-proj" value="${esc(t.kind==='other'?(t.source||''):t.pool?(t.poolSrc||''):'')}"></div>
   <label>Note</label><input id="f-note" value="${esc(t.note)}" placeholder="e.g. DMart groceries">
   <label>Date</label><input id="f-date" type="date" value="${t.date}">
   <button class="btn" data-a="savetx" data-id="${t.id}">Save</button></div>
@@ -2127,11 +2131,17 @@ function projHeld(src,accId){let v=0;S.tx.forEach(t=>{if(t.acc!==accId)return;if
 function projSync(){
   const w=$('#w-proj');if(!w)return;const k=$('#f-kind').value,inc=k==='income'||k==='other',out=(k==='expense'&&payMode()!=='2')||(k==='pass'&&tt==='debit');
   w.style.display=inc||out?'':'none';if(!(inc||out))return;
-  const cur=$('#f-proj').value,ac=$('#f-acc').value,an=(acc(ac)||{}).name||'this account';
+  const cur=$('#f-proj').value,ac=$('#f-acc').value,a=acc(ac),an=a?a.name:'this account';
   const held=out&&ac?S.sources.map(x=>({x,v:projHeld(x.id,ac)})).filter(o=>o.v>0):[];
-  $('#proj-label').textContent=inc?'Is this project money?':'Paid from project money?';
-  $('#proj-hint').innerHTML=held.length?`<div class="small" style="background:var(--brand-soft);border-radius:10px;padding:8px 10px;margin-bottom:8px">${esc(an)} holds project money: ${held.map(o=>`<b>${esc(o.x.name)}</b> ${inr(o.v)}`).join(' · ')}. Is this spend from it?</div>`:'';
-  $('#proj-chips').innerHTML=`<button type="button" class="chip ${cur?'':'on'}" data-a="projpick" data-id="">${inc?'No, my income':'No, my own money'}</button>`+S.sources.map(x=>{const h=held.find(o=>o.x===x);return `<button type="button" class="chip ${cur===x.id?'on':''}" data-a="projpick" data-id="${esc(x.id)}">${esc(x.name)}${h?' · '+inrH(h.v):''}</button>`}).join('')+`<button type="button" class="chip" data-a="projpick" data-id="__new">+ New project</button>`;
+  const pv=held.reduce((s2,o)=>s2+o.v,0),bal=a?accBal(a.id):0,mine=Math.max(0,bal-pv);
+  const shown=inc?S.sources.slice():held.map(o=>o.x);if(cur&&!shown.some(x=>x.id===cur)){const x=S.sources.find(y=>y.id===cur);if(x)shown.push(x)}
+  const card=(id,name,amt,sub)=>`<button type="button" class="wcard ${cur===id?'on':''}" data-a="projpick" data-id="${esc(id)}"><span class="wdot"></span><small>${esc(name)}</small>${amt!=null?`<b class="num">${inr(amt)}</b>`:''}${sub?`<small class="mute">${sub}</small>`:''}</button>`;
+  $('#proj-label').textContent=inc?'Whose money is this?':'Whose money in '+an+'?';
+  let html=`<div class="wcards">${card('',inc?'My income':'My money',out&&a?mine:null,out&&!a?'pick an account':'')}${shown.map(x=>{const h=held.find(o=>o.x===x);return card(x.id,x.name,out?(h?h.v:0):null,out&&!h?'none in this account':'')}).join('')}</div>`;
+  if(out&&a&&pv>0&&bal>0){const pm=Math.round(mine/bal*100);html+=`<div class="wbar"><i style="width:${pm}%;background:#5b82bf"></i><i style="width:${100-pm}%;background:var(--brand)"></i></div><div class="small mute" style="margin-top:5px">${esc(an)} = ${inr(bal)} · ${pm}% mine · ${100-pm}% project</div>`}
+  const others=S.sources.filter(x=>!shown.includes(x));
+  html+=`<div class="small" style="margin-top:8px"><span class="mute">${others.length?'Other projects: ':''}</span>${others.map(x=>`<a class="wlink" data-a="projpick" data-id="${esc(x.id)}">${esc(x.name)}</a>`).join(' · ')}${others.length?' · ':''}<a class="wlink" data-a="projpick" data-id="__new">+ New project</a></div>`;
+  $('#proj-hint').innerHTML='';$('#proj-chips').innerHTML=html;
 }
 const payMode=()=>{const b=document.querySelector('#poolseg .on');return b?b.dataset.id:'0'};
 function partyChips(){
