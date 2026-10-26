@@ -406,7 +406,7 @@ canvas#donut{width:200px;height:200px}
     <div class="glass card"><div class="lbl" style="margin-bottom:6px">Order history</div><div class="scroll" id="hist"></div></div>
   </section>
   <section class="glass card t-port" id="tbCard">
-    <div class="tbh"><div class="lbl">Tradebook &amp; P&amp;L</div><div class="tbc"><select id="tbDay"></select><button class="btn" id="tbCsv">⬇ CSV</button></div></div>
+    <div class="tbh"><div class="lbl">Tradebook &amp; P&amp;L</div><div class="tbc"><select id="tbDay"></select><button class="btn" id="tbPdf">📄 PDF</button></div></div>
     <div id="tbSum" class="tbs"></div>
     <div class="lbl" style="margin:14px 0 6px">Closed trades (bought → sold)</div>
     <div class="scroll"><table class="hold tbt"><thead><tr><th>Trade</th><th>Qty</th><th>Bought / Sold</th><th class="hm">Charges</th><th>P&amp;L</th></tr></thead><tbody id="tbClosed"></tbody></table></div>
@@ -1006,12 +1006,59 @@ function renderTradebook(){
   $("tbClosed").innerHTML=C.map(o=>`<tr><td>${tbWho(o,wd)}</td><td class="num">${o.qty}</td><td class="num"><span class="up">${fmt(o.buyPx)}</span><br><span class="down">${fmt(o.sellPx)}</span></td><td class="num hm">${fmt(o.charges)}</td><td class="num ${o.pnl>=0?"up":"down"}">${sg(o.pnl)}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">No closed trades yet. A trade shows here once you sell what you bought.</td></tr>`;
   $("tbAll").innerHTML=R.map(o=>`<tr><td>${tbWho(o,wd)}</td><td><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b></td><td class="num">${o.qty}</td><td class="num">${fmt(o.price)}</td><td class="hm">${o.tag||"Market"}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">No orders yet.</td></tr>`;
 }
-function tradebookCsv(){
-  const R=tbRows(),q=v=>`"${String(v).replace(/"/g,'""')}"`;
-  const rows=[["Date","Time","Exchange","Instrument","Side","Qty","Price","Type","Buy price","Sell price","Charges","Net P&L"],
-    ...R.map(o=>[o.ts?dayOf(o.ts):"",o.ts?timeOf(o.ts):"",o.ex,o.sym,o.side,o.qty,o.price.toFixed(2),o.tag||"Market",o.closed?o.buyPx.toFixed(2):"",o.closed?o.sellPx.toFixed(2):"",o.closed?o.charges.toFixed(2):"",o.closed?o.pnl.toFixed(2):""])];
-  const blob=new Blob([rows.map(r=>r.map(q).join(",")).join("\n")],{type:"text/csv"}),a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);a.download=`tradebook-${tbDay}.csv`;document.body.append(a);a.click();a.remove();
+// ---- PDF report (jsPDF is loaded from a CDN the first time it is needed) ----
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>no(new Error("load "+src));document.head.append(s)})}
+async function ensurePdfLibs(){
+  if(!(window.jspdf&&window.jspdf.jsPDF))await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+  if(!(window.jspdf.jsPDF.API&&window.jspdf.jsPDF.API.autoTable))await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js");
+}
+const pn=v=>(v<0?"-":"")+"Rs "+Math.abs(v).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+function reportData(){
+  const R=tbRows(),C=R.filter(o=>o.closed),net=C.reduce((a,o)=>a+o.pnl,0),ch=C.reduce((a,o)=>a+o.charges,0);
+  const dt=o=>o.ts?dayOf(o.ts):"Earlier",tm=o=>o.ts?timeOf(o.ts):"-";
+  return{R,C,net,ch,wins:C.filter(o=>o.pnl>0).length,loss:C.filter(o=>o.pnl<0).length,dt,tm,
+    title:tbDay==="all"?"All days":dayLabel(tbDay)};
+}
+async function tradebookPdf(){
+  const btn=$("tbPdf"),old=btn.textContent;btn.textContent="Preparing…";btn.disabled=true;
+  const d=reportData();
+  try{
+    await ensurePdfLibs();
+    const doc=new window.jspdf.jsPDF({unit:"pt",format:"a4"}),W=doc.internal.pageSize.getWidth();
+    doc.setFontSize(18);doc.setFont("helvetica","bold");doc.text("Dalal Street Arena - Tradebook & P&L",40,48);
+    doc.setFontSize(10);doc.setFont("helvetica","normal");doc.setTextColor(110);
+    doc.text(`${d.title}  |  Generated ${new Date().toLocaleString("en-IN",{timeZone:"Asia/Kolkata"})} IST`,40,66);
+    doc.setTextColor(0);doc.setFontSize(11);
+    const sum=[["Net P&L (after charges)",pn(d.net)],["Total charges",pn(d.ch)],["Closed trades",String(d.C.length)],["Wins / Losses",`${d.wins} / ${d.loss}`],["Orders",String(d.R.length)]];
+    doc.autoTable({startY:80,body:sum,theme:"plain",styles:{fontSize:10,cellPadding:3},columnStyles:{0:{fontStyle:"bold",cellWidth:150},1:{halign:"left"}},margin:{left:40}});
+    const col=(data,idx)=>{if(data.section==="body"&&data.column.index===idx){const v=d.C[data.row.index]?.pnl;if(v!=null)data.cell.styles.textColor=v>=0?[0,140,90]:[210,40,70]}};
+    doc.setFont("helvetica","bold");doc.text("Closed trades (bought -> sold)",40,doc.lastAutoTable.finalY+24);
+    doc.autoTable({startY:doc.lastAutoTable.finalY+32,theme:"striped",headStyles:{fillColor:[20,26,50]},styles:{fontSize:8,cellPadding:4},margin:{left:40,right:40},
+      head:[["Date","Time","Instrument","Ex","Qty","Bought","Sold","Charges","P&L"]],
+      body:d.C.map(o=>[d.dt(o),d.tm(o),o.sym,o.ex,o.qty,fmt(o.buyPx),fmt(o.sellPx),fmt(o.charges),(o.pnl>=0?"+":"-")+fmt(Math.abs(o.pnl))]).concat(d.C.length?[]:[[{content:"No closed trades.",colSpan:9}]]),
+      columnStyles:{4:{halign:"right"},5:{halign:"right"},6:{halign:"right"},7:{halign:"right"},8:{halign:"right",fontStyle:"bold"}},didParseCell:x=>col(x,8)});
+    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text("All orders",40,doc.lastAutoTable.finalY+26);
+    doc.autoTable({startY:doc.lastAutoTable.finalY+34,theme:"striped",headStyles:{fillColor:[20,26,50]},styles:{fontSize:8,cellPadding:4},margin:{left:40,right:40},
+      head:[["Date","Time","Instrument","Ex","Side","Qty","Price","Type"]],
+      body:d.R.map(o=>[d.dt(o),d.tm(o),o.sym,o.ex,o.side,o.qty,fmt(o.price),o.tag||"Market"]).concat(d.R.length?[]:[[{content:"No orders.",colSpan:8}]]),
+      columnStyles:{5:{halign:"right"},6:{halign:"right"}}});
+    const pages=doc.internal.getNumberOfPages();doc.setFontSize(8);doc.setTextColor(130);
+    for(let i=1;i<=pages;i++){doc.setPage(i);doc.text(`Virtual trading game - not real money. Page ${i}/${pages}`,40,doc.internal.pageSize.getHeight()-20)}
+    const name=`tradebook-${tbDay}.pdf`,blob=doc.output("blob"),file=new File([blob],name,{type:"application/pdf"});
+    if(navigator.canShare&&navigator.canShare({files:[file]})&&isMobile()){try{await navigator.share({files:[file],title:"Tradebook"});return}catch(e){if(e&&e.name==="AbortError")return}}
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),20000);
+  }catch(err){
+    printReport(d);   // no internet for the PDF library: fall back to the browser's print dialog (choose "Save as PDF")
+  }finally{btn.textContent=old;btn.disabled=false}
+}
+function printReport(d){
+  const w=window.open("","_blank");if(!w)return toast("Allow pop-ups to print / save the report as PDF.","#ff4d6d");
+  const row=c=>`<tr>${c.map(x=>`<td>${x}</td>`).join("")}</tr>`;
+  w.document.write(`<!doctype html><title>Tradebook</title><style>body{font:12px Arial;margin:24px}h1{font-size:18px}table{border-collapse:collapse;width:100%;margin:8px 0 18px}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left}th{background:#eee}.u{color:#008c5a}.d{color:#d22846}</style>
+  <h1>Dalal Street Arena - Tradebook &amp; P&amp;L</h1><p>${d.title} | Net P&amp;L ${pn(d.net)} | Charges ${pn(d.ch)} | Wins/Losses ${d.wins}/${d.loss}</p>
+  <h3>Closed trades</h3><table><tr><th>Date</th><th>Time</th><th>Instrument</th><th>Ex</th><th>Qty</th><th>Bought</th><th>Sold</th><th>Charges</th><th>P&amp;L</th></tr>${d.C.map(o=>row([d.dt(o),d.tm(o),o.sym,o.ex,o.qty,fmt(o.buyPx),fmt(o.sellPx),fmt(o.charges),`<b class="${o.pnl>=0?"u":"d"}">${o.pnl>=0?"+":"-"}${fmt(Math.abs(o.pnl))}</b>`])).join("")}</table>
+  <h3>All orders</h3><table><tr><th>Date</th><th>Time</th><th>Instrument</th><th>Ex</th><th>Side</th><th>Qty</th><th>Price</th><th>Type</th></tr>${d.R.map(o=>row([d.dt(o),d.tm(o),o.sym,o.ex,o.side,o.qty,fmt(o.price),o.tag||"Market"])).join("")}</table>`);
+  w.document.close();w.focus();setTimeout(()=>w.print(),300);
 }
 let fnoKeyPos="";
 function renderFnoPos(){
@@ -1142,7 +1189,7 @@ $("chain").onclick=e=>{const c=e.target.closest("td[data-k]");if(!c)return;fno.t
 $("fLots").oninput=render;
 $("fBuy").onclick=()=>fnoTrade(1);$("fSell").onclick=()=>fnoTrade(-1);
 $("tbDay").onchange=()=>{tbDay=$("tbDay").value;tbKey="";render()};
-$("tbCsv").onclick=tradebookCsv;
+$("tbPdf").onclick=tradebookPdf;
 $("fnoPos").onclick=e=>{
   const c=e.target.dataset.close;
   if(c){if(!isOpen())return toast("Market is closed. Turn on Practice mode to close positions.","#ff4d6d");closeFno(+c);render();return}
