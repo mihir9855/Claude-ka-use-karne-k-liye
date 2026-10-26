@@ -243,6 +243,24 @@ canvas#donut{width:200px;height:200px}
 }
 .mini div{min-width:0}
 @media(max-width:820px){.mini{gap:6px}.mini div{padding:9px 8px}.mini b{font-size:clamp(11px,3.7vw,14px)!important}}
+.fnogrid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}
+.fnogrid .ticket{margin-top:12px;position:sticky;top:90px}
+.dnav{display:flex;gap:8px;max-width:1500px;margin:14px auto 0;padding:0 20px}
+.dnav button{border:1px solid var(--line);background:var(--glass);color:var(--mut);padding:10px 18px;border-radius:12px;font:700 13px Inter;cursor:pointer}
+.dnav button.on{background:#fff;color:#0a0f1f;border-color:#fff}
+@media(min-width:821px){
+  body[data-tab="fno"] .t-market,body[data-tab="fno"] .t-trade,body[data-tab="fno"] .t-port{display:none}
+  body:not([data-tab="fno"]) .t-fno{display:none}
+}
+@media(max-width:820px){
+  .dnav{display:none}.fnogrid{grid-template-columns:minmax(0,1fr)}.fnogrid .ticket{position:static}
+  body:not([data-tab="fno"]) .t-fno{display:none}
+  body:not([data-tab="port"]):not([data-tab="fno"]) .t-pf{display:none}
+  .bnav{grid-template-columns:repeat(6,1fr)!important}.bnav button{font-size:10px!important}
+  body[data-tab="fno"] .qbar{display:none}
+}
+.wrap{grid-template-columns:minmax(0,1fr)}.wrap>*{min-width:0}
+.fnogrid>*{min-width:0}.chain{table-layout:fixed}.ticket .tr{min-width:0}
 </style>
 </head>
 <body>
@@ -256,6 +274,7 @@ canvas#donut{width:200px;height:200px}
   <button class="btn gear" id="gear" aria-label="Settings">⚙ <span class="dsk">Settings</span></button>
 </div></header>
 <div class="tape"><div id="tape"></div></div>
+<div class="dnav" id="dnav"><button data-t="trade" class="on">📊 Trade</button><button data-t="fno">⚡ Futures &amp; Options</button></div>
 <div id="sheet" class="sheet" hidden>
   <div class="panel glass">
     <div class="ph"><b>⚙ Settings</b><button class="btn" id="sclose">✕</button></div>
@@ -300,24 +319,12 @@ canvas#donut{width:200px;height:200px}
         <div><h2 id="dName"></h2><small id="dSector"></small></div>
         <div><div class="price num" id="dPrice"></div><div class="num" id="dChg" style="text-align:right;font-weight:700"></div></div>
       </div>
-      <div class="ctabs" id="ctabs"><button data-c="chart" class="on">Chart</button><button data-c="fno">Futures &amp; Options</button></div>
+      <button class="btn" id="toFno" style="margin-top:12px">⚡ Trade futures &amp; options of this stock ›</button>
       <div id="chartView">
       <div class="exsw" id="exSwitch"></div>
       <canvas id="chart"></canvas>
       <div class="facts" id="facts"></div>
       <div class="arb" id="arb"></div>
-      </div>
-      <div id="fnoView" hidden>
-        <div class="ctl"><select id="fUnder"></select><select id="fExp"></select><span id="fInfo" class="num mut" style="font-size:12px"></span></div>
-        <div class="futrow" id="futRow"></div>
-        <div class="scroll" style="max-height:330px"><table class="chain"><thead><tr><th>Call (CE)</th><th>Strike</th><th>Put (PE)</th></tr></thead><tbody id="chain"></tbody></table></div>
-        <div class="ticket">
-          <div id="tkTitle" class="num" style="font-weight:700">Tap a Future or an option price above to select a contract</div>
-          <div class="tr"><span class="mut">Lots</span><input id="fLots" type="number" min="1" value="1"><span id="tkReq" class="num mut"></span></div>
-          <div class="tr"><button class="tbtn" id="fBuy">BUY</button><button class="tbtn s" id="fSell">SELL</button></div>
-          <div class="err" id="fErr" style="margin:0"></div>
-          <div class="hint">Simulated derivatives: prices come from a Black-Scholes model on the live spot (IV 15% index / 30% stocks, 7% rate). Futures need 15% margin; selling options blocks 15% margin. Cash-settled at expiry.</div>
-        </div>
       </div>
     </article>
 
@@ -341,7 +348,25 @@ canvas#donut{width:200px;height:200px}
     </aside>
   </section>
 
-  <section class="glass card t-port" id="fnoCard" hidden><div class="lbl" style="margin-bottom:8px">Futures &amp; Options positions</div>
+  <section class="glass card t-fno" id="fnoPage">
+    <div class="lbl" style="margin-bottom:2px">Futures &amp; Options</div>
+    <div class="fnogrid">
+      <div>      
+        <div class="ctl"><select id="fUnder"></select><select id="fExp"></select><span id="fInfo" class="num mut" style="font-size:12px"></span></div>
+        <div class="futrow" id="futRow"></div>
+        <div class="scroll" style="max-height:330px"><table class="chain"><thead><tr><th>Call (CE)</th><th>Strike</th><th>Put (PE)</th></tr></thead><tbody id="chain"></tbody></table></div>
+      </div>
+      <div><div class="ticket">
+          <div id="tkTitle" class="num" style="font-weight:700">Tap a Future or an option price above to select a contract</div>
+          <div class="tr"><span class="mut">Lots</span><input id="fLots" type="number" min="1" value="1"><span id="tkReq" class="num mut"></span></div>
+          <div class="tr"><button class="tbtn" id="fBuy">BUY</button><button class="tbtn s" id="fSell">SELL</button></div>
+          <div class="err" id="fErr" style="margin:0"></div>
+          <div class="hint">Simulated derivatives: prices come from a Black-Scholes model on the live spot (IV 15% index / 30% stocks, 7% rate). Futures need 15% margin; selling options blocks 15% margin. Cash-settled at expiry.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="glass card t-pf" id="fnoCard" hidden><div class="lbl" style="margin-bottom:8px">Futures &amp; Options positions</div>
     <div class="scroll"><table class="hold fnopos"><thead><tr><th>Contract</th><th>Side</th><th>Lots</th><th>Entry</th><th>Mark</th><th>P&amp;L</th><th></th></tr></thead><tbody id="fnoPos"></tbody></table></div></section>
   <section class="bottom t-port">
     <div class="glass card"><div class="lbl" style="margin-bottom:8px">My portfolio</div>
@@ -356,7 +381,8 @@ canvas#donut{width:200px;height:200px}
 <nav class="bnav" id="bnav">
   <button data-t="home" class="on"><i>🏠</i>Home</button>
   <button data-t="market"><i>📈</i>Market</button>
-  <button data-t="trade"><i>⚡</i>Trade</button>
+  <button data-t="trade"><i>📊</i>Trade</button>
+  <button data-t="fno"><i>⚡</i>F&amp;O</button>
   <button data-t="port"><i>💼</i>Portfolio</button>
   <button data-t="set"><i>⚙️</i>Settings</button>
 </nav>
@@ -582,7 +608,7 @@ function render(){
   $("cash").textContent="₹"+fmt(state.cash,0);$("inv").textContent="₹"+fmt(inv,0);$("nh").textContent=H.length+state.fno.length;
   $("nwspark").innerHTML=spark(state.nw.length>1?state.nw:[START,net],200,54,colr(pnl),true);
 
-  if(localOnly)renderWatch();updateAllPrices();renderTape();renderDetail();renderHold(H,invS);renderOrders();renderFnoPos();if(ctab==="fno")renderFno();
+  if(localOnly)renderWatch();updateAllPrices();renderTape();renderDetail();renderHold(H,invS);renderOrders();renderFnoPos();if(document.body.dataset.tab==="fno")renderFno();
 }
 
 function pxCell(s,e){if(!s.on[e])return `<div class="num mut">—</div><span class="mut" style="font-size:11px">not listed</span>`;const p=pct(s,e),c=p>=0?"up":"down",f=s.last[e]>0?"fu":s.last[e]<0?"fd":"";
@@ -608,8 +634,7 @@ function renderIndices(){
   const html=`<div class="fh" style="padding-top:0">Indices (tap to trade futures &amp; options)</div>${rows}${L.length>6?`<button class="btn" id="idxToggle" style="width:100%;margin:8px 0">${idxAll?"Show less":`Show all ${L.length} indices`}</button>`:""}<div class="sep" style="margin:10px 0 8px"></div>`;
   if(html!==lastIdxHtml){$("indices").innerHTML=html;lastIdxHtml=html}
 }
-function setCtab(c){ctab=c;document.querySelectorAll("#ctabs button").forEach(b=>b.classList.toggle("on",b.dataset.c===c));$("chartView").hidden=c!=="chart";$("fnoView").hidden=c!=="fno"}
-function openIndex(id){fno.under=id;fno.tk=null;fnoKey="";setCtab("fno");if(isMobile())go("trade");else window.scrollTo({top:0,behavior:"smooth"});render()}
+function openIndex(id){fno.under=id;fno.tk=null;fnoKey="";go("fno");render()}
 function updateAllPrices(){
   renderIndices();renderRecent();
   document.querySelectorAll("#allList .rp, #recent .rp").forEach(n=>{
@@ -846,7 +871,7 @@ function closeFno(id,why){
 }
 function settleExpired(){for(const p of [...state.fno])if(p.expiry<=Date.now()&&markOf(p)!=null)closeFno(p.id,"expiry")}
 
-const fno={under:"STOCK",exp:null,tk:null};let fnoKey="",ctab="chart";
+const fno={under:"STOCK",exp:null,tk:null};let fnoKey="";
 function fnoCtx(){const u=fno.under==="STOCK"?sel:fno.under,e=exOf(u,ex);return{u,e,S:spotOf(u,e)}}
 function renderFno(){
   const{u,e,S}=fnoCtx();
@@ -967,7 +992,8 @@ $("aAdd").onclick=addAlert;
 function renderNotif(){const n=$("notif");if(!("Notification" in window)){n.textContent="Not supported";n.disabled=true;return}
   const p=Notification.permission;n.textContent=p==="granted"?"On ✓":p==="denied"?"Blocked":"Enable";n.disabled=p!=="default"}
 $("notif").onclick=()=>{try{Notification.requestPermission().then(renderNotif)}catch(e){}};renderNotif();
-$("ctabs").onclick=e=>{const c=e.target.dataset.c;if(!c)return;setCtab(c);render()};
+$("toFno").onclick=()=>{fno.under="STOCK";fno.tk=null;fnoKey="";go("fno");render()};
+$("dnav").onclick=e=>{const b=e.target.closest("button");if(b)go(b.dataset.t)};
 $("indices").onclick=e=>{if(e.target.id==="idxToggle"){idxAll=!idxAll;lastIdxHtml="";render();return}const r=e.target.closest("[data-idx]");if(r)openIndex(r.dataset.idx)};
 $("fUnder").onchange=()=>{fno.under=$("fUnder").value;fno.tk=null;fnoKey="";render()};
 $("fExp").onchange=()=>{fno.exp=+$("fExp").value;render()};
@@ -976,9 +1002,10 @@ $("chain").onclick=e=>{const c=e.target.closest("td[data-k]");if(!c)return;fno.t
 $("fLots").oninput=render;
 $("fBuy").onclick=()=>fnoTrade(1);$("fSell").onclick=()=>fnoTrade(-1);
 $("fnoPos").onclick=e=>{const id=e.target.dataset.close;if(!id)return;if(!isOpen())return toast("Market is closed. Turn on Practice mode to close positions.","#ff4d6d");closeFno(+id);render()};
-function go(t){document.body.dataset.tab=t;document.querySelectorAll("#bnav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));window.scrollTo(0,0)}
+function go(t){document.body.dataset.tab=t;document.querySelectorAll("#bnav button,#dnav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));window.scrollTo(0,0);if(t==="fno")render()}
 $("bnav").onclick=e=>{const b=e.target.closest("button");if(b)go(b.dataset.t)};
-document.body.dataset.tab="home";
+document.body.dataset.tab=matchMedia("(max-width:820px)").matches?"home":"trade";
+matchMedia("(max-width:820px)").addEventListener("change",m=>go(m.matches?"home":"trade"));
 const isMobile=()=>matchMedia("(max-width:820px)").matches;
 $("qbar").onclick=e=>{const v=e.target.dataset.s;if(!v)return;side=v;setPlabel();render();$("colOrder").scrollIntoView({behavior:"smooth",block:"start"})};
 try{new IntersectionObserver(en=>$("qbar").classList.toggle("hide",en[0].isIntersecting),{threshold:.25}).observe($("colOrder"))}catch(e){}
