@@ -9,6 +9,8 @@ export const C = {
   accent: '#C27A12',
   accentSoft: '#FBF0DC',
   danger: '#C0392B',
+  header: '#2C5A41',
+  headerSoft: '#3E7655',
 };
 
 export const R = 16;

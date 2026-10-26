@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { computeTargets } from '../core/nutrition';
 import type { Activity, Condition, Goal, Lang, Person } from '../core/types';
@@ -99,64 +98,17 @@ function PersonCard({ index }: { index: number }) {
   );
 }
 
-export function ProfileScreen({ onOpenDishes }: { onOpenDishes?: () => void } = {}) {
+export function FamilyScreen() {
   const lang = useStore((s) => s.lang);
-  const setLang = useStore((s) => s.setLang);
-  const mealCount = useStore((s) => s.mealCount);
-  const setMealCount = useStore((s) => s.setMealCount);
-  const setOnboarded = useStore((s) => s.setOnboarded);
   const count = useStore((s) => s.persons.length);
   const addPerson = useStore((s) => s.addPerson);
-  const resetAll = useStore((s) => s.resetAll);
-  const [confirmReset, setConfirmReset] = useState(false);
-  const geminiKey = useStore((s) => s.geminiKey);
-  const setGeminiKey = useStore((s) => s.setGeminiKey);
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }} keyboardShouldPersistTaps="handled">
-      <H>{t(lang, 'profileTitle')}</H>
-      <View style={{ gap: 6 }}>
-        <Label>{t(lang, 'language')}</Label>
-        <Segmented
-          value={lang}
-          onChange={setLang}
-          options={LANGS.map((l) => ({ value: l, label: LANG_LABEL[l] }))}
-        />
-      </View>
-      <View style={{ gap: 6 }}>
-        <Label>{t(lang, 'mealsPerDay')}</Label>
-        <Segmented
-          value={mealCount}
-          onChange={setMealCount}
-          options={(['auto', 3, 4, 5, 6] as const).map((n) => ({
-            value: n,
-            label: n === 'auto' ? t(lang, 'auto') : String(n),
-          }))}
-        />
-      </View>
-      <View style={{ gap: 10 }}>
-        <Label>{t(lang, 'members')}</Label>
-        {Array.from({ length: count }, (_, i) => (
-          <PersonCard key={i} index={i} />
-        ))}
-        {count < MAX_MEMBERS && <Button icon="plus" kind="soft" label={t(lang, 'addMember')} onPress={addPerson} />}
-      </View>
-      <Collapse icon="camera" title={t(lang, 'smartScan')} summary={geminiKey ? '••••' + geminiKey.slice(-4) : undefined}>
-        <Field label={t(lang, 'geminiKey')} value={geminiKey} onChangeText={setGeminiKey} autoCapitalize="none" autoCorrect={false} secureTextEntry />
-        <Muted>{t(lang, 'keyHint')}</Muted>
-      </Collapse>
-      {onOpenDishes && <Button icon="dishes" kind="soft" label={t(lang, 'ourDishes')} onPress={onOpenDishes} />}
-      <Button kind="soft" label={t(lang, 'redoSetup')} onPress={() => setOnboarded(false)} />
-      {confirmReset ? (
-        <View style={{ gap: 8 }}>
-          <Muted>{t(lang, 'sure')}</Muted>
-          <Row>
-            <Button kind="danger" icon="trash" label={t(lang, 'yesDelete')} onPress={() => resetAll()} />
-            <Button kind="soft" label={t(lang, 'no')} onPress={() => setConfirmReset(false)} />
-          </Row>
-        </View>
-      ) : (
-        <Button kind="danger" label={t(lang, 'resetAll')} onPress={() => setConfirmReset(true)} />
-      )}
+    <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }} keyboardShouldPersistTaps="handled">
+      <Label>{t(lang, 'members')}</Label>
+      {Array.from({ length: count }, (_, i) => (
+        <PersonCard key={i} index={i} />
+      ))}
+      {count < MAX_MEMBERS && <Button icon="plus" kind="soft" label={t(lang, 'addMember')} onPress={addPerson} />}
       <Muted>{t(lang, 'disclaimer')}</Muted>
     </ScrollView>
   );

@@ -83,7 +83,7 @@ export function OnboardScreen() {
   const count = useStore((s) => s.persons.length);
   const setMemberCount = useStore((s) => s.setMemberCount);
   const setOnboarded = useStore((s) => s.setOnboarded);
-  const makePlan = useStore((s) => s.makePlan);
+  const makeWeek = useStore((s) => s.makeWeek);
   const [step, setStep] = useState(0);
   const tx = (k: StrKey) => t(lang, k);
 
@@ -100,7 +100,7 @@ export function OnboardScreen() {
           : tx('obHome');
 
   const finish = () => {
-    makePlan();
+    makeWeek();
     setOnboarded(true);
   };
 

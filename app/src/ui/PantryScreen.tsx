@@ -12,7 +12,7 @@ import { C } from './theme';
 import { PantryShelves } from './PantryPicker';
 import { BarcodeScan, PhotoScan } from './ScanScreens';
 
-function AddItem({ onDone, to = 'have' }: { onDone: () => void; to?: 'have' | 'buy' }) {
+export function AddItem({ onDone, to = 'have' }: { onDone: () => void; to?: 'have' | 'buy' }) {
   const lang = useStore((s) => s.lang);
   const key = useStore((s) => s.geminiKey);
   const add = useStore((s) => s.addIngredient);
@@ -136,8 +136,6 @@ export function PantryScreen() {
   const mine = useStore((s) => s.customIngredients);
   const removeIngredient = useStore((s) => s.removeIngredient);
   const count = Object.values(have).filter(Boolean).length;
-  const buyCount = useStore((s) => Object.keys(s.shopping).length);
-  const [view, setView] = useState<'home' | 'buy'>('home');
   const [panel, setPanel] = useState<'none' | 'add' | 'name' | 'finish'>('none');
   const [scan, setScan] = useState<'barcode' | 'photo' | null>(null);
   const tx = (k: StrKey) => t(lang, k);
@@ -146,24 +144,11 @@ export function PantryScreen() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
-      <H>{tx('tabPantry')}</H>
-      <Segmented
-        value={view}
-        onChange={(v) => {
-          setView(v);
-          setPanel('none');
-        }}
-        options={[
-          { value: 'home', label: `${tx('tabHome')} · ${count}` },
-          { value: 'buy', label: `${tx('tabBuy')}${buyCount ? ` · ${buyCount}` : ''}` },
-        ]}
-      />
+      <Muted>{`${count} ${tx('itemsHome')}`}</Muted>
 
-      {panel === 'name' && <AddItem to={view === 'buy' ? 'buy' : 'have'} onDone={() => setPanel('none')} />}
+      {panel === 'name' && <AddItem to="have" onDone={() => setPanel('none')} />}
 
-      {view === 'buy' ? (
-        <ShoppingList onAddOwn={() => setPanel('name')} />
-      ) : panel === 'finish' ? (
+      {panel === 'finish' ? (
         <FinishPicker onDone={() => setPanel('none')} />
       ) : (
         <>

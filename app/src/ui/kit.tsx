@@ -62,11 +62,13 @@ export function Chip({
   on,
   onPress,
   tone = 'primary',
+  dim,
 }: {
   label: string;
   on?: boolean;
   onPress?: () => void;
   tone?: 'primary' | 'accent';
+  dim?: boolean;
 }) {
   const color = tone === 'accent' ? C.accent : C.primary;
   return (
@@ -74,7 +76,7 @@ export function Chip({
       accessibilityRole="button"
       accessibilityState={{ selected: !!on }}
       onPress={onPress}
-      style={[s.chip, on && { backgroundColor: color, borderColor: color }]}
+      style={[s.chip, on && { backgroundColor: color, borderColor: color }, dim && { opacity: 0.4 }]}
     >
       <Text style={[s.chipText, on && { color: '#fff', fontWeight: '600' }]}>{label}</Text>
     </Pressable>

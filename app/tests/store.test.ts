@@ -68,3 +68,17 @@ test('makeWeek plans seven days, keeps eaten meals, and rules reach the planner'
   assert.equal(s().menu.menuOff.idli, undefined);
   s().resetAll();
 });
+
+test('editing a dish\'s ingredients changes its nutrition everywhere, and reset brings it back', async () => {
+  const { useStore, allDishes } = await import('../src/state/store');
+  const { dishMacros } = await import('../src/core/nutrition');
+  const s = () => useStore.getState();
+  s().resetAll();
+  const find = () => allDishes(s().customDishes, s().dishEdits).find((x) => x.id === 'aloo_matar')!;
+  const before = dishMacros(find()).kcal;
+  s().setDishItems('aloo_matar', [{ ing: 'aloo', g: 300 }, { ing: 'oil', g: 20 }]);
+  assert.ok(dishMacros(find()).kcal !== before);
+  assert.equal(find().items.length, 2);
+  s().resetDishItems('aloo_matar');
+  assert.equal(dishMacros(find()).kcal, before);
+});

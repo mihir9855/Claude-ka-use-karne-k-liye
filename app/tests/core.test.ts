@@ -420,3 +420,77 @@ test('week shopping list adds up ingredients across days and skips what is at ho
   for (const k of Object.keys(have)) assert.ok(!some.some((x) => x.ing === k));
   assert.equal(some.length, none.length - 3);
 });
+
+import { dayInsight, dayNutrition } from '../src/core/dayCheck';
+
+test('day nutrition adds up per person and per meal, and the insight names the biggest problem', () => {
+  const plan = generateDayPlan(base({ mealCount: 4 }));
+  const days = dayNutrition(plan, BUILTIN_DISHES, [him, her]);
+  assert.equal(days.length, 2);
+  for (const day of days) {
+    const sum = Object.values(day.bySlot).reduce((a, m) => a + m.kcal, 0);
+    assert.ok(Math.abs(sum - day.total.kcal) < 1e-6);
+    assert.equal(Object.keys(day.bySlot).length, 4);
+  }
+  const t = computeTargets(him);
+  const heavy = { total: { kcal: t.kcal * 1.5, protein: t.protein, carbs: t.carbs * 2, fat: t.fat, fiber: t.fiber }, bySlot: { breakfast: { kcal: 1, protein: 1, carbs: t.carbs * 1.2, fat: 1, fiber: 1 }, lunch: { kcal: 1, protein: 1, carbs: t.carbs * 0.8, fat: 1, fiber: 1 } } };
+  const insight = dayInsight(heavy, t);
+  assert.equal(insight?.macro, 'carbs');
+  assert.ok(insight!.diff > 0);
+  assert.equal(insight?.slot, 'breakfast');
+  const low = { total: { kcal: t.kcal, protein: t.protein * 0.5, carbs: t.carbs, fat: t.fat, fiber: t.fiber }, bySlot: {} };
+  assert.deepEqual(dayInsight(low, t), { macro: 'protein', diff: t.protein * -0.5 });
+  const fine = { total: { kcal: t.kcal, protein: t.protein, carbs: t.carbs, fat: t.fat, fiber: t.fiber * 2 }, bySlot: {} };
+  assert.equal(dayInsight(fine, t), null); // extra fibre is not a warning
+});
+
+import { avoidWords, findDishes, parseSuggestions } from '../src/core/finder';
+
+const reply = (dishes: unknown[]) => JSON.stringify({ dishes });
+const good = { name_en: 'Paneer palak wrap', name_hi: 'Paneer palak wrap', name_gu: 'પનીર પાલક રેપ', role: 'complete', meals: ['lunch', 'dinner'], cuisine: 'north', items: [{ id: 'atta', g: 50 }, { id: 'paneer', g: 70 }, { id: 'palak', g: 80 }, { id: 'oil', g: 6 }], extras: [] };
+
+test('AI suggestions: valid dishes pass, nonsense is dropped', () => {
+  const ok = parseSuggestions(reply([good]));
+  assert.equal(ok.length, 1);
+  assert.equal(ok[0].name.gu, 'પનીર પાલક રેપ');
+  assert.equal(ok[0].items.length, 4);
+  const bad = [
+    { ...good, name_en: 'Unknown id', items: [{ id: 'unicorn', g: 50 }, { id: 'atta', g: 50 }] },
+    { ...good, name_en: 'Too heavy', items: [{ id: 'ghee', g: 300 }, { id: 'atta', g: 300 }] },
+    { ...good, name_en: 'One item', items: [{ id: 'atta', g: 50 }] },
+    { ...good, name_en: 'Bad role', role: 'dessert' },
+    { ...good, name_en: '', items: good.items },
+  ];
+  assert.deepEqual(parseSuggestions(reply(bad)), []);
+  assert.deepEqual(parseSuggestions('not json'), []);
+});
+
+test('AI suggestions: health limits are enforced in code, not only in the prompt', () => {
+  const lactose = new Set(['dairy'] as const) as Set<'dairy'>;
+  assert.deepEqual(parseSuggestions(reply([good]), lactose), []); // contains paneer
+  const dairyFree = { ...good, name_en: 'Palak wrap', items: [{ id: 'atta', g: 50 }, { id: 'palak', g: 80 }, { id: 'oil', g: 8 }] };
+  assert.equal(parseSuggestions(reply([dairyFree]), lactose).length, 1);
+  const sneaky = { ...dairyFree, name_en: 'Cheesy wrap', extras: [{ name: 'Cheese slice', g: 20, group: 'dairy', kcal: 300, protein: 20, carbs: 3, fat: 24, fiber: 0 }] };
+  assert.deepEqual(parseSuggestions(reply([sneaky]), lactose), []); // extra outside the list is still caught by its name
+  const withExtra = { ...dairyFree, name_en: 'Palak wrap with ragi', extras: [{ name: 'Sprouted ragi', g: 20, group: 'flour', kcal: 330, protein: 7, carbs: 70, fat: 1.5, fiber: 11 }] };
+  assert.equal(parseSuggestions(reply([withExtra]), lactose)[0].extras.length, 1);
+});
+
+test('AI Finder sends the key, the request and the family limits, and returns checked dishes', async () => {
+  let body = '';
+  let key = '';
+  const fake = (async (_u: string, init: { headers: Record<string, string>; body: string }) => {
+    body = init.body;
+    key = init.headers['x-goog-api-key'];
+    return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: reply([good]) }] } }] }) };
+  }) as unknown as typeof fetch;
+  const avoid = avoidWords([{ ...him, conditions: ['lactose'] }, her]);
+  assert.ok(avoid.some((w) => w.includes('dairy')));
+  const out = await findDishes({ request: 'high protein dinner', apiKey: 'k1', avoid: [], homeStock: ['paneer'] }, fake);
+  assert.equal(key, 'k1');
+  assert.match(body, /high protein dinner/);
+  assert.match(body, /paneer/);
+  assert.equal(out.length, 1);
+  const blocked = await findDishes({ request: 'dinner', apiKey: 'k1', avoid }, fake);
+  assert.deepEqual(blocked, []); // paneer dish is dropped for a lactose-free family
+});

@@ -53,10 +53,10 @@ async function reason(res: Response): Promise<string> {
   }
 }
 
-type Part = { text: string } | { inline_data: { mime_type: string; data: string } };
+export type Part = { text: string } | { inline_data: { mime_type: string; data: string } };
 
 /** One Gemini call (free tier). Returns the model's text, or throws a ScanError saying what went wrong. */
-async function gemini(parts: Part[], apiKey: string, fetchFn: Fetch): Promise<string> {
+export async function gemini(parts: Part[], apiKey: string, fetchFn: Fetch = fetch): Promise<string> {
   const body = JSON.stringify({
     contents: [{ parts }],
     generationConfig: { responseMimeType: 'application/json', temperature: 0 },
@@ -98,7 +98,7 @@ export interface Nutrition {
   fiber: number;
 }
 
-const NUTRITION_SHAPE =
+export const NUTRITION_SHAPE =
   '"group": one of ' + GROUPS.join('|') + ', "kcal": number, "protein": number, "carbs": number, "fat": number, "fiber": number (all per 100 g, as bought/raw)';
 
 /** Accept a model's numbers only when they are plausible for 100 g of food. */
@@ -119,7 +119,7 @@ export function normalizeNutrition(o: unknown): Nutrition | null {
   return { group, kcal: Math.round(kcal), protein: round(protein), carbs: round(carbs), fat: round(fat), fiber: round(fiber) };
 }
 
-function firstJson(text: string): unknown {
+export function firstJson(text: string): unknown {
   const m = text.match(/\{[\s\S]*\}/);
   if (!m) return null;
   try {

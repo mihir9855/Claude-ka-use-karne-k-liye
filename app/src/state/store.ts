@@ -6,7 +6,7 @@ import { addDays } from '../core/dates';
 import { generateDayPlan, generateWeekPlan, regenerateSlot, type PlanInput } from '../core/planner';
 import type { ShoppingList } from '../core/shopping';
 import { setCustomIngredients, GROUP_DEFAULTS } from '../data/ingredients';
-import type { DayPlan, Dish, Ingredient, MenuPrefs, PlanRules, DishPref, Lang, LogEntry, Pantry, Person, Slot } from '../core/types';
+import type { DayPlan, Dish, DishItem, Ingredient, MenuPrefs, PlanRules, DishPref, Lang, LogEntry, Pantry, Person, Slot } from '../core/types';
 import { BUILTIN_DISHES } from '../data/dishes';
 
 export const MAX_MEMBERS = 6;
@@ -30,17 +30,23 @@ interface State {
   persons: Person[];
   rules: PlanRules;
   menu: MenuPrefs;
+  /** which family member the Nutrition tab shows */
+  nutPerson: number;
   mealCount: number | 'auto';
   strictPantry: boolean;
   pantry: Pantry;
   /** things to buy: id -> grams (0 = unknown) */
   shopping: ShoppingList;
   customDishes: Dish[];
+  /** the user's own ingredient lists for built-in dishes, by dish id */
+  dishEdits: Record<string, DishItem[]>;
   customIngredients: Ingredient[];
   prefs: Record<string, DishPref>;
   log: LogEntry[];
   plans: Record<string, DayPlan>;
   saltByDate: Record<string, number>;
+  /** what the current week plan was built from; differs once settings change */
+  planSig: string;
   /** last delete, kept briefly so it can be undone (not saved to disk) */
   undoSnapshot:
     | { kind: 'person'; persons: Person[]; plans: Record<string, DayPlan> }
@@ -50,6 +56,7 @@ interface State {
   undoDelete: () => void;
   clearUndo: () => void;
   setLang: (l: Lang) => void;
+  setNutPerson: (i: number) => void;
   setRules: (patch: Partial<PlanRules>) => void;
   setMenu: (patch: Partial<MenuPrefs>) => void;
   toggleMenuDish: (id: string) => void;
@@ -71,8 +78,10 @@ interface State {
   removeFromShopping: (id: string) => void;
   markBought: (id: string) => void;
   clearPantry: () => void;
-  addIngredient: (name: string, group: Ingredient['group'], nutrition?: Partial<Pick<Ingredient, 'kcal' | 'protein' | 'carbs' | 'fat' | 'fiber'>>, to?: 'have' | 'buy') => void;
+  addIngredient: (name: string, group: Ingredient['group'], nutrition?: Partial<Pick<Ingredient, 'kcal' | 'protein' | 'carbs' | 'fat' | 'fiber'>>, to?: 'have' | 'buy' | 'none') => string;
   removeIngredient: (id: string) => void;
+  setDishItems: (id: string, items: DishItem[]) => void;
+  resetDishItems: (id: string) => void;
   addDish: (d: Omit<Dish, 'id' | 'custom'>) => string;
   removeDish: (id: string) => void;
   setPref: (id: string, pref: DishPref | undefined) => void;
@@ -123,16 +132,19 @@ export const useStore = create<State>()(
       persons: [newPerson('', 'male'), newPerson('', 'female')],
       rules: DEFAULT_RULES,
       menu: DEFAULT_MENU,
+      nutPerson: 0,
       mealCount: 'auto',
       strictPantry: true,
       pantry: { have: {}, soon: {} },
       shopping: {},
       customDishes: [],
+      dishEdits: {},
       customIngredients: [],
       prefs: {},
       log: [],
       plans: {},
       saltByDate: {},
+      planSig: '',
       undoSnapshot: null,
 
       undoDelete: () =>
@@ -145,6 +157,7 @@ export const useStore = create<State>()(
         }),
       clearUndo: () => set({ undoSnapshot: null }),
       setLang: (lang) => set({ lang }),
+      setNutPerson: (nutPerson) => set({ nutPerson }),
       setRules: (patch) => set((s) => ({ rules: { ...s.rules, ...patch } })),
       setMenu: (patch) => set((s) => ({ menu: { ...s.menu, ...patch } })),
       toggleMenuDish: (id) =>
@@ -173,7 +186,7 @@ export const useStore = create<State>()(
             ? { ...plan, slots: plan.slots.map((sp) => (eaten.has(sp.slot) ? old.slots.find((o) => o.slot === sp.slot) ?? sp : sp)) }
             : plan;
         }
-        set({ plans, saltByDate: { ...s.saltByDate, ...salts } });
+        set({ plans, saltByDate: { ...s.saltByDate, ...salts }, planSig: planSignature(s) });
       },
       setOnboarded: (onboarded) => set({ onboarded }),
       setGeminiKey: (geminiKey) => set({ geminiKey: geminiKey.trim() }),
@@ -254,11 +267,13 @@ export const useStore = create<State>()(
           pantry: { have: {}, soon: {} },
           shopping: {},
           customDishes: [],
+          dishEdits: {},
           customIngredients: [],
           prefs: {},
           log: [],
           plans: {},
           saltByDate: {},
+          planSig: '',
           undoSnapshot: null,
         });
       },
@@ -284,7 +299,7 @@ export const useStore = create<State>()(
       clearPantry: () => set({ pantry: { have: {}, soon: {} } }),
       addIngredient: (name, group, nutrition, to = 'have') => {
         const n = name.trim();
-        if (!n) return;
+        if (!n) return '';
         const id = `x_${uid()}`;
         const ing: Ingredient = { id, name: { en: n, hi: n, gu: n }, group, ...GROUP_DEFAULTS[group], ...nutrition };
         const customIngredients = [...get().customIngredients, ing];
@@ -292,8 +307,11 @@ export const useStore = create<State>()(
         set((s) =>
           to === 'buy'
             ? { customIngredients, shopping: { ...s.shopping, [id]: 0 } }
-            : { customIngredients, pantry: { ...s.pantry, have: { ...s.pantry.have, [id]: true } } },
+            : to === 'none'
+              ? { customIngredients }
+              : { customIngredients, pantry: { ...s.pantry, have: { ...s.pantry.have, [id]: true } } },
         );
+        return id;
       },
       removeIngredient: (id) => {
         const customIngredients = get().customIngredients.filter((i) => i.id !== id);
@@ -308,6 +326,13 @@ export const useStore = create<State>()(
           return { customIngredients, shopping, pantry: { have, soon } };
         });
       },
+      setDishItems: (id, items) => set((s) => ({ dishEdits: { ...s.dishEdits, [id]: items } })),
+      resetDishItems: (id) =>
+        set((s) => {
+          const dishEdits = { ...s.dishEdits };
+          delete dishEdits[id];
+          return { dishEdits };
+        }),
       addDish: (d) => {
         const id = `c_${uid()}`;
         set((s) => ({ customDishes: [...s.customDishes, { ...d, id, custom: true }] }));
@@ -375,8 +400,35 @@ export const useStore = create<State>()(
   ),
 );
 
-export function allDishes(customDishes: Dish[]): Dish[] {
-  return [...BUILTIN_DISHES, ...customDishes];
+/** Everything that changes what a plan should look like. Names are left out: renaming should not stale a plan. */
+export function planSignature(s: Pick<State, 'persons' | 'rules' | 'menu' | 'mealCount' | 'dishEdits' | 'prefs'>): string {
+  return JSON.stringify([
+    s.persons.map(({ name: _n, ...rest }) => rest),
+    s.rules,
+    s.menu,
+    s.mealCount,
+    Object.keys(s.dishEdits).sort(),
+    Object.entries(s.prefs).filter(([, v]) => v === 'dislike').map(([k]) => k).sort(),
+  ]);
+}
+
+const NO_EDITS: Record<string, DishItem[]> = {};
+let memo: { custom: Dish[]; edits: Record<string, DishItem[]>; out: Dish[] } | null = null;
+
+/** Built-in dishes (with the user's ingredient edits applied) followed by the user's own dishes. */
+export function allDishes(customDishes: Dish[], edits: Record<string, DishItem[]> = NO_EDITS): Dish[] {
+  if (memo && memo.custom === customDishes && memo.edits === edits) return memo.out;
+  const base = Object.keys(edits).length === 0 ? BUILTIN_DISHES : BUILTIN_DISHES.map((d) => (edits[d.id] ? { ...d, items: edits[d.id] } : d));
+  const out = [...base, ...customDishes];
+  memo = { custom: customDishes, edits, out };
+  return out;
+}
+
+/** The full dish list for a screen; recomputed only when the user's dishes or edits change. */
+export function useAllDishes(): Dish[] {
+  const custom = useStore((s) => s.customDishes);
+  const edits = useStore((s) => s.dishEdits);
+  return allDishes(custom, edits);
 }
 
 function planInput(s: State, date: string, salt: number): PlanInput {
@@ -384,7 +436,7 @@ function planInput(s: State, date: string, salt: number): PlanInput {
     date,
     persons: s.persons,
     mealCount: s.mealCount,
-    dishes: allDishes(s.customDishes),
+    dishes: allDishes(s.customDishes, s.dishEdits),
     pantry: s.pantry,
     log: s.log,
     prefs: s.prefs,

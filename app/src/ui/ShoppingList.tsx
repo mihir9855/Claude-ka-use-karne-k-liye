@@ -19,7 +19,7 @@ function Picker({ onClose }: { onClose: () => void }) {
   const add = useStore((s) => s.addToShopping);
   const remove = useStore((s) => s.removeFromShopping);
   const mine = useStore((s) => s.customIngredients);
-  const all = useMemo(() => INGREDIENTS.filter((i) => !i.basic || i.id === 'oil'), [mine]);
+  const all = useMemo(() => INGREDIENTS.filter((i) => !i.basic || ['oil', 'sugar', 'salt'].includes(i.id)), [mine]);
   return (
     <View style={{ gap: 10 }}>
       {AISLES.map((a) => {
@@ -46,9 +46,9 @@ function Picker({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function ShoppingList({ onAddOwn }: { onAddOwn: () => void }) {
+export function ShoppingList({ onAddOwn, planItems = {} }: { onAddOwn: () => void; /** what the week's plan needs, id -> grams */ planItems?: Record<string, number> }) {
   const lang = useStore((s) => s.lang);
-  const shopping = useStore((s) => s.shopping);
+  const manual = useStore((s) => s.shopping);
   const bought = useStore((s) => s.markBought);
   const remove = useStore((s) => s.removeFromShopping);
   const mine = useStore((s) => s.customIngredients);
@@ -56,6 +56,12 @@ export function ShoppingList({ onAddOwn }: { onAddOwn: () => void }) {
   const [notice, setNotice] = useState('');
   const tx = (k: StrKey) => t(lang, k);
 
+  // one list: what the plan needs plus what was added by hand
+  const shopping = useMemo(() => {
+    const merged: Record<string, number> = { ...planItems };
+    for (const [id, g] of Object.entries(manual)) merged[id] = Math.max(merged[id] ?? 0, g);
+    return merged;
+  }, [planItems, manual]);
   const groups = useMemo(() => groupShopping(shopping, INGREDIENT_BY_ID, lang), [shopping, lang, mine]);
   const count = groups.reduce((n, g) => n + g.items.length, 0);
 
@@ -136,9 +142,11 @@ export function ShoppingList({ onAddOwn }: { onAddOwn: () => void }) {
                     {it.name}
                     {it.grams > 0 ? <Text style={{ color: C.muted }}>{`  ${it.grams} ${tx('g')}`}</Text> : null}
                   </Text>
-                  <Pressable accessibilityRole="button" accessibilityLabel={tx('remove')} onPress={() => remove(it.id)} hitSlop={8}>
-                    <Icon name="close" size={18} color={C.muted} />
-                  </Pressable>
+                  {manual[it.id] !== undefined && planItems[it.id] === undefined && (
+                    <Pressable accessibilityRole="button" accessibilityLabel={tx('remove')} onPress={() => remove(it.id)} hitSlop={8}>
+                      <Icon name="close" size={18} color={C.muted} />
+                    </Pressable>
+                  )}
                 </Row>
               ))}
             </View>

@@ -7,9 +7,14 @@ import { SLOTS_BY_COUNT } from '../core/planner';
 import type { Dish, DishItem, DishRole, MealCategory } from '../core/types';
 import { INGREDIENTS } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
-import { allDishes, useStore } from '../state/store';
+import { useAllDishes, useStore } from '../state/store';
 import { dishName, ingName, r } from './helpers';
 import { Icon } from './Icon';
+import { ActivityIndicator } from 'react-native';
+import { avoidWords, findDishes, type Suggestion } from '../core/finder';
+import { dishMacros as macrosOf } from '../core/nutrition';
+import { ScanError } from '../core/scan';
+import { INGREDIENT_BY_ID } from '../data/ingredients';
 import { Button, Card, Chip, Field, H, Label, Muted, Row, Search, Segmented } from './kit';
 import { C } from './theme';
 
@@ -189,32 +194,134 @@ function DishRow({ dish }: { dish: Dish }) {
   );
 }
 
-export function DishesScreen({ onClose }: { onClose?: () => void } = {}) {
+function AiFinder({ onDone }: { onDone: () => void }) {
   const lang = useStore((s) => s.lang);
-  const custom = useStore((s) => s.customDishes);
+  const key = useStore((s) => s.geminiKey);
+  const setKey = useStore((s) => s.setGeminiKey);
+  const persons = useStore((s) => s.persons);
+  const have = useStore((s) => s.pantry.have);
+  const addDish = useStore((s) => s.addDish);
+  const addIngredient = useStore((s) => s.addIngredient);
+  const [draftKey, setDraftKey] = useState('');
+  const [ask, setAsk] = useState('');
+  const [stock, setStock] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [results, setResults] = useState<Suggestion[] | null>(null);
+  const [saved, setSaved] = useState<Record<number, true>>({});
+  const [error, setError] = useState('');
+  const tx = (k: StrKey) => t(lang, k);
+
+  const find = async () => {
+    if (!ask.trim() || busy) return;
+    setBusy(true);
+    setError('');
+    setResults(null);
+    try {
+      const homeStock = stock ? Object.keys(have).filter((id) => have[id]).map((id) => INGREDIENT_BY_ID[id]?.name.en).filter(Boolean) : undefined;
+      setResults(await findDishes({ request: ask, apiKey: key, avoid: avoidWords(persons), homeStock }));
+      setSaved({});
+    } catch (e) {
+      const kind = e instanceof ScanError ? e.kind : 'other';
+      setError(`${tx(kind === 'key' ? 'errKey' : kind === 'limit' ? 'errLimit' : kind === 'network' ? 'errNet' : 'errOther')} ${(e as Error)?.message ?? ''}`.trim().slice(0, 220));
+    }
+    setBusy(false);
+  };
+
+  const save = (sg: Suggestion, i: number) => {
+    const items = [...sg.items];
+    for (const ex of sg.extras) {
+      const id = addIngredient(ex.name, ex.group, { kcal: ex.kcal, protein: ex.protein, carbs: ex.carbs, fat: ex.fat, fiber: ex.fiber }, 'none');
+      if (id) items.push({ ing: id, g: ex.g });
+    }
+    addDish({ name: sg.name, role: sg.role, meals: sg.meals, items, cuisine: sg.cuisine });
+    setSaved((x) => ({ ...x, [i]: true }));
+  };
+
+  return (
+    <Card>
+      <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
+        <Label>{tx('finderAsk')}</Label>
+        <Button kind="soft" label={tx('close')} onPress={onDone} />
+      </Row>
+      {!key ? (
+        <View style={{ gap: 8 }}>
+          <Muted>{tx('needKey')}</Muted>
+          <Field label={tx('geminiKey')} value={draftKey} onChangeText={setDraftKey} autoCapitalize="none" autoCorrect={false} secureTextEntry />
+          <Muted>{tx('keyHint')}</Muted>
+          {draftKey.trim().length > 10 && <Button label={tx('save')} onPress={() => setKey(draftKey)} />}
+        </View>
+      ) : (
+        <>
+          <Search value={ask} onChangeText={setAsk} placeholder={tx('finderEx1')} onSubmitEditing={find} returnKeyType="search" />
+          <Row>
+            {(['finderEx1', 'finderEx2', 'finderEx3'] as StrKey[]).map((k) => (
+              <Chip key={k} label={tx(k)} onPress={() => setAsk(tx(k))} />
+            ))}
+            <Chip tone="accent" label={tx('finderUseStock')} on={stock} onPress={() => setStock(!stock)} />
+          </Row>
+          {busy ? (
+            <Row>
+              <ActivityIndicator color={C.primary} />
+              <Muted>{tx('finderWorking')}</Muted>
+            </Row>
+          ) : (
+            ask.trim().length > 0 && <Button icon="sparkle" label={tx('findBtn')} onPress={find} />
+          )}
+        </>
+      )}
+      {!!error && <Muted style={{ color: C.danger }}>{error}</Muted>}
+      {results && results.length === 0 && <Muted>{tx('finderNone')}</Muted>}
+      {results?.map((sg, i) => {
+        const dish = { id: 'x', name: sg.name, role: sg.role, meals: sg.meals, items: sg.items };
+        const m = macrosOf(dish);
+        const extraKcal = sg.extras.reduce((a, e) => a + (e.kcal * e.g) / 100, 0);
+        const extraProt = sg.extras.reduce((a, e) => a + (e.protein * e.g) / 100, 0);
+        return (
+          <View key={i} style={{ backgroundColor: '#fff', borderRadius: 12, padding: 12, gap: 6, borderWidth: 1, borderColor: C.line }}>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: C.text }}>{sg.name[lang] || sg.name.en}</Text>
+            <Muted>
+              {tx(`role_${sg.role}` as StrKey)} · {r(m.kcal + extraKcal)} {tx('kcal')} · {r(m.protein + extraProt)} {tx('g')} {tx('proteinShort')}
+            </Muted>
+            <Muted>
+              {[...sg.items.map((it) => `${ingName(it.ing, lang)} ${it.g}${tx('g')}`), ...sg.extras.map((e) => `${e.name} ${e.g}${tx('g')}`)].join(' · ')}
+            </Muted>
+            {saved[i] ? <Muted style={{ color: C.primary }}>{tx('savedOk')}</Muted> : <Button icon="heart" kind="soft" label={tx('saveRecipe')} onPress={() => save(sg, i)} />}
+          </View>
+        );
+      })}
+      {results && results.length > 0 && <Muted>{tx('aiNote')}</Muted>}
+    </Card>
+  );
+}
+
+export function DishesScreen() {
+  const lang = useStore((s) => s.lang);
   const log = useStore((s) => s.log);
-  const [onlyOurs, setOnlyOurs] = useState(false);
+  const prefs = useStore((s) => s.prefs);
+  const [view, setView] = useState<'saved' | 'all'>('saved');
   const [adding, setAdding] = useState(false);
+  const [finding, setFinding] = useState(false);
   const [q, setQ] = useState('');
   const tx = (k: StrKey) => t(lang, k);
 
-  const dishes = useMemo(() => allDishes(custom), [custom]);
+  const dishes = useAllDishes();
   const usual = useMemo(() => topDishes(log, dishes, 5), [log, dishes]);
+  const needle = q.trim().toLowerCase();
   const shown = dishes
-    .filter((d) => (onlyOurs ? d.custom : true))
-    .filter((d) => !q.trim() || Object.values(d.name).some((n) => n.toLowerCase().includes(q.trim().toLowerCase())))
-    .sort((a, b) => Number(!!b.custom) - Number(!!a.custom));
+    .filter((d) => (view === 'all' ? true : prefs[d.id] === 'like' || d.custom))
+    .filter((d) => !needle || Object.values(d.name).some((n) => n.toLowerCase().includes(needle)))
+    .sort((a, b) => Number(!!b.custom) - Number(!!a.custom))
+    .slice(0, 80);
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }} keyboardShouldPersistTaps="handled">
-      <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
-        <H>{tx('dishesTitle')}</H>
-        <Row style={{ flexWrap: 'nowrap' }}>
-          {!adding && <Button icon="plus" label={tx('addShort')} onPress={() => setAdding(true)} />}
-          {onClose && <Button icon="close" kind="soft" label={tx('close')} onPress={onClose} />}
-        </Row>
+      <Row>
+        {!adding && <Button icon="plus" label={tx('addRecipe')} onPress={() => setAdding(true)} />}
+        {!finding && <Button icon="sparkle" kind="soft" label={tx('aiFinder')} onPress={() => setFinding(true)} />}
       </Row>
       {adding && <AddDishForm onDone={() => setAdding(false)} />}
+      {finding && <AiFinder onDone={() => setFinding(false)} />}
+      <Muted>{tx('savedHint')}</Muted>
       {usual.length > 0 && (
         <View style={{ gap: 6 }}>
           <Label>{tx('usualFoods')}</Label>
@@ -227,10 +334,11 @@ export function DishesScreen({ onClose }: { onClose?: () => void } = {}) {
       )}
       <Search value={q} onChangeText={setQ} placeholder={tx('search')} />
       <Segmented
-        value={onlyOurs ? 'ours' : 'all'}
-        onChange={(v) => setOnlyOurs(v === 'ours')}
-        options={[{ value: 'all', label: tx('all') }, { value: 'ours', label: tx('ours') }]}
+        value={view}
+        onChange={setView}
+        options={[{ value: 'saved', label: tx('savedTab') }, { value: 'all', label: tx('allDishes') }]}
       />
+      {shown.length === 0 && <Muted>{tx('savedEmpty')}</Muted>}
       <View>
         {shown.map((d) => (
           <DishRow key={d.id} dish={d} />

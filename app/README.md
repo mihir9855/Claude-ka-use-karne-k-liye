@@ -5,24 +5,20 @@ groceries at home, their health goals and their health limits. English, Hinglish
 
 ## What works now
 
-1. **Profile**: two people, each with goal (fat loss / muscle gain / stay healthy), activity and health limits
-   (diabetes, BP, thyroid, PCOS, cholesterol, lactose, gluten, kidney, peanut/soy/nut allergy, no onion-garlic).
-   Daily calorie and protein targets are computed on the phone (Mifflin-St Jeor).
-2. **Meals per day**: auto, or 3 / 4 / 5 / 6. Calories and protein are split across the meals.
-3. **Pantry**: tap what you have; double-tap marks "use first". "Plan only from my pantry" keeps suggestions cookable.
-4. **Plan A / Plan B** for every meal, with per-person portions. Tap to pick one. A "missing for today" list is shown.
-5. **Our dishes**: add dishes you cook (ingredients or your own numbers), and log "we ate this".
-   The planner learns from the log: favourite dishes come up more, recently eaten ones are held back, dishes often
-   eaten together are paired, and 👎 dishes are never suggested.
-
-No AI service and no paid API are used; everything runs on the phone. Data is stored locally.
-
-## Not built yet
-
-- Sync between your two phones and the "A vs B, then decide together" vote (needs a free Supabase project).
-- Photo, voice and barcode pantry input (optional, free Gemini tier).
-- Cooking steps and a cooking sheet for the cook.
-- Dish names are in all three languages for built-in dishes. Dishes you add use the one name you type.
+- **Planner**: a plan for the next 7 days, each day with its meals. Tap a meal to see the portion for each
+  person, what to cook with, mark it eaten, or ask for another.
+- **Nutrition**: today against each person's target (calories, protein, carbs, fat, fibre), split by meal, with a
+  note on what is furthest off.
+- **Grocery list**: one list for the week's plan plus anything added by hand, grouped like a supermarket
+  (vegetables, fruit, dairy, dal, atta and rice...). Tick to move an item to the home stock. Copy, PDF and share.
+- **Menu (side drawer)**: family and health limits (1-6 people), cuisines, planning rules (rice or roti,
+  no fried, no sweets, quick weekday dishes), My Menu (take dishes in or out), Customize ingredients,
+  Saved recipes with an AI Finder, home stock (add by name, barcode or photo), settings.
+- **280 vegetarian dishes** (North, West, South, East, North-East, continental, Indo-Chinese), named in
+  English, Hinglish and Gujarati. Quantities are approximate.
+- Runs on the phone with no paid service. Optional: a free Gemini key for photo detection, nutrition lookup by
+  name, and the AI Finder (every AI dish is checked in code: real ingredients, believable numbers, and
+  none of the foods the family must avoid).
 
 ## Run it
 

@@ -126,6 +126,7 @@ const rows: Row[] = [
   ['lemon', 'Lemon', 'Nimbu', 'લીંબુ', 'veg', 29, 1.1, 9, 0.3, undefined, true],
   ['tamarind', 'Tamarind', 'Imli', 'આમલી', 'other', 239, 2.8, 63, 0.6, undefined, true],
   ['jaggery', 'Jaggery', 'Gud', 'ગોળ', 'other', 383, 0.4, 98, 0.1, undefined, true],
+  ['salt', 'Salt', 'Namak', 'મીઠું', 'other', 0, 0, 0, 0, undefined, true],
   ['sugar', 'Sugar', 'Cheeni', 'ખાંડ', 'other', 387, 0, 100, 0, ['high_gi'], true],
   // other
   ['papad', 'Papad', 'Papad', 'પાપડ', 'other', 371, 25, 60, 3, ['high_sodium']],
@@ -146,7 +147,7 @@ const FIBER: Record<string, number> = {
   pasta: 3, noodles: 3, sesame: 12, dates: 8, sarson: 3.2, sweet_potato: 3, beetroot: 2.8, radish: 1.6, pumpkin: 0.5, mushroom: 1,
   sweetcorn: 2, tindora: 1.6, turai: 1.5, karela: 2.8, guar: 3, raw_banana: 2.3, drumstick: 3.2, orange: 2.4,
   papaya: 1.7, pomegranate: 4, guava: 5.4, watermelon: 0.4, ginger: 2, green_chilli: 1.5, coriander: 2.8,
-  curry_leaves: 6.4, mint: 6.8, lemon: 2.8, tamarind: 5, jaggery: 0, sugar: 0,
+  curry_leaves: 6.4, mint: 6.8, lemon: 2.8, tamarind: 5, jaggery: 0, sugar: 0, salt: 0,
 };
 
 // finer shelf categories than the raw `group` column
