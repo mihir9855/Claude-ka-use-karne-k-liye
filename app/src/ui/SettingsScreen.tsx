@@ -1,15 +1,11 @@
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import type { Lang } from '../core/types';
-import { LANG_LABEL, t } from '../i18n/strings';
+import { t } from '../i18n/strings';
 import { useStore } from '../state/store';
 import { Button, Collapse, Field, Label, Muted, Row, Segmented } from './kit';
 
-const LANGS: Lang[] = ['en', 'hi', 'gu'];
-
 export function SettingsScreen() {
   const lang = useStore((s) => s.lang);
-  const setLang = useStore((s) => s.setLang);
   const mealCount = useStore((s) => s.mealCount);
   const setMealCount = useStore((s) => s.setMealCount);
   const setOnboarded = useStore((s) => s.setOnboarded);
@@ -19,10 +15,6 @@ export function SettingsScreen() {
   const [confirmReset, setConfirmReset] = useState(false);
   return (
     <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
-      <View style={{ gap: 6 }}>
-        <Label>{t(lang, 'language')}</Label>
-        <Segmented value={lang} onChange={setLang} options={LANGS.map((l) => ({ value: l, label: LANG_LABEL[l] }))} />
-      </View>
       <View style={{ gap: 6 }}>
         <Label>{t(lang, 'mealsPerDay')}</Label>
         <Segmented

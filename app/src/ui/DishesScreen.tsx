@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import { Text } from './Text';
 import { todayStr } from '../core/dates';
 import { topDishes } from '../core/habits';
 import { dishMacros } from '../core/nutrition';
@@ -11,6 +12,8 @@ import { useAllDishes, useStore } from '../state/store';
 import { dishName, ingName, r } from './helpers';
 import { Icon } from './Icon';
 import { ActivityIndicator } from 'react-native';
+import { artFor } from '../core/artFor';
+import { CUISINE_TONE, DishArt } from './Art';
 import { avoidWords, findDishes, type Suggestion } from '../core/finder';
 import { dishMacros as macrosOf } from '../core/nutrition';
 import { ScanError } from '../core/scan';
@@ -146,21 +149,29 @@ function DishRow({ dish }: { dish: Dish }) {
   const tx = (k: StrKey) => t(lang, k);
 
   return (
-    <View style={{ borderBottomWidth: 1, borderBottomColor: C.line }}>
+    <View style={{ backgroundColor: C.card, borderRadius: 22, padding: 12, marginBottom: 10, gap: 10 }}>
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={dishName(dish, lang)}
         accessibilityState={{ expanded: open }}
         onPress={() => setOpen(!open)}
-        style={{ paddingVertical: 12, gap: 2, opacity: pref === 'dislike' ? 0.45 : 1 }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pref === 'dislike' ? 0.45 : 1 }}
       >
-        <Row style={{ flexWrap: 'nowrap', gap: 6 }}>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: C.text, flexShrink: 1 }}>{dishName(dish, lang)}</Text>
-          {pref === 'like' && <Icon name="heart" size={14} color={C.danger} />}
-          {dish.custom && <Icon name="user" size={14} color={C.primary} />}
-        </Row>
-        <Muted>
-          {tx(`role_${dish.role}` as StrKey)} · {r(m.kcal)} {tx('kcal')} · {r(m.protein)} {tx('g')} {tx('proteinShort')}
-        </Muted>
+        <View style={{ width: 60, height: 60, borderRadius: 20, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+          <DishArt kind={artFor(dish)} tone={CUISINE_TONE[dish.cuisine ?? 'north']} size={46} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+          <Row style={{ flexWrap: 'nowrap', gap: 6 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: C.text, flexShrink: 1 }} numberOfLines={1}>
+              {dishName(dish, lang)}
+            </Text>
+            {pref === 'like' && <Icon name="heart" size={14} color={C.danger} />}
+          </Row>
+          <Text style={{ fontSize: 13, color: C.muted }} numberOfLines={1}>
+            {`${tx(`role_${dish.role}` as StrKey)} · ${r(m.kcal)} ${tx('kcal')} · ${r(m.protein)} ${tx('g')}`}
+          </Text>
+        </View>
+        <Icon name={open ? 'up' : 'down'} size={18} color={C.muted} />
       </Pressable>
       {open && (
         <View style={{ gap: 10, paddingBottom: 12 }}>

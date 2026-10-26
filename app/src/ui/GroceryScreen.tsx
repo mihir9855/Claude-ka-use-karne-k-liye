@@ -33,7 +33,7 @@ export function GroceryScreen() {
   }, [plans, persons.length, dishes, pantry]);
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
       {adding && <AddItem to="buy" onDone={() => setAdding(false)} />}
       <ShoppingList onAddOwn={() => setAdding(true)} planItems={planItems} />
       <View style={{ gap: 8 }}>

@@ -1,4 +1,5 @@
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Text } from './Text';
 import { computeTargets } from '../core/nutrition';
 import type { Activity, Condition, Goal, Lang, Person } from '../core/types';
 import { LANG_LABEL, t, type StrKey } from '../i18n/strings';

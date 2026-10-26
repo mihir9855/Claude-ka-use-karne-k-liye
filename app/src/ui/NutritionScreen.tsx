@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from './Text';
 import { addDays, todayStr } from '../core/dates';
 import { dayInsight, dayNutrition, type InsightMacro } from '../core/dayCheck';
 import { computeTargets } from '../core/nutrition';
@@ -8,17 +9,16 @@ import { fmt, t, type StrKey } from '../i18n/strings';
 import { useAllDishes, useStore } from '../state/store';
 import { dateLabel, r } from './helpers';
 import { Icon } from './Icon';
-import { Chip, Muted, Row } from './kit';
+import { Chip, Muted, Pill, Row } from './kit';
 import { useNav } from './nav';
-import { C, R } from './theme';
+import { Ring } from './Ring';
+import { C, MEAL, RADIUS, SHADOW } from './theme';
 
-const SLOT_COLOR: Record<Slot, string> = {
-  breakfast: '#6FA3BE',
-  midmorning: '#8FB7A3',
-  lunch: '#E8A04D',
-  evening: '#B07FA0',
-  dinner: '#4A4E8C',
-  bedtime: '#7B8794',
+const MACRO_COLOR: Record<'protein' | 'carbs' | 'fat' | 'fiber', string> = {
+  protein: '#E8553A',
+  carbs: '#FFB020',
+  fat: '#35C2E0',
+  fiber: '#19B58A',
 };
 
 /** One bar split by meal, with a tick where the target is. */
@@ -26,13 +26,13 @@ function StackBar({ parts, target }: { parts: { slot: Slot; v: number }[]; targe
   const total = parts.reduce((a, p) => a + p.v, 0);
   const max = Math.max(total, target) * 1.05 || 1;
   return (
-    <View style={{ height: 14, justifyContent: 'center' }}>
-      <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: C.line }}>
+    <View style={{ height: 16, justifyContent: 'center' }}>
+      <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: C.surface }}>
         {parts.map((p) => (
-          <View key={p.slot} style={{ width: `${(p.v / max) * 100}%`, backgroundColor: SLOT_COLOR[p.slot] }} />
+          <View key={p.slot} style={{ width: `${(p.v / max) * 100}%`, backgroundColor: MEAL[p.slot].strong }} />
         ))}
       </View>
-      <View style={{ position: 'absolute', left: `${(target / max) * 100}%`, top: 0, width: 2, height: 14, backgroundColor: C.text }} />
+      <View style={{ position: 'absolute', left: `${(target / max) * 100}%`, top: 0, width: 3, height: 16, borderRadius: 2, backgroundColor: C.ink }} />
     </View>
   );
 }
@@ -42,7 +42,8 @@ export function NutritionScreen() {
   const lang = useStore((s) => s.lang);
   const persons = useStore((s) => s.persons);
   const plans = useStore((s) => s.plans);
-  const [who, setWho] = [useStore((s) => s.nutPerson), useStore((s) => s.setNutPerson)];
+  const who = useStore((s) => s.nutPerson);
+  const setWho = useStore((s) => s.setNutPerson);
   const dishes = useAllDishes();
   const tx = (k: StrKey) => t(lang, k);
 
@@ -59,24 +60,18 @@ export function NutritionScreen() {
   const lab = dateLabel(date, lang);
   const prev = addDays(date, -1);
   const next = addDays(date, 1);
-
-  const slotsInOrder = plan?.slots.map((s) => s.slot) ?? [];
+  const slotsInOrder = plan?.slots.map((sp) => sp.slot) ?? [];
   const parts = (k: InsightMacro) => slotsInOrder.map((slot) => ({ slot, v: day?.bySlot[slot]?.[k] ?? 0 }));
   const insight = day ? dayInsight(day, target) : null;
   const unit = (k: InsightMacro) => (k === 'kcal' ? tx('kcal') : tx('g'));
 
-  const pill = (k: InsightMacro) => {
+  const status = (k: InsightMacro) => {
     const diff = (day?.total[k] ?? 0) - target[k];
     const rel = target[k] ? diff / target[k] : 0;
-    const good = k === 'fiber' ? diff >= 0 : Math.abs(rel) <= 0.1;
+    if (r(diff) === 0) return <Pill tone="good" label={tx('onTarget')} />;
     const bad = k === 'protein' ? rel < -0.1 : k === 'fiber' ? false : rel > 0.1;
-    const text = r(diff) === 0 ? tx('onTarget') : `${diff > 0 ? '+' : ''}${r(diff)} ${unit(k)} ${diff > 0 ? tx('over') : tx('under')}`;
-    const tone = bad ? { bg: '#FBE3E0', fg: C.danger } : good ? { bg: C.primarySoft, fg: C.primary } : { bg: C.accentSoft, fg: C.accent };
-    return (
-      <View style={{ backgroundColor: tone.bg, borderRadius: 999, paddingVertical: 3, paddingHorizontal: 10 }}>
-        <Text style={{ fontSize: 12, fontWeight: '600', color: tone.fg }}>{text}</Text>
-      </View>
-    );
+    const good = k === 'fiber' ? diff >= 0 : Math.abs(rel) <= 0.1;
+    return <Pill tone={bad ? 'bad' : good ? 'good' : 'warn'} label={`${diff > 0 ? '+' : ''}${r(diff)} ${unit(k)}`} />;
   };
 
   const pKcal = (day?.total.protein ?? 0) * 4;
@@ -84,25 +79,24 @@ export function NutritionScreen() {
   const fKcal = (day?.total.fat ?? 0) * 9;
   const sumK = pKcal + cKcal + fKcal || 1;
   const share = [
-    { k: 'protein' as const, v: pKcal / sumK, color: '#B85C4A' },
-    { k: 'carbs' as const, v: cKcal / sumK, color: '#D9CBB0' },
-    { k: 'fat' as const, v: fKcal / sumK, color: '#E0B04A' },
+    { k: 'protein' as const, v: pKcal / sumK },
+    { k: 'carbs' as const, v: cKcal / sumK },
+    { k: 'fat' as const, v: fKcal / sumK },
   ];
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-      <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Previous day" onPress={() => nav.setNutDate(prev)} hitSlop={10} style={{ opacity: valid(prev) ? 1 : 0.3 }} disabled={!valid(prev)}>
-          <Icon name="back" size={22} color={C.text} />
+    <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 24 }}>
+      <View style={s.switcher}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Previous day" onPress={() => nav.setNutDate(prev)} hitSlop={8} disabled={!valid(prev)} style={[s.arrow, !valid(prev) && { opacity: 0.3 }]}>
+          <Icon name="back" size={20} color={C.text} width={2.6} />
         </Pressable>
-        <View style={{ alignItems: 'center' }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: C.text }}>{date === today ? tx('tabToday') : lab.weekday}</Text>
-          <Muted>{`${lab.day} ${lab.month}`}</Muted>
-        </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Next day" onPress={() => nav.setNutDate(next)} hitSlop={10} style={{ opacity: valid(next) ? 1 : 0.3 }} disabled={!valid(next)}>
-          <Icon name="right" size={22} color={C.text} />
+        <Text style={s.switchText} numberOfLines={1}>
+          {`${date === today ? tx('todayWord') : lab.weekday} · ${lab.day} ${lab.month}`}
+        </Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Next day" onPress={() => nav.setNutDate(next)} hitSlop={8} disabled={!valid(next)} style={[s.arrow, !valid(next) && { opacity: 0.3 }]}>
+          <Icon name="right" size={20} color={C.text} width={2.6} />
         </Pressable>
-      </Row>
+      </View>
 
       {persons.length > 1 && (
         <Row>
@@ -115,29 +109,39 @@ export function NutritionScreen() {
       {!plan || !day ? (
         <Muted>{tx('noWeek')}</Muted>
       ) : (
-        <View style={{ backgroundColor: C.surface, borderRadius: R, padding: 16, gap: 16 }}>
-          <Muted>{tx('nutTarget')}</Muted>
-          <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap', alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 34, fontWeight: '800', color: C.text }}>
-              {r(day.total.kcal)}
-              <Text style={{ fontSize: 16, fontWeight: '400', color: C.muted }}>{` / ${r(target.kcal)} ${tx('kcal')}`}</Text>
-            </Text>
-            {pill('kcal')}
-          </Row>
-          <StackBar parts={parts('kcal')} target={target.kcal} />
+        <>
+          <View style={s.heroCard}>
+            <Ring size={148} stroke={18} target={target.kcal} parts={slotsInOrder.map((slot) => ({ v: day.bySlot[slot]?.kcal ?? 0, color: MEAL[slot].strong }))}>
+              <Text style={s.ringBig} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                {r(day.total.kcal)}
+              </Text>
+            </Ring>
+            <View style={{ flex: 1, minWidth: 0, gap: 8 }}>
+              <Text style={s.cap} numberOfLines={1}>
+                {tx('nutTarget')}
+              </Text>
+              <Text style={s.ofTarget} numberOfLines={1}>
+                {`of ${r(target.kcal)} ${tx('kcal')}`}
+              </Text>
+              {status('kcal')}
+            </View>
+          </View>
+
           <Row style={{ gap: 12 }}>
             {slotsInOrder.map((slot) => (
-              <Row key={slot} style={{ gap: 5, flexWrap: 'nowrap' }}>
-                <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: SLOT_COLOR[slot] }} />
-                <Text style={{ fontSize: 12, color: C.muted }}>{tx(`slot_${slot}` as StrKey)}</Text>
+              <Row key={slot} style={{ gap: 6, flexWrap: 'nowrap' }}>
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: MEAL[slot].strong }} />
+                <Text style={s.legend} numberOfLines={1}>
+                  {tx(`slot_${slot}` as StrKey)}
+                </Text>
               </Row>
             ))}
           </Row>
 
           {insight && (
-            <View style={{ backgroundColor: insight.diff > 0 ? '#FBE3E0' : C.accentSoft, borderRadius: 12, padding: 12, flexDirection: 'row', gap: 10 }}>
+            <View style={[s.insight, { backgroundColor: insight.diff > 0 ? C.dangerSoft : C.accentSoft }]}>
               <Icon name="flame" size={20} color={insight.diff > 0 ? C.danger : C.accent} />
-              <Text style={{ flex: 1, color: C.text, fontSize: 14 }}>
+              <Text style={s.insightText} numberOfLines={1}>
                 {fmt(tx(insight.diff > 0 ? 'insightOver' : 'insightUnder'), {
                   macro: tx(`macro_${insight.macro}` as StrKey),
                   n: Math.abs(r(insight.diff)),
@@ -148,38 +152,63 @@ export function NutritionScreen() {
             </View>
           )}
 
-          {(['protein', 'carbs', 'fat', 'fiber'] as InsightMacro[]).map((k) => (
-            <View key={k} style={{ gap: 6 }}>
-              <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
-                <Text style={{ fontSize: 17, fontWeight: '700', color: C.text }}>{tx(`macro_${k}` as StrKey)}</Text>
-                <Muted>
-                  {r(day.total[k])} / {r(target[k])} {tx('g')}
-                </Muted>
-              </Row>
-              <StackBar parts={parts(k)} target={target[k]} />
-              <Row>{pill(k)}</Row>
-            </View>
-          ))}
+          <View style={s.card}>
+            {(['protein', 'carbs', 'fat', 'fiber'] as const).map((k) => (
+              <View key={k} style={{ gap: 8 }}>
+                <View style={s.macroRow}>
+                  <View style={[s.dot, { backgroundColor: MACRO_COLOR[k] }]} />
+                  <Text style={s.macroName} numberOfLines={1}>
+                    {tx(`macro_${k}` as StrKey)}
+                  </Text>
+                  <Text style={s.macroVal} numberOfLines={1}>
+                    {`${r(day.total[k])} / ${r(target[k])} ${tx('g')}`}
+                  </Text>
+                  {status(k)}
+                </View>
+                <StackBar parts={parts(k)} target={target[k]} />
+              </View>
+            ))}
+          </View>
 
-          <View style={{ gap: 8 }}>
-            <Text style={{ fontSize: 17, fontWeight: '700', color: C.text }}>{tx('caloriesFrom')}</Text>
-            <View style={{ flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden' }}>
+          <View style={s.card}>
+            <Text style={s.cap} numberOfLines={1}>
+              {tx('caloriesFrom')}
+            </Text>
+            <View style={{ flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', gap: 3 }}>
               {share.map((x) => (
-                <View key={x.k} style={{ width: `${x.v * 100}%`, backgroundColor: x.color }} />
+                <View key={x.k} style={{ flex: Math.max(x.v, 0.02), backgroundColor: MACRO_COLOR[x.k], borderRadius: 7 }} />
               ))}
             </View>
-            <Row style={{ justifyContent: 'space-between' }}>
+            <Row style={{ gap: 14, flexWrap: 'nowrap' }}>
               {share.map((x) => (
-                <View key={x.k}>
-                  <Text style={{ fontSize: 20, fontWeight: '800', color: C.text }}>{Math.round(x.v * 100)}%</Text>
-                  <Muted>{tx(`macro_${x.k}` as StrKey)}</Muted>
-                </View>
+                <Row key={x.k} style={{ gap: 6, flexWrap: 'nowrap', flexShrink: 1 }}>
+                  <View style={[s.dot, { backgroundColor: MACRO_COLOR[x.k] }]} />
+                  <Text style={s.legend} numberOfLines={1}>{`${tx(`macro_${x.k}` as StrKey)} ${Math.round(x.v * 100)}%`}</Text>
+                </Row>
               ))}
             </Row>
           </View>
           <Muted>{tx('plannedNote')}</Muted>
-        </View>
+        </>
       )}
     </ScrollView>
   );
 }
+
+const s = StyleSheet.create({
+  switcher: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderRadius: 999, padding: 6, ...SHADOW },
+  arrow: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
+  switchText: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '800', color: C.text },
+  heroCard: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 16, ...SHADOW },
+  ringBig: { fontSize: 30, fontWeight: '800', color: C.text, maxWidth: 100, textAlign: 'center' },
+  cap: { fontSize: 12, fontWeight: '800', color: C.muted, textTransform: 'uppercase', letterSpacing: 1 },
+  ofTarget: { fontSize: 20, fontWeight: '800', color: C.text },
+  legend: { fontSize: 12, color: C.muted, fontWeight: '600', flexShrink: 1 },
+  insight: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: RADIUS.lg, paddingHorizontal: 14, minHeight: 50 },
+  insightText: { flex: 1, color: C.text, fontSize: 14, fontWeight: '700' },
+  card: { backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 16, gap: 16, ...SHADOW },
+  macroRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  macroName: { fontSize: 15, fontWeight: '800', color: C.text },
+  macroVal: { flex: 1, minWidth: 0, textAlign: 'right', fontSize: 13, color: C.muted, fontWeight: '600' },
+});

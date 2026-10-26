@@ -494,3 +494,30 @@ test('AI Finder sends the key, the request and the family limits, and returns ch
   const blocked = await findDishes({ request: 'dinner', apiKey: 'k1', avoid }, fake);
   assert.deepEqual(blocked, []); // paneer dish is dropped for a lactose-free family
 });
+
+import { artFor } from '../src/core/artFor';
+
+test('every dish gets a fitting picture', () => {
+  const art = (id: string) => artFor(BUILTIN_DISHES.find((x) => x.id === id)!);
+  assert.equal(art('idli'), 'idli');
+  assert.equal(art('dosa'), 'dosa');
+  assert.equal(art('roti'), 'rotiStack');
+  assert.equal(art('jeera_rice'), 'riceBowl');
+  assert.equal(art('veg_biryani'), 'riceBowl');
+  assert.equal(art('dal_tadka'), 'dalBowl');
+  assert.equal(art('sambar'), 'dalBowl');
+  assert.equal(art('palak_paneer'), 'paneerBowl');
+  assert.equal(art('aloo_gobi'), 'veggiePan');
+  assert.equal(art('sweet_lassi'), 'glass');
+  assert.equal(art('tomato_soup'), 'soup');
+  assert.equal(art('fruit_bowl'), 'fruitBowl');
+  assert.equal(art('samosa'), 'snackTri');
+  assert.equal(art('green_salad'), 'salad');
+  assert.equal(art('dry_fruit_ladoo'), 'ladoo');
+  const kinds = new Set(BUILTIN_DISHES.map(artFor));
+  assert.ok(kinds.size >= 11, `only ${kinds.size} kinds are used`);
+  const count: Record<string, number> = {};
+  for (const d of BUILTIN_DISHES) count[artFor(d)] = (count[artFor(d)] ?? 0) + 1;
+  // no single picture should dominate the library
+  for (const [k, n] of Object.entries(count)) assert.ok(n <= BUILTIN_DISHES.length * 0.3, `${k} is used for ${n} dishes`);
+});

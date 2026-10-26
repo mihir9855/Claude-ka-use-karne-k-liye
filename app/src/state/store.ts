@@ -126,7 +126,7 @@ const uid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
-      lang: 'hi',
+      lang: 'en',
       onboarded: false,
       geminiKey: '',
       persons: [newPerson('', 'male'), newPerson('', 'female')],
@@ -390,6 +390,8 @@ export const useStore = create<State>()(
     }),
     {
       name: 'our-thali-v1',
+      // English only for now: older saved data may say Hinglish or Gujarati
+      merge: (persisted, current) => ({ ...current, ...(persisted as object), lang: 'en' as const }),
       // custom pantry items must be registered before any screen reads the ingredient lists
       onRehydrateStorage: () => (state) => {
         if (state?.customIngredients) setCustomIngredients(state.customIngredients);

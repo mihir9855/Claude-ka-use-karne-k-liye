@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Text } from './Text';
 import { dishMacros } from '../core/nutrition';
 import type { Dish, DishItem } from '../core/types';
 import { INGREDIENTS } from '../data/ingredients';
@@ -88,7 +89,7 @@ export function CustomizeScreen() {
       {shown.map((d) => (
         <View key={d.id} style={{ backgroundColor: C.surface, borderRadius: R, padding: 14 }}>
           <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
-            <Text style={{ flex: 1, fontSize: 16, fontWeight: '700', color: C.text }} onPress={() => setOpen(open === d.id ? null : d.id)}>
+            <Text numberOfLines={1} style={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: '700', color: C.text }} onPress={() => setOpen(open === d.id ? null : d.id)}>
               {dishName(d, lang)}
               {edits[d.id] ? `  ·  ${tx('edited')}` : ''}
             </Text>

@@ -1,7 +1,8 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from './Text';
 import { lookupBarcode, detectItemsFromImage, ScanError, type BarcodeResult, type PhotoResult } from '../core/scan';
 import { INGREDIENT_BY_ID } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';

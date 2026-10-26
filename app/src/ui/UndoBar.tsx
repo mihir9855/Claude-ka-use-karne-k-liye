@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from './Text';
 import { t } from '../i18n/strings';
 import { useStore } from '../state/store';
 import { Icon } from './Icon';
