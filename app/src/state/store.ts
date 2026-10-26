@@ -390,6 +390,9 @@ export const useStore = create<State>()(
     }),
     {
       name: 'our-thali-v1',
+      // v2: new first-run flow (profile, health, cuisines, stock) shows once; saved data is kept
+      version: 2,
+      migrate: (p) => ({ ...(p as object), onboarded: false }) as State,
       // English only for now: older saved data may say Hinglish or Gujarati
       merge: (persisted, current) => ({ ...current, ...(persisted as object), lang: 'en' as const }),
       // custom pantry items must be registered before any screen reads the ingredient lists

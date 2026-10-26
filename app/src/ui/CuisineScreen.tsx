@@ -39,7 +39,7 @@ function CuisineTile({ cuisine, on, star, onPress, onStar }: { cuisine: Cuisine;
   );
 }
 
-export function CuisineScreen() {
+export function CuisinePicker() {
   const lang = useStore((s) => s.lang);
   const menu = useStore((s) => s.menu);
   const setMenu = useStore((s) => s.setMenu);
@@ -60,7 +60,7 @@ export function CuisineScreen() {
   const toggleUsual = (c: Cuisine) => setMenu({ usual: menu.usual.includes(c) ? menu.usual.filter((x) => x !== c) : [...menu.usual, c].slice(-2) });
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 18, paddingBottom: 28 }}>
+    <View style={{ gap: 18 }}>
       <View style={{ gap: 8 }}>
         <Label>{tx('cuisinesInclude')}</Label>
         <Muted>{tx('cuisinesHint')}</Muted>
@@ -72,6 +72,14 @@ export function CuisineScreen() {
         <Muted>{tx('usualQ')}</Muted>
       </View>
       <Toggle label={tx('includeNew')} on={menu.includeNew} onChange={(v) => setMenu({ includeNew: v })} />
+    </View>
+  );
+}
+
+export function CuisineScreen() {
+  return (
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
+      <CuisinePicker />
     </ScrollView>
   );
 }

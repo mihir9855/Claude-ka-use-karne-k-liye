@@ -5,6 +5,7 @@ import type { Condition, Goal, Person } from '../core/types';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
 import { MealArt } from './Art';
+import { CuisinePicker } from './CuisineScreen';
 import { Button, Chip, Field, H, Label, Muted, Row, Segmented } from './kit';
 import { PantryShelves } from './PantryPicker';
 import { C, RADIUS, SHADOW } from './theme';
@@ -24,10 +25,7 @@ function PersonStep({ index }: { index: number }) {
   const lang = useStore((s) => s.lang);
   const p = useStore((s) => s.persons[index]);
   const update = useStore((s) => s.updatePerson);
-  const [showHealth, setShowHealth] = useState(p.conditions.length > 0);
   const tx = (k: StrKey) => t(lang, k);
-  const toggle = (c: Condition) =>
-    update(index, { conditions: p.conditions.includes(c) ? p.conditions.filter((x) => x !== c) : [...p.conditions, c] });
   const numField = (label: string, key: 'age' | 'heightCm' | 'weightKg') => (
     <Field label={label} keyboardType="numeric" value={p[key] ? String(p[key]) : ''} onChangeText={(v) => update(index, { [key]: num(v) } as Partial<Person>)} />
   );
@@ -49,37 +47,55 @@ function PersonStep({ index }: { index: number }) {
           ))}
         </Row>
       </View>
-      {showHealth ? (
-        <View>
-          <Label>{tx('obLimitsHint')}</Label>
-          <Row>
-            {CONDITIONS.map((c) => (
-              <Chip key={c} tone="accent" label={tx(`cond_${c}` as StrKey)} on={p.conditions.includes(c)} onPress={() => toggle(c)} />
-            ))}
-          </Row>
-        </View>
-      ) : (
-        <Row>
-          <Chip label={tx('obLimitsHint')} onPress={() => setShowHealth(true)} />
-        </Row>
-      )}
+    </View>
+  );
+}
+
+function HealthStep({ index }: { index: number }) {
+  const lang = useStore((s) => s.lang);
+  const p = useStore((s) => s.persons[index]);
+  const update = useStore((s) => s.updatePerson);
+  const tx = (k: StrKey) => t(lang, k);
+  const toggle = (c: Condition) =>
+    update(index, { conditions: p.conditions.includes(c) ? p.conditions.filter((x) => x !== c) : [...p.conditions, c] });
+  return (
+    <View style={{ gap: 12 }}>
+      <Muted>Pick any that apply. Skip if none.</Muted>
+      <Row>
+        {CONDITIONS.map((c) => (
+          <Chip key={c} tone="accent" label={tx(`cond_${c}` as StrKey)} on={p.conditions.includes(c)} onPress={() => toggle(c)} />
+        ))}
+      </Row>
     </View>
   );
 }
 
 export function OnboardScreen() {
   const lang = useStore((s) => s.lang);
-  const count = useStore((s) => s.persons.length);
+  const persons = useStore((s) => s.persons);
+  const count = persons.length;
   const setMemberCount = useStore((s) => s.setMemberCount);
   const setOnboarded = useStore((s) => s.setOnboarded);
   const makeWeek = useStore((s) => s.makeWeek);
   const [step, setStep] = useState(0);
   const tx = (k: StrKey) => t(lang, k);
 
-  // 0 welcome, 1 family size, 2..count+1 each member, then the pantry
-  const LAST = count + 2;
+  // 0 welcome, 1 family size, then each member's profile, each member's health limits, cuisines, pantry
+  const LAST = 2 * count + 3;
   const isPerson = step >= 2 && step <= count + 1;
-  const title = step === 1 ? tx('howMany') : isPerson ? `${tx('obAbout')} ${step - 1} of ${count}` : tx('obHome');
+  const isHealth = step >= count + 2 && step <= 2 * count + 1;
+  const isCuisine = step === 2 * count + 2;
+  const hi = step - count - 2;
+  const title =
+    step === 1
+      ? tx('howMany')
+      : isPerson
+        ? `${tx('obAbout')} ${step - 1} of ${count}`
+        : isHealth
+          ? (count > 1 ? `Health · ${persons[hi]?.name || `Person ${hi + 1}`}` : 'Health & allergies')
+          : isCuisine
+            ? 'Cuisines you like'
+            : tx('obHome');
 
   const finish = () => {
     makeWeek();
@@ -115,6 +131,8 @@ export function OnboardScreen() {
         {step === LAST && <Muted>{tx('obHomeHint')}</Muted>}
         {step === 1 && <Segmented value={count} onChange={setMemberCount} options={[1, 2, 3, 4, 5, 6].map((n) => ({ value: n, label: String(n) }))} />}
         {isPerson && <PersonStep key={step} index={step - 2} />}
+        {isHealth && <HealthStep key={step} index={hi} />}
+        {isCuisine && <CuisinePicker />}
         {step === LAST && <PantryShelves ids={COMMON} />}
       </ScrollView>
       <View style={s.foot}>
