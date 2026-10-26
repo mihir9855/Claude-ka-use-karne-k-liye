@@ -314,6 +314,11 @@ canvas#donut{width:200px;height:200px}
         <div><span class="lbl">Invested</span><b class="num" id="inv"></b></div>
         <div><span class="lbl">Holdings</span><b class="num" id="nh"></b></div>
       </div>
+      <div class="mini">
+        <div><span class="lbl">Today P&amp;L</span><b class="num" id="pToday"></b></div>
+        <div><span class="lbl">Unrealised</span><b class="num" id="pUnr"></b></div>
+        <div><span class="lbl">Realised</span><b class="num" id="pReal"></b></div>
+      </div>
     </div>
     <div class="glass card idx" id="idxNSE" style="--c:#ff9933"><span class="exb">NSE</span><div class="lbl">NIFTY 50</div><div class="big num" id="vNSE"></div><div class="num" id="cNSE" style="font-weight:700"></div><div id="sNSE"></div></div>
     <div class="glass card idx" id="idxBSE" style="--c:#5b8cff"><span class="exb">BSE</span><div class="lbl">S&amp;P BSE SENSEX</div><div class="big num" id="vBSE"></div><div class="num" id="cBSE" style="font-weight:700"></div><div id="sBSE"></div></div>
@@ -629,7 +634,12 @@ function render(){
 
   // portfolio numbers
   const H=holdings(),invS=H.reduce((a,h)=>a+h.val,0),inv=invS+fnoValue(),net=state.cash+inv,pnl=net-START;
-  $("net").textContent=inr(net);$("pnl").className="num "+(pnl>=0?"up":"down");$("pnl").textContent=`${pnl>=0?"▲":"▼"} ${inr(Math.abs(pnl))} (${(pnl/START*100).toFixed(2)}%)`;
+  $("net").textContent=inr(net);$("pnl").className="num "+(pnl>=0?"up":"down");$("pnl").textContent=`Total P&L  ${pnl>=0?"▲":"▼"} ${inr(Math.abs(pnl))} (${pnl>=0?"+":"−"}${Math.abs(pnl/START*100).toFixed(2)}%)`;
+  // P&L split: unrealised = open stock + F&O positions at today's prices; realised (after brokerage) = everything else
+  const unr=H.reduce((a,x)=>a+x.pl,0)+state.fno.reduce((a,p)=>{const m=markOf(p);return a+posPnl(p,m==null?p.entry:m)},0);
+  const dk=istNow().toDateString();if(!state.day||state.day.d!==dk){state.day={d:dk,nw:net};save()}
+  const setP=(id,v)=>{const e=$(id);e.textContent=(v>=0?"+":"−")+"₹"+fmt(Math.abs(v),0);e.className="num "+(v>=0?"up":"down")};
+  setP("pToday",net-state.day.nw);setP("pUnr",unr);setP("pReal",pnl-unr);
   $("cash").textContent="₹"+fmt(state.cash,0);$("inv").textContent="₹"+fmt(inv,0);$("nh").textContent=H.length+state.fno.length;
   $("nwspark").innerHTML=spark(state.nw.length>1?state.nw:[START,net],200,54,colr(pnl),true);
 
@@ -1038,7 +1048,7 @@ try{$("always").checked=localStorage.getItem("bseg_practice")==="1"}catch(e){}
 $("always").onchange=()=>{try{localStorage.setItem("bseg_practice",$("always").checked?"1":"0")}catch(e){}render()};
 const sheet=$("sheet");$("gear").onclick=()=>{if(matchMedia("(max-width:820px)").matches)go("set");else sheet.hidden=false};$("sclose").onclick=()=>sheet.hidden=true;
 sheet.onclick=e=>{if(e.target===sheet)sheet.hidden=true};
-$("reset").onclick=()=>{if(confirm("Restart with ₹10,00,000? All holdings will be cleared.")){state={cash:START,pos:{},orders:[],nw:[],extra:[],pending:[],alerts:[],fno:[],lots:{},recent:[]};save();render();toast("Game reset ✓","#ff9933")}};
+$("reset").onclick=()=>{if(confirm("Restart with ₹10,00,000? All holdings will be cleared.")){state={cash:START,pos:{},orders:[],nw:[],extra:[],pending:[],alerts:[],fno:[],lots:{},recent:[],day:null};save();render();toast("Game reset ✓","#ff9933")}};
 const cv=$("chart");
 cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),n=cur().hist[ex].length;hoverI=Math.round((e.clientX-r.left)/(r.width-64)*(n-1));if(hoverI>=n)hoverI=-1;drawChart(cur())};
 cv.onmouseleave=()=>{hoverI=-1;drawChart(cur())};
