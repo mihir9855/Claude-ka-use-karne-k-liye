@@ -554,6 +554,23 @@ let state=load()||{cash:START,pos:{},orders:[],nw:[]};
 // migrate older saves (positions were keyed by symbol only → NSE)
 for(const k of Object.keys(state.pos)) if(!k.includes(":")){state.pos["NSE:"+k]=state.pos[k];delete state.pos[k];}
 state.recent=state.recent||[];state.nw=state.nw||[];state.extra=state.extra||[];state.pending=state.pending||[];state.alerts=state.alerts||[];state.fno=state.fno||[];state.lots=state.lots||{}; state.orders.forEach(o=>{o.ex=o.ex||"NSE"});
+backfillTradebook();
+// Orders made before the tradebook existed have no buy/sell pairing or P&L: replay them oldest-first to rebuild it.
+function backfillTradebook(){
+  if(state.tbv===1)return;
+  const led={};
+  for(const o of [...state.orders].reverse()){
+    const isF=/ (CE|PE|FUT)( |$)/.test(o.sym),k=o.ex+":"+o.sym,l=led[k]||(led[k]={q:0,a:0}),sg=o.side==="BUY"?1:-1;let rem=o.qty;
+    if(l.q*sg<0){
+      const c=Math.min(rem,Math.abs(l.q)),gross=(l.q>0?o.price-l.a:l.a-o.price)*c;
+      if(!o.closed){const charges=isF?0:(o.price*c*FEE+l.a*c*FEE);
+        Object.assign(o,{closed:true,fno:isF||undefined,buyPx:l.q>0?l.a:o.price,sellPx:l.q>0?o.price:l.a,gross,charges,pnl:gross-charges})}
+      l.q+=sg*c;rem-=c;if(l.q===0)l.a=0;
+    }
+    if(rem>0){l.a=(l.a*Math.abs(l.q)+o.price*rem)/(Math.abs(l.q)+rem);l.q+=sg*rem}
+  }
+  state.tbv=1;
+}
 function load(){try{return JSON.parse(localStorage.getItem("bseg"))}catch(e){return null}}
 function save(){try{localStorage.setItem("bseg",JSON.stringify(state))}catch(e){}}
 
