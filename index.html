@@ -584,7 +584,7 @@ const realOpen=()=>{const d=istNow(),m=d.getHours()*60+d.getMinutes(),w=d.getDay
 const isOpen=()=>$("always").checked||realOpen();
 
 function tick(){
-  if(!isOpen())return;
+  if(!isOpen()||liveEver)return;   // no simulated moves once real prices exist
   mood=mood*.95+(Math.random()-.5)*.0006;
   for(const s of STOCKS){
     const common=(Math.random()-.5)*2*s.vol*1.7+mood;
@@ -615,11 +615,22 @@ function pushIdx(){for(const e of EX){if(REAL[e])continue;IDX[e].push(idxNow(e))
 
 /* ---------- live data from backend ---------- */
 let synced=false;
+// Once real prices have been seen we never fall back to made-up prices (that caused fake jumps). Until a real price
+// has arrived for an instrument, trading it is blocked.
+let liveEver=false,pollDone=false,waitSince=0;
+const warming=()=>!liveEver&&waitSince&&Date.now()-waitSince<60000;   // server reachable but real prices not in yet
+function priceErr(s,e){
+  if(!pollDone)return "Loading live prices… try again in a moment.";
+  if(warming())return "Connecting to live prices… this can take up to a minute after the server wakes up.";
+  if(liveEver&&s.on[e]&&!s.seeded[e])return `Waiting for the live ${e} price of ${s.sym}…`;
+  return "";
+}
+const idxSpot=e=>REAL[e]?REAL[e].price:((liveEver||!pollDone||warming())?null:idxNow(e));
 async function pollLive(){
   try{
     if(!synced){ for(const x of state.extra) await fetch("/api/add?sym="+encodeURIComponent(x.sym)).catch(()=>{}); synced=true; }
     const want=[...new Set([...(IM(fno.under)?["IDX:"+fno.under]:EX.map(e=>key(e,fno.under))),...state.fno.filter(p=>IM(p.under)).map(p=>"IDX:"+p.under),...EX.map(e=>key(e,sel)),...pageItems.flatMap(r=>EX.map(e=>key(e,r.sym))),...Object.keys(state.pos),...state.extra.slice(0,12).flatMap(x=>EX.map(e=>key(e,x.sym)))])].join(",");
-    const j=await (await fetch("/api/quotes?want="+encodeURIComponent(want),{cache:"no-store"})).json(); liveMode=!!j.live;
+    const j=await (await fetch("/api/quotes?want="+encodeURIComponent(want),{cache:"no-store"})).json(); liveMode=!!j.live;if(j.live)liveEver=true;if(!j.live&&!liveEver){if(!waitSince)waitSince=Date.now()}else waitSince=0;
     if(j.indexMeta&&j.indexMeta.length)INDEXMETA=j.indexMeta;
     for(const m of INDEXMETA){const q=j.quotes["IDX:"+m.id];if(q)IDXQ[m.id]=q}
     for(const e of EX){const q=j.quotes["IDX:"+e];if(q){if(!REAL[e])IDX[e]=[];REAL[e]=q;if(q.series&&q.series.length>1)IDX[e]=q.series.slice();}}
@@ -627,11 +638,12 @@ async function pollLive(){
     for(const r of pageItems){const q=j.quotes[key("NSE",r.sym)]||j.quotes[key("BSE",r.sym)];if(q&&!STOCKS.some(s=>s.sym===r.sym))STOCKS.push(makeStock(r.sym,r.name,"Listed",q.price,false));}
     for(const x of state.extra){const q=j.quotes[key("NSE",x.sym)];if(q&&!STOCKS.some(s=>s.sym===x.sym))STOCKS.push(makeStock(x.sym,x.name,"Added",q.price,false));}
     for(const s of STOCKS)for(const e of EX){
-      const q=j.live&&j.quotes[key(e,s.sym)]; s.live[e]=!!q;
+      const q=(j.live||liveEver)&&j.quotes[key(e,s.sym)]; s.live[e]=!!q;
       if(q){ if(!s.seeded[e]){s.prev[e]=q.prev;s.hist[e]=[];s.hi[e]=q.price;s.lo[e]=q.price;s.seeded[e]=true;s.px[e]=q.price;}
         setPx(s,e,q.price); s.prev[e]=q.prev; }
     }
-  }catch(err){liveMode=false;if(REAL.NSE||REAL.BSE){REAL.NSE=REAL.BSE=null;for(const e of EX)IDX[e]=[idxNow(e)]}STOCKS.forEach(s=>EX.forEach(e=>s.live[e]=false));}
+  }catch(err){liveMode=false;if(!liveEver)STOCKS.forEach(s=>EX.forEach(e=>s.live[e]=false));}   // keep the last real prices if the connection drops
+  pollDone=true;
   render();
 }
 
@@ -655,7 +667,7 @@ function render(){
   const d=istNow(),open=isOpen();
   $("clock").textContent=d.toLocaleTimeString("en-IN")+" IST";$("clock2").textContent=d.toLocaleTimeString("en-IN");
   const m=$("mkt");m.className="pill "+(realOpen()?"open":(open?"open":"closed"));m.lastElementChild.textContent=realOpen()?"Market open":(open?"Practice mode":"Market closed");
-  const sr=$("src");sr.textContent=liveMode?(realOpen()?"● Live data":"Last close"):"Simulated";sr.style.color=liveMode&&realOpen()?"var(--up)":"var(--mut)";
+  const sr=$("src");sr.textContent=liveMode?(realOpen()?"● Live data":"Last close"):(liveEver?"Reconnecting…":"Simulated");sr.style.color=liveMode&&realOpen()?"var(--up)":"var(--mut)";
 
   // indices
   for(const e of EX){
@@ -798,6 +810,7 @@ const CLOSED_MSG="Market is closed (Mon–Fri, 9:15 AM–3:30 PM IST). Turn on P
 function rememberStock(s){if(!s.core&&!state.extra.some(x=>x.sym===s.sym))state.extra.push({sym:s.sym,name:s.name})}
 // Executes an equity order at px. Returns "" on success or an error message.
 function fill(sd,s,e,q,px,tag){
+  const pe=priceErr(s,e);if(pe)return pe;
   if(!s.on[e])return `${s.sym} is not listed on ${e} — trade it on the other exchange.`;
   const val=q*px,fee=val*FEE,k=key(e,s.sym);let avgBuy=0;
   if(sd==="BUY"){
@@ -842,7 +855,7 @@ function checkPending(){
   if(!isOpen()||!state.pending.length)return;
   let changed=false;
   for(const o of [...state.pending]){
-    const s=STOCKS.find(x=>x.sym===o.sym);if(!s||!s.on[o.ex])continue;const ltp=s.px[o.ex];
+    const s=STOCKS.find(x=>x.sym===o.sym);if(!s||!s.on[o.ex]||priceErr(s,o.ex))continue;const ltp=s.px[o.ex];
     const hit=o.type==="LIMIT"?(o.side==="BUY"?ltp<=o.price:ltp>=o.price):(o.side==="SELL"?ltp<=o.price:ltp>=o.price);
     if(!hit)continue;
     state.pending=state.pending.filter(x=>x!==o);changed=true;
@@ -865,7 +878,7 @@ function addAlert(){
 function checkAlerts(){
   if(!state.alerts.length)return;
   for(const a of [...state.alerts]){
-    const s=STOCKS.find(x=>x.sym===a.sym);if(!s)continue;const ltp=s.px[a.ex];
+    const s=STOCKS.find(x=>x.sym===a.sym);if(!s||priceErr(s,a.ex))continue;const ltp=s.px[a.ex];
     if(a.dir==="above"?ltp>=a.price:ltp<=a.price){
       state.alerts=state.alerts.filter(x=>x!==a);save();
       toast(`🔔 <b>${a.sym}</b> ${a.ex} is ${a.dir==="above"?"above":"below"} ${inr(a.price)}<br><small class="num">Now ${inr(ltp)}</small>`,"#ff9933");
@@ -892,7 +905,7 @@ function bs(kind,S,K,T,sig){
 }
 const exOf=(u,e)=>{const m=IM(u);return m?m.ex:e};
 const ivOf=u=>IM(u)?((u==="NIFTY"||u==="SENSEX")?.15:.17):.30;
-function spotOf(u,e){if(u==="NIFTY")return idxNow("NSE");if(u==="SENSEX")return idxNow("BSE");if(IM(u)){const q=IDXQ[u];return q?q.price:null}const s=STOCKS.find(x=>x.sym===u);return s?s.px[e]:null}
+function spotOf(u,e){if(u==="NIFTY")return idxSpot("NSE");if(u==="SENSEX")return idxSpot("BSE");if(IM(u)){const q=IDXQ[u];return q?q.price:null}const s=STOCKS.find(x=>x.sym===u);return s?s.px[e]:null}
 function lotOf(u){
   if(IM(u))return IM(u).lot;
   if(!state.lots[u]){const s=STOCKS.find(x=>x.sym===u),px=s?s.px.NSE:1000;let n=600000/px;n=n>=100?Math.round(n/25)*25:n>=20?Math.round(n/5)*5:Math.max(1,Math.round(n));state.lots[u]=n}
@@ -924,7 +937,8 @@ function openFno(c,sd,lots){
   if(!isOpen())return "Market is closed. Turn on Practice mode in ⚙ Settings to trade derivatives.";
   if(!(lots>0))return "Enter the number of lots.";
   const lot=lotOf(c.under),qty=lots*lot,S=spotOf(c.under,c.ex),m=markOf(c);
-  if(S==null||m==null)return "No price available for this underlying yet.";
+  if(!IM(c.under)){const us=STOCKS.find(x=>x.sym===c.under),pe=us&&priceErr(us,c.ex);if(pe)return pe}
+  if(S==null||m==null)return "Waiting for the live price of this underlying…";
   if(m<=0.05&&c.kind!=="FUT"&&sd>0)return "This option is worthless — pick another strike.";
   const notional=S*qty;let margin=0;
   if(c.kind==="FUT"){margin=notional*MARGIN;if(margin>state.cash)return `Not enough cash — margin needed ${inr(margin)}.`;state.cash-=margin}
@@ -934,8 +948,14 @@ function openFno(c,sd,lots){
   state.orders.unshift({side:sd>0?"BUY":"SELL",sym:contractName(c),ex:c.ex,qty,price:m,tag:"F&O",ts:Date.now(),fee:0});
   save();return "";
 }
+function underOk(p){
+  if(markOf(p)==null)return false;
+  if(IM(p.under))return true;
+  const s=STOCKS.find(x=>x.sym===p.under);return !!s&&!priceErr(s,p.ex);
+}
 function closeFno(id,why){
   const p=state.fno.find(x=>x.id===id);if(!p)return;
+  if(!underOk(p)){toast("Live price is not available yet — try again in a moment.","#ff4d6d");return}
   const m=markOf(p);const mk=m==null?p.entry:m,pnl=posPnl(p,mk);
   if(p.kind==="FUT")state.cash+=p.margin+pnl;else if(p.side>0)state.cash+=mk*p.qty;else state.cash+=p.margin-mk*p.qty;
   state.fno=state.fno.filter(x=>x!==p);
@@ -943,7 +963,7 @@ function closeFno(id,why){
   save();
   toast(`<b>${why==="expiry"?"Expired & settled":why?why+" hit — position closed":"Position closed"}</b> · ${contractName(p)}<br><small class="num ${pnl>=0?"up":"down"}">P&amp;L ${sgn(pnl)}</small>`,pnl>=0?"#00e0a0":"#ff4d6d");
 }
-function settleExpired(){for(const p of [...state.fno])if(p.expiry<=Date.now()&&markOf(p)!=null)closeFno(p.id,"expiry")}
+function settleExpired(){for(const p of [...state.fno])if(p.expiry<=Date.now()&&underOk(p))closeFno(p.id,"expiry")}
 
 const fno={under:"NIFTY",exp:null,tk:null};let fnoKey="";
 function fnoCtx(){const u=fno.under,e=exOf(u,ex);return{u,e,S:spotOf(u,e)}}
@@ -1100,7 +1120,7 @@ function savePm(){
 function checkFnoExits(){
   if(!isOpen())return;
   for(const p of [...state.fno]){
-    if(!p.sl&&!p.tp)continue;const m=markOf(p);if(m==null)continue;const L=p.side>0;let why=null;
+    if(!p.sl&&!p.tp)continue;if(!underOk(p))continue;const m=markOf(p);if(m==null)continue;const L=p.side>0;let why=null;
     if(p.sl&&(L?m<=p.sl:m>=p.sl))why="Stop-loss";else if(p.tp&&(L?m>=p.tp:m<=p.tp))why="Target";
     if(why){closeFno(p.id,why);notify(`${why} hit`,`${contractName(p)} closed`);beep()}
   }
