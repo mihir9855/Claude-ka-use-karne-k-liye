@@ -409,7 +409,7 @@ canvas#donut{width:200px;height:200px}
     <div class="tbh"><div class="lbl">Tradebook &amp; P&amp;L</div><div class="tbc"><select id="tbDay"></select><button class="btn" id="tbPdf">📄 PDF</button></div></div>
     <div id="tbSum" class="tbs"></div>
     <div class="lbl" style="margin:14px 0 6px">Closed trades (bought → sold)</div>
-    <div class="scroll"><table class="hold tbt"><thead><tr><th>Trade</th><th>Qty</th><th>Bought / Sold</th><th class="hm">Charges</th><th>P&amp;L</th></tr></thead><tbody id="tbClosed"></tbody></table></div>
+    <div class="scroll"><table class="hold tbt"><thead><tr><th>Trade</th><th>Qty</th><th>Bought / Sold</th><th class="hm">Charges</th><th>P&amp;L</th><th></th></tr></thead><tbody id="tbClosed"></tbody></table></div>
     <div class="lbl" style="margin:14px 0 6px">All orders</div>
     <div class="scroll"><table class="hold tbt"><thead><tr><th>Order</th><th>Side</th><th>Qty</th><th>Price</th><th class="hm">Type</th></tr></thead><tbody id="tbAll"></tbody></table></div>
   </section>
@@ -1023,7 +1023,7 @@ function renderTradebook(){
   const tile=(t,v,c)=>`<div><small>${t}</small><b class="${c||""}">${v}</b></div>`,sg=v=>(v>=0?"+":"−")+"₹"+fmt(Math.abs(v));
   $("tbSum").innerHTML=tile("Net P&L (after charges)",sg(net),net>=0?"up":"down")+tile("Charges",inr(ch))+tile("Wins / Losses",`${w} / ${l}`)+tile("Orders",R.length);
   const wd=tbDay==="all";const tbWho=(o,wd)=>`<b>${o.sym}</b><br><small>${o.ex} · ${timeOf(o.ts,wd)}</small>`;
-  $("tbClosed").innerHTML=C.map(o=>`<tr><td>${tbWho(o,wd)}</td><td class="num">${o.qty}</td><td class="num"><span class="up">${fmt(o.buyPx)}</span><br><span class="down">${fmt(o.sellPx)}</span></td><td class="num hm">${fmt(o.charges)}</td><td class="num ${o.pnl>=0?"up":"down"}">${sg(o.pnl)}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">No closed trades yet. A trade shows here once you sell what you bought.</td></tr>`;
+  $("tbClosed").innerHTML=C.map(o=>`<tr><td>${tbWho(o,wd)}</td><td class="num">${o.qty}</td><td class="num"><span class="up">${fmt(o.buyPx)}</span><br><span class="down">${fmt(o.sellPx)}</span></td><td class="num hm">${fmt(o.charges)}</td><td class="num ${o.pnl>=0?"up":"down"}">${sg(o.pnl)}</td><td><button class="xb" data-void="${state.orders.indexOf(o)}" title="Void this trade">Void</button></td></tr>`).join("")||`<tr><td colspan="6" class="empty">No closed trades yet. A trade shows here once you sell what you bought.</td></tr>`;
   $("tbAll").innerHTML=R.map(o=>`<tr><td>${tbWho(o,wd)}</td><td><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b></td><td class="num">${o.qty}</td><td class="num">${fmt(o.price)}</td><td class="hm">${o.tag||"Market"}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">No orders yet.</td></tr>`;
 }
 // ---- PDF report (jsPDF is loaded from a CDN the first time it is needed) ----
@@ -1208,6 +1208,18 @@ $("futRow").onclick=()=>{fno.tk={kind:"FUT"};render()};
 $("chain").onclick=e=>{const c=e.target.closest("td[data-k]");if(!c)return;fno.tk={kind:c.dataset.k,strike:+c.dataset.s};render()};
 $("fLots").oninput=render;
 $("fBuy").onclick=()=>fnoTrade(1);$("fSell").onclick=()=>fnoTrade(-1);
+// Void a closed trade: removes it (and the matching opening order) and takes its profit/loss back out of cash.
+$("tbClosed").onclick=e=>{
+  const i=e.target.dataset.void;if(i===undefined)return;const o=state.orders[+i];if(!o||!o.closed)return;
+  const lbl=`${o.sym} (${o.qty}): ${o.pnl>=0?"profit":"loss"} of ₹${fmt(Math.abs(o.pnl))}`;
+  if(!confirm(`Void this trade?\n\n${lbl}\n\nThe trade is removed from the tradebook and ₹${fmt(Math.abs(o.pnl))} is ${o.pnl>=0?"deducted from":"added back to"} your cash. This cannot be undone.`))return;
+  const opens=o.side==="SELL"?"BUY":"SELL";
+  let j=state.orders.findIndex((x,idx)=>idx>+i&&x.sym===o.sym&&x.ex===o.ex&&x.side===opens&&x.qty===o.qty&&!x.closed);
+  state.cash-=o.pnl;
+  state.orders.splice(+i,1);if(j>+i)j--;if(j>=0)state.orders.splice(j,1);
+  save();tbKey="";render();
+  toast(`<b>Trade voided</b><br><small class="num">Cash ${o.pnl>=0?"−":"+"}${inr(Math.abs(o.pnl))}</small>`,"#ff9933");
+};
 $("tbDay").onchange=()=>{tbDay=$("tbDay").value;tbKey="";render()};
 $("tbPdf").onclick=tradebookPdf;
 $("fnoPos").onclick=e=>{
