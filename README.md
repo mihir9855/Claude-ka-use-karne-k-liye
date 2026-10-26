@@ -16,7 +16,7 @@ node server.js        # Node 18+, no npm install needed
 ## Order types, alerts and F&O
 - **Limit orders** (buy/sell at your price) and **stop-loss orders** are checked every second and fill at the live price once triggered. They can be placed while the market is closed and fire when it opens.
 - **Price alerts** show a popup, play a beep and (if allowed) send a browser notification.
-- **Futures & Options** (simulated): NIFTY 50, SENSEX and any stock. Option prices use Black-Scholes on the live spot, futures use cost-of-carry; 15% margin, cash-settled at expiry. Positions are shown under *Futures & Options positions*.
+- **Futures & Options** (simulated): any stock plus the indices — NIFTY 50, BANK NIFTY, FIN NIFTY, MIDCAP SELECT, NIFTY NEXT 50, SENSEX, BANKEX and the sector/broad NIFTY indices (an index is listed once Yahoo returns a price for it). Lot sizes and strike steps for indices are approximate. Option prices use Black-Scholes on the live spot, futures use cost-of-carry; 15% margin, cash-settled at expiry. Positions are shown under *Futures & Options positions*.
 - Pending orders, alerts and positions are stored in your browser and are only processed while the app is open.
 
 Yahoo Finance is a free, unofficial source and may be delayed or rate-limited. This is a game, not trading advice.

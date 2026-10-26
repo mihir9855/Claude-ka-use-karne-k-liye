@@ -77,23 +77,58 @@ async function fetchKey(key) {
   const m = j.chart.result[0].meta;
   quotes[key] = { price: m.regularMarketPrice, prev: m.chartPreviousClose ?? m.previousClose, time: m.regularMarketTime };
 }
-// Real index levels: NIFTY 50 (^NSEI) and S&P BSE SENSEX (^BSESN), with today's intraday curve for the sparkline.
-async function fetchIndex(ex) {
-  const j = await getJSON(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ex === "NSE" ? "^NSEI" : "^BSESN")}?interval=5m&range=1d`);
+// Indices tradable in F&O (lot sizes and strike steps are approximate). Yahoo may not carry every index; missing ones are skipped.
+const INDICES = [
+  { id: "NIFTY", name: "NIFTY 50", y: "^NSEI", ex: "NSE", lot: 75, step: 50, weekly: true },
+  { id: "BANKNIFTY", name: "BANK NIFTY", y: "^NSEBANK", ex: "NSE", lot: 30, step: 100 },
+  { id: "FINNIFTY", name: "FIN NIFTY", y: "NIFTY_FIN_SERVICE.NS", ex: "NSE", lot: 65, step: 50 },
+  { id: "MIDCPNIFTY", name: "MIDCAP SELECT", y: "NIFTY_MID_SELECT.NS", ex: "NSE", lot: 120, step: 25 },
+  { id: "NIFTYNXT50", name: "NIFTY NEXT 50", y: "^NSMIDCP", ex: "NSE", lot: 25, step: 100 },
+  { id: "SENSEX", name: "SENSEX", y: "^BSESN", ex: "BSE", lot: 20, step: 100, weekly: true },
+  { id: "BANKEX", name: "BANKEX", y: "BSE-BANKEX.BO", ex: "BSE", lot: 30, step: 100 },
+  { id: "NIFTYIT", name: "NIFTY IT", y: "^CNXIT", ex: "NSE", lot: 50, step: 100 },
+  { id: "NIFTYAUTO", name: "NIFTY AUTO", y: "^CNXAUTO", ex: "NSE", lot: 50, step: 100 },
+  { id: "NIFTYPHARMA", name: "NIFTY PHARMA", y: "^CNXPHARMA", ex: "NSE", lot: 50, step: 100 },
+  { id: "NIFTYFMCG", name: "NIFTY FMCG", y: "^CNXFMCG", ex: "NSE", lot: 50, step: 100 },
+  { id: "NIFTYMETAL", name: "NIFTY METAL", y: "^CNXMETAL", ex: "NSE", lot: 50, step: 50 },
+  { id: "NIFTYENERGY", name: "NIFTY ENERGY", y: "^CNXENERGY", ex: "NSE", lot: 50, step: 100 },
+  { id: "NIFTYREALTY", name: "NIFTY REALTY", y: "^CNXREALTY", ex: "NSE", lot: 50, step: 10 },
+  { id: "NIFTYPSUBANK", name: "NIFTY PSU BANK", y: "^CNXPSUBANK", ex: "NSE", lot: 50, step: 50 },
+  { id: "NIFTYMEDIA", name: "NIFTY MEDIA", y: "^CNXMEDIA", ex: "NSE", lot: 50, step: 10 },
+  { id: "NIFTYINFRA", name: "NIFTY INFRA", y: "^CNXINFRA", ex: "NSE", lot: 50, step: 50 },
+  { id: "NIFTYMIDCAP100", name: "NIFTY MIDCAP 100", y: "^CNXMIDCAP", ex: "NSE", lot: 50, step: 100 },
+  { id: "NIFTYSMALLCAP100", name: "NIFTY SMALLCAP 100", y: "^CNXSC", ex: "NSE", lot: 50, step: 50 },
+  { id: "NIFTY100", name: "NIFTY 100", y: "^CNX100", ex: "NSE", lot: 50, step: 50 },
+  { id: "NIFTY200", name: "NIFTY 200", y: "^CNX200", ex: "NSE", lot: 50, step: 50 },
+  { id: "NIFTY500", name: "NIFTY 500", y: "^CRSLDX", ex: "NSE", lot: 50, step: 50 },
+];
+const IDX_BY_ID = Object.fromEntries(INDICES.map(i => [i.id, i]));
+let idxRR = 0;
+async function fetchIdx(id) {
+  const def = IDX_BY_ID[id];
+  fetchedAt["IDX:" + id] = Date.now();
+  const j = await getJSON(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(def.y)}?interval=5m&range=1d`);
   const r = j.chart.result[0], m = r.meta, closes = (r.indicators.quote[0].close || []).filter(v => v != null);
   const step = Math.max(1, Math.ceil(closes.length / 90));
-  quotes["IDX:" + ex] = { price: m.regularMarketPrice, prev: m.chartPreviousClose ?? m.previousClose, time: m.regularMarketTime, series: closes.filter((_, i) => i % step === 0 || i === closes.length - 1) };
+  const q = { price: m.regularMarketPrice, prev: m.chartPreviousClose ?? m.previousClose, time: m.regularMarketTime, series: closes.filter((_, i) => i % step === 0 || i === closes.length - 1) };
+  quotes["IDX:" + id] = q;
+  if (id === "NIFTY") quotes["IDX:NSE"] = q;       // aliases used by the headline index cards
+  if (id === "SENSEX") quotes["IDX:BSE"] = q;
 }
 async function cycle() {
   const now = Date.now(), batch = new Set();
   for (const s of Object.keys(extra)) if (now - extra[s] > EXTRA_TTL_MS) { delete extra[s]; delete quotes["NSE:" + s]; delete quotes["BSE:" + s]; }
   for (const k of Object.keys(wanted)) {
+    if (k.startsWith("IDX:")) { if (now - wanted[k] > 60000) delete wanted[k]; continue; }
     if (now - wanted[k] > 60000) delete wanted[k];
     else { if (extra[k.split(":")[1]]) extra[k.split(":")[1]] = now; if (now - (fetchedAt[k] || 0) > STALE_MS) batch.add(k); }
   }
   const keys = allKeys();
   for (let i = 0; i < BATCH && keys.length; i++) batch.add(keys[rr++ % keys.length]);
-  const list = [...batch], res = await Promise.allSettled([...list.map(fetchKey), fetchIndex("NSE"), fetchIndex("BSE")]);
+  const idxIds = new Set(["NIFTY", "SENSEX"]);
+  for (let i = 0; i < 3; i++) idxIds.add(INDICES[idxRR++ % INDICES.length].id);
+  for (const k of Object.keys(wanted)) if (k.startsWith("IDX:") && IDX_BY_ID[k.slice(4)] && now - (fetchedAt[k] || 0) > STALE_MS) idxIds.add(k.slice(4));
+  const list = [...batch], res = await Promise.allSettled([...list.map(fetchKey), ...[...idxIds].map(fetchIdx)]);
   const ok = res.filter(r => r.status === "fulfilled").length;
   if (ok) lastOk = Date.now();
   console.log(`[${new Date().toISOString()}] refreshed ${ok}/${list.length}` + (ok ? "" : ` (${res[0].reason?.message})`));
@@ -120,8 +155,8 @@ async function yahooSearch(q) {
 http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x"), p = u.pathname, sp = u.searchParams;
   if (p === "/api/quotes") {
-    for (const k of (sp.get("want") || "").split(",").slice(0, 200)) if (/^(NSE|BSE):[A-Z0-9&.-]{1,20}$/.test(k)) wanted[k] = Date.now();
-    return json(res, { live: Date.now() - lastOk < TICK_MS * 6, updated: lastOk, quotes, unlisted: Object.keys(unlisted) });
+    for (const k of (sp.get("want") || "").split(",").slice(0, 200)) if (/^(NSE|BSE):[A-Z0-9&.-]{1,20}$/.test(k) || (/^IDX:[A-Z0-9]{2,20}$/.test(k) && IDX_BY_ID[k.slice(4)])) wanted[k] = Date.now();
+    return json(res, { live: Date.now() - lastOk < TICK_MS * 6, updated: lastOk, quotes, unlisted: Object.keys(unlisted), indexMeta: INDICES.map(({ id, name, ex, lot, step, weekly }) => ({ id, name, ex, lot, step, weekly: !!weekly })) });
   }
   if (p === "/api/stocks") {            // browse / search the complete NSE + BSE list
     const q = (sp.get("q") || "").trim().toLowerCase().slice(0, 40), letter = (sp.get("letter") || "").toUpperCase().slice(0, 1);

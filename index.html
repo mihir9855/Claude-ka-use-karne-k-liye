@@ -287,6 +287,7 @@ canvas#donut{width:200px;height:200px}
     <aside class="glass card t-market">
       <div class="cols"><span>Stock</span><span class="cx NSE">NSE</span><span class="cx BSE">BSE</span></div>
       <input class="search" id="q" placeholder="Search any NSE / BSE stock…" autocomplete="off">
+      <div id="indices"></div>
       <div id="recent"></div>
       <div id="letters" class="letters"></div>
       <div class="list"><table class="w"><tbody id="watch"></tbody></table><div id="allList"></div></div>
@@ -513,6 +514,9 @@ function setPx(s,e,p){
 }
 const IDX={NSE:[],BSE:[]};
 const CORE=()=>STOCKS.filter(s=>s.core);
+let INDEXMETA=[{id:"NIFTY",name:"NIFTY 50",ex:"NSE",lot:75,step:50,weekly:true},{id:"SENSEX",name:"SENSEX",ex:"BSE",lot:20,step:100,weekly:true}];
+const IDXQ={};                      // live quotes of every index (from the backend)
+const IM=u=>INDEXMETA.find(x=>x.id===u);
 const REAL={NSE:null,BSE:null};   // real index quotes from the backend (NIFTY 50 / SENSEX)
 const idxPrev=e=>REAL[e]?REAL[e].prev:BASEIDX[e];
 const idxNow=e=>{if(REAL[e])return REAL[e].price;const C=CORE();return C.reduce((a,s)=>a+s.px[e]/s.prev[e],0)/C.length*BASEIDX[e]};
@@ -525,8 +529,10 @@ let synced=false;
 async function pollLive(){
   try{
     if(!synced){ for(const x of state.extra) await fetch("/api/add?sym="+encodeURIComponent(x.sym)).catch(()=>{}); synced=true; }
-    const want=[...new Set([...EX.map(e=>key(e,sel)),...pageItems.flatMap(r=>EX.map(e=>key(e,r.sym))),...Object.keys(state.pos),...state.extra.slice(0,12).flatMap(x=>EX.map(e=>key(e,x.sym)))])].join(",");
+    const want=[...new Set([...(IM(fno.under)?["IDX:"+fno.under]:[]),...state.fno.filter(p=>IM(p.under)).map(p=>"IDX:"+p.under),...EX.map(e=>key(e,sel)),...pageItems.flatMap(r=>EX.map(e=>key(e,r.sym))),...Object.keys(state.pos),...state.extra.slice(0,12).flatMap(x=>EX.map(e=>key(e,x.sym)))])].join(",");
     const j=await (await fetch("/api/quotes?want="+encodeURIComponent(want),{cache:"no-store"})).json(); liveMode=!!j.live;
+    if(j.indexMeta&&j.indexMeta.length)INDEXMETA=j.indexMeta;
+    for(const m of INDEXMETA){const q=j.quotes["IDX:"+m.id];if(q)IDXQ[m.id]=q}
     for(const e of EX){const q=j.quotes["IDX:"+e];if(q){if(!REAL[e])IDX[e]=[];REAL[e]=q;if(q.series&&q.series.length>1)IDX[e]=q.series.slice();}}
     const UL=new Set(j.unlisted||[]);for(const s of STOCKS)for(const e of EX)s.on[e]=!UL.has(key(e,s.sym));
     for(const r of pageItems){const q=j.quotes[key("NSE",r.sym)]||j.quotes[key("BSE",r.sym)];if(q&&!STOCKS.some(s=>s.sym===r.sym))STOCKS.push(makeStock(r.sym,r.name,"Listed",q.price,false));}
@@ -592,8 +598,20 @@ function renderRecent(){
   const html=show?`<div class="fh" style="padding-top:0">Recently opened</div>`+state.recent.map(r=>`<div class="fr ${r.sym===sel?"sel":""}" data-sym="${r.sym}" data-name="${r.name.replace(/"/g,"&quot;")}" style="cursor:pointer"><div><b>${r.sym}</b><small>${r.name}</small></div><div class="rp" data-px="${r.sym}"></div></div>`).join("")+`<div class="sep" style="margin:10px 0 8px"></div>`:"";
   if(html!==lastRecent){$("recent").innerHTML=html;lastRecent=html}
 }
+let idxAll=false,lastIdxHtml="";
+function renderIndices(){
+  const L=INDEXMETA.filter(m=>m.id==="NIFTY"||m.id==="SENSEX"||IDXQ[m.id]);
+  if(!L.length||$("q").value.trim()){if(lastIdxHtml){$("indices").innerHTML="";lastIdxHtml=""}return}
+  const rows=(idxAll?L:L.slice(0,6)).map(m=>{
+    const v=spotOf(m.id,m.ex),pv=m.id==="NIFTY"?idxPrev("NSE"):m.id==="SENSEX"?idxPrev("BSE"):(IDXQ[m.id]||{}).prev,c=v&&pv?(v/pv-1)*100:0;
+    return `<div class="fr" data-idx="${m.id}" style="cursor:pointer"><div><b>${m.name}</b><small>${m.ex} index · trade F&amp;O</small></div><div class="rp"><div class="px num" style="width:auto;min-width:110px"><div style="font-weight:700">${v?fmt(v):"…"}</div><span class="chg ${c>=0?"up":"down"}">${c>=0?"+":""}${c.toFixed(2)}%</span></div></div></div>`}).join("");
+  const html=`<div class="fh" style="padding-top:0">Indices (tap to trade futures &amp; options)</div>${rows}${L.length>6?`<button class="btn" id="idxToggle" style="width:100%;margin:8px 0">${idxAll?"Show less":`Show all ${L.length} indices`}</button>`:""}<div class="sep" style="margin:10px 0 8px"></div>`;
+  if(html!==lastIdxHtml){$("indices").innerHTML=html;lastIdxHtml=html}
+}
+function setCtab(c){ctab=c;document.querySelectorAll("#ctabs button").forEach(b=>b.classList.toggle("on",b.dataset.c===c));$("chartView").hidden=c!=="chart";$("fnoView").hidden=c!=="fno"}
+function openIndex(id){fno.under=id;fno.tk=null;fnoKey="";setCtab("fno");if(isMobile())go("trade");else window.scrollTo({top:0,behavior:"smooth"});render()}
 function updateAllPrices(){
-  renderRecent();
+  renderIndices();renderRecent();
   document.querySelectorAll("#allList .rp, #recent .rp").forEach(n=>{
     const s=STOCKS.find(x=>x.sym===n.dataset.px);n.parentElement.classList.toggle("sel",n.dataset.px===sel);
     if(!s){n.innerHTML=`<div class="px mut num">…</div><div class="px mut num">…</div>`;return}
@@ -773,20 +791,20 @@ function bs(kind,S,K,T,sig){
   const v=sig*Math.sqrt(T),d1=(Math.log(S/K)+(RATE+sig*sig/2)*T)/v,d2=d1-v;
   return kind==="CE"?S*ncdf(d1)-K*Math.exp(-RATE*T)*ncdf(d2):K*Math.exp(-RATE*T)*ncdf(-d2)-S*ncdf(-d1);
 }
-const exOf=(u,e)=>u==="NIFTY"?"NSE":u==="SENSEX"?"BSE":e;
-const ivOf=u=>(u==="NIFTY"||u==="SENSEX")?.15:.30;
-function spotOf(u,e){if(u==="NIFTY")return idxNow("NSE");if(u==="SENSEX")return idxNow("BSE");const s=STOCKS.find(x=>x.sym===u);return s?s.px[e]:null}
+const exOf=(u,e)=>{const m=IM(u);return m?m.ex:e};
+const ivOf=u=>IM(u)?((u==="NIFTY"||u==="SENSEX")?.15:.17):.30;
+function spotOf(u,e){if(u==="NIFTY")return idxNow("NSE");if(u==="SENSEX")return idxNow("BSE");if(IM(u)){const q=IDXQ[u];return q?q.price:null}const s=STOCKS.find(x=>x.sym===u);return s?s.px[e]:null}
 function lotOf(u){
-  if(u==="NIFTY")return 75;if(u==="SENSEX")return 20;
+  if(IM(u))return IM(u).lot;
   if(!state.lots[u]){const s=STOCKS.find(x=>x.sym===u),px=s?s.px.NSE:1000;let n=600000/px;n=n>=100?Math.round(n/25)*25:n>=20?Math.round(n/5)*5:Math.max(1,Math.round(n));state.lots[u]=n}
   return state.lots[u];
 }
-function stepOf(u,S){if(u==="NIFTY")return 50;if(u==="SENSEX")return 100;return S<50?1:S<100?2.5:S<250?5:S<500?10:S<1000?20:S<2500?50:S<5000?100:S<10000?250:500}
+function stepOf(u,S){if(IM(u)&&IM(u).step)return IM(u).step;return S<50?1:S<100?2.5:S<250?5:S<500?10:S<1000?20:S<2500?50:S<5000?100:S<10000?250:500}
 const expLabel=ts=>new Date(ts).toLocaleDateString("en-IN",{day:"2-digit",month:"short",timeZone:"UTC"});
 // Expiries at 3:30 PM IST (= 10:00 UTC). NSE expires on Tuesdays, BSE on Thursdays. Indices: weekly; stocks: monthly.
 function expiriesFor(u,e){
   const wd=e==="NSE"?2:4,n=istNow(),y=n.getFullYear(),m=n.getMonth(),d=n.getDate(),out=[];
-  if(u==="NIFTY"||u==="SENSEX"){for(let i=0;i<60&&out.length<3;i++){const t=Date.UTC(y,m,d+i,10,0);if(new Date(t).getUTCDay()===wd&&t>Date.now())out.push(t)}}
+  if(IM(u)&&IM(u).weekly){for(let i=0;i<60&&out.length<3;i++){const t=Date.UTC(y,m,d+i,10,0);if(new Date(t).getUTCDay()===wd&&t>Date.now())out.push(t)}}
   else for(let mo=0;mo<4&&out.length<2;mo++){let t=Date.UTC(y,m+mo+1,0,10,0);while(new Date(t).getUTCDay()!==wd)t-=864e5;if(t>Date.now())out.push(t)}
   return out;
 }
@@ -832,7 +850,7 @@ const fno={under:"STOCK",exp:null,tk:null};let fnoKey="",ctab="chart";
 function fnoCtx(){const u=fno.under==="STOCK"?sel:fno.under,e=exOf(u,ex);return{u,e,S:spotOf(u,e)}}
 function renderFno(){
   const{u,e,S}=fnoCtx();
-  const uo=[["STOCK",`${sel} (${ex})`],["NIFTY","NIFTY 50 (NSE)"],["SENSEX","SENSEX (BSE)"]];
+  const uo=[["STOCK",`${sel} (${ex})`],...INDEXMETA.filter(m=>m.id==="NIFTY"||m.id==="SENSEX"||IDXQ[m.id]).map(m=>[m.id,`${m.name} (${m.ex})`])];
   const uk=uo.map(x=>x[1]).join("|");if($("fUnder").dataset.k!==uk){$("fUnder").innerHTML=uo.map(([v,t])=>`<option value="${v}">${t}</option>`).join("");$("fUnder").dataset.k=uk}
   $("fUnder").value=fno.under;
   const E=expiriesFor(u,e),ek=u+e+E.join(",");
@@ -949,7 +967,8 @@ $("aAdd").onclick=addAlert;
 function renderNotif(){const n=$("notif");if(!("Notification" in window)){n.textContent="Not supported";n.disabled=true;return}
   const p=Notification.permission;n.textContent=p==="granted"?"On ✓":p==="denied"?"Blocked":"Enable";n.disabled=p!=="default"}
 $("notif").onclick=()=>{try{Notification.requestPermission().then(renderNotif)}catch(e){}};renderNotif();
-$("ctabs").onclick=e=>{const c=e.target.dataset.c;if(!c)return;ctab=c;document.querySelectorAll("#ctabs button").forEach(b=>b.classList.toggle("on",b.dataset.c===c));$("chartView").hidden=c!=="chart";$("fnoView").hidden=c!=="fno";render()};
+$("ctabs").onclick=e=>{const c=e.target.dataset.c;if(!c)return;setCtab(c);render()};
+$("indices").onclick=e=>{if(e.target.id==="idxToggle"){idxAll=!idxAll;lastIdxHtml="";render();return}const r=e.target.closest("[data-idx]");if(r)openIndex(r.dataset.idx)};
 $("fUnder").onchange=()=>{fno.under=$("fUnder").value;fno.tk=null;fnoKey="";render()};
 $("fExp").onchange=()=>{fno.exp=+$("fExp").value;render()};
 $("futRow").onclick=()=>{fno.tk={kind:"FUT"};render()};
