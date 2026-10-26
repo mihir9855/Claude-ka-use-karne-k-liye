@@ -748,10 +748,14 @@ function renderHold(H,inv){
   $("hold").innerHTML=H.map(h=>`<tr class="r" data-e="${h.e}" data-s="${h.sym}"><td><div class="sym"><i class="av" style="width:28px;height:28px;font-size:11px;background:hsl(${hue(h.sym)} 65% 45%)">${h.sym[0]}</i><div><b>${h.sym}</b> <span class="badge ${h.e}" style="margin:0">${h.e}</span></div></div></td><td class="num">${h.qty}</td><td class="num">${fmt(h.avg)}</td><td class="num">${fmt(h.ltp)}</td><td class="num">${fmt(h.val,0)}</td><td class="num ${h.pl>=0?"up":"down"}">${sgn(h.pl)}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">No holdings yet — buy your first stock! 🚀</td></tr>`;
   $("hist").innerHTML=state.orders.slice(0,25).map(o=>`<div class="ord"><span><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b> ${o.sym} <span class="badge ${o.ex}" style="margin:0 0 0 4px">${o.ex}</span></span><span class="num mut">${o.qty} @ ${fmt(o.price)}</span></div>`).join("")||`<div class="empty">No orders yet</div>`;
   // donut
-  const items=H.map(h=>({n:h.sym,v:h.val})).sort((a,b)=>b.v-a.v).slice(0,9);items.push({n:"Cash",v:state.cash});
+  // stocks + F&O positions (grouped by underlying; margin and option premium count as invested) + cash
+  const fg={};for(const p of state.fno)fg[p.under]=(fg[p.under]||0)+posValue(p);
+  let items=[...H.map(h=>({n:h.sym,v:h.val})),...Object.entries(fg).map(([u,v])=>({n:u+" F&O",v:Math.max(0,v)}))].filter(i=>i.v>0).sort((a,b)=>b.v-a.v);
+  if(items.length>8){const rest=items.slice(8).reduce((a,i)=>a+i.v,0);items=[...items.slice(0,8),{n:"Others",v:rest}]}
+  items.push({n:"Cash",v:Math.max(0,state.cash)});
   const tot=items.reduce((a,i)=>a+i.v,0),c=$("donut"),g=c.getContext("2d");g.clearRect(0,0,400,400);
   let ang=-Math.PI/2;items.forEach((it,i)=>{const sw=it.v/tot*Math.PI*2;g.beginPath();g.arc(200,200,150,ang,ang+sw-.03);g.strokeStyle=it.n==="Cash"?"#3a4266":PAL[i%PAL.length];g.lineWidth=44;g.lineCap="butt";g.stroke();ang+=sw;});
-  $("dpct").textContent=(inv/tot*100).toFixed(0)+"%";
+  $("dpct").textContent=((tot-Math.max(0,state.cash))/tot*100).toFixed(0)+"%";
   $("legend").innerHTML=items.map((it,i)=>`<span><i style="background:${it.n==="Cash"?"#3a4266":PAL[i%PAL.length]}"></i>${it.n} ${(it.v/tot*100).toFixed(0)}%</span>`).join("");
 }
 
