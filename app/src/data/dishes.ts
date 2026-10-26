@@ -1,34 +1,14 @@
-import type { Dish, DishRole, MealCategory } from '../core/types';
+import type { Cuisine, Dish, DishTag, MealCategory } from '../core/types';
+import { d } from './dishBuilder';
+import { MORE_DISHES } from './dishes2';
 
 const B: MealCategory = 'breakfast';
 const L: MealCategory = 'lunch';
 const D: MealCategory = 'dinner';
 const S: MealCategory = 'snack';
 
-/** items are "ingredientId:grams" for ONE serving (raw weights) */
-function d(
-  id: string,
-  en: string,
-  hi: string,
-  gu: string,
-  role: DishRole,
-  meals: MealCategory[],
-  items: string[],
-): Dish {
-  return {
-    id,
-    name: { en, hi, gu },
-    role,
-    meals,
-    items: items.map((s) => {
-      const [ing, g] = s.split(':');
-      return { ing, g: Number(g) };
-    }),
-  };
-}
-
 // Indian vegetarian. Quantities are for one person-serving before portion scaling.
-export const BUILTIN_DISHES: Dish[] = [
+const BASE_DISHES: Dish[] = [
   // ---- complete meals (breakfast / light dinner) ----
   d('poha', 'Poha', 'Poha', 'પૌવા', 'complete', [B, S], ['poha:60', 'onion:30', 'peanuts:10', 'matar:20', 'oil:6', 'masala:3']),
   d('moong_chilla', 'Moong dal chilla', 'Moong dal chilla', 'મગની દાળના ચીલા', 'complete', [B, D], ['moong_dal:70', 'onion:20', 'tomato:20', 'oil:6', 'masala:3']),
@@ -95,3 +75,25 @@ export const BUILTIN_DISHES: Dish[] = [
   d('chaas', 'Chaas (buttermilk)', 'Chaas', 'છાશ', 'side', [L, D], ['curd:100']),
   d('papad', 'Papad', 'Papad', 'પાપડ', 'side', [], ['papad:10']),
 ];
+
+// The first 54 dishes were written before cuisine and tags existed; they are tagged here.
+const CUISINE_OF: Record<string, Cuisine> = {
+  poha: 'west', besan_chilla: 'west', dhokla: 'west', khichdi: 'west', methi_thepla: 'west', gujarati_dal: 'west',
+  kadhi: 'west', bajra_rotla: 'west', jowar_roti: 'west', suji_upma: 'south', masala_oats: 'continental',
+  paneer_sandwich: 'continental', overnight_oats: 'continental', protein_shake: 'continental', sattu_drink: 'east',
+};
+const QUICK = [
+  'poha', 'moong_chilla', 'besan_chilla', 'paneer_sandwich', 'overnight_oats', 'sprouts_chaat', 'protein_shake',
+  'roasted_chana', 'makhana', 'curd_fruit', 'sattu_drink', 'paneer_cubes', 'haldi_milk', 'paneer_bhurji',
+  'tofu_bhurji', 'moong_dal', 'roti', 'rice', 'raita', 'salad', 'chaas',
+];
+const BREAD = ['roti', 'bajra_rotla', 'jowar_roti', 'missi_roti'];
+
+const TAGGED: Dish[] = BASE_DISHES.map((dish) => ({
+  ...dish,
+  cuisine: CUISINE_OF[dish.id] ?? 'north',
+  ...(QUICK.includes(dish.id) ? { tags: ['quick' as DishTag] } : {}),
+  ...(BREAD.includes(dish.id) ? { staple: 'bread' as const } : dish.id === 'rice' ? { staple: 'rice' as const } : {}),
+}));
+
+export const BUILTIN_DISHES: Dish[] = [...TAGGED, ...MORE_DISHES];

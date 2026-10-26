@@ -299,3 +299,124 @@ import { portionText } from '../src/core/portion';
 test('portions read as plain fractions', () => {
   assert.deepEqual([0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5].map(portionText), ['½', '¾', '1', '1¼', '1½', '1¾', '2', '2¼', '2½']);
 });
+
+test('dish library: 250+ dishes, valid ingredients, sane numbers, names in three languages', () => {
+  assert.ok(BUILTIN_DISHES.length >= 250, String(BUILTIN_DISHES.length));
+  const ids = new Set<string>();
+  for (const dish of BUILTIN_DISHES) {
+    assert.ok(!ids.has(dish.id), `duplicate ${dish.id}`);
+    ids.add(dish.id);
+    assert.ok(dish.items.length > 0, dish.id);
+    for (const it of dish.items) {
+      assert.ok(INGREDIENT_BY_ID[it.ing], `${dish.id}: ${it.ing}`);
+      assert.ok(it.g > 0 && it.g <= 500, `${dish.id}: ${it.g} g of ${it.ing}`);
+    }
+    const m = dishMacros(dish);
+    const light = dish.role === 'side' || dish.id === 'papad' || dish.id.includes('soup');
+    assert.ok(m.kcal >= (light ? 20 : 60) && m.kcal <= 950, `${dish.id}: ${Math.round(m.kcal)} kcal`);
+    assert.ok(m.protein <= 70, `${dish.id}: ${Math.round(m.protein)} g protein`);
+    assert.ok(dish.name.en && dish.name.hi && dish.name.gu, dish.id);
+    assert.ok((dish.meals.length > 0 || dish.id === 'papad') && dish.cuisine, dish.id);
+    if (dish.role === 'staple') assert.ok(dish.staple, `${dish.id} needs a staple kind`);
+  }
+  // every cuisine has something to cook, and fried dishes are tagged
+  for (const c of ['north', 'west', 'south', 'east', 'northeast', 'continental', 'indochinese'])
+    assert.ok(BUILTIN_DISHES.some((x) => x.cuisine === c), c);
+  assert.ok(BUILTIN_DISHES.filter((x) => x.tags?.includes('fried')).length >= 10);
+});
+
+test('vegetarian library: nothing needs onion or garlic unless it lists them', () => {
+  const jain = BUILTIN_DISHES.filter((dish) => !dishFlags(dish).has('onion_garlic'));
+  assert.ok(jain.length >= 150, `only ${jain.length} onion-garlic-free dishes`);
+});
+
+import { addDays, isWeekday } from '../src/core/dates';
+import { generateWeekPlan, stapleKindFor } from '../src/core/planner';
+import type { MenuPrefs, PlanRules } from '../src/core/types';
+
+const { date: _d, ...weekBase } = base();
+const noRules: PlanRules = { stapleRule: 'any', avoidFried: false, avoidSweet: false, quickWeekdays: false };
+const allMenu: MenuPrefs = { cuisines: [], usual: [], menuOff: {}, includeNew: true };
+const dishOf = new Map(BUILTIN_DISHES.map((x) => [x.id, x]));
+const idsOf = (week: ReturnType<typeof generateWeekPlan>) =>
+  Object.values(week).flatMap((p) => p.slots.flatMap((s) => s.options.flatMap((o) => o.dishIds)));
+
+test('dates helpers', () => {
+  assert.equal(addDays('2026-10-30', 3), '2026-11-02');
+  assert.equal(addDays('2026-12-30', 3), '2027-01-02');
+  assert.equal(isWeekday('2026-10-26'), true); // Monday
+  assert.equal(isWeekday('2026-10-25'), false); // Sunday
+});
+
+test('a 7-day plan for 4 people with 6 meals is fast and gives every day every meal', () => {
+  const kid: Person = { name: 'K', sex: 'male', age: 8, heightCm: 125, weightKg: 26, activity: 'light', goal: 'maintain', conditions: [] };
+  const t0 = Date.now();
+  const week = generateWeekPlan({ ...weekBase, persons: [him, her, kid, { ...her, name: 'E' }], mealCount: 6, rules: noRules, menu: allMenu }, '2026-10-26', 7);
+  const ms = Date.now() - t0;
+  assert.ok(ms < 4000, `${ms} ms`);
+  assert.equal(Object.keys(week).length, 7);
+  for (const p of Object.values(week)) {
+    assert.equal(p.slots.length, 6);
+    for (const s of p.slots) assert.ok(s.options.length >= 1);
+  }
+});
+
+test('the same main dish does not appear on consecutive days', () => {
+  const week = generateWeekPlan({ ...weekBase, mealCount: 4, rules: noRules, menu: allMenu }, '2026-10-26', 7);
+  const keyOf = (date: string) =>
+    new Set(week[date].slots.flatMap((s) => s.options[0].dishIds).filter((id) => ['main', 'complete'].includes(dishOf.get(id)!.role)));
+  let repeats = 0;
+  for (let i = 0; i < 6; i++) {
+    const a = keyOf(addDays('2026-10-26', i));
+    for (const id of keyOf(addDays('2026-10-26', i + 1))) if (a.has(id)) repeats++;
+  }
+  assert.ok(repeats <= 2, `${repeats} dishes repeated on the next day`);
+});
+
+test('rules: rice only, bread only, alternate, no fried, no sweet', () => {
+  const stapleIds = (week: ReturnType<typeof generateWeekPlan>, date: string) =>
+    week[date].slots.filter((s) => ['lunch', 'dinner'].includes(s.slot)).flatMap((s) => s.options.flatMap((o) => o.dishIds)).filter((id) => dishOf.get(id)!.role === 'staple');
+  const rice = generateWeekPlan({ ...weekBase, rules: { ...noRules, stapleRule: 'rice' }, menu: allMenu }, '2026-10-26', 3);
+  for (const date of Object.keys(rice)) for (const id of stapleIds(rice, date)) assert.equal(dishOf.get(id)!.staple, 'rice', id);
+  const bread = generateWeekPlan({ ...weekBase, rules: { ...noRules, stapleRule: 'bread' }, menu: allMenu }, '2026-10-26', 3);
+  for (const date of Object.keys(bread)) for (const id of stapleIds(bread, date)) assert.equal(dishOf.get(id)!.staple, 'bread', id);
+  assert.notEqual(stapleKindFor({ ...noRules, stapleRule: 'alternate' }, '2026-10-26'), stapleKindFor({ ...noRules, stapleRule: 'alternate' }, '2026-10-27'));
+  const clean = generateWeekPlan({ ...weekBase, mealCount: 6, rules: { ...noRules, avoidFried: true, avoidSweet: true }, menu: allMenu }, '2026-10-26', 4);
+  for (const id of idsOf(clean)) assert.ok(!dishOf.get(id)!.tags?.some((t) => t === 'fried' || t === 'sweet'), id);
+});
+
+test('My Menu: removed dishes and unselected cuisines stay out, unless new dishes are allowed', () => {
+  const south: MenuPrefs = { cuisines: ['south'], usual: ['south'], menuOff: { dosa: true }, includeNew: false };
+  const week = generateWeekPlan({ ...weekBase, mealCount: 6, rules: noRules, menu: south }, '2026-10-26', 3);
+  for (const id of idsOf(week)) {
+    assert.equal(dishOf.get(id)!.cuisine, 'south', id);
+    assert.notEqual(id, 'dosa');
+  }
+  const open = generateWeekPlan({ ...weekBase, mealCount: 6, rules: noRules, menu: { ...south, includeNew: true } }, '2026-10-26', 3);
+  assert.ok(idsOf(open).some((id) => dishOf.get(id)!.cuisine !== 'south'));
+  for (const id of idsOf(open)) assert.notEqual(id, 'dosa');
+});
+
+test('quick weekdays prefer dishes tagged quick', () => {
+  const rules = { ...noRules, quickWeekdays: true };
+  const on = generateWeekPlan({ ...weekBase, mealCount: 4, rules, menu: allMenu }, '2026-10-26', 5); // Mon-Fri
+  const off = generateWeekPlan({ ...weekBase, mealCount: 4, rules: noRules, menu: allMenu }, '2026-10-26', 5);
+  const share = (w: ReturnType<typeof generateWeekPlan>) => {
+    const ids = Object.values(w).flatMap((p) => p.slots.map((s) => s.options[0].dishIds).flat());
+    return ids.filter((id) => dishOf.get(id)!.tags?.includes('quick')).length / ids.length;
+  };
+  assert.ok(share(on) > share(off), `${share(on)} vs ${share(off)}`);
+});
+
+import { shoppingGapWeek } from '../src/core/planner';
+
+test('week shopping list adds up ingredients across days and skips what is at home', () => {
+  const week = generateWeekPlan({ ...weekBase, mealCount: 3, rules: noRules, menu: allMenu }, '2026-10-26', 3);
+  const none = shoppingGapWeek(Object.values(week), BUILTIN_DISHES, { have: {}, soon: {} });
+  assert.ok(none.length > 5);
+  assert.equal(new Set(none.map((x) => x.ing)).size, none.length); // each ingredient once
+  const have = Object.fromEntries(none.slice(0, 3).map((x) => [x.ing, true]));
+  const some = shoppingGapWeek(Object.values(week), BUILTIN_DISHES, { have, soon: {} });
+  for (const k of Object.keys(have)) assert.ok(!some.some((x) => x.ing === k));
+  assert.equal(some.length, none.length - 3);
+});

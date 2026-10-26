@@ -1,0 +1,58 @@
+import type { Dish } from '../core/types';
+import { d } from './dishBuilder';
+
+const B = 'breakfast' as const;
+const L = 'lunch' as const;
+const D = 'dinner' as const;
+
+// North Indian mains, curries and rice dishes.
+export const MORE_NORTH: Dish[] = [
+  d('dal_makhani', 'Dal makhani', 'Dal makhani', 'દાળ મખની', 'main', [L, D], ['urad_dal:35', 'rajma:20', 'butter:8', 'cream:15', 'tomato:60', 'onion:30', 'oil:4', 'masala:4']),
+  d('dal_fry', 'Dal fry', 'Dal fry', 'દાળ ફ્રાય', 'main', [L, D], ['toor_dal:30', 'moong_dal:20', 'tomato:40', 'onion:20', 'oil:8', 'masala:3']),
+  d('chana_dal_tadka', 'Chana dal tadka', 'Chana dal tadka', 'ચણાની દાળ તડકા', 'main', [L, D], ['chana_dal:55', 'tomato:40', 'onion:20', 'oil:8', 'masala:3']),
+  d('mix_dal', 'Mixed dal', 'Mix dal', 'મિક્સ દાળ', 'main', [L, D], ['toor_dal:20', 'moong_dal:15', 'masoor_dal:15', 'chana_dal:10', 'tomato:40', 'oil:8', 'masala:3']),
+  d('lasuni_dal', 'Lasooni dal', 'Lasooni dal', 'લસણિયા દાળ', 'main', [L, D], ['toor_dal:50', 'garlic:10', 'tomato:30', 'ghee:6', 'masala:3']),
+  d('kala_chana_curry', 'Kala chana curry', 'Kala chana', 'કાળા ચણાનું શાક', 'main', [L, D], ['kala_chana:50', 'onion:40', 'tomato:60', 'oil:8', 'masala:4']),
+  d('chawli_curry', 'Lobia (chawli) curry', 'Lobia sabzi', 'ચોળાનું શાક', 'main', [L, D], ['chawli:50', 'tomato:60', 'onion:30', 'oil:8', 'masala:4']),
+  d('paneer_butter_masala', 'Paneer butter masala', 'Paneer butter masala', 'પનીર બટર મસાલા', 'main', [L, D], ['paneer:80', 'tomato:100', 'cream:15', 'butter:10', 'onion:30', 'cashew:10', 'masala:4']),
+  d('kadai_paneer', 'Kadai paneer', 'Kadai paneer', 'કડાઈ પનીર', 'main', [L, D], ['paneer:80', 'capsicum:60', 'tomato:60', 'onion:40', 'oil:10', 'masala:4']),
+  d('shahi_paneer', 'Shahi paneer', 'Shahi paneer', 'શાહી પનીર', 'main', [L, D], ['paneer:80', 'tomato:80', 'cream:20', 'cashew:15', 'onion:30', 'oil:6', 'masala:3']),
+  d('paneer_tikka_masala', 'Paneer tikka masala', 'Paneer tikka masala', 'પનીર ટિક્કા મસાલા', 'main', [L, D], ['paneer:90', 'curd:30', 'tomato:80', 'onion:30', 'oil:10', 'masala:4']),
+  d('paneer_do_pyaza', 'Paneer do pyaza', 'Paneer do pyaza', 'પનીર દો પ્યાઝા', 'main', [L, D], ['paneer:80', 'onion:100', 'capsicum:30', 'oil:10', 'masala:4']),
+  d('matar_mushroom', 'Matar mushroom', 'Matar mushroom', 'વટાણા મશરૂમ', 'main', [L, D], ['mushroom:100', 'matar:60', 'tomato:60', 'onion:30', 'oil:8', 'masala:4']),
+  d('mushroom_masala', 'Mushroom masala', 'Mushroom masala', 'મશરૂમ મસાલા', 'main', [L, D], ['mushroom:150', 'tomato:70', 'onion:40', 'oil:8', 'masala:4']),
+  d('malai_kofta', 'Malai kofta', 'Malai kofta', 'મલાઈ કોફતા', 'main', [L, D], ['paneer:50', 'aloo:40', 'tomato:70', 'cream:20', 'cashew:12', 'oil:15', 'masala:3'], 'north', ['fried']),
+  d('aloo_gobi', 'Aloo gobi', 'Aloo gobi', 'બટાકા ફૂલકોબી', 'main', [L, D], ['aloo:80', 'cauliflower:120', 'tomato:30', 'oil:9', 'masala:4']),
+  d('aloo_jeera', 'Jeera aloo', 'Jeera aloo', 'જીરા આલૂ', 'main', [L, D], ['aloo:150', 'oil:8', 'masala:3']),
+  d('aloo_baingan', 'Aloo baingan', 'Aloo baingan', 'બટાકા રીંગણ', 'main', [L, D], ['aloo:70', 'brinjal:120', 'tomato:30', 'oil:9', 'masala:4']),
+  d('bhindi_do_pyaza', 'Bhindi do pyaza', 'Bhindi do pyaza', 'ભીંડા દો પ્યાઝા', 'main', [L, D], ['bhindi:150', 'onion:80', 'tomato:30', 'oil:10', 'masala:4']),
+  d('baingan_masala', 'Baingan masala', 'Baingan masala', 'રીંગણ મસાલા', 'main', [L, D], ['brinjal:200', 'tomato:50', 'onion:40', 'oil:10', 'masala:4']),
+  d('sarson_saag', 'Sarson ka saag', 'Sarson ka saag', 'સરસવનું શાક', 'main', [L, D], ['sarson:150', 'palak:50', 'butter:8', 'makai:10', 'masala:3']),
+  d('lauki_kofta', 'Lauki kofta', 'Lauki kofta', 'દૂધીના કોફતા', 'main', [L, D], ['lauki:120', 'besan:25', 'tomato:60', 'oil:25', 'masala:3'], 'north', ['fried']),
+  d('tinda_masala', 'Tinda masala', 'Tinda masala', 'ટીંડોળા મસાલા', 'main', [L, D], ['tindora:150', 'tomato:50', 'onion:30', 'oil:8', 'masala:3']),
+  d('karela_fry', 'Karela fry', 'Karela fry', 'કારેલાનું શાક', 'main', [L, D], ['karela:150', 'onion:40', 'besan:10', 'oil:10', 'masala:3']),
+  d('turai_sabzi', 'Turai sabzi', 'Turai sabzi', 'તુરિયાનું શાક', 'main', [L, D], ['turai:200', 'tomato:30', 'oil:8', 'masala:3']),
+  d('kaddu_sabzi', 'Kaddu sabzi', 'Kaddu sabzi', 'કોળાનું શાક', 'main', [L, D], ['pumpkin:200', 'oil:8', 'jaggery:3', 'masala:3']),
+  d('aloo_methi', 'Aloo methi', 'Aloo methi', 'બટાકા મેથી', 'main', [L, D], ['aloo:100', 'methi:100', 'oil:9', 'masala:3']),
+  d('methi_malai_matar', 'Methi malai matar', 'Methi malai matar', 'મેથી મલાઈ મટર', 'main', [L, D], ['methi:60', 'matar:80', 'cream:20', 'onion:30', 'oil:6', 'masala:3']),
+  d('dum_aloo', 'Dum aloo', 'Dum aloo', 'દમ આલૂ', 'main', [L, D], ['aloo:150', 'curd:40', 'tomato:50', 'oil:12', 'masala:4']),
+  d('gobhi_masala', 'Gobi masala', 'Gobi masala', 'ફૂલકોબી મસાલા', 'main', [L, D], ['cauliflower:200', 'tomato:60', 'oil:10', 'masala:4']),
+  d('palak_corn', 'Palak corn', 'Palak corn', 'પાલક કોર્ન', 'main', [L, D], ['palak:150', 'sweetcorn:50', 'onion:30', 'oil:8', 'masala:3']),
+  d('soya_keema', 'Soya keema', 'Soya keema', 'સોયા કીમા', 'main', [L, D], ['soya_chunks:40', 'matar:40', 'tomato:60', 'onion:40', 'oil:8', 'masala:4']),
+  d('kadhi_pakora', 'Kadhi pakora', 'Kadhi pakora', 'કઢી પકોડા', 'main', [L, D], ['besan:40', 'curd:120', 'oil:25', 'masala:3'], 'north', ['fried']),
+  d('rajma_chawal', 'Rajma chawal', 'Rajma chawal', 'રાજમા ચાવલ', 'complete', [L, D], ['rajma:50', 'rice:70', 'tomato:60', 'onion:30', 'oil:8', 'masala:4']),
+  d('chole_chawal', 'Chole chawal', 'Chole chawal', 'છોલે ચાવલ', 'complete', [L, D], ['chole:55', 'rice:70', 'tomato:60', 'onion:30', 'oil:8', 'masala:4']),
+  d('matar_pulao', 'Matar pulao', 'Matar pulao', 'વટાણા પુલાવ', 'complete', [L, D], ['rice:65', 'matar:40', 'ghee:8', 'masala:3']),
+  d('veg_pulao', 'Veg pulao', 'Veg pulao', 'વેજ પુલાવ', 'complete', [L, D], ['rice:65', 'carrot:20', 'beans:20', 'matar:20', 'ghee:8', 'masala:3']),
+  d('veg_biryani', 'Veg biryani', 'Veg biryani', 'વેજ બિરયાની', 'complete', [L, D], ['rice:65', 'carrot:20', 'beans:20', 'matar:20', 'curd:30', 'oil:10', 'cashew:8', 'masala:4']),
+  d('paneer_biryani', 'Paneer biryani', 'Paneer biryani', 'પનીર બિરયાની', 'complete', [L, D], ['rice:65', 'paneer:60', 'curd:30', 'oil:10', 'masala:4']),
+  d('khichdi_masala', 'Masala khichdi', 'Masala khichdi', 'મસાલા ખીચડી', 'complete', [L, D], ['rice:50', 'moong_dal:40', 'carrot:20', 'matar:20', 'ghee:6', 'masala:3'], 'north'),
+  d('masoor_khichdi', 'Masoor khichdi', 'Masoor khichdi', 'મસૂર ખીચડી', 'complete', [L, D], ['rice:45', 'masoor_dal:45', 'ghee:6', 'masala:3'], 'north'),
+  d('dalia_khichdi', 'Dalia khichdi', 'Dalia khichdi', 'દલિયા ખીચડી', 'complete', [L, D], ['dalia:50', 'moong_dal:35', 'carrot:20', 'matar:20', 'ghee:6'], 'north'),
+  d('paneer_bhurji_wrap', 'Paneer bhurji roll', 'Paneer bhurji roll', 'પનીર ભુર્જી રોલ', 'complete', [L, D], ['atta:50', 'paneer:70', 'onion:30', 'tomato:30', 'oil:8'], 'north'),
+  d('tofu_masala', 'Tofu masala', 'Tofu masala', 'ટોફુ મસાલા', 'main', [L, D], ['tofu:130', 'tomato:60', 'onion:30', 'oil:8', 'masala:4'], 'north'),
+  d('litti_chokha', 'Litti chokha', 'Litti chokha', 'લિટ્ટી ચોખા', 'complete', [L, D], ['atta:60', 'sattu:50', 'brinjal:100', 'tomato:30', 'ghee:10'], 'east'),
+  d('gatte_sabzi', 'Gatte ki sabzi', 'Gatte ki sabzi', 'ગટ્ટાનું શાક', 'main', [L, D], ['besan:50', 'curd:60', 'oil:15', 'masala:4'], 'west'),
+  d('dal_baati', 'Dal baati', 'Dal baati', 'દાળ બાટી', 'complete', [L, D], ['atta:80', 'toor_dal:30', 'moong_dal:15', 'ghee:20', 'masala:3'], 'west'),
+  d('sweet_potato_chaat', 'Sweet potato chaat', 'Shakarkand chaat', 'શક્કરિયાની ચાટ', 'complete', [B, D], ['sweet_potato:200', 'lemon:5', 'masala:2'], 'north'),
+];

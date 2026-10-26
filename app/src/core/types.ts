@@ -32,6 +32,9 @@ export type Flag =
 
 export type Slot = 'breakfast' | 'midmorning' | 'lunch' | 'evening' | 'dinner' | 'bedtime';
 export type MealCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type Cuisine = 'north' | 'west' | 'south' | 'east' | 'northeast' | 'continental' | 'indochinese';
+export type DishTag = 'fried' | 'quick' | 'sweet';
+
 export type DishRole = 'complete' | 'main' | 'staple' | 'side' | 'snack';
 
 export interface Person {
@@ -80,6 +83,11 @@ export interface Dish {
   role: DishRole;
   meals: MealCategory[];
   items: DishItem[];
+  /** where the dish comes from, for cuisine preferences */
+  cuisine?: Cuisine;
+  tags?: DishTag[];
+  /** for roti-or-rice rules on staples */
+  staple?: 'rice' | 'bread';
   custom?: boolean;
   /** used when a custom dish has no ingredient list */
   macros?: Macros;
@@ -120,4 +128,25 @@ export interface DayPlan {
   date: string;
   mealCount: number;
   slots: SlotPlan[];
+}
+
+/** How the week is planned: simple switches instead of free text. */
+export interface PlanRules {
+  /** which staple goes with lunch and dinner */
+  stapleRule: 'any' | 'rice' | 'bread' | 'alternate';
+  avoidFried: boolean;
+  avoidSweet: boolean;
+  /** prefer quick dishes Monday to Friday */
+  quickWeekdays: boolean;
+}
+
+export interface MenuPrefs {
+  /** cuisines whose dishes are in My Menu; empty means all */
+  cuisines: Cuisine[];
+  /** up to two cuisines cooked most weeks; these are preferred */
+  usual: Cuisine[];
+  /** dishes taken out of My Menu */
+  menuOff: Record<string, true>;
+  /** let dishes from other cuisines appear now and then */
+  includeNew: boolean;
 }

@@ -46,3 +46,25 @@ test('finishing sends an item to the buy list and reset clears everything', asyn
   assert.deepEqual(s().customIngredients, []);
   assert.equal(s().persons.length, 2);
 });
+
+test('makeWeek plans seven days, keeps eaten meals, and rules reach the planner', async () => {
+  const { useStore } = await import('../src/state/store');
+  const { todayStr, addDays } = await import('../src/core/dates');
+  const s = () => useStore.getState();
+  s().resetAll();
+  s().setRules({ avoidFried: true });
+  s().makeWeek();
+  const today = todayStr();
+  assert.equal(Object.keys(s().plans).length, 7);
+  assert.ok(s().plans[addDays(today, 6)]);
+  const slot = s().plans[today].slots[0];
+  const eatenDish = slot.options[0].dishIds;
+  s().logMeal(today, slot.slot, eatenDish);
+  s().makeWeek();
+  assert.deepEqual(s().plans[today].slots[0].options[0].dishIds, eatenDish);
+  s().toggleMenuDish('idli');
+  assert.equal(s().menu.menuOff.idli, true);
+  s().toggleMenuDish('idli');
+  assert.equal(s().menu.menuOff.idli, undefined);
+  s().resetAll();
+});

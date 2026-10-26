@@ -1,4 +1,5 @@
 import { INGREDIENT_BY_ID } from '../data/ingredients';
+import { addDays, daysBetween, isWeekday } from './dates';
 import { habitScore, habitStats, pairCounts, pairKey } from './habits';
 import { autoMealCount, computeTargets, dishFlags, dishMacros, excludedFlags, giShare, softFlags } from './nutrition';
 import type {
@@ -8,6 +9,8 @@ import type {
   Flag,
   LogEntry,
   MealCategory,
+  MenuPrefs,
+  PlanRules,
   MealOption,
   Pantry,
   Person,
@@ -47,7 +50,24 @@ export interface PlanInput {
   strictPantry: boolean;
   /** change to get a different plan for the same day */
   salt?: number;
+  rules?: PlanRules;
+  menu?: MenuPrefs;
 }
+
+// Dish objects live as long as the app, so results are cached per object.
+const macroCache = new WeakMap<Dish, ReturnType<typeof dishMacros>>();
+const flagCache = new WeakMap<Dish, Set<Flag>>();
+const tagCache = new WeakMap<Dish, Set<FoodTag>>();
+const macrosOf = (d: Dish) => {
+  let m = macroCache.get(d);
+  if (!m) macroCache.set(d, (m = dishMacros(d)));
+  return m;
+};
+const flagsOfDish = (d: Dish) => {
+  let f = flagCache.get(d);
+  if (!f) flagCache.set(d, (f = dishFlags(d)));
+  return f;
+};
 
 function mulberry32(seed: number) {
   let a = seed >>> 0;
@@ -66,26 +86,38 @@ function hash(s: string): number {
   return h >>> 0;
 }
 
-function compositions(cat: MealCategory, dishes: Dish[]): Dish[][] {
-  const pool = dishes.filter((d) => d.meals.includes(cat));
-  const role = (r: Dish['role']) => pool.filter((d) => d.role === r);
-  const sides = role('side');
+interface Parts {
+  complete: Dish[];
+  main: Dish[];
+  staple: Dish[];
+  side: Dish[];
+  snack: Dish[];
+}
+
+function compositions(cat: MealCategory, parts: Parts): Dish[][] {
   const out: Dish[][] = [];
   if (cat === 'snack') {
-    for (const d of [...role('snack'), ...role('complete')]) out.push([d]);
+    for (const d of [...parts.snack, ...parts.complete]) out.push([d]);
     return out;
   }
-  for (const c of role('complete')) {
+  for (const c of parts.complete) {
     out.push([c]);
-    for (const s of sides) out.push([c, s]);
+    for (const s of parts.side) out.push([c, s]);
   }
   if (cat === 'breakfast') return out;
-  for (const m of role('main'))
-    for (const st of role('staple')) {
+  for (const m of parts.main)
+    for (const st of parts.staple) {
       out.push([m, st]);
-      for (const s of sides) out.push([m, st, s]);
+      for (const s of parts.side) out.push([m, st, s]);
     }
   return out;
+}
+
+/** 'rice' or 'bread' for this date, or undefined when any staple will do. */
+export function stapleKindFor(rules: PlanRules | undefined, date: string): 'rice' | 'bread' | undefined {
+  if (!rules || rules.stapleRule === 'any') return undefined;
+  if (rules.stapleRule === 'alternate') return daysBetween('2000-01-03', date) % 2 === 0 ? 'bread' : 'rice';
+  return rules.stapleRule;
 }
 
 function pantryHas(pantry: Pantry): boolean {
@@ -116,6 +148,8 @@ const TAG_WEIGHT: Record<FoodTag, number> = { fruit: 1.2, leafy: 0.6, dairy: 0.5
 
 /** Food groups a dish contributes, used to cover the whole day (calcium, vitamins, iron). */
 export function dishTags(dish: Dish): Set<FoodTag> {
+  const cached = tagCache.get(dish);
+  if (cached) return cached;
   const tags = new Set<FoodTag>();
   for (const it of dish.items) {
     const ing = INGREDIENT_BY_ID[it.ing];
@@ -125,6 +159,7 @@ export function dishTags(dish: Dish): Set<FoodTag> {
     if (ing.group === 'leafy' && it.g >= 40) tags.add('leafy');
     if (ing.group === 'pulse' && it.g >= 30) tags.add('pulse');
   }
+  tagCache.set(dish, tags);
   return tags;
 }
 
@@ -162,24 +197,60 @@ function planSlot(
   // dishes already eaten today are not suggested again
   const eatenToday = new Set(input.log.filter((e) => e.date === input.date).flatMap((e) => e.dishIds));
 
-  const flagCache = new Map<string, Set<Flag>>();
-  const flagsOf = (d: Dish) => {
-    let f = flagCache.get(d.id);
-    if (!f) flagCache.set(d.id, (f = dishFlags(d)));
-    return f;
+  const flagsOf = flagsOfDish;
+  const rules = input.rules;
+  const menu = input.menu;
+  const cat = slotCategory(slot);
+  const weekday = isWeekday(input.date);
+  const stapleKind = stapleKindFor(rules, input.date);
+
+  const allowedDish = (d: Dish) => {
+    if (input.prefs[d.id] === 'dislike') return false;
+    if ([...flagsOf(d)].some((f) => banned.has(f))) return false;
+    if (rules?.avoidFried && d.tags?.includes('fried')) return false;
+    if (rules?.avoidSweet && d.tags?.includes('sweet')) return false;
+    if (menu?.menuOff[d.id]) return false;
+    if (menu && !menu.includeNew && menu.cuisines.length > 0 && d.cuisine && !menu.cuisines.includes(d.cuisine)) return false;
+    return true;
   };
 
-  const allowedDish = (d: Dish) =>
-    input.prefs[d.id] !== 'dislike' && ![...flagsOf(d)].some((f) => banned.has(f));
-
-  const pool = input.dishes.filter(allowedDish);
-  const comps = compositions(slotCategory(slot), pool);
+  // A quick look at each dish decides which few are worth combining; combining everything would be slow.
+  const quickScore = (d: Dish): number => {
+    const m = macrosOf(d);
+    let q = (m.protein / Math.max(m.kcal, 1)) * 100 * 0.6;
+    if (hasPantry) q += 1.5 * coverage([d], pantry).cov;
+    q += habitScore(stats.get(d.id));
+    if (input.prefs[d.id] === 'like') q += 0.8;
+    if (usedToday.has(d.id) && KEY_ROLES.includes(d.role)) q -= 1.5;
+    if (eatenToday.has(d.id) && KEY_ROLES.includes(d.role)) q -= 5;
+    if (weekday && rules?.quickWeekdays && d.tags?.includes('quick')) q += 0.8;
+    if (menu?.usual.includes(d.cuisine as never)) q += 0.5;
+    return q + rng() * 1.2;
+  };
+  const byMeal = input.dishes.filter((d) => d.meals.includes(cat) && allowedDish(d));
+  const top = (role: Dish['role'], n: number, extra?: (d: Dish) => boolean) =>
+    byMeal
+      .filter((d) => d.role === role && (!extra || extra(d)))
+      .map((d) => ({ d, q: quickScore(d) }))
+      .sort((a, b) => b.q - a.q)
+      .slice(0, n)
+      .map((x) => x.d);
+  let staples = top('staple', 6, stapleKind ? (d) => d.staple === stapleKind : undefined);
+  if (staples.length === 0) staples = top('staple', 6);
+  const parts: Parts = {
+    complete: top('complete', 40),
+    main: top('main', 24),
+    staple: staples,
+    side: top('side', 6),
+    snack: top('snack', 40),
+  };
+  const comps = compositions(cat, parts);
 
   const score = (dishes: Dish[]): Scored => {
     let kcal = 0;
     let protein = 0;
     for (const d of dishes) {
-      const m = dishMacros(d);
+      const m = macrosOf(d);
       kcal += m.kcal;
       protein += m.protein;
     }
@@ -207,7 +278,7 @@ function planSlot(
     kcalErr /= persons.length;
 
     // steady energy: fibre per meal, and no big spike from fast carbs
-    const mealFiber = dishes.reduce((a, d) => a + dishMacros(d).fiber, 0);
+    const mealFiber = dishes.reduce((a, d) => a + macrosOf(d).fiber, 0);
     let fiberScore = 0;
     persons.forEach((_, i) => {
       const need = (14 * targets[i].kcal) / 1000;
@@ -226,6 +297,8 @@ function planSlot(
     for (const d of dishes) {
       s += habitScore(stats.get(d.id));
       if (input.prefs[d.id] === 'like') s += 0.8;
+      if (weekday && rules?.quickWeekdays && d.tags?.includes('quick')) s += 0.4;
+      if (menu?.usual.includes(d.cuisine as never)) s += 0.3;
       if (usedToday.has(d.id) && KEY_ROLES.includes(d.role)) s -= 1.5;
       for (const f of flagsOf(d)) if (soft.has(f)) s -= 0.7;
     }
@@ -351,4 +424,36 @@ export function shoppingGap(plan: DayPlan, dishes: Dish[], pantry: Pantry): Shop
   return [...need.entries()]
     .map(([ing, g]) => ({ ing, grams: Math.ceil(g / 10) * 10 }))
     .sort((a, b) => b.grams - a.grams);
+}
+
+/**
+ * A plan for several days in a row. Each day sees the dishes planned before it, so the same
+ * dish does not come back the next day.
+ */
+export function generateWeekPlan(
+  base: Omit<PlanInput, 'date' | 'salt'>,
+  start: string,
+  days: number,
+  saltByDate: Record<string, number> = {},
+): Record<string, DayPlan> {
+  const out: Record<string, DayPlan> = {};
+  const planned: LogEntry[] = [];
+  for (let i = 0; i < days; i++) {
+    const date = addDays(start, i);
+    const plan = generateDayPlan({ ...base, log: [...base.log, ...planned], date, salt: saltByDate[date] ?? 0 });
+    out[date] = plan;
+    for (const sp of plan.slots) {
+      const opt = sp.options[sp.chosen ?? 0];
+      if (opt) planned.push({ id: `plan-${date}-${sp.slot}`, date, slot: sp.slot, dishIds: opt.dishIds });
+    }
+  }
+  return out;
+}
+
+/** What a whole stretch of days needs that is not at home, with each ingredient added up once. */
+export function shoppingGapWeek(plans: DayPlan[], dishes: Dish[], pantry: Pantry): ShoppingItem[] {
+  const total = new Map<string, number>();
+  for (const plan of plans)
+    for (const it of shoppingGap(plan, dishes, pantry)) total.set(it.ing, (total.get(it.ing) ?? 0) + it.grams);
+  return [...total.entries()].map(([ing, grams]) => ({ ing, grams })).sort((a, b) => b.grams - a.grams);
 }

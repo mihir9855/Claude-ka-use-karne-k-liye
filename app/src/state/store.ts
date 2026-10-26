@@ -2,10 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { todayStr } from '../core/dates';
-import { generateDayPlan, regenerateSlot, type PlanInput } from '../core/planner';
+import { addDays } from '../core/dates';
+import { generateDayPlan, generateWeekPlan, regenerateSlot, type PlanInput } from '../core/planner';
 import type { ShoppingList } from '../core/shopping';
 import { setCustomIngredients, GROUP_DEFAULTS } from '../data/ingredients';
-import type { DayPlan, Dish, Ingredient, DishPref, Lang, LogEntry, Pantry, Person, Slot } from '../core/types';
+import type { DayPlan, Dish, Ingredient, MenuPrefs, PlanRules, DishPref, Lang, LogEntry, Pantry, Person, Slot } from '../core/types';
 import { BUILTIN_DISHES } from '../data/dishes';
 
 export const MAX_MEMBERS = 6;
@@ -27,6 +28,8 @@ interface State {
   /** Google Gemini key for photo detection, kept only on this device */
   geminiKey: string;
   persons: Person[];
+  rules: PlanRules;
+  menu: MenuPrefs;
   mealCount: number | 'auto';
   strictPantry: boolean;
   pantry: Pantry;
@@ -47,6 +50,10 @@ interface State {
   undoDelete: () => void;
   clearUndo: () => void;
   setLang: (l: Lang) => void;
+  setRules: (patch: Partial<PlanRules>) => void;
+  setMenu: (patch: Partial<MenuPrefs>) => void;
+  toggleMenuDish: (id: string) => void;
+  makeWeek: () => void;
   setOnboarded: (v: boolean) => void;
   setGeminiKey: (k: string) => void;
   addToPantry: (ids: string[]) => void;
@@ -102,6 +109,9 @@ const safeStorage = {
   },
 };
 
+const DEFAULT_RULES: PlanRules = { stapleRule: 'any', avoidFried: false, avoidSweet: false, quickWeekdays: false };
+const DEFAULT_MENU: MenuPrefs = { cuisines: [], usual: [], menuOff: {}, includeNew: true };
+
 const uid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 
 export const useStore = create<State>()(
@@ -111,6 +121,8 @@ export const useStore = create<State>()(
       onboarded: false,
       geminiKey: '',
       persons: [newPerson('', 'male'), newPerson('', 'female')],
+      rules: DEFAULT_RULES,
+      menu: DEFAULT_MENU,
       mealCount: 'auto',
       strictPantry: true,
       pantry: { have: {}, soon: {} },
@@ -133,6 +145,36 @@ export const useStore = create<State>()(
         }),
       clearUndo: () => set({ undoSnapshot: null }),
       setLang: (lang) => set({ lang }),
+      setRules: (patch) => set((s) => ({ rules: { ...s.rules, ...patch } })),
+      setMenu: (patch) => set((s) => ({ menu: { ...s.menu, ...patch } })),
+      toggleMenuDish: (id) =>
+        set((s) => {
+          const menuOff = { ...s.menu.menuOff };
+          if (menuOff[id]) delete menuOff[id];
+          else menuOff[id] = true;
+          return { menu: { ...s.menu, menuOff } };
+        }),
+      // plans today and the next six days; meals already eaten stay as they were
+      makeWeek: () => {
+        const s = get();
+        const start = todayStr();
+        const salts: Record<string, number> = {};
+        for (let i = 0; i < 7; i++) {
+          const date = addDays(start, i);
+          salts[date] = (s.saltByDate[date] ?? -1) + 1;
+        }
+        const { date: _date, salt: _salt, ...base } = planInput(s, start, 0);
+        const fresh = generateWeekPlan(base, start, 7, salts);
+        const plans = { ...s.plans };
+        for (const [date, plan] of Object.entries(fresh)) {
+          const old = s.plans[date];
+          const eaten = new Set(s.log.filter((e) => e.date === date).map((e) => e.slot));
+          plans[date] = old
+            ? { ...plan, slots: plan.slots.map((sp) => (eaten.has(sp.slot) ? old.slots.find((o) => o.slot === sp.slot) ?? sp : sp)) }
+            : plan;
+        }
+        set({ plans, saltByDate: { ...s.saltByDate, ...salts } });
+      },
       setOnboarded: (onboarded) => set({ onboarded }),
       setGeminiKey: (geminiKey) => set({ geminiKey: geminiKey.trim() }),
       addToPantry: (ids) =>
@@ -206,6 +248,8 @@ export const useStore = create<State>()(
         set({
           onboarded: false,
           persons: [newPerson('', 'male'), newPerson('', 'female')],
+          rules: DEFAULT_RULES,
+          menu: DEFAULT_MENU,
           mealCount: 'auto',
           pantry: { have: {}, soon: {} },
           shopping: {},
@@ -346,5 +390,7 @@ function planInput(s: State, date: string, salt: number): PlanInput {
     prefs: s.prefs,
     strictPantry: s.strictPantry,
     salt,
+    rules: s.rules,
+    menu: s.menu,
   };
 }
