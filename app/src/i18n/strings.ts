@@ -130,7 +130,7 @@ const S = {
   navCuisine: { en: 'Cuisine preferences', hi: 'Khane ki pasand', gu: 'ખાવાની પસંદગી' },
   navRules: { en: 'Meal planning rules', hi: 'Plan ke niyam', gu: 'પ્લાનના નિયમો' },
   navMenu: { en: 'My menu', hi: 'Mera menu', gu: 'મારું મેનુ' },
-  navCustomize: { en: 'Customize ingredients', hi: 'Cheezein badlo', gu: 'સામગ્રી બદલો' },
+  navCustomize: { en: 'Edit ingredients', hi: 'Cheezein badlo', gu: 'સામગ્રી બદલો' },
   navSaved: { en: 'Saved recipes', hi: 'Saved recipes', gu: 'સેવ કરેલી વાનગી' },
   navSettings: { en: 'Settings', hi: 'Settings', gu: 'સેટિંગ્સ' },
   planWeek: { en: 'Plan my week', hi: 'Plan my week', gu: 'Plan my week' },

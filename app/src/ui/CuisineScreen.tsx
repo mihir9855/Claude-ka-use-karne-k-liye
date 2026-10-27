@@ -5,9 +5,19 @@ import type { Cuisine } from '../core/types';
 import { BUILTIN_DISHES } from '../data/dishes';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
-import { Icon } from './Icon';
+import { Icon, IconTile, type IconName } from './Icon';
 import { Label, Muted, Toggle } from './kit';
 import { C, RADIUS, SHADOW } from './theme';
+
+const ICON: Record<Cuisine, IconName> = {
+  north: 'wheat',
+  west: 'bean',
+  south: 'bowl',
+  east: 'drop',
+  northeast: 'leaf',
+  continental: 'apple',
+  indochinese: 'coffee',
+};
 
 export const CUISINES: Cuisine[] = ['north', 'west', 'south', 'east', 'northeast', 'continental', 'indochinese'];
 function CuisineTile({ cuisine, count, on, star, onPress, onStar }: { cuisine: Cuisine; count: number; on: boolean; star: boolean; onPress: () => void; onStar?: () => void }) {
@@ -20,6 +30,7 @@ function CuisineTile({ cuisine, count, on, star, onPress, onStar }: { cuisine: C
           <Icon name="heart" size={16} color={star ? C.danger : C.muted} />
         </Pressable>
       )}
+      <IconTile name={ICON[cuisine]} size={48} icon={26} width={1.5} />
       <Text style={[s.name, on && { color: C.primary }]} numberOfLines={1}>
         {name}
       </Text>
@@ -74,7 +85,7 @@ export function CuisineScreen() {
 
 const s = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tile: { flexBasis: '47%', flexGrow: 1, minWidth: 0, alignItems: 'flex-start', gap: 2, paddingVertical: 14, paddingLeft: 14, paddingRight: 44, backgroundColor: C.card, borderRadius: RADIUS.xl, ...SHADOW },
+  tile: { flexBasis: '47%', flexGrow: 1, minWidth: 0, alignItems: 'flex-start', gap: 2, paddingVertical: 14, paddingLeft: 14, paddingRight: 14, backgroundColor: C.card, borderRadius: RADIUS.xl, ...SHADOW },
   tileOn: { borderColor: C.primary, backgroundColor: C.primarySoft },
   name: { fontSize: 15, fontWeight: '700', color: C.text, maxWidth: '100%' },
   count: { fontSize: 12, color: C.muted, fontWeight: '600', maxWidth: '100%' },

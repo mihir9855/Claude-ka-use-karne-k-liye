@@ -9,7 +9,7 @@ import type { DayPlan, MealOption } from '../core/types';
 import { t, type StrKey } from '../i18n/strings';
 import { planSignature, useAllDishes, useStore } from '../state/store';
 import { dateLabel, dishName, r } from './helpers';
-import { Icon } from './Icon';
+import { Icon, IconTile, LineScene, SLOT_ICON } from './Icon';
 import { Button, Chip, Muted, Pill, Row, Segmented } from './kit';
 import { useNav } from './nav';
 import { C, MEAL, RADIUS, SHADOW } from './theme';
@@ -118,6 +118,7 @@ export function PlannerScreen() {
     return (
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
         <View style={s.empty}>
+          <LineScene size={170} />
           <Text style={s.emptyTitle} numberOfLines={1}>
             {tx('weekHero')}
           </Text>
@@ -145,7 +146,7 @@ export function PlannerScreen() {
         onPress={() => nav.go({ k: 'meal', date, i })}
         style={({ pressed }) => [s.wRow, (eaten || pressed) && { opacity: 0.5 }]}
       >
-        <View style={[s.dot, { backgroundColor: col.strong }]} />
+        <Icon name={SLOT_ICON[sp.slot]} size={18} color={C.muted} width={1.8} />
         <Text style={s.wSlot} numberOfLines={1}>
           {tx(`slot_${sp.slot}` as StrKey)}
         </Text>
@@ -276,6 +277,7 @@ export function PlannerScreen() {
             onPress={() => nav.go({ k: 'meal', date, i })}
             style={({ pressed }) => [s.meal, eaten && { backgroundColor: C.goodSoft }, pressed && { opacity: 0.85 }]}
           >
+            <IconTile name={SLOT_ICON[sp.slot]} size={56} icon={28} width={1.5} />
             <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
               <Row style={{ flexWrap: 'nowrap', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
@@ -354,16 +356,17 @@ const s = StyleSheet.create({
   dayBtnText: { color: C.text, fontSize: 13, fontWeight: '600' },
   opt: { width: 28, height: 28, borderRadius: RADIUS.sm, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   optText: { fontSize: 12, fontWeight: '700', color: C.text },
-  meal: { gap: 6, borderRadius: RADIUS.xl, padding: 14, backgroundColor: C.card, ...SHADOW },
+  mealArt: { width: 72, height: 72, borderRadius: RADIUS.lg, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  meal: { flexDirection: 'row', gap: 12, borderRadius: RADIUS.xl, padding: 14, backgroundColor: C.card, ...SHADOW },
   mealLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: C.muted, flexShrink: 1 },
   mealSub: { fontSize: 13, color: C.muted },
   dishRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dishName: { flex: 1, fontSize: 16, fontWeight: '600', color: C.text },
+  dishName: { flex: 1, fontSize: 15, fontWeight: '600', color: C.text },
   wCard: { backgroundColor: C.card, borderRadius: RADIUS.xl, overflow: 'hidden', ...SHADOW },
   wHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 16, minHeight: 44, backgroundColor: C.surface },
   wHeadText: { flex: 1, fontSize: 15, fontWeight: '700', color: C.text },
   wToday: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  wRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, minHeight: 42 },
+  wRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, minHeight: 46 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   wSlot: { width: 76, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.6, color: C.muted },
   wMore: { fontSize: 12, fontWeight: '600', color: C.muted },

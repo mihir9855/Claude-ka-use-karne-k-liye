@@ -78,9 +78,9 @@ const PAGE_TITLE: Record<string, StrKey> = {
 };
 
 const TABS: NavItem<Tab>[] = [
-  { key: 'planner', label: 'tabPlanner' },
-  { key: 'grocery', label: 'tabGrocery' },
-  { key: 'nutrition', label: 'tabNutrition' },
+  { key: 'planner', label: 'tabPlanner', art: 'calendar' },
+  { key: 'grocery', label: 'tabGrocery', art: 'cart' },
+  { key: 'nutrition', label: 'tabNutrition', art: 'chart' },
 ];
 
 function Shell() {
@@ -135,25 +135,25 @@ function Shell() {
 
   const open = (k: Exclude<Page['k'], 'meal'>) => () => setStack([{ k }]);
   const sections: { title?: StrKey; items: DrawerItem[] }[] = [
-    { items: [{ key: 'home', label: 'tabPlanner', onPress: () => { setStack([]); setTab('planner'); } }] },
+    { items: [{ key: 'home', label: 'tabPlanner', badge: 'home', onPress: () => { setStack([]); setTab('planner'); } }] },
     {
       title: 'secPrefs',
       items: [
-        { key: 'family', label: 'navFamily', onPress: open('family') },
-        { key: 'cuisine', label: 'navCuisine', onPress: open('cuisine') },
-        { key: 'rules', label: 'navRules', onPress: open('rules') },
+        { key: 'family', label: 'navFamily', badge: 'users', onPress: open('family') },
+        { key: 'cuisine', label: 'navCuisine', badge: 'globe', onPress: open('cuisine') },
+        { key: 'rules', label: 'navRules', badge: 'rules', onPress: open('rules') },
       ],
     },
     {
       title: 'secKitchen',
       items: [
-        { key: 'menu', label: 'navMenu', onPress: open('menu') },
-        { key: 'customize', label: 'navCustomize', onPress: open('customize') },
-        { key: 'saved', label: 'navSaved', onPress: open('saved') },
-        { key: 'pantry', label: 'tabPantry', onPress: open('pantry') },
+        { key: 'menu', label: 'navMenu', badge: 'grid', onPress: open('menu') },
+        { key: 'customize', label: 'navCustomize', badge: 'pen', onPress: open('customize') },
+        { key: 'saved', label: 'navSaved', badge: 'heart', onPress: open('saved') },
+        { key: 'pantry', label: 'tabPantry', badge: 'pantry', onPress: open('pantry') },
       ],
     },
-    { items: [{ key: 'settings', label: 'navSettings', onPress: open('settings') }] },
+    { items: [{ key: 'settings', label: 'navSettings', badge: 'settings', onPress: open('settings') }] },
   ];
 
   let body: ReactNode = null;

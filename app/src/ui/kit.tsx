@@ -215,9 +215,10 @@ export function Field({ label, ...p }: TextInputProps & { label: string }) {
 }
 
 /** A tappable row with a radio dot, a title and one line of detail. */
-export function Choice({ title, sub, on, onPress }: { title: string; sub?: string; on: boolean; onPress: () => void }) {
+export function Choice({ title, sub, on, onPress, lead }: { title: string; sub?: string; on: boolean; onPress: () => void; lead?: ReactNode }) {
   return (
     <Pressable accessibilityRole="radio" accessibilityLabel={title} accessibilityState={{ selected: on }} onPress={onPress} style={[s.choice, on && s.choiceOn]}>
+      {lead ? <View style={s.choiceLead}>{lead}</View> : null}
       <View style={[s.choiceDot, on && { borderColor: C.primary }]}>{on && <View style={s.choiceIn} />}</View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={s.choiceTitle} numberOfLines={1}>
@@ -249,6 +250,7 @@ export function Bar({ value, max, color = C.primary }: { value: number; max: num
 const s = StyleSheet.create({
   choice: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: RADIUS.lg, backgroundColor: C.card, ...SHADOW },
   choiceOn: { borderColor: C.primary, backgroundColor: C.primarySoft },
+  choiceLead: { width: 44, height: 44, borderRadius: RADIUS.md, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   choiceDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   choiceIn: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary },
   choiceTitle: { fontSize: 16, fontWeight: '700', color: C.text },

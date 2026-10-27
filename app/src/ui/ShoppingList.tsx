@@ -9,7 +9,7 @@ import { AISLES, aisleOf, type Aisle, groupShopping, shoppingHtml, shoppingText 
 import { INGREDIENT_BY_ID, INGREDIENTS } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
-import { Icon } from './Icon';
+import { AISLE_ICON, Icon, IconTile } from './Icon';
 import { Button, Chip, Collapse, Muted, Pill, Row } from './kit';
 import { C, RADIUS, SHADOW } from './theme';
 
@@ -105,6 +105,7 @@ export function ShoppingList({ onAddOwn, planItems = {}, usedIn = {} }: { onAddO
             {tx('listTitle')}
           </Text>
         </View>
+        <IconTile name="cart" size={56} icon={28} width={1.4} />
       </View>
 
       <Row>
@@ -126,6 +127,7 @@ export function ShoppingList({ onAddOwn, planItems = {}, usedIn = {} }: { onAddO
         groups.map((g) => (
           <View key={g.aisle} style={s.aisle}>
             <View style={s.aisleHead}>
+              <IconTile name={AISLE_ICON[g.aisle] ?? 'cart'} size={38} icon={20} width={1.6} />
               <Text style={s.aisleName} numberOfLines={1}>
                 {aisleName(g.aisle)}
               </Text>
@@ -170,6 +172,7 @@ const s = StyleSheet.create({
   heroSub: { color: C.muted, fontSize: 14 },
   aisle: { backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 14, gap: 4, ...SHADOW },
   aisleHead: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 6 },
+  aisleArt: { width: 40, height: 40, borderRadius: RADIUS.md, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   aisleName: { flex: 1, minWidth: 0, fontSize: 12, fontWeight: '600', color: C.muted, textTransform: 'uppercase', letterSpacing: 1 },
   item: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 50 },
   itemLine: { borderTopWidth: 1, borderTopColor: C.line },

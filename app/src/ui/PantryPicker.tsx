@@ -3,6 +3,8 @@ import type { Ingredient } from '../core/types';
 import { INGREDIENTS } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
+import { aisleOf } from '../core/shopping';
+import { AISLE_ICON, Icon } from './Icon';
 import { Chip, Collapse, Label, Row } from './kit';
 
 export const GROUP_ORDER: Ingredient['group'][] = [
@@ -53,6 +55,7 @@ export function PantryShelves({
         return collapsible ? (
           <Collapse
             key={g}
+            lead={<Icon name={AISLE_ICON[aisleOf(items[0])] ?? 'cart'} size={22} width={1.6} />}
             title={`${title}  ${have.length}/${items.length}`}
             summary={have.length ? have.map((i) => i.name[lang]).join(', ') : undefined}
           >

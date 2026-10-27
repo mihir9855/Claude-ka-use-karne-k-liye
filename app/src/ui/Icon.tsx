@@ -1,5 +1,6 @@
+import { View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { C } from './theme';
+import { C, RADIUS } from './theme';
 
 // 24x24 outline icons (Lucide-style geometry), stroke only.
 type Def = { d?: string[]; c?: [number, number, number][] };
@@ -38,6 +39,20 @@ const ICONS = {
   sun: { d: ['M12 2v2', 'M12 20v2', 'm4.93 4.93 1.41 1.41', 'm17.66 17.66 1.41 1.41', 'M2 12h2', 'M20 12h2', 'm6.34 17.66-1.41 1.41', 'm19.07 4.93-1.41 1.41'], c: [[12, 12, 4]] },
   moon: { d: ['M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'] },
   snack: { d: ['M2 17a5 5 0 0 0 10 0c0-2.76-2.5-5-5-3-2.5-2-5 .24-5 3Z', 'M12 17a5 5 0 0 0 10 0c0-2.76-2.5-5-5-3-2.5-2-5 .24-5 3Z', 'M7 14c3.22-2.91 4.29-8.75 5-12 1.66 2.38 4.94 9 5 12', 'M22 9c-4.29 0-7.14-2.33-10-7 5.71 0 10 1.67 10 7Z'] },
+  sunrise: { d: ['M12 2v8', 'm4.93 10.93 1.41 1.41', 'M2 18h2', 'M20 18h2', 'm19.07 10.93-1.41 1.41', 'M22 22H2', 'm8 6 4-4 4 4', 'M16 18a4 4 0 0 0-8 0'] },
+  apple: { d: ['M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z', 'M10 2c1 .5 2 2 2 5'] },
+  bowl: { d: ['M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z', 'M7 21h10', 'M19.5 12 22 6', 'M16.25 3c.27.1.8.53.75 1.36-.06.83-.93 1.2-1 2.02-.05.78.34 1.24.73 1.62', 'M11.25 3c.27.1.8.53.74 1.36-.05.83-.93 1.2-.98 2.02-.06.78.33 1.24.72 1.62', 'M6.25 3c.27.1.8.53.75 1.36-.06.83-.93 1.2-1 2.02-.05.78.34 1.24.74 1.62'] },
+  wheat: { d: ['M2 22 16 8', 'M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z', 'M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z', 'M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z', 'M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z', 'M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z', 'M18.47 13.47 20 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L12 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z'] },
+  drop: { d: ['M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z'] },
+  dumbbell: { d: ['M6 7v10', 'M3 10v4', 'M18 7v10', 'M21 10v4', 'M6 12h12'] },
+  users: { d: ['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', 'M22 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'], c: [[9, 7, 4]] },
+  globe: { d: ['M2 12h20', 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'], c: [[12, 12, 10]] },
+  grid: { d: ['M3 3h7v7H3z', 'M14 3h7v7h-7z', 'M14 14h7v7h-7z', 'M3 14h7v7H3z'] },
+  chart: { d: ['M3 3v18h18', 'M18 17V9', 'M13 17V5', 'M8 17v-3'] },
+  home: { d: ['m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M9 22V12h6v10'] },
+  milk: { d: ['M8 2h8', 'M9 2v2.789a4 4 0 0 1-.672 2.219l-.656.984A4 4 0 0 0 7 10.212V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-9.789a4 4 0 0 0-.672-2.219l-.656-.984A4 4 0 0 1 15 4.788V2', 'M7 15a6.472 6.472 0 0 1 5 0 6.47 6.47 0 0 0 5 0'] },
+  bean: { d: ['M10.165 6.598C9.954 7.478 9.64 8.36 9 9c-.64.64-1.521.954-2.402 1.165A6 6 0 0 0 8 22c7.732 0 14-6.268 14-14a6 6 0 0 0-11.835-1.402Z', 'M5.341 10.62a4 4 0 1 0 5.279-5.28'] },
+  rules: { d: ['M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2', 'M9 2h6v4H9z', 'm9 14 2 2 4-4'] },
 } satisfies Record<string, Def>;
 
 export type IconName = keyof typeof ICONS;
@@ -53,10 +68,56 @@ export function Icon({ name, size = 20, color = C.text, width = 2 }: { name: Ico
 }
 
 export const SLOT_ICON: Record<string, IconName> = {
-  breakfast: 'coffee',
-  midmorning: 'snack',
-  lunch: 'sun',
-  evening: 'snack',
+  breakfast: 'sunrise',
+  midmorning: 'apple',
+  lunch: 'today',
+  evening: 'coffee',
   dinner: 'moon',
-  bedtime: 'moon',
+  bedtime: 'milk',
 };
+
+/** One icon per store aisle. */
+export const AISLE_ICON: Record<string, IconName> = {
+  veg: 'leaf',
+  fruit: 'apple',
+  dairy: 'milk',
+  pulse: 'bean',
+  staple: 'wheat',
+  dry: 'snack',
+  oil: 'drop',
+  other: 'cart',
+};
+
+/** A larger line drawing for welcome and empty screens: a bowl with a few ingredients around it, one ink colour. */
+export function LineScene({ size = 200 }: { size?: number }) {
+  const small = Math.round(size * 0.22);
+  const pos = (style: object) => ({ position: 'absolute' as const, ...style });
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: size * 0.86, height: size * 0.86, borderRadius: size, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name="bowl" size={Math.round(size * 0.5)} color={C.text} width={1.1} />
+      </View>
+      <View style={pos({ left: 0, top: size * 0.12 })}>
+        <Icon name="leaf" size={small} color={C.text} width={1.2} />
+      </View>
+      <View style={pos({ right: 0, top: size * 0.04 })}>
+        <Icon name="wheat" size={small} color={C.text} width={1.2} />
+      </View>
+      <View style={pos({ left: size * 0.06, bottom: size * 0.06 })}>
+        <Icon name="apple" size={small * 0.9} color={C.text} width={1.2} />
+      </View>
+      <View style={pos({ right: size * 0.06, bottom: size * 0.1 })}>
+        <Icon name="drop" size={small * 0.8} color={C.text} width={1.2} />
+      </View>
+    </View>
+  );
+}
+
+/** A line icon on a soft rounded tile: the one picture style used across the app. */
+export function IconTile({ name, size = 44, icon, tint = C.surface, color = C.text, width = 1.6 }: { name: IconName; size?: number; icon?: number; tint?: string; color?: string; width?: number }) {
+  return (
+    <View style={{ width: size, height: size, borderRadius: size > 60 ? RADIUS.xl : RADIUS.lg, backgroundColor: tint, alignItems: 'center', justifyContent: 'center' }}>
+      <Icon name={name} size={icon ?? Math.round(size * 0.52)} color={color} width={width} />
+    </View>
+  );
+}

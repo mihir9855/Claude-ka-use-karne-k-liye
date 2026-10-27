@@ -8,7 +8,7 @@ import { INGREDIENT_BY_ID } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { useAllDishes, useStore } from '../state/store';
 import { dateLabel, dishName, ingName, r } from './helpers';
-import { Icon } from './Icon';
+import { Icon, IconTile, SLOT_ICON } from './Icon';
 import { Button, Chip, Muted, Pill, Row, Segmented } from './kit';
 import { C, MEAL, RADIUS, SHADOW } from './theme';
 
@@ -43,16 +43,19 @@ export function MealDetail({ date, index }: { date: string; index: number }) {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 32 }}>
-      <View style={{ gap: 4 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: col.strong }} />
-          <Text style={s.heroLabel} numberOfLines={1}>
-            {tx(`slot_${sp.slot}` as StrKey)}
+      <View style={s.hero}>
+        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: col.strong }} />
+            <Text style={s.heroLabel} numberOfLines={1}>
+              {tx(`slot_${sp.slot}` as StrKey)}
+            </Text>
+          </View>
+          <Text style={s.heroDate} numberOfLines={1}>
+            {`${lab.weekday} ${lab.day} ${lab.month}`}
           </Text>
         </View>
-        <Text style={s.heroDate} numberOfLines={1}>
-          {`${lab.weekday} ${lab.day} ${lab.month}`}
-        </Text>
+        <IconTile name={SLOT_ICON[sp.slot]} size={84} icon={44} width={1.3} />
       </View>
 
       {sp.options.length > 1 && !eaten && (
@@ -85,6 +88,7 @@ export function MealDetail({ date, index }: { date: string; index: number }) {
         return (
           <View key={id} style={s.dish}>
             <Row style={{ flexWrap: 'nowrap', gap: 12 }}>
+              <IconTile name="bowl" size={64} icon={32} width={1.4} />
               <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
                 {d && <Pill label={tx(`role_${d.role}` as StrKey)} />}
                 {d && (
@@ -141,6 +145,8 @@ export function MealDetail({ date, index }: { date: string; index: number }) {
 }
 
 const s = StyleSheet.create({
+  hero: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 18, ...SHADOW },
+  dishArt: { width: 68, height: 68, borderRadius: RADIUS.lg, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   heroLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.1, color: C.muted },
   heroDate: { fontSize: 28, fontWeight: '700', color: C.text, letterSpacing: -0.6 },
   eatBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 46, paddingHorizontal: 18, borderRadius: RADIUS.md, maxWidth: '100%' },

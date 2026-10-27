@@ -7,6 +7,7 @@ import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
 import { CuisinePicker } from './CuisineScreen';
 import { Button, Chip, Choice, Field, H, Label, Muted, Row, Segmented } from './kit';
+import { LineScene } from './Icon';
 import { PantryShelves } from './PantryPicker';
 import { AddItem } from './PantryScreen';
 import { C, RADIUS, SHADOW } from './theme';
@@ -135,11 +136,13 @@ export function OnboardScreen() {
   if (step === 0)
     return (
       <View style={s.welcome}>
-        <View style={{ flex: 1 }} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <LineScene size={260} />
+        </View>
         <View style={{ gap: 0, marginBottom: 28 }}>
           <Text style={s.welcomeTitle} numberOfLines={1}>Plan your</Text>
           <Text style={s.welcomeTitle} numberOfLines={1}>family's meals</Text>
-          <Text style={s.welcomeSub}>{tx('obWelcomeSub')}</Text>
+          <Text style={[s.welcomeSub, { marginTop: 10 }]}>{tx('obWelcomeSub')}</Text>
         </View>
         <View style={{ gap: 10 }}>
           <Button label={tx('start')} onPress={() => setStep(1)} />

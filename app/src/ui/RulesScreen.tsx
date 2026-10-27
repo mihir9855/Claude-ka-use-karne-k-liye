@@ -2,6 +2,7 @@ import { ScrollView, View } from 'react-native';
 import type { PlanRules, ThaliStyle } from '../core/types';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
+import { Icon, type IconName } from './Icon';
 import { Choice, Field, Label, Toggle } from './kit';
 
 const LUNCH: { v: ThaliStyle; t: string; sub: string }[] = [
@@ -20,18 +21,18 @@ export function RulesScreen() {
   const rules = useStore((s) => s.rules);
   const setRules = useStore((s) => s.setRules);
   const tx = (k: StrKey) => t(lang, k);
-  const opts: { value: PlanRules['stapleRule']; label: StrKey }[] = [
-    { value: 'any', label: 'stapleAny' },
-    { value: 'rice', label: 'stapleRice' },
-    { value: 'bread', label: 'stapleBread' },
-    { value: 'alternate', label: 'stapleAlt' },
+  const opts: { value: PlanRules['stapleRule']; label: StrKey; art: IconName }[] = [
+    { value: 'any', label: 'stapleAny', art: 'grid' },
+    { value: 'rice', label: 'stapleRice', art: 'bowl' },
+    { value: 'bread', label: 'stapleBread', art: 'wheat' },
+    { value: 'alternate', label: 'stapleAlt', art: 'refresh' },
   ];
   return (
     <ScrollView contentContainerStyle={{ padding: 16, gap: 18 }}>
       <View style={{ gap: 8 }}>
         <Label>{tx('stapleQ')}</Label>
         {opts.map((o) => (
-          <Choice key={o.value} title={tx(o.label)} on={rules.stapleRule === o.value} onPress={() => setRules({ stapleRule: o.value })} />
+          <Choice key={o.value} title={tx(o.label)} lead={<Icon name={o.art} size={22} width={1.6} />} on={rules.stapleRule === o.value} onPress={() => setRules({ stapleRule: o.value })} />
         ))}
       </View>
       <View style={{ gap: 8 }}>

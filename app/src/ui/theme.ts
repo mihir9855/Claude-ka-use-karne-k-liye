@@ -24,12 +24,12 @@ export const C = {
 
 /** One small dot colour per time of day. The tile itself stays plain. */
 export const MEAL = {
-  breakfast: { strong: '#D9A021', soft: '#F6F3EC', ink: '#3A3833' },
-  midmorning: { strong: '#4B9DB3', soft: '#F6F3EC', ink: '#3A3833' },
-  lunch: { strong: '#C2410C', soft: '#F6F3EC', ink: '#3A3833' },
-  evening: { strong: '#4E9E7A', soft: '#F6F3EC', ink: '#3A3833' },
-  dinner: { strong: '#5E5BA8', soft: '#F6F3EC', ink: '#3A3833' },
-  bedtime: { strong: '#8A8498', soft: '#F6F3EC', ink: '#3A3833' },
+  breakfast: { strong: '#1A1A18', soft: '#F6F3EC', ink: '#3A3833' },
+  midmorning: { strong: '#4A4843', soft: '#F6F3EC', ink: '#3A3833' },
+  lunch: { strong: '#77746B', soft: '#F6F3EC', ink: '#3A3833' },
+  evening: { strong: '#A19D91', soft: '#F6F3EC', ink: '#3A3833' },
+  dinner: { strong: '#C5C1B5', soft: '#F6F3EC', ink: '#3A3833' },
+  bedtime: { strong: '#DDD9CD', soft: '#F6F3EC', ink: '#3A3833' },
 } as const;
 
 export const R = 12;

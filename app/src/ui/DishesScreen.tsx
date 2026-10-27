@@ -17,6 +17,7 @@ import { dishMacros as macrosOf } from '../core/nutrition';
 import { ScanError } from '../core/scan';
 import { INGREDIENT_BY_ID } from '../data/ingredients';
 import { Button, Card, Chip, Field, H, Label, Muted, Row, Search, Segmented } from './kit';
+import { IconTile } from './Icon';
 import { C, RADIUS, SHADOW } from './theme';
 
 const ROLES: DishRole[] = ['complete', 'main', 'staple', 'side', 'snack'];
@@ -155,6 +156,7 @@ function DishRow({ dish }: { dish: Dish }) {
         onPress={() => setOpen(!open)}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pref === 'dislike' ? 0.45 : 1 }}
       >
+        <IconTile name="bowl" size={46} icon={24} width={1.5} />
         <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
           <Row style={{ flexWrap: 'nowrap', gap: 6 }}>
             <Text style={{ fontSize: 16, fontWeight: '700', color: C.text, flexShrink: 1 }} numberOfLines={1}>
