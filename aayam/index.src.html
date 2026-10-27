@@ -174,37 +174,17 @@ details.adv[open]>summary::before{content:"－ "}
 @media (prefers-reduced-motion:reduce){.enter{animation:none}.opt{transition:none}.tabs button{transition:none}}
 
 /* mandovar */
-.mover{padding:12px}
-.mover svg{display:block;width:100%;height:auto;max-width:420px;margin:0 auto}
-.mover .band{fill:#e9eef0;stroke:#fff;stroke-width:1;cursor:pointer}
-.mover .band.b{fill:#d9e1e4}
-.mover .band.on{fill:var(--acc)}
-.mover .wallr{fill:#c5ced4;opacity:.6}
-.mover .ldr{stroke:var(--line);fill:none}
-.mover .lbl{font-size:11.5px;fill:var(--ink);cursor:pointer}
-.mover .lbl.on{font-weight:700;fill:var(--acc)}
-.mover .lbl .hh{fill:var(--muted)}
-.mover .base{stroke:var(--ink);stroke-width:1.2;stroke-dasharray:4 3}
-.mover .bl{font-size:11px;fill:var(--muted)}
-.mlist{display:flex;flex-direction:column;gap:14px}
-.mc{border:2px solid var(--line);cursor:pointer;scroll-margin-top:84px}
-.mc.on{border-color:var(--acc);background:#fbfdfd}
-.mh{display:flex;align-items:flex-start;gap:12px}
-.mn{width:28px;height:28px;border-radius:50%;background:var(--soft);color:var(--muted);display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
-.mc.on .mn{background:var(--acc);color:#fff}
-.mc h3{font-family:var(--serif);font-size:19px;margin:0;line-height:1.3}
-.mt{font-size:12.5px;color:var(--muted)}
-.mv{margin-left:auto;font-family:var(--serif);font-size:24px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
-.mr{margin:10px 0 0;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
-.mfig{margin:12px 0 0;border:1px solid var(--line);border-radius:14px;padding:8px;color:var(--ink)}
-.mfig svg{display:block;width:100%;height:auto;max-height:520px}
-.mfig .cap{font-size:12px;color:var(--muted);margin:6px 2px 0}
-.mfig .dm{stroke:var(--acc);stroke-width:1.6;fill:none}
-.mfig .dsh{stroke:var(--acc);stroke-width:1;stroke-dasharray:6 5;fill:none}
-.mfig text{fill:var(--acc);font-family:var(--sans);font-weight:700;font-variant-numeric:tabular-nums}
-.mfig .ln{fill:none;stroke:#111;stroke-width:1.4}
-.mfig text.tx{fill:var(--ink);font-weight:500}
-.msub{margin-top:10px}
+.mrow>summary{list-style:none;display:flex;justify-content:space-between;align-items:baseline;gap:12px;cursor:pointer}
+.mrow>summary::-webkit-details-marker{display:none}
+.mhd{display:flex;justify-content:space-between;align-items:baseline;gap:12px;width:100%}
+.mrow.r{display:block}
+.mrow summary>span,.mhd>span{font-weight:600}
+.mrow summary small,.mhd small{display:block;color:var(--muted);font-weight:400;font-size:12.5px}
+.mrow summary b,.mhd b{font-family:var(--serif);font-size:19px;white-space:nowrap}
+.msub{margin:10px 0 2px 14px;padding-left:12px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted)}
+.msub div{display:flex;justify-content:space-between;gap:12px}
+.msub b{font-family:var(--sans);font-weight:600;color:var(--ink)}
+.mtot{font-weight:700}
 </style>
 <header class="top"><div class="wrap">
   <div class="brand"><img id="logo" alt=""><div><b>આયામ</b><small>બૃહદ ટેમ્પલ · શિલ્પ રત્નાકર</small></div></div>
@@ -215,7 +195,6 @@ details.adv[open]>summary::before{content:"－ "}
   </nav>
 </div></header>
 
-<!--PLATE-->
 <main class="wrap">
 
 <!-- ============ 1 · NAKSHATRA ============ -->
@@ -309,40 +288,22 @@ details.adv[open]>summary::before{content:"－ "}
 
 <!-- ============ 3 · MANDOVAR ============ -->
 <section id="tab-mand" class="page" hidden>
-  <header><h1>મંડોવર</h1><p class="lead">પીઠના ઉપરથી છજ્જાના ઉપર સુધી, દરેક થરનું અલગ માપ અને રેખાકૃતિ. ગર્ભગૃહ અને દીવાલ પ્લાનિંગ ટેબમાંથી આવે છે.</p></header>
+  <header><h1>મંડોવર</h1><p class="lead">ગર્ભગૃહ અને દીવાલ પ્લાનિંગ ટેબમાંથી આવે છે. અહીં મંડોવરની ઊંચાઈ અને દરેક થરનું માપ છે.</p></header>
   <div class="work">
     <div class="col">
-      <div>
-        <h2><span class="n">1</span>પ્લાનિંગનું માપ</h2>
-        <div class="card" id="m-base"></div>
-        <div class="seg" style="margin-top:10px"><button class="pill" id="m-toPlan">પ્લાનિંગમાં બદલો</button></div>
-      </div>
-      <div>
-        <h2><span class="n">2</span>મંડોવરનો પ્રકાર</h2>
-        <div class="seg" id="m-type" role="group" aria-label="મંડોવરનો પ્રકાર"></div>
-      </div>
-      <div>
-        <h2><span class="n">3</span>ઊંચાઈ</h2>
-        <div class="seg" id="m-meth" role="group" aria-label="ઊંચાઈની રીત"></div>
-        <p class="hint">ગ્રંથની ચાર રીત. દરેક રીતનું માપ બટન પર છે.</p>
-        <div class="stats" id="m-stats" style="margin-top:14px"></div>
-        <details class="adv" style="margin-top:12px"><summary>ઊંચાઈ જાતે નાખો</summary>
-          <div style="padding-top:12px"><div id="m-ov"></div><div class="seg"><button class="reset" id="m-resetH">↺ ગ્રંથની ઊંચાઈ લો</button></div></div>
-        </details>
-      </div>
-      <div>
-        <h2><span class="n">4</span>માપ કેટલા સુધી</h2>
-        <div class="seg" id="m-unit" role="group" aria-label="માપની ચોકસાઈ"></div>
-      </div>
+      <div id="m-hero"></div>
+      <details class="adv"><summary>બીજા વિકલ્પો</summary>
+        <div style="padding-top:12px;display:flex;flex-direction:column;gap:18px">
+          <div><span class="lab">મંડોવરનો પ્રકાર</span><div class="seg" id="m-type" style="margin-top:8px"></div></div>
+          <div><span class="lab">ઊંચાઈની રીત</span><div class="seg" id="m-meth" style="margin-top:8px"></div></div>
+          <div><span class="lab">માપ કેટલા સુધી</span><div class="seg" id="m-unit" style="margin-top:8px"></div></div>
+          <div><div id="m-ov"></div><div class="seg"><button class="reset" id="m-resetH">↺ ગ્રંથની ઊંચાઈ લો</button></div></div>
+        </div>
+      </details>
     </div>
     <div class="col">
       <div id="m-warn"></div>
-      <div class="card mover" id="m-over"></div>
-      <div>
-        <h2><span class="n">5</span>થર પ્રમાણે માપ</h2>
-        <p class="sub">ક્રમ નીચેથી ઉપર, પીઠના ઉપરથી શરૂ. કણપીઠ, પીઠ અને દ્વાર આમાં નથી.</p>
-        <div class="mlist" id="m-cards"></div>
-      </div>
+      <div><h2>થર પ્રમાણે ઊંચાઈ</h2><p class="sub">નીચેથી ઉપર. જેમાં ઉપ-ભાગ છે તેને દબાવો.</p><div class="card rows" id="m-cards"></div></div>
     </div>
   </div>
 </section>
@@ -673,7 +634,7 @@ const MD=(function(){
     {id:"sam",name:"સામાન્ય",base:75,thars:()=>[t(KH,5),t(KU,20),t(KA,8),t(AN,2.5),t(KE,8),t(BH,8),t(PKA,8),t(AN,2.5),t(CH,13,{out:10,note:N_CH})]},
     {id:"mine",name:"મારો મંડોવર",base:144,thars:()=>[t("કુંભો",24),t("કળશો",9),t("કેવાર દાબડી",10),t("કેવાર",7),t("જાંઘી",28),t("પટ્ટી",6),t("ડોઢિયો",18),t("ભરણી",7),t("કપોતાલી",8),t("છાજું",12,{out:10})]}];
 
-  let sel=-1,V=null;
+  let V=null;
   const unit=()=>S.mu===1?1:8;
   const roundU=x=>Math.round(x*8/unit())*unit()/8;
 
@@ -696,53 +657,12 @@ const MD=(function(){
     return {g,pw,ty,H,hAll,hasOv,u,total:from,rows,proj:last&&last.out!=null?last.out:null,mm};
   }
 
-  const PLK=1276/144,PWD=893;
-  function plateFig(r){
-    const y0=r.pl[0]*PLK,y1=r.pl[1]*PLK,h=y1-y0,pad=2,W=h>=150?PWD:Math.min(PWD,Math.max(260,h*6));
-    const M=250,vw=W+M,fs=Math.round(15*vw/560),dx=W+40,tk=fs*.45,yt=y0-pad-fs,vh=h+2*pad+2*fs,ym=(y0+y1)/2;
-    let o='<svg viewBox="-6 '+yt.toFixed(1)+' '+(vw+6)+' '+vh.toFixed(1)+'" role="img" aria-label="'+esc(r.x.n)+' ની રેખાકૃતિ">';
-    o+='<svg x="0" y="'+(y0-pad).toFixed(1)+'" width="'+W+'" height="'+(h+2*pad).toFixed(1)+'" viewBox="0 '+(y0-pad).toFixed(1)+' '+W+' '+(h+2*pad).toFixed(1)+'"><use href="#plate86"/></svg>';
-    o+='<path class="dsh" d="M0 '+y0.toFixed(1)+'H'+(dx+tk).toFixed(1)+'M0 '+y1.toFixed(1)+'H'+(dx+tk).toFixed(1)+'"/>';
-    o+='<path class="dm" d="M'+dx+' '+y0.toFixed(1)+'V'+y1.toFixed(1)+'M'+(dx-tk)+' '+y0.toFixed(1)+'H'+(dx+tk)+'M'+(dx-tk)+' '+y1.toFixed(1)+'H'+(dx+tk)+'"/>';
-    o+='<text x="'+(dx+tk+fs*.5).toFixed(1)+'" y="'+(ym+fs*.35).toFixed(1)+'" font-size="'+fs+'">'+fe(r.h)+'</text>';
-    return o+'</svg><p class="cap">પુસ્તકનો પ્લેટ (પૃ. 86) માંથી આ થર. થરની સીમા ભાગના પ્રમાણે, અંદાજે.</p>';}
-  function lineFig(r){
-    const H=Math.max(56,Math.min(210,r.h*Math.min(40,210/Math.max(r.h,.1)))),x0=70,x1=250,y0=20,dx=x1+36;
-    let o='<svg viewBox="0 0 360 '+(H+40)+'" role="img" aria-label="'+esc(r.x.n)+' ની રેખાકૃતિ" style="max-width:420px">';
-    o+='<rect class="ln" x="'+x0+'" y="'+y0+'" width="'+(x1-x0)+'" height="'+H.toFixed(1)+'"/>';
-    o+='<path class="dm" d="M'+dx+' '+y0+'V'+(y0+H).toFixed(1)+'M'+(dx-5)+' '+y0+'H'+(dx+5)+'M'+(dx-5)+' '+(y0+H).toFixed(1)+'H'+(dx+5)+'"/>';
-    o+='<text x="'+(dx+10)+'" y="'+(y0+H/2+5).toFixed(1)+'" font-size="14">'+fe(r.h)+'</text>';
-    o+='<text class="tx" x="'+((x0+x1)/2)+'" y="'+(y0+H/2+5).toFixed(1)+'" font-size="14" text-anchor="middle">'+esc(r.x.n)+'</text>';
-    return o+'</svg><p class="cap">આ પ્રકારનો પુસ્તકનો પ્લેટ હજી ઉમેર્યો નથી. અહીં ફક્ત થરની ઊંચાઈ બતાવી છે.</p>';}
-
-  function overview(){
-    const svg=V.total>0?(()=>{
-      const W=380,top=16,bot=34,HH=560,sy=(HH-top-bot)/V.total,x0=46,wallW=26;
-      const maxOut=Math.max(...V.rows.map(r=>r.out!=null?r.out:V.u)),kx=Math.min(10,80/Math.max(maxOut,.001));
-      const yBase=top+V.total*sy;let y=yBase,bands=[],lab=[];
-      V.rows.forEach((r,i)=>{const h=r.h*sy,yt=y-h;
-        const o=r.out!=null?r.out:(/^(જંઘ|જાંઘ)/.test(r.x.n)?0:V.u),bw=Math.max(o*kx,.5);
-        bands.push('<rect class="band'+(i%2?' b':'')+(i===sel?' on':'')+'" data-mi="'+i+'" x="'+x0+'" y="'+yt.toFixed(1)+'" width="'+(bw+14).toFixed(1)+'" height="'+Math.max(h,.6).toFixed(1)+'"/>');
-        lab.push(yt+h/2);y=yt;});
-      const gap=15;let pos=lab.slice();for(let a=1;a<pos.length;a++)if(pos[a]>pos[a-1]-gap)pos[a]=pos[a-1]-gap;
-      const lo=Math.min(...pos);if(lo<top+6){const s=top+6-lo;pos=pos.map(p=>p+s)}
-      const lx=x0+14+80+18;let o='<rect class="wallr" x="'+(x0-wallW)+'" y="'+top+'" width="'+wallW+'" height="'+(yBase-top).toFixed(1)+'"/>'+bands.join("");
-      lab.forEach((ly,k)=>{const r=V.rows[k],bw=Math.max((r.out!=null?r.out:V.u)*kx,.5)+14;
-        o+='<path class="ldr" d="M'+(x0+bw).toFixed(1)+' '+ly.toFixed(1)+' L'+(lx-6)+' '+pos[k].toFixed(1)+'"/>';
-        o+='<text class="lbl'+(k===sel?' on':'')+'" data-mi="'+k+'" x="'+lx+'" y="'+(pos[k]+4).toFixed(1)+'">'+esc(r.x.n)+' <tspan class="hh" dx="4">'+fe(r.h)+'</tspan></text>';});
-      o+='<line class="base" x1="'+(x0-wallW-6)+'" x2="'+(W-6)+'" y1="'+yBase+'" y2="'+yBase+'"/>';
-      o+='<text class="bl" x="'+(x0-wallW-6)+'" y="'+(yBase+16)+'">પીઠનું મથાળું</text><text class="bl" x="'+(x0-wallW-6)+'" y="'+(yBase+30)+'">કુલ ઊંચાઈ '+fe(V.total)+'</text>';
-      return '<svg viewBox="0 0 '+W+' '+HH+'" role="img" aria-label="મંડોવરનું બાજુનું ચિત્ર, નીચેથી ઉપર થરો">'+o+'</svg>';})():'';
-    return svg+'<p class="hint" style="padding:0 6px 4px">ઊંચાઈ માપસર છે. ખુરા અને છજ્જાનો નીકાળો પુસ્તક મુજબ, બાકીના થર સરખા નીકાળે દોર્યા છે. થર પર દબાવો.</p>';}
-
-  function cards(){
-    return V.rows.map((r,i)=>{const x=r.x;
-      const subs=r.subs?'<div class="rows msub"><div class="lab" style="padding-bottom:4px">ઉપ-ભાગ (પુસ્તકના ક્રમમાં)</div>'+r.subs.map(s=>'<div class="r"><span>'+esc(s.n)+(s.d?' (બાકીનો)':'')+'<small>'+pf(s.p)+' ભાગ</small></span><b>'+fe(s.h)+'</b></div>').join("")+'</div>':'';
-      return '<article class="card mc'+(i===sel?' on':'')+'" id="mc'+i+'" data-mi="'+i+'" tabindex="0">'+
-        '<div class="mh"><span class="mn">'+(i+1)+'</span><div><h3>'+esc(x.n)+'</h3>'+(x.site?'<span class="mt">સાઇટનું નામ: '+esc(x.site)+'</span>':'')+'</div><span class="mv">'+fe(r.h)+'</span></div>'+
-        '<div class="mfig">'+(r.pl?plateFig(r):lineFig(r))+'</div>'+
-        '<p class="mr">'+pf(x.p)+' ભાગ · પીઠના ઉપરથી '+fe(r.from)+' થી '+fe(r.to)+' સુધી'+(r.out!=null?' · નીકાળો '+fe(r.out):'')+'</p>'+
-        subs+(x.note?'<p class="hint">'+esc(x.note)+'</p>':'')+'</article>';}).join("");}
+  function rowsHTML(){
+    const body=V.rows.map((r,i)=>{
+      const sub=r.subs?'<div class="msub">'+r.subs.map(s=>'<div><span>'+esc(s.n)+(s.d?' (બાકીનો)':'')+'</span><b>'+fe(s.h)+'</b></div>').join("")+'</div>':'';
+      const head='<span>'+(i+1)+'. '+esc(r.x.n)+'<small>પીઠના ઉપરથી '+fe(r.from)+' થી '+fe(r.to)+(r.out!=null?' · નીકાળો '+fe(r.out):'')+'</small></span><b>'+fe(r.h)+'</b>';
+      return r.subs?'<details class="r mrow"><summary>'+head+'</summary>'+sub+'</details>':'<div class="r mrow"><div class="mhd">'+head+'</div></div>';}).join("");
+    return body+'<div class="r mtot"><span>કુલ ઊંચાઈ</span><b>'+fe(V.total)+'</b></div>';}
 
   function pills(host,items,cur,fn,lab){
     const el=$(host);el.innerHTML=items.map(it=>'<button class="pill" data-v="'+it.id+'" aria-pressed="'+(String(it.id)===String(cur))+'">'+(lab?lab(it):it.name)+'</button>').join("");
@@ -750,30 +670,21 @@ const MD=(function(){
 
   function render(){
     V=compute();const ok=!!(S.gw&&S.gd);
-    const rowsB=ok?(()=>{const w=wallV(),pw=PWv(),pd=PDv();const R=(l,v,s)=>'<div class="r"><span>'+l+(s?'<small>'+s+'</small>':'')+'</span><b>'+v+'</b></div>';
-      return R('ગર્ભગૃહ (અંદર)',fiI(S.gw)+' × '+fiI(S.gd))+R('દીવાલ',fiI(w),S.wallK==='c'?'તમારી જાડાઈ':S.wallK==='s6'?'પથ્થર, પ્રાસાદના ⅙':'ઈંટ, પ્રાસાદના ¼')+R('પ્રાસાદ (બહાર)',fiI(pw)+' × '+fiI(pd),'ખૂણેથી ખૂણે, દીવાલ + ગર્ભગૃહ + દીવાલ');})()
-      :'<div class="empty">પહેલાં પ્લાનિંગ ટેબમાં ગર્ભગૃહનું માપ લખો.</div>';
-    $('m-base').innerHTML='<div class="rows">'+rowsB+'</div>';
-    pills('m-type',TYPES,S.mt||'n144',v=>{S.mt=v;sel=-1;save();renderAll();});
+    pills('m-type',TYPES,S.mt||'n144',v=>{S.mt=v;save();renderAll();});
     pills('m-meth',METH,S.mm||2,v=>{S.mm=+v;save();renderAll();},it=>'રીત '+it.id+(ok?' · '+fe(V.hAll[it.id-1]):''));
     pills('m-unit',[{id:8,name:"પૂરા ઇંચ"},{id:1,name:"⅛″ સુધી"}],unit(),v=>{S.mu=+v;save();renderAll();});
     $('m-resetH').hidden=!V.hasOv;
-    if(!ok||!(V.g>0)){['m-stats','m-over','m-cards','m-warn'].forEach(i=>$(i).innerHTML='');return;}
-    $('m-stats').innerHTML='<div class="stat key"><small>મંડોવરની ઊંચાઈ</small><b>'+fe(V.H)+'</b></div><div class="stat"><small>1 ભાગ</small><b>'+fe(V.u)+'</b></div><div class="stat"><small>છજ્જાનો નીકાળો</small><b>'+(V.proj!=null?fe(V.proj):'—')+'</b></div>';
+    if(!ok||!(V.g>0)){$('m-hero').innerHTML='<div class="empty">પહેલાં પ્લાનિંગ ટેબમાં ગર્ભગૃહનું માપ લખો.</div>';['m-cards','m-warn'].forEach(i=>$(i).innerHTML='');return;}
+    $('m-hero').innerHTML='<div class="stat key"><small>મંડોવરની ઊંચાઈ</small><b>'+fe(V.H)+'</b></div>'+
+      '<p class="hint">પીઠના ઉપરથી છજ્જાના ઉપર સુધી. પ્રાસાદ '+fiI(V.pw)+' × '+fiI(PDv())+' (પ્લાનિંગમાંથી).</p>'+
+      '<div class="seg" style="margin-top:10px"><button class="pill" id="m-toPlan">પ્લાનિંગમાં બદલો</button></div>';
+    $('m-toPlan').onclick=()=>{S.tab='plan';save();applyTab(true);window.scrollTo({top:0});};
     const w=[];
-    if(V.g<1||V.g>50)w.push("પુસ્તકનાં કોષ્ટક 1′-6″ થી 75′ ના પ્રાસાદ માટે છે. આ માપ તેની બહાર છે, એટલે ઊંચાઈ અંદાજિત છે.");
-    if(V.ty.id==="mine")w.push("આ તમારો પોતાનો મંડોવર છે (129 ભાગ). ઊંચાઈ 144 ભાગના હિસાબે લીધી છે, એટલે થરોની કુલ ઊંચાઈ "+fe(V.total)+" થાય છે.");
+    if(V.g<1||V.g>50)w.push("આ માપ પુસ્તકના કોષ્ટકની બહાર છે, એટલે ઊંચાઈ અંદાજિત છે.");
+    if(V.ty.id==="mine")w.push("મારો મંડોવર 129 ભાગનો છે. ઊંચાઈ 144 ભાગના હિસાબે લીધી છે, એટલે થરોની કુલ ઊંચાઈ "+fe(V.total)+" થાય છે.");
     $('m-warn').innerHTML=w.map(x=>'<p class="warn">'+x+'</p>').join("");
-    $('m-over').innerHTML=overview();
-    $('m-cards').innerHTML=cards();
+    $('m-cards').innerHTML=rowsHTML();
   }
-  function pick(i){
-    sel=sel===i?-1:i;
-    document.querySelectorAll('#tab-mand [data-mi]').forEach(el=>{const on=+el.dataset.mi===sel;
-      if(el.classList.contains('mc')||el.classList.contains('band')||el.classList.contains('lbl'))el.classList.toggle('on',on);});
-    if(sel>=0){const el=$('mc'+sel);if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest',behavior:'smooth'});}}
-  $('tab-mand').addEventListener('click',e=>{const el=e.target.closest('[data-mi]');if(el)pick(+el.dataset.mi);});
-  $('tab-mand').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target.closest&&e.target.closest('[data-mi]');if(!el||e.target.tagName==='INPUT')return;e.preventDefault();pick(+el.dataset.mi);});
   return {render};
 })();
 
@@ -798,7 +709,6 @@ document.querySelectorAll('#wallOpt button').forEach(b=>b.onclick=()=>{S.wallK=b
 $('tMandap').onclick=()=>{S.mandap=!S.mandap;save();renderAll();};
 $('tDims').onclick=()=>{S.dims=S.dims===false;save();renderAll();};
 $('m-resetH').onclick=()=>{delete S.mov;save();syncDims(null);renderAll();};
-$('m-toPlan').onclick=()=>{S.tab='plan';save();applyTab(true);window.scrollTo({top:0});};
 $('resetProj').onclick=()=>{delete S.bp;delete S.pp;save();syncDims(null);renderAll();};
 
 const TABS=['nak','plan','mand'];
