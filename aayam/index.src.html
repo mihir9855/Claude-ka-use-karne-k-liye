@@ -1,0 +1,817 @@
+<title>આયામ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="icon" type="image/png" href="__ICON__">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;500;600;700&family=Noto+Serif+Gujarati:wght@600;700&display=swap">
+<style>
+/* Layout: white sheet. Sticky top bar with two big tabs. Each tab is a two-column workspace on a PC
+   (inputs left, result right) and one column on a phone. Big numerals, pills instead of boxes. */
+:root{
+  --bg:#ffffff; --ink:#14181f; --muted:#667085; --line:#e5e8ed; --soft:#f4f7f8;
+  --acc:#0f5f66; --acc-ink:#ffffff; --acc-soft:#e6f2f2;
+  --ok:#1a7f4b; --ok-soft:#e4f4ea; --bad:#c2362b; --bad-soft:#fdeceb; --warn:#9a6200; --warn-soft:#fff3d9;
+  --dE:#1a7f4b; --dS:#7b3fb8; --dW:#2456c8; --dN:#c2362b;
+  --sans:"Noto Sans Gujarati","Shruti","Nirmala UI",system-ui,sans-serif;
+  --serif:"Noto Serif Gujarati","Noto Sans Gujarati","Shruti",serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-tap-highlight-color:transparent;
+  padding-bottom:max(40px,env(safe-area-inset-bottom,0px))}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2.5px solid var(--acc);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:max(18px,env(safe-area-inset-left,0px)) max(18px,env(safe-area-inset-right,0px))}
+
+/* top bar */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:18px;min-height:64px;flex-wrap:wrap;padding-block:8px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand img{width:38px;height:38px;border-radius:10px;display:block}
+.brand b{font-family:var(--serif);font-size:23px;line-height:1;letter-spacing:.01em}
+.brand small{display:block;font-size:11.5px;color:var(--muted);letter-spacing:.02em;margin-top:3px}
+.tabs{display:flex;gap:6px;margin-left:auto;background:var(--soft);border-radius:999px;padding:4px}
+.tabs button{border:0;background:none;border-radius:999px;padding:9px 20px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:8px;transition:background .2s,color .2s}
+.tabs button i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12.5px;background:var(--line);color:var(--muted)}
+.tabs button[aria-pressed=true]{background:var(--ink);color:#fff}
+.tabs button[aria-pressed=true] i{background:var(--acc);color:#fff}
+@media (max-width:560px){
+  .top .wrap{gap:10px}
+  .brand small{display:none}
+  .tabs{margin-left:0;width:100%}
+  .tabs button{flex:1;justify-content:center;padding:11px 8px}
+}
+
+/* page frame */
+.page{padding-block:26px 24px}
+.page>header{margin-bottom:20px}
+h1{font-family:var(--serif);font-size:30px;line-height:1.25;margin:0}
+.lead{color:var(--muted);margin:4px 0 0;max-width:60ch}
+.work{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:28px 40px;align-items:start}
+@media (max-width:900px){.work{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:26px;min-width:0}
+.sticky{position:sticky;top:92px}
+@media (max-width:900px){.sticky{position:static}}
+
+h2{font-family:var(--serif);font-size:19px;margin:0 0 10px;display:flex;align-items:center;gap:10px}
+h2 .n{width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-family:var(--sans);font-size:13px;font-weight:700;flex:none}
+.sub{font-size:14px;color:var(--muted);margin:-4px 0 10px}
+.lab{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.01em}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+
+/* number entry: feet, inch, total inch */
+.dim{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.trip{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.num{display:flex;align-items:baseline;gap:3px;background:var(--soft);border:2px solid transparent;border-radius:14px;padding:7px 12px;min-width:0}
+.num:focus-within{border-color:var(--acc);background:#fff}
+.num input{font-family:var(--serif);font-size:28px;font-weight:700;border:0;background:none;width:3ch;text-align:right;padding:0;outline:none;min-width:0}
+.num.big input{width:4ch}
+.num b{font-size:20px;color:var(--muted);font-weight:500}
+.num input::-webkit-outer-spin-button,.num input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.num input[type=number]{-moz-appearance:textfield;appearance:textfield}
+.eq{color:var(--muted);font-size:18px}
+.num.tot{background:none;border:2px dashed var(--line)}
+.num.tot input{font-size:22px;color:var(--muted)}
+.num.tot:focus-within{border-style:solid}
+
+/* pills / segments */
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.pill{border:2px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;font-weight:600;color:var(--muted);transition:border-color .15s,background .15s,color .15s}
+.pill:hover{border-color:#c4cad3}
+.pill[aria-pressed=true]{border-color:var(--acc);background:var(--acc-soft);color:var(--acc)}
+.face{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.face .pill{padding:11px 4px;text-align:center;border-radius:14px}
+
+/* verdict */
+.verdict{border-radius:20px;padding:18px 20px;display:grid;grid-template-columns:104px 1fr;gap:6px 18px;align-items:center;border:2px solid var(--line)}
+.verdict.ok{border-color:#9ad3b3;background:linear-gradient(180deg,var(--ok-soft),#fff 70%)}
+.verdict.no{border-color:#f0b9b4;background:linear-gradient(180deg,var(--bad-soft),#fff 70%)}
+.verdict svg{width:100%;height:auto;display:block}
+.verdict .st{font-size:13px;font-weight:700;letter-spacing:.02em}
+.verdict.ok .st{color:var(--ok)}.verdict.no .st{color:var(--bad)}
+.verdict .big{font-family:var(--serif);font-size:30px;line-height:1.2;margin:2px 0 6px}
+.facts{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted)}
+.facts b{color:var(--ink)}
+.match{grid-column:1/-1;font-size:14px;font-weight:600;padding-top:8px;border-top:1px solid var(--line);margin-top:6px}
+.d-E{color:var(--dE)}.d-S{color:var(--dS)}.d-W{color:var(--dW)}.d-N{color:var(--dN)}
+
+/* height aay */
+.aayrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:6px}
+.tag{font-size:13px;font-weight:700;padding:5px 14px;border-radius:999px;white-space:nowrap}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}.tag.no{background:var(--bad-soft);color:var(--bad)}.tag.man{background:var(--acc-soft);color:var(--acc)}
+.near{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;font-size:14px;color:var(--muted)}
+.near button{border:2px solid var(--ok);color:var(--ok);background:#fff;border-radius:999px;padding:5px 14px;font-weight:700}
+.aays{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px}
+.aays span{display:flex;flex-direction:column;align-items:center;padding:7px 2px;border-radius:12px;background:var(--soft);font-size:13px;font-weight:600;color:var(--muted);text-align:center;line-height:1.3}
+.aays span small{font-size:11.5px;font-weight:500}
+.aays span.cur{background:var(--bad-soft);color:var(--bad)}
+.aays span.cur.good{background:var(--ok);color:#fff}
+
+/* nearby sizes */
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:14px}
+.step{display:flex;align-items:center;gap:6px;margin-left:auto;background:var(--soft);border-radius:999px;padding:3px}
+.step button{width:34px;height:34px;border:0;border-radius:50%;background:#fff;color:var(--acc);font-size:20px;font-weight:700;line-height:1;display:grid;place-items:center}
+.step button:disabled{opacity:.35;cursor:default}
+.step b{min-width:24px;text-align:center;font-variant-numeric:tabular-nums}
+.step small{color:var(--muted);font-weight:600;padding-right:8px}
+.sizes{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.sizes h3{grid-column:1/-1;margin:8px 0 0;font-size:14px;color:var(--muted);font-weight:600}
+.opt{display:block;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:16px;padding:11px 13px;font-variant-numeric:tabular-nums;transition:border-color .15s,transform .15s}
+.opt:hover{border-color:var(--acc);transform:translateY(-1px)}
+.opt b{display:block;font-family:var(--serif);font-size:19px}
+.opt .ft{display:block;font-size:13px;color:var(--muted)}
+.opt .nk{display:flex;justify-content:space-between;gap:6px;font-size:13.5px;font-weight:600;margin-top:6px}
+.opt .ay{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.opt .ay.good{color:var(--ok);font-weight:700}
+.opt.ok{border-color:#9ad3b3;background:#fbfefc}
+.opt.no{opacity:.55}
+.empty{color:var(--muted);padding:18px;border:2px dashed var(--line);border-radius:16px;text-align:center}
+
+/* planning */
+.walls .pill{flex:1;text-align:center;border-radius:14px;padding:11px 6px}
+.card{border:1px solid var(--line);border-radius:20px;padding:16px 18px}
+.plan{padding:10px 10px 6px}
+.plan svg{display:block;width:100%;height:auto;max-height:78vh}
+.plan svg .ln{fill:none;stroke:#111;stroke-width:1.4;stroke-linejoin:miter;vector-effect:non-scaling-stroke}
+.plan svg .th{fill:none;stroke:#111;stroke-width:2.2;vector-effect:non-scaling-stroke}
+.plan svg .dg{fill:none;stroke:#111;stroke-width:1;stroke-dasharray:6 4;vector-effect:non-scaling-stroke}
+.plan svg .dm{fill:none;stroke:#111;stroke-width:.9;vector-effect:non-scaling-stroke}
+.plan svg .dx{fill:#111;stroke:#fff;stroke-width:3.5px;paint-order:stroke;stroke-linejoin:round}
+.plan svg .gl{fill:#667085}
+.plan svg .pl{fill:#fff;stroke:#111;stroke-width:1.2;vector-effect:non-scaling-stroke}
+.plan .tg{display:flex;flex-wrap:wrap;gap:8px 12px;padding:10px 12px 12px;align-items:center}
+.plan .tg .pill{padding:6px 14px;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted);padding:0 12px 10px}
+.legend span{display:flex;align-items:center;gap:7px}
+.legend i{display:block;width:22px;height:0;border-top:2px solid #111}
+.legend i.d{border-top-style:dashed;border-top-width:1.5px}
+.legend i.h{height:10px;border:1.5px solid #111;background:repeating-linear-gradient(45deg,#bbb 0 1px,#fff 1px 5px)}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px 22px}
+.stat small{display:block;font-size:13px;color:var(--muted)}
+.stat b{font-family:var(--serif);font-size:24px;line-height:1.25;font-variant-numeric:tabular-nums}
+.stat.key b{color:var(--acc);font-size:30px}
+.rows{display:flex;flex-direction:column}
+.rows .r{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.rows .r:first-child{border-top:0}
+.rows .r span{font-weight:600}
+.rows .r small{display:block;color:var(--muted);font-weight:400;font-size:12.5px;line-height:1.35}
+.rows .r b{font-family:var(--serif);font-size:19px;white-space:nowrap}
+.rows .r i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px}
+details.adv>summary{cursor:pointer;font-weight:600;color:var(--acc);padding:6px 0;list-style:none}
+details.adv>summary::-webkit-details-marker{display:none}
+details.adv>summary::before{content:"＋ "}
+details.adv[open]>summary::before{content:"－ "}
+.reset{border:2px solid var(--acc);color:var(--acc);background:#fff;border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700}
+.warn{font-size:14px;color:var(--bad);margin:0 0 10px}
+.warn:empty{display:none}
+.prev{height:170px;display:flex;justify-content:center}
+.prev svg{height:100%;width:auto;max-width:100%}
+.enter{animation:rise .45s cubic-bezier(.2,.7,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.enter{animation:none}.opt{transition:none}.tabs button{transition:none}}
+
+/* mandovar */
+.mover{padding:12px}
+.mover svg{display:block;width:100%;height:auto;max-width:420px;margin:0 auto}
+.mover .band{fill:#e9eef0;stroke:#fff;stroke-width:1;cursor:pointer}
+.mover .band.b{fill:#d9e1e4}
+.mover .band.on{fill:var(--acc)}
+.mover .wallr{fill:#c5ced4;opacity:.6}
+.mover .ldr{stroke:var(--line);fill:none}
+.mover .lbl{font-size:11.5px;fill:var(--ink);cursor:pointer}
+.mover .lbl.on{font-weight:700;fill:var(--acc)}
+.mover .lbl .hh{fill:var(--muted)}
+.mover .base{stroke:var(--ink);stroke-width:1.2;stroke-dasharray:4 3}
+.mover .bl{font-size:11px;fill:var(--muted)}
+.mlist{display:flex;flex-direction:column;gap:14px}
+.mc{border:2px solid var(--line);cursor:pointer;scroll-margin-top:84px}
+.mc.on{border-color:var(--acc);background:#fbfdfd}
+.mh{display:flex;align-items:flex-start;gap:12px}
+.mn{width:28px;height:28px;border-radius:50%;background:var(--soft);color:var(--muted);display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+.mc.on .mn{background:var(--acc);color:#fff}
+.mc h3{font-family:var(--serif);font-size:19px;margin:0;line-height:1.3}
+.mt{font-size:12.5px;color:var(--muted)}
+.mv{margin-left:auto;font-family:var(--serif);font-size:24px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mr{margin:10px 0 0;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mfig{margin:12px 0 0;border:1px solid var(--line);border-radius:14px;padding:8px;color:var(--ink)}
+.mfig svg{display:block;width:100%;height:auto;max-height:520px}
+.mfig .cap{font-size:12px;color:var(--muted);margin:6px 2px 0}
+.mfig .dm{stroke:var(--acc);stroke-width:1.6;fill:none}
+.mfig .dsh{stroke:var(--acc);stroke-width:1;stroke-dasharray:6 5;fill:none}
+.mfig text{fill:var(--acc);font-family:var(--sans);font-weight:700;font-variant-numeric:tabular-nums}
+.mfig .ln{fill:none;stroke:#111;stroke-width:1.4}
+.mfig text.tx{fill:var(--ink);font-weight:500}
+.msub{margin-top:10px}
+</style>
+<header class="top"><div class="wrap">
+  <div class="brand"><img id="logo" alt=""><div><b>આયામ</b><small>બૃહદ ટેમ્પલ · શિલ્પ રત્નાકર</small></div></div>
+  <nav class="tabs" id="tabs" role="group" aria-label="વિભાગ">
+    <button data-t="nak"><i>1</i>નક્ષત્ર</button>
+    <button data-t="plan"><i>2</i>પ્લાનિંગ</button>
+    <button data-t="mand"><i>3</i>મંડોવર</button>
+  </nav>
+</div></header>
+
+<!--PLATE-->
+<main class="wrap">
+
+<!-- ============ 1 · NAKSHATRA ============ -->
+<section id="tab-nak" class="page" hidden>
+  <header><h1>નક્ષત્ર</h1><p class="lead">ગર્ભગૃહનું માપ લખો. નક્ષત્ર, ગણ, દિશા અને આય તરત દેખાશે. શુભ માપ નીચે મળશે.</p></header>
+  <div class="work">
+    <div class="col">
+      <div>
+        <h2><span class="n">1</span>ગર્ભગૃહનું માપ</h2>
+        <div id="nak-dims"></div>
+        <div class="prev" id="prev" aria-hidden="true"></div>
+        <p class="warn" id="warn"></p>
+      </div>
+      <div>
+        <h2><span class="n">2</span>મંદિરનું મુખ</h2>
+        <div class="face" id="faceSeg" role="group" aria-label="મંદિરનું મુખ">
+          <button class="pill" data-f="N">ઉત્તર</button><button class="pill" data-f="S">દક્ષિણ</button><button class="pill" data-f="E">પૂર્વ</button><button class="pill" data-f="W">પશ્ચિમ</button>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div id="verdict"></div>
+      <div>
+        <h2><span class="n">3</span>ઊંચાઈનો આય</h2>
+        <div id="h-dims"></div>
+        <div id="aayInfo"></div>
+        <div class="aays" id="aays" aria-label="આઠ આય"></div>
+      </div>
+      <div>
+        <h2><span class="n">4</span>ગર્ભગૃહને મળતાં બીજાં માપ</h2>
+        <div class="tools">
+          <div class="seg"><button class="pill" id="onlyGood" aria-pressed="false">ફક્ત શુભ</button></div>
+          <div class="step" id="cntStep" role="group" aria-label="કેટલાં માપ"><small>માપ</small><button data-s="-1" aria-label="ઓછાં">−</button><b id="cntV">5</b><button data-s="1" aria-label="વધુ">+</button></div>
+        </div>
+        <div class="sizes" id="sizes"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2 · PLANNING ============ -->
+<section id="tab-plan" class="page" hidden>
+  <header><h1>પ્લાનિંગ</h1><p class="lead">ગર્ભગૃહ પરથી દીવાલ, પ્રાસાદનું માપ, અને પૂરો લાઇન-વર્ક પ્લાન. માપ બદલો તો ચિત્ર તરત બદલાય.</p></header>
+  <div class="work">
+    <div class="col">
+      <div>
+        <h2><span class="n">1</span>ગર્ભગૃહ (અંદરથી)</h2>
+        <div id="g-dims"></div>
+        <div class="seg"><button class="pill" id="fromNak">↙ નક્ષત્રનું માપ લો</button></div>
+      </div>
+      <div>
+        <h2><span class="n">2</span>દીવાલની જાડાઈ</h2>
+        <div class="seg walls" id="wallOpt" role="group" aria-label="દીવાલનો પ્રકાર">
+          <button class="pill" data-w="s6">પથ્થર ⅙</button><button class="pill" data-w="b4">ઈંટ ¼</button><button class="pill" data-w="c">મારી જાડાઈ</button>
+        </div>
+        <div id="wallc" style="margin-top:14px"></div>
+        <p class="hint" id="wallHint"></p>
+      </div>
+      <div>
+        <h2><span class="n">3</span>પ્રાસાદનું માપ</h2>
+        <p class="sub">બહારની બાજુ, રેખાથી રેખા: દીવાલ + ગર્ભગૃહ + દીવાલ.</p>
+        <div class="stats" id="pstats"></div>
+      </div>
+      <div>
+        <h2><span class="n">4</span>બાજુની વહેંચણી</h2>
+        <p class="sub">એક બાજુ: રેખા 2 · પઢરો 1½ · ભદ્ર 3 · પઢરો 1½ · રેખા 2 (કુલ 10 ભાગ).</p>
+        <div class="card" id="split"></div>
+        <details class="adv" style="margin-top:12px"><summary>નીકાળાનું માપ બદલો</summary>
+          <div style="padding-top:12px"><div id="bp-dim"></div><div id="pp-dim"></div>
+          <div class="seg"><button class="reset" id="resetProj">↺ ગ્રંથનું માપ લો</button></div></div>
+        </details>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plan sticky" id="planCard">
+        <div class="tg">
+          <button class="pill" id="tMandap" aria-pressed="true">મંડપ સાથે</button>
+          <button class="pill" id="tDims" aria-pressed="true">માપ બતાવો</button>
+        </div>
+        <div id="planSvg"></div>
+        <div class="legend"><span><i class="h"></i>દીવાલ</span><span><i></i>બહારની રેખા</span><span><i class="d"></i>ઘુમ્મટ</span></div>
+      </div>
+      <div>
+        <h2><span class="n">5</span>બાકીનાં માપ</h2>
+        <p class="sub">પ્રાસાદના માપ પરથી, પૂરા ઇંચમાં.</p>
+        <div class="card rows" id="allm"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 · MANDOVAR ============ -->
+<section id="tab-mand" class="page" hidden>
+  <header><h1>મંડોવર</h1><p class="lead">પીઠના ઉપરથી છજ્જાના ઉપર સુધી, દરેક થરનું અલગ માપ અને રેખાકૃતિ. ગર્ભગૃહ અને દીવાલ પ્લાનિંગ ટેબમાંથી આવે છે.</p></header>
+  <div class="work">
+    <div class="col">
+      <div>
+        <h2><span class="n">1</span>પ્લાનિંગનું માપ</h2>
+        <div class="card" id="m-base"></div>
+        <div class="seg" style="margin-top:10px"><button class="pill" id="m-toPlan">પ્લાનિંગમાં બદલો</button></div>
+      </div>
+      <div>
+        <h2><span class="n">2</span>મંડોવરનો પ્રકાર</h2>
+        <div class="seg" id="m-type" role="group" aria-label="મંડોવરનો પ્રકાર"></div>
+      </div>
+      <div>
+        <h2><span class="n">3</span>ઊંચાઈ</h2>
+        <div class="seg" id="m-meth" role="group" aria-label="ઊંચાઈની રીત"></div>
+        <p class="hint">ગ્રંથની ચાર રીત. દરેક રીતનું માપ બટન પર છે.</p>
+        <div class="stats" id="m-stats" style="margin-top:14px"></div>
+        <details class="adv" style="margin-top:12px"><summary>ઊંચાઈ જાતે નાખો</summary>
+          <div style="padding-top:12px"><div id="m-ov"></div><div class="seg"><button class="reset" id="m-resetH">↺ ગ્રંથની ઊંચાઈ લો</button></div></div>
+        </details>
+      </div>
+      <div>
+        <h2><span class="n">4</span>માપ કેટલા સુધી</h2>
+        <div class="seg" id="m-unit" role="group" aria-label="માપની ચોકસાઈ"></div>
+      </div>
+    </div>
+    <div class="col">
+      <div id="m-warn"></div>
+      <div class="card mover" id="m-over"></div>
+      <div>
+        <h2><span class="n">5</span>થર પ્રમાણે માપ</h2>
+        <p class="sub">ક્રમ નીચેથી ઉપર, પીઠના ઉપરથી શરૂ. કણપીઠ, પીઠ અને દ્વાર આમાં નથી.</p>
+        <div class="mlist" id="m-cards"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const NAK=['','અશ્વિની','ભરણી','કૃત્તિકા','રોહિણી','મૃગશીર્ષ','આર્દ્રા','પુનર્વસુ','પુષ્ય','આશ્લેષા','મઘા','પૂર્વા ફાલ્ગુની','ઉત્તરા ફાલ્ગુની','હસ્ત','ચિત્રા','સ્વાતિ','વિશાખા','અનુરાધા','જ્યેષ્ઠા','મૂળ','પૂર્વાષાઢા','ઉત્તરાષાઢા','શ્રવણ','ધનિષ્ઠા','શતભિષા','પૂર્વા ભાદ્રપદ','ઉત્તરા ભાદ્રપદ','રેવતી'];
+const DIRS={E:'પૂર્વ',S:'દક્ષિણ',W:'પશ્ચિમ',N:'ઉત્તર'};
+const nakDir=n=>(n>=3&&n<=9)?'E':(n>=10&&n<=16)?'S':(n>=17&&n<=23)?'W':'N';
+const WANT=[1,5,7,8,13,15,17,22,27];            /* the 9 nakshatras the user takes */
+const GAN_OF='DMRMDMDDRRMMDRDRDRRMMDRRMMD';
+const GAN={D:'દેવ',M:'મનુષ્ય',R:'રાક્ષસ'};
+const ganOf=nk=>GAN[GAN_OF[nk-1]];
+const shesh=(w,d)=>{const r=(w*d)%27;return r===0?27:r;};
+const nakOf=s=>{const k=(s*8)%27;return k===0?27:k;};
+const AAY=['','ધ્વજ','ધૂમ્ર','સિંહ','શ્વાન','વૃષભ','ખર','ગજ','ધ્વાંક્ષ'];
+const AAY_DIR=['','પૂર્વ','અગ્નિ','દક્ષિણ','નૈઋત્ય','પશ્ચિમ','વાયવ્ય','ઉત્તર','ઈશાન'];
+const AAY_OK=[1];
+const aayOf=(w,d)=>{const r=(w*d*9)%8;return r===0?8:r;};
+const aayH=h=>{const r=(h*9)%8;return r===0?8:r;};
+const ftin=x=>{const f=Math.floor(x/12);return f+'′-'+(x-f*12)+'″';};
+const rI=x=>Math.round(x);
+const fiI=x=>{const q=rI(x),f=Math.floor(q/12);return f+'′-'+(q-f*12)+'″';};
+const iv=v=>{const n=Math.round(parseFloat(v));return isFinite(n)&&n>0?n:0;};
+
+/* ---------- state (own save; the old app's save is read once so nothing already typed is lost) ---------- */
+const PK='aayam-v9';
+let S={w:109,d:109,face:'E',cnt:5,wallK:'s6',mandap:true,dims:true};
+try{
+  const v9=JSON.parse(localStorage.getItem(PK)||'null');
+  if(v9) Object.assign(S,v9);
+  else{const old=JSON.parse(localStorage.getItem('aayam-projects')||'null');
+    if(old&&old.list){const p=old.list.find(x=>x.id===old.cur)||old.list[0];const o=(p&&p.data)||{};
+      ['w','d','h','face','cnt','gw','gd'].forEach(k=>{if(o[k]!==undefined)S[k]=o[k];});
+      if(o.wallK==='brick')S.wallK='b4';}}
+}catch(e){}
+if(S.gw===undefined){S.gw=S.w;S.gd=S.d;}
+function save(){try{localStorage.setItem(PK,JSON.stringify(S));}catch(e){}}
+
+/* ---------- number entry: feet + inch + total inch, kept in sync ---------- */
+const DIMS={}; /* key -> {get,set,label,big} */
+function dimHTML(key,label,big){
+  return '<div class="dim" data-key="'+key+'"><span class="lab">'+label+'</span><div class="trip">'+
+   '<label class="num'+(big?' big':'')+'"><input data-u="f" type="number" inputmode="numeric" min="0" aria-label="'+label+' ફૂટ"><b>′</b></label>'+
+   '<label class="num'+(big?' big':'')+'"><input data-u="i" type="number" inputmode="numeric" min="0" aria-label="'+label+' ઇંચ"><b>″</b></label>'+
+   '<span class="eq">=</span>'+
+   '<label class="num tot"><input data-u="n" type="number" inputmode="numeric" min="0" aria-label="'+label+' કુલ ઇંચ"><b>″</b></label></div></div>';}
+function mountDim(host,key,label,get,set,big){$(host).innerHTML+=dimHTML(key,label,big);DIMS[key]={get,set};}
+function syncDims(skip){
+  document.querySelectorAll('.dim').forEach(box=>{const k=box.dataset.key,d=DIMS[k];if(!d)return;const v=rI(d.get()||0),f=Math.floor(v/12);
+    box.querySelectorAll('input').forEach(el=>{if(el===skip)return;const u=el.dataset.u;el.value=!v?'':u==='n'?v:u==='f'?f:v-f*12;});});}
+document.addEventListener('input',e=>{const el=e.target,box=el.closest('.dim');if(!box)return;
+  const k=box.dataset.key,d=DIMS[k];if(!d)return;
+  const q=u=>parseFloat(box.querySelector('[data-u="'+u+'"]').value)||0;
+  const v=el.dataset.u==='n'?q('n'):q('f')*12+q('i');
+  d.set(rI(v)>0?rI(v):0);save();syncDims(el);renderAll();});
+
+/* ---------- 1 · NAKSHATRA (same rules as before) ---------- */
+let previewN=0;
+function preview(W,D,T){
+  const pid='wh'+(++previewN);
+  const t=T>0?T:0.12*W, o1=0.4*t, o2=0.8*t, band=0.38*t;
+  const c=0.16, p=0.14, m=1-2*c-2*p, L=W+2*t, Ls=D+t, xs=W/2+t;
+  const offs=[0,o1,o2,o1,0], fr=[c,p,m,p,c];
+  let v=[], y=D;
+  fr.forEach((f,i)=>{const x=-xs-offs[i]; v.push([x,y]); y-=f*Ls; v.push([x,y]);});
+  let x=-L/2;
+  fr.forEach((f,i)=>{const yy=-t-offs[i]; v.push([x,yy]); x+=f*L; v.push([x,yy]);});
+  y=-t;
+  fr.slice().reverse().forEach((f,i)=>{const xx=xs+offs[4-i]; v.push([xx,y]); y+=f*Ls; v.push([xx,y]);});
+  v=v.filter((q,i)=>i===0||Math.abs(q[0]-v[i-1][0])>1e-6||Math.abs(q[1]-v[i-1][1])>1e-6);
+  v=v.filter((q,i)=>{const a=v[i-1],b=v[i+1];if(!a||!b)return true;return !((Math.abs(a[0]-q[0])<1e-6&&Math.abs(b[0]-q[0])<1e-6)||(Math.abs(a[1]-q[1])<1e-6&&Math.abs(b[1]-q[1])<1e-6));});
+  const n=v.length, nrm=(a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;return [dy/l,-dx/l];};
+  const out=v.map((q,i)=>{const a=v[i-1], b=v[i+1];let n1=a?nrm(a,q):[0,0], n2=b?nrm(q,b):[0,0];
+    return [q[0]+band*(n1[0]+n2[0]), q[1]+band*(n1[1]+n2[1])];});
+  const P=pts=>pts.map(q=>q[0].toFixed(2)+','+q[1].toFixed(2)).join(' ');
+  let o='';
+  o+='<path class="wall" fill-rule="evenodd" d="M'+P(v).replace(/ /g,' L')+' Z M'+(-W/2)+','+D+' L'+(-W/2)+',0 L'+(W/2)+',0 L'+(W/2)+','+D+' Z"/>';
+  o+='<polyline points="'+P(out)+'"/>';
+  v.forEach((q,i)=>{if(i===0||i===n-1)return;o+='<line class="bv" x1="'+q[0]+'" y1="'+q[1]+'" x2="'+out[i][0]+'" y2="'+out[i][1]+'"/>';});
+  o+='<line x1="'+out[0][0]+'" y1="'+D+'" x2="'+out[n-1][0]+'" y2="'+D+'"/>';
+  const tj=Math.min(t,0.12*W);
+  [-1,1].forEach(sg=>{const x0=sg*W/2, q=[[x0,D-1.23*tj],[x0-sg*1.23*tj,D-1.23*tj],[x0-sg*2.06*tj,D-0.43*tj],[x0-sg*2.06*tj,D]];
+    o+='<polyline points="'+P(q)+'"/>';});
+  const minX=Math.min(...out.map(q=>q[0])), maxX=Math.max(...out.map(q=>q[0])), minY=Math.min(...out.map(q=>q[1]));
+  const pad=0.25*t, x0=minX-pad, y0=minY-pad, w=maxX-minX+2*pad, h=D+pad-y0;
+  return '<svg viewBox="'+x0.toFixed(1)+' '+y0.toFixed(1)+' '+w.toFixed(1)+' '+h.toFixed(1)+'">'+
+    '<defs><pattern id="'+pid+'" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#8a94a3" stroke-width="1"/></pattern></defs>'+
+    '<g fill="none" stroke="#14181f" stroke-width="1" stroke-linejoin="miter"><style>.wall{fill:url(#'+pid+')}.bv{stroke-width:.8}</style>'+
+    o.replace(/<(polyline|line|path)/g,'<$1 vector-effect="non-scaling-stroke"')+'</g></svg>';
+}
+function compass(face,nd){
+  const ang={N:-90,E:0,S:90,W:180}, lab={N:['ઉ',60,14],E:['પૂ',108,64],S:['દ',60,114],W:['પ',12,64]};
+  let o='<circle cx="60" cy="60" r="44" fill="none" stroke="#e5e8ed" stroke-width="1.5"/><circle cx="60" cy="60" r="30" fill="none" stroke="#e5e8ed" stroke-dasharray="2 4"/>';
+  for(let k=0;k<360;k+=30) o+='<line x1="60" y1="17" x2="60" y2="'+(k%90?20:23)+'" stroke="#98a2b3" stroke-width="1" transform="rotate('+k+' 60 60)"/>';
+  Object.keys(lab).forEach(k=>{const [t,x,y]=lab[k];o+='<text x="'+x+'" y="'+(y+4)+'" font-size="12" text-anchor="middle" fill="'+(k===face?'#0f5f66':'#667085')+'" font-weight="'+(k===face?'700':'500')+'">'+t+'</text>';});
+  o+='<g transform="rotate('+ang[nd]+' 60 60)"><circle cx="92" cy="60" r="6" fill="var(--d'+nd+')" stroke="#fff" stroke-width="2"/></g>';
+  o+='<g transform="rotate('+ang[face]+' 60 60)"><path d="M72 60 H90" stroke="#0f5f66" stroke-width="3" stroke-linecap="round"/><path d="M95 60 l-8 -5.5 v11z" fill="#0f5f66"/>'+
+     '<rect x="48" y="50" width="20" height="20" rx="1.5" fill="#fff" stroke="#14181f" stroke-width="1.4"/><rect x="51.5" y="53.5" width="13" height="13" fill="none" stroke="#14181f" stroke-width=".8"/>'+
+     '<line x1="68" y1="56" x2="68" y2="64" stroke="#0f5f66" stroke-width="3"/></g>';
+  return '<svg viewBox="0 0 120 124" role="img" aria-label="મુખ '+DIRS[face]+', નક્ષત્ર '+DIRS[nd]+'">'+o+'</svg>';
+}
+function info(w,d){const nk=nakOf(shesh(w,d));return {nk,dir:nakDir(nk),ok:WANT.includes(nk)};}
+function aayInfo(w,d){const n=aayOf(w,d);return {n,ok:AAY_OK.includes(n)};}
+function optHTML(w,d){
+  const q=info(w,d), a=aayInfo(w,d), good=q.ok;
+  return '<button class="opt '+(good?'ok':'no')+'" data-w="'+w+'" data-d="'+d+'"><b>'+w+' × '+d+'</b><span class="ft">'+ftin(w)+' × '+ftin(d)+'</span>'+
+    '<span class="nk"><span class="'+(good?'d-'+q.dir:'')+'">'+NAK[q.nk]+' · '+ganOf(q.nk)+'</span><span class="'+(good?'d-'+q.dir:'')+'">'+(good?'✓ ':'')+DIRS[q.dir]+'</span></span>'+
+    '<span class="ay'+(a.ok?' good':'')+'"><span>આય '+AAY[a.n]+'</span><span>'+(a.ok?'✓':'')+'</span></span></button>';
+}
+function renderNak(){
+  const w=S.w,d=S.d;
+  $('warn').textContent=(w&&w%2===0)||(d&&d%2===0)?'નોંધ: માપ એકી સંખ્યામાં નથી.':'';
+  $('prev').innerHTML=w&&d?preview(w,d):'';
+  /* height aay */
+  const h=S.h;let hh='',n=h?aayH(h):0,ok=AAY_OK.includes(n);
+  if(h){let near='';
+    if(!ok){let u=h+1;while(!AAY_OK.includes(aayH(u)))u++;let dn=h-1;while(dn>0&&!AAY_OK.includes(aayH(dn)))dn--;
+      near='<div class="near">ધ્વજ આય વાળી નજીકની ઊંચાઈ'+(dn>0?'<button data-h="'+dn+'">'+dn+'″ · '+ftin(dn)+'</button>':'')+'<button data-h="'+u+'">'+u+'″ · '+ftin(u)+'</button></div>';}
+    hh='<div class="aayrow"><div><span class="lab">ઊંચાઈનો આય</span><div style="font-family:var(--serif);font-size:26px">'+n+'. '+AAY[n]+'</div><span class="hint" style="margin:0">દિશા <b>'+AAY_DIR[n]+'</b></span></div>'+
+      '<span class="tag '+(ok?'ok':'no')+'">'+(ok?'✓ ધ્વજ આય':'ધ્વજ આય નથી')+'</span></div>'+near;}
+  $('aayInfo').innerHTML=hh;
+  let ay='';for(let i=1;i<=8;i++)ay+='<span class="'+(i===n?'cur'+(ok?' good':''):'')+'">'+i+'. '+AAY[i]+'<small>'+AAY_DIR[i]+'</small></span>';
+  $('aays').innerHTML=ay;
+  document.querySelectorAll('#faceSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===(S.face||'E')));
+  const cnt=S.cnt||5;$('cntV').textContent=cnt;
+  document.querySelectorAll('#cntStep button').forEach(b=>b.disabled=+b.dataset.s<0?cnt<=1:cnt>=10);
+  $('onlyGood').setAttribute('aria-pressed',!!S.onlyGood);
+  if(!w||!d){$('verdict').innerHTML='<div class="empty">ગર્ભગૃહનું માપ લખો.</div>';$('sizes').innerHTML='';return;}
+  const q=info(w,d),a=aayInfo(w,d),f=S.face||'E',same=q.dir===f;
+  $('verdict').innerHTML='<div class="verdict '+(q.ok?'ok':'no')+'"><div>'+compass(f,q.dir)+'</div><div>'+
+    '<div class="st">'+(q.ok?'✓ આ માપ લેવાય':'આ માપ 9 શુભ નક્ષત્રમાં નથી')+'</div>'+
+    '<div class="big">'+NAK[q.nk]+'</div>'+
+    '<div class="facts"><span>ગણ <b>'+ganOf(q.nk)+'</b></span><span>દિશા <b class="d-'+q.dir+'">'+DIRS[q.dir]+'</b></span><span>આય <b class="'+(a.ok?'d-E':'d-N')+'">'+AAY[a.n]+(a.ok?' ✓':'')+'</b></span></div></div>'+
+    '<div class="match '+(same?'d-'+f:'')+'" style="'+(same?'':'color:var(--muted)')+'">'+(same?'✓ મુખની દિશા અને નક્ષત્રની દિશા એક છે':'મુખ '+DIRS[f]+' છે, નક્ષત્રની દિશા '+DIRS[q.dir])+'</div></div>';
+  let up='',down='',nu=0,nd=0;
+  for(let i=1;i<=cnt;i++){
+    const U=[w+2*i,d+2*i];if(!S.onlyGood||info(U[0],U[1]).ok){up+=optHTML(U[0],U[1]);nu++;}
+    if(w-2*i>0&&d-2*i>0){const D=[w-2*i,d-2*i];if(!S.onlyGood||info(D[0],D[1]).ok){down+=optHTML(D[0],D[1]);nd++;}}}
+  $('sizes').innerHTML=(up?'<h3>મોટાં માપ</h3>'+up:'')+(down?'<h3>નાનાં માપ</h3>'+down:'')+(!up&&!down?'<div class="empty" style="grid-column:1/-1">આટલાં માપમાં શુભ માપ નથી. "માપ" વધારો.</div>':'');
+}
+
+/* ---------- 2 · PLANNING ---------- */
+const AU=0.75;
+const gz=()=>PW()/18;
+function tbl(pts,g){if(!g)return 0;if(g<=pts[0][0])return pts[0][1]*g/pts[0][0];
+  for(let i=1;i<pts.length;i++){const [a,va]=pts[i-1],[b,vb]=pts[i];if(g<=b)return va+(vb-va)*(g-a)/(b-a);}
+  const n=pts.length,[a,va]=pts[n-2],[b,vb]=pts[n-1];return vb+(vb-va)*(g-b)/(b-a);}
+function grow(g,v1,segs){const pts=[[1,v1]];let v=v1,prev=1;segs.forEach(([u,per])=>{v+=per*(u-prev);pts.push([u,v]);prev=u;});return tbl(pts,g);}
+const WALLS={s6:['પથ્થર ⅙',6],b4:['ઈંટ ¼',4]};
+function wallV(){
+  if(S.wallK==='c')return rI(S.wallc||0);
+  return S.gw?rI(S.gw/(WALLS[S.wallK][1]-2)):0;}
+const PWv=()=>S.gw?S.gw+2*wallV():0, PDv=()=>S.gd?S.gd+2*wallV():0;
+function PW(){return PWv();}
+/* Nandan: rekha 2, padhro 1½, bhadra 3 → 10 parts a side */
+const PARTS={r:2,p:1.5,b:3};
+function split(len){const u=len/10,r=rI(2*u),p=rI(1.5*u);return {u,r,p,b:rI(len)-2*(r+p)};}
+const bhDefault=()=>rI(0.75*(PWv()/10));   /* bhadra projects 3/4 part (Pancham/Saptam Ratna) */
+const bhV=()=>S.bp!==undefined?S.bp:bhDefault();
+const ppV=()=>S.pp!==undefined?S.pp:0;
+/* mandap */
+const MF=[[1,'સરખો'],[1.25,'સવાયો'],[1.5,'દોઢો'],[1.75,'પોણા બે ગણો'],[2,'બમણો']];
+const mfAuto=()=>{const g=gz();return g>=10?1:g>=5?1.5:g>=4?1.75:2;};
+const PAD=[5,2];
+function splitI(total,ws){const T=rI(total),W=ws.reduce((a,x)=>a+x,0);if(!T||!W)return ws.map(()=>0);
+  const out=ws.map(w=>rI(T*w/W)),big=ws.indexOf(Math.max(...ws));out[big]+=T-out.reduce((a,x)=>a+x,0);return out;}
+const mwV=()=>rI(PWv()*mfAuto());
+const stwV=()=>rI(grow(gz(),4,[[2,3],[3,2],[12,2],[16,1.25],[40,1],[50,.75]])*AU);
+const MAND2=g=>g<=5?24*g:grow(g-4,120,[[26,12],[46,9]]);
+const dhV=()=>rI(tbl([[18,12],[72,48],[180,66],[360,88.5],[540,103.5],[900,118.5]].map(([a,b])=>[a/18,b]),PWv()/18));
+
+/* drawing: line work, inches, front (door) at the bottom */
+function planSVG(){
+  const pw=PWv(),pd=PDv(),w=wallV();if(!pw||!pd)return '';
+  const A=split(pw),B=split(pd),bp=bhV(),pp=ppV(),dw=rI(dhV()/2);
+  const showM=!!S.mandap,showD=S.dims!==false;
+  const showM0=!!S.mandap,fs=Math.max(pw,pd,showM0?mwV():0)/22, tk=fs*.45;
+  const xs=[0,A.r,A.r+A.p,A.r+A.p+A.b,A.r+2*A.p+A.b,pw],ys=[0,B.r,B.r+B.p,B.r+B.p+B.b,B.r+2*B.p+B.b,pd];
+  const off=[0,pp,bp,pp,0];
+  /* outline, clockwise from the top-left */
+  let P=[];
+  for(let i=0;i<5;i++){P.push([xs[i],-off[i]],[xs[i+1],-off[i]]);}
+  for(let i=0;i<5;i++){P.push([pw+off[i],ys[i]],[pw+off[i],ys[i+1]]);}
+  for(let i=4;i>=0;i--){P.push([xs[i+1],pd+off[i]],[xs[i],pd+off[i]]);}
+  for(let i=4;i>=0;i--){P.push([-off[i],ys[i+1]],[-off[i],ys[i]]);}
+  P=P.filter((q,i)=>i===0||Math.abs(q[0]-P[i-1][0])>1e-6||Math.abs(q[1]-P[i-1][1])>1e-6);
+  if(P.length>1&&Math.abs(P[0][0]-P[P.length-1][0])<1e-6&&Math.abs(P[0][1]-P[P.length-1][1])<1e-6)P.pop();
+  P=P.filter((q,i)=>{const a=P[(i+P.length-1)%P.length],b=P[(i+1)%P.length];return !((Math.abs(a[0]-q[0])<1e-6&&Math.abs(b[0]-q[0])<1e-6)||(Math.abs(a[1]-q[1])<1e-6&&Math.abs(b[1]-q[1])<1e-6));});
+  const pts=ps=>ps.map(q=>q[0].toFixed(2)+','+q[1].toFixed(2)).join(' ');
+  const dx=pw/2-dw/2, dx2=pw/2+dw/2, yin=pd-w, yout=pd+bp;
+  let o='';
+  /* mandap under the prasad */
+  let mw=0,bays=[],mx=[],my0=pd+bp,extraBottom=0;
+  if(showM){
+    mw=mwV();bays=splitI(mw,[(PAD[0]-PAD[1])/2,PAD[1],(PAD[0]-PAD[1])/2]);const sw=stwV();
+    const mx0=pw/2-mw/2;mx=[mx0,mx0+bays[0],mx0+bays[0]+bays[1],mx0+mw];
+    o+='<rect class="ln" x="'+mx0+'" y="'+my0+'" width="'+mw+'" height="'+mw+'"/>';
+    o+='<circle class="dg" cx="'+pw/2+'" cy="'+(my0+mw/2)+'" r="'+(bays[1]/2)+'"/>';
+    mx.forEach(x=>mx.forEach(y0=>{const yy=my0+(y0-mx0);o+='<rect class="pl" x="'+(x-sw/2)+'" y="'+(yy-sw/2)+'" width="'+sw+'" height="'+sw+'"/>';}));
+    extraBottom=mw;
+  }
+  /* wall (hatched) with the door opening cut out */
+  const inner='M'+w+','+w+' L'+(w+S.gw)+','+w+' L'+(w+S.gw)+','+(w+S.gd)+' L'+w+','+(w+S.gd)+' Z';
+  const door='M'+dx+','+yin+' L'+dx2+','+yin+' L'+dx2+','+yout+' L'+dx+','+yout+' Z';
+  o='<path fill="url(#hh)" fill-rule="evenodd" d="M'+pts(P).replace(/ /g,' L')+' Z '+inner+' '+door+'"/>'+o;
+  o+='<polygon class="th" points="'+pts(P)+'"/>';
+  o+='<line x1="'+dx+'" y1="'+yout+'" x2="'+dx2+'" y2="'+yout+'" stroke="#fff" stroke-width="4" vector-effect="non-scaling-stroke"/>';
+  o+='<polygon class="ln" points="'+[[w,w],[w+S.gw,w],[w+S.gw,w+S.gd],[w,w+S.gd]].map(q=>q.join(',')).join(' ')+'"/>';
+  o+='<line class="ln" x1="'+dx+'" y1="'+yin+'" x2="'+dx+'" y2="'+yout+'"/><line class="ln" x1="'+dx2+'" y1="'+yin+'" x2="'+dx2+'" y2="'+yout+'"/>';
+  o+='<text class="gl" x="'+pw/2+'" y="'+(w+S.gd/2+fs*.3)+'" font-size="'+fs*1.15+'" text-anchor="middle">ગર્ભગૃહ</text>';
+  o+='<text class="dx" x="'+pw/2+'" y="'+(w+S.gd/2+fs*1.9)+'" font-size="'+fs*.95+'" text-anchor="middle">'+fiI(S.gw)+' × '+fiI(S.gd)+'</text>';
+  /* dimension helpers */
+  const H=(x1,x2,y,t,s)=>'<line class="dm" x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'"/><line class="dm" x1="'+x1+'" y1="'+(y-tk)+'" x2="'+x1+'" y2="'+(y+tk)+'"/><line class="dm" x1="'+x2+'" y1="'+(y-tk)+'" x2="'+x2+'" y2="'+(y+tk)+'"/>'+
+    (t?'<text class="dx" x="'+((x1+x2)/2)+'" y="'+(y-tk*1.1)+'" font-size="'+(s||fs)+'" text-anchor="middle">'+t+'</text>':'');
+  const V=(x,y1,y2,t,s)=>{const m=(y1+y2)/2,tx=x-tk*1.2;return '<line class="dm" x1="'+x+'" y1="'+y1+'" x2="'+x+'" y2="'+y2+'"/><line class="dm" x1="'+(x-tk)+'" y1="'+y1+'" x2="'+(x+tk)+'" y2="'+y1+'"/><line class="dm" x1="'+(x-tk)+'" y1="'+y2+'" x2="'+(x+tk)+'" y2="'+y2+'"/>'+
+    (t?'<text class="dx" x="'+tx+'" y="'+m+'" font-size="'+(s||fs)+'" text-anchor="middle" transform="rotate(-90 '+tx+' '+m+')">'+t+'</text>':'');};
+  const mt=Math.max(bp,pp);
+  let top=-mt-fs*1.6,left=-mt-fs*1.6;
+  if(showD){
+    /* width chain on top, depth chain on the left, overall one row further out */
+    const seg=[A.r,A.p,A.b,A.p,A.r],segd=[B.r,B.p,B.b,B.p,B.r];
+    for(let i=0;i<5;i++)o+=H(xs[i],xs[i+1],top,String(seg[i]),fs*.8);
+    o+=H(0,pw,top-fs*2.1,fiI(pw),fs);
+    for(let i=0;i<5;i++)o+=V(left,ys[i],ys[i+1],String(segd[i]),fs*.8);
+    o+=V(left-fs*2.1,0,pd,fiI(pd),fs);
+    /* wall and bhadra projection */
+    o+=H(0,w,pd*.5,String(w),fs*.8);
+    o+=H(dx,dx2,yout+fs*1.7,'દ્વાર '+fiI(dw),fs*.9);
+    if(bp)o+=H(pw,pw+bp,ys[2]-fs*.4,'',fs*.7)+'<text class="dx" x="'+(pw+bp+fs*.5)+'" y="'+(ys[2]-fs*.8)+'" font-size="'+fs*.8+'" text-anchor="start">'+bp+'</text>';
+    if(showM){
+      const by=my0+mw+fs*2;
+      for(let i=0;i<3;i++)o+=H(mx[i],mx[i+1],by,fiI(bays[i]),fs*.85);
+      o+=H(mx[0],mx[3],by+fs*2.3,'મંડપ '+fiI(mw),fs);
+    }
+  }
+  const x0=Math.min(left-fs*(showD?3.6:1),-mt-fs)-0, x1=Math.max(pw+mt+fs*(showD?4:2),showM?mx[3]+fs*2:0),
+        y0=top-fs*(showD?3.4:1.6), y1=(showM?my0+mw+fs*(showD?5.5:2):pd+mt+fs*(showD?4:2));
+  const vx=Math.min(x0,showM?mx[0]-fs*2:x0), vw=Math.max(x1,showM?mx[3]+fs*2:x1)-vx;
+  /* north arrow: the plan is turned so the temple's face points down */
+  const th={S:0,E:90,N:180,W:270}[S.face||'E'],r=th*Math.PI/180,ax=Math.sin(r),ay=-Math.cos(r);
+  const cx=vx+vw-fs*4.6,cy=y0+fs*3,L=fs*1.7;
+  const na='<g><circle cx="'+cx+'" cy="'+cy+'" r="'+L*1.15+'" fill="#fff" stroke="#111" stroke-width="1" vector-effect="non-scaling-stroke"/>'+
+    '<line x1="'+(cx-ax*L*.8)+'" y1="'+(cy-ay*L*.8)+'" x2="'+(cx+ax*L)+'" y2="'+(cy+ay*L)+'" stroke="#111" stroke-width="1.6" vector-effect="non-scaling-stroke"/>'+
+    '<polygon points="'+[[cx+ax*L,cy+ay*L],[cx+ax*L*.45-ay*L*.28,cy+ay*L*.45+ax*L*.28],[cx+ax*L*.45+ay*L*.28,cy+ay*L*.45-ax*L*.28]].map(q=>q[0].toFixed(2)+','+q[1].toFixed(2)).join(' ')+'" fill="#111"/>'+
+    '<text class="dx" x="'+(cx+ax*L*1.55)+'" y="'+(cy+ay*L*1.55+fs*.3)+'" font-size="'+fs*.9+'" text-anchor="middle">ઉ</text></g>';
+  const face='<text class="gl" x="'+(vx+fs*.5)+'" y="'+(y0+fs*1.4)+'" font-size="'+fs*.95+'">મુખ: '+DIRS[S.face||'E']+'</text>';
+  return '<svg viewBox="'+vx.toFixed(1)+' '+y0.toFixed(1)+' '+vw.toFixed(1)+' '+(y1-y0).toFixed(1)+'" role="img" aria-label="મંદિરનો પ્લાન">'+
+    '<defs><pattern id="hh" width="'+fs*.7+'" height="'+fs*.7+'" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="'+fs*.7+'" stroke="#9aa3b0" stroke-width="1" vector-effect="non-scaling-stroke"/></pattern></defs>'+
+    o+na+face+'</svg>';
+}
+function renderPlan(){
+  const w=wallV(),pw=PWv(),pd=PDv();
+  document.querySelectorAll('#wallOpt button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.w===S.wallK));
+  $('wallc').hidden=S.wallK!=='c';
+  $('wallHint').textContent=S.wallK==='c'?'તમારી પોતાની જાડાઈ.':'ગ્રંથ પ્રમાણે પ્રાસાદની પહોળાઈનો '+(S.wallK==='s6'?'છઠ્ઠો':'ચોથો')+' ભાગ. ગર્ભગૃહ ÷ '+(WALLS[S.wallK][1]-2)+'.';
+  $('tMandap').setAttribute('aria-pressed',!!S.mandap);$('tDims').setAttribute('aria-pressed',S.dims!==false);
+  if(!S.gw||!S.gd){['pstats','split','allm','planSvg'].forEach(i=>$(i).innerHTML=i==='planSvg'?'<div class="empty">ગર્ભગૃહનું માપ લખો.</div>':'');return;}
+  $('pstats').innerHTML='<div class="stat"><small>દીવાલ</small><b>'+fiI(w)+'</b></div><div class="stat key"><small>પ્રાસાદ</small><b>'+fiI(pw)+' × '+fiI(pd)+'</b></div>';
+  const A=split(pw),B=split(pd),sq=Math.abs(pw-pd)<1;
+  const side=(lab,L,s)=>'<div style="padding:0 0 8px"><div class="lab" style="display:flex;justify-content:space-between;margin-bottom:4px"><span>'+lab+'</span><b style="color:var(--ink)">'+fiI(L)+'</b></div>'+
+    '<div class="rows">'+[['#0f5f66','રેખા',s.r],['#c9a86b','પઢરો',s.p],['#1a7f4b','ભદ્ર',s.b]].map(x=>'<div class="r"><span><i style="background:'+x[0]+'"></i>'+x[1]+(x[1]==='ભદ્ર'?'':' (બે બાજુ)')+'</span><b>'+fiI(x[2])+'</b></div>').join('')+'</div></div>';
+  $('split').innerHTML=sq?side('દરેક બાજુ',pw,A):side('આગળ-પાછળની બાજુ',pw,A)+side('પડખાની બાજુ',pd,B);
+  $('planSvg').innerHTML=planSVG();
+  /* the rest of the measures */
+  const g=gz(),mh=rI(MAND2(g)*AU),pitha=rI(grow(g,12,[[5,5],[10,4],[20,3],[36,1.5],[50,.75]])*AU),bhit=rI((4+.5*(Math.min(g,50)-1))*AU),dh=dhV(),mw=mwV(),stw=stwV();
+  const R=(l,v,s)=>'<div class="r"><span>'+l+(s?'<small>'+s+'</small>':'')+'</span><b>'+v+'</b></div>';
+  $('allm').innerHTML=R('ભીત (પહેલી)',fiI(bhit),'પાયાનો પહેલો થર')+R('પીઠ',fiI(pitha),'જમીનથી પીઠના ઉપર સુધી')+R('મંડોવર ઊંચાઈ',fiI(mh),'પીઠના ઉપરથી છજ્જાના ઉપર સુધી')+
+    R('દ્વાર',fiI(dh)+' × '+fiI(dh/2),'ઊંચાઈ × પહોળાઈ')+R('મંડપ',fiI(mw)+' × '+fiI(mw),MF.find(x=>x[0]===mfAuto())[1]+' ગણો, ચોરસ')+R('થાંભલાની પહોળાઈ',fiI(stw))+R('ઘુમ્મટની ઊંચાઈ',fiI(mw/2),'મંડપની પહોળાઈનો અડધો');
+}
+
+
+/* ---------- 3 · MANDOVAR (takes the garbhagriha and wall from the Planning tab) ---------- */
+const MD=(function(){
+  const GL=["","⅛","¼","⅜","½","⅝","¾","⅞"];
+  function fe(x){let E=Math.round(x*8);const neg=E<0;E=Math.abs(E);const ft=Math.floor(E/96),r=E%96,i=Math.floor(r/8),g=GL[r%8];const inch=i?i+g:(g||"0");return (neg?"−":"")+(ft?ft+"′-"+inch+"″":inch+"″");}
+  function pf(p){let w=Math.floor(p+1e-9),f=Math.round((p-w)*8);if(f===8){w++;f=0}if(Math.abs((p-w)*8-f)>1e-6)return String(Math.round(p*100)/100);return (w?String(w):"")+GL[f]||"0";}
+  /* round to `unit` eighths of an inch so the pieces still add up to the rounded total */
+  function dist(vals,total,unit){
+    const T=Math.round(total*8/unit),Sum=vals.reduce((a,b)=>a+b,0);
+    const raw=vals.map(v=>Sum?v/Sum*T:0),fl=raw.map(Math.floor);let left=T-fl.reduce((a,b)=>a+b,0);
+    raw.map((v,i)=>[v-fl[i],i]).sort((a,b)=>b[0]-a[0]).forEach(o=>{if(left>0){fl[o[1]]++;left--}});
+    return fl.map(v=>v*unit/8);}
+  const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+  /* heights, pitha top to chhajja top, in angul (3/4″) */
+  const METH=[
+    {id:1,f:g=>g<=5?24*g+tbl([[1,14],[2,14],[3,7],[4,5],[5,3]],Math.max(g,1)):grow(g-4,123,[[6,14],[26,12],[46,9]])},
+    {id:2,f:MAND2},
+    {id:3,f:g=>tbl([[1,33],[2,55],[3,77],[4,97],[5,120],[6,142],[7,161],[8,176],[9,187],[10,192],[15,246],[20,300],[25,354],[30,408],[35,510],[40,516],[45,570],[50,600]],g)},
+    {id:4,f:g=>g<=5?24*g:grow(g-4,120,[[9,12],[17,11],[46,10]])}];
+
+  const KH="ખુરો",KU="કુંભો",KA="કળશ",AN="અંતરાલ",KE="કેવાળ",MA="માંચી",JA="જંઘા",UD="ઉદ્‌ગમ (ડોઢિયો)",BH="ભરણી",SH="શિરાવટી",PKA="પુષ્પકંઠ",CH="છજ્જુ";
+  const t=(n,p,o)=>{o=o||{};o.n=n;o.p=p;return o};
+  const SUB_KH=[["અંતરપત્ર",.5],["કર્ણ",2],["વાપીસ્કંધ",1.5],["કનક",1]];
+  const SUB_KU=[["સ્કંધપટ્ટ",.5],["ચિપ્પિકા",1],["કુંભ (ઘડો)",null]];
+  const SUB_KE=[["સ્કંધપટ્ટિકા",.5],["સ્કંધ",2.25],["મુખપટ્ટિકા",.25],["કર્ણ",2],["સ્કંધ",2.5],["સ્કંધપટ્ટ",.5]];
+  const SUB_MA=[["અંતરપત્ર",1.25],["કામરૂપ",.75],["પટ્ટિકા",.25],["સ્કંધ",2],["મુખપટ્ટી",.25],["કર્ણ",1.25],["સ્કંધ",1.25],["અંતરપત્રિકા",1.25],["કનક",.5],["નિર્વાણપટ્ટિકા",.25]];
+  const SUB_UD=[["છાદ્ય",.5],["કપોતાલી",.25],["અંતરપત્ર",.25],["પહેલો ઉદ્‌ગમ",5.5],["બીજો ઉદ્‌ગમ",8.5]];
+  const SUB_SH=[["ભારપુત્તલિકા",3],["સ્કંધ",.75],["કર્ણ",.75],["અંતરપત્ર",.5],["પટ્ટ",5]];
+  const N_JA="ખૂણે દિક્પાળ (પૂર્વથી શરૂ). પશ્ચિમ ભદ્રે નટેશ, દક્ષિણ ભદ્રે રુદ્ર–અંધકાસુર, ઉત્તર ભદ્રે દેવી. જંઘાની ચાર જાત: નાગરી (સાદી), લાટી (યુગલો, ગુજરાતમાં), વૈરાટી (પાંદડાં), દ્રાવિડી.";
+  const N_CH="નીકાળો 10 ભાગ. ભીંતમાં પ્રવેશ 6 ભાગ, વારિમાર્ગ 6 ભાગ.";
+  const n144=()=>[
+    t(KH,5,{out:2,subs:SUB_KH,note:"નીકાળો 2 ભાગ. આગળ બે પટ્ટિકા 1 ભાગ બહાર."}),
+    t(KU,20,{site:"કુંભો",subs:SUB_KU,note:"ત્રણ બાજુ બ્રહ્મા, વિષ્ણુ, રુદ્ર."}),
+    t(KA,8,{site:"કળસો"}),
+    t(AN,2.5,{site:"મંડોવર કેવાર દાબડી"}),
+    t(KE,8,{site:"મંડોવર કેવાર દાબડી",subs:SUB_KE}),
+    t(MA,9,{site:"કેવાર",subs:SUB_MA}),
+    t(JA,35,{site:"જાંગી",note:N_JA}),
+    t(UD,15,{site:"ડોઢીયા વાદ",subs:SUB_UD,note:"બીજા ઉદ્‌ગમમાં અંતરપત્ર ½, અંધારિકા ½, ગ્રાસપટ્ટી 3 ભાગ આવે છે; પુસ્તકમાં ગોઠવણ સ્પષ્ટ નથી."}),
+    t(BH,8,{site:"પાલ",note:"ભરણી 13 નાના ભાગમાં વહેંચાય છે."}),
+    t(SH,10,{site:"ભેટી",subs:SUB_SH}),
+    t(PKA,8,{site:"સુંઢીયું છાજુ"}),
+    t(AN,2.5,{site:"સુંઢીયું છાજુ"}),
+    t(CH,13,{site:"સુંઢીયું છાજુ",out:10,note:N_CH})];
+  const meru=()=>{const a=n144();return a.slice(0,9).concat([t(MA+" (ઉપરનો)",8),t(JA+" (ઉપરની)",25),t("ઉદ્‌ગમ (ઉપરનો)",13),t(BH+" (ઉપરની)",8)],a.slice(9))};
+  const TYPES=[
+    {id:"n144",name:"144 ભાગ",base:144,thars:n144},
+    {id:"meru",name:"198 મેરુ",base:198,thars:meru},
+    {id:"m108",name:"108 ભાગ",base:108,thars:()=>[t(KH,4),t(KU,15),t(KA,6),t(AN,3),t("કપોતાલી",6),t(MA,6),t(JA,32,{note:N_JA}),t("ઉદ્‌ગમ",11),t(BH,6),t("કપોતાલી",6),t(AN,3),t(CH,10,{out:7})]},
+    {id:"m27",name:"27 ભાગ",base:27,thars:()=>[t(KH,1),t(KU,4),t(KA,1.5),t(AN,.5),t(KE,1.5),t(MA,1.5),t(JA,8),t("ઉદ્‌ગમ",3),t(BH,1.5),t(PKA,1.5),t(AN,.5),t(CH,2.5,{out:2})]},
+    {id:"chatur",name:"57 ચતુર્મુખ",base:57,thars:()=>[t(KH,2),t(KU,7),t(KA,3),t("અંતરપત્રિકા",1),t("કપોતાલી",3),t(AN,.5),t(MA,3),t(JA,15),t("ઉદ્‌ગમ",5),t(BH,3),t("અંતરપત્રિકા",.5),t(SH,4),t("કપોતાલી",3),t("માળા",3),t(CH,4,{out:4})]},
+    {id:"sam",name:"સામાન્ય",base:75,thars:()=>[t(KH,5),t(KU,20),t(KA,8),t(AN,2.5),t(KE,8),t(BH,8),t(PKA,8),t(AN,2.5),t(CH,13,{out:10,note:N_CH})]},
+    {id:"mine",name:"મારો મંડોવર",base:144,thars:()=>[t("કુંભો",24),t("કળશો",9),t("કેવાર દાબડી",10),t("કેવાર",7),t("જાંઘી",28),t("પટ્ટી",6),t("ડોઢિયો",18),t("ભરણી",7),t("કપોતાલી",8),t("છાજું",12,{out:10})]}];
+
+  let sel=-1,V=null;
+  const unit=()=>S.mu===1?1:8;
+  const roundU=x=>Math.round(x*8/unit())*unit()/8;
+
+  function compute(){
+    const g=gz(),pw=PWv();
+    const ty=TYPES.find(x=>x.id===S.mt)||TYPES[0],mm=METH.find(x=>x.id===(+S.mm||2))||METH[1];
+    const hAll=METH.map(m=>roundU(m.f(g)*AU));
+    const hasOv=S.mov>0,H=hasOv?S.mov:hAll[mm.id-1];
+    const thars=ty.thars(),totalParts=thars.reduce((a,x)=>a+x.p,0),u=H/ty.base,tot=u*totalParts;
+    const hs=dist(thars.map(x=>x.p),tot,unit());
+    let from=0,pcum=0;
+    const rows=thars.map((x,i)=>{
+      const h=hs[i],r={x,h,from,to:from+h,out:x.out!=null?x.out*u:null};from+=h;
+      if(ty.id==="n144")r.pl=[144-pcum-x.p,144-pcum];   /* plate p.86 is drawn top-down in 144 equal parts */
+      pcum+=x.p;
+      if(x.subs){const known=x.subs.reduce((a,s)=>a+(s[1]||0),0),parts=x.subs.map(s=>s[1]==null?x.p-known:s[1]),sh=dist(parts,h,1);
+        r.subs=x.subs.map((s,k)=>({n:s[0],p:parts[k],h:sh[k],d:s[1]==null}));}
+      return r;});
+    const last=rows[rows.length-1];
+    return {g,pw,ty,H,hAll,hasOv,u,total:from,rows,proj:last&&last.out!=null?last.out:null,mm};
+  }
+
+  const PLK=1276/144,PWD=893;
+  function plateFig(r){
+    const y0=r.pl[0]*PLK,y1=r.pl[1]*PLK,h=y1-y0,pad=2,W=h>=150?PWD:Math.min(PWD,Math.max(260,h*6));
+    const M=250,vw=W+M,fs=Math.round(15*vw/560),dx=W+40,tk=fs*.45,yt=y0-pad-fs,vh=h+2*pad+2*fs,ym=(y0+y1)/2;
+    let o='<svg viewBox="-6 '+yt.toFixed(1)+' '+(vw+6)+' '+vh.toFixed(1)+'" role="img" aria-label="'+esc(r.x.n)+' ની રેખાકૃતિ">';
+    o+='<svg x="0" y="'+(y0-pad).toFixed(1)+'" width="'+W+'" height="'+(h+2*pad).toFixed(1)+'" viewBox="0 '+(y0-pad).toFixed(1)+' '+W+' '+(h+2*pad).toFixed(1)+'"><use href="#plate86"/></svg>';
+    o+='<path class="dsh" d="M0 '+y0.toFixed(1)+'H'+(dx+tk).toFixed(1)+'M0 '+y1.toFixed(1)+'H'+(dx+tk).toFixed(1)+'"/>';
+    o+='<path class="dm" d="M'+dx+' '+y0.toFixed(1)+'V'+y1.toFixed(1)+'M'+(dx-tk)+' '+y0.toFixed(1)+'H'+(dx+tk)+'M'+(dx-tk)+' '+y1.toFixed(1)+'H'+(dx+tk)+'"/>';
+    o+='<text x="'+(dx+tk+fs*.5).toFixed(1)+'" y="'+(ym+fs*.35).toFixed(1)+'" font-size="'+fs+'">'+fe(r.h)+'</text>';
+    return o+'</svg><p class="cap">પુસ્તકનો પ્લેટ (પૃ. 86) માંથી આ થર. થરની સીમા ભાગના પ્રમાણે, અંદાજે.</p>';}
+  function lineFig(r){
+    const H=Math.max(56,Math.min(210,r.h*Math.min(40,210/Math.max(r.h,.1)))),x0=70,x1=250,y0=20,dx=x1+36;
+    let o='<svg viewBox="0 0 360 '+(H+40)+'" role="img" aria-label="'+esc(r.x.n)+' ની રેખાકૃતિ" style="max-width:420px">';
+    o+='<rect class="ln" x="'+x0+'" y="'+y0+'" width="'+(x1-x0)+'" height="'+H.toFixed(1)+'"/>';
+    o+='<path class="dm" d="M'+dx+' '+y0+'V'+(y0+H).toFixed(1)+'M'+(dx-5)+' '+y0+'H'+(dx+5)+'M'+(dx-5)+' '+(y0+H).toFixed(1)+'H'+(dx+5)+'"/>';
+    o+='<text x="'+(dx+10)+'" y="'+(y0+H/2+5).toFixed(1)+'" font-size="14">'+fe(r.h)+'</text>';
+    o+='<text class="tx" x="'+((x0+x1)/2)+'" y="'+(y0+H/2+5).toFixed(1)+'" font-size="14" text-anchor="middle">'+esc(r.x.n)+'</text>';
+    return o+'</svg><p class="cap">આ પ્રકારનો પુસ્તકનો પ્લેટ હજી ઉમેર્યો નથી. અહીં ફક્ત થરની ઊંચાઈ બતાવી છે.</p>';}
+
+  function overview(){
+    const svg=V.total>0?(()=>{
+      const W=380,top=16,bot=34,HH=560,sy=(HH-top-bot)/V.total,x0=46,wallW=26;
+      const maxOut=Math.max(...V.rows.map(r=>r.out!=null?r.out:V.u)),kx=Math.min(10,80/Math.max(maxOut,.001));
+      const yBase=top+V.total*sy;let y=yBase,bands=[],lab=[];
+      V.rows.forEach((r,i)=>{const h=r.h*sy,yt=y-h;
+        const o=r.out!=null?r.out:(/^(જંઘ|જાંઘ)/.test(r.x.n)?0:V.u),bw=Math.max(o*kx,.5);
+        bands.push('<rect class="band'+(i%2?' b':'')+(i===sel?' on':'')+'" data-mi="'+i+'" x="'+x0+'" y="'+yt.toFixed(1)+'" width="'+(bw+14).toFixed(1)+'" height="'+Math.max(h,.6).toFixed(1)+'"/>');
+        lab.push(yt+h/2);y=yt;});
+      const gap=15;let pos=lab.slice();for(let a=1;a<pos.length;a++)if(pos[a]>pos[a-1]-gap)pos[a]=pos[a-1]-gap;
+      const lo=Math.min(...pos);if(lo<top+6){const s=top+6-lo;pos=pos.map(p=>p+s)}
+      const lx=x0+14+80+18;let o='<rect class="wallr" x="'+(x0-wallW)+'" y="'+top+'" width="'+wallW+'" height="'+(yBase-top).toFixed(1)+'"/>'+bands.join("");
+      lab.forEach((ly,k)=>{const r=V.rows[k],bw=Math.max((r.out!=null?r.out:V.u)*kx,.5)+14;
+        o+='<path class="ldr" d="M'+(x0+bw).toFixed(1)+' '+ly.toFixed(1)+' L'+(lx-6)+' '+pos[k].toFixed(1)+'"/>';
+        o+='<text class="lbl'+(k===sel?' on':'')+'" data-mi="'+k+'" x="'+lx+'" y="'+(pos[k]+4).toFixed(1)+'">'+esc(r.x.n)+' <tspan class="hh" dx="4">'+fe(r.h)+'</tspan></text>';});
+      o+='<line class="base" x1="'+(x0-wallW-6)+'" x2="'+(W-6)+'" y1="'+yBase+'" y2="'+yBase+'"/>';
+      o+='<text class="bl" x="'+(x0-wallW-6)+'" y="'+(yBase+16)+'">પીઠનું મથાળું</text><text class="bl" x="'+(x0-wallW-6)+'" y="'+(yBase+30)+'">કુલ ઊંચાઈ '+fe(V.total)+'</text>';
+      return '<svg viewBox="0 0 '+W+' '+HH+'" role="img" aria-label="મંડોવરનું બાજુનું ચિત્ર, નીચેથી ઉપર થરો">'+o+'</svg>';})():'';
+    return svg+'<p class="hint" style="padding:0 6px 4px">ઊંચાઈ માપસર છે. ખુરા અને છજ્જાનો નીકાળો પુસ્તક મુજબ, બાકીના થર સરખા નીકાળે દોર્યા છે. થર પર દબાવો.</p>';}
+
+  function cards(){
+    return V.rows.map((r,i)=>{const x=r.x;
+      const subs=r.subs?'<div class="rows msub"><div class="lab" style="padding-bottom:4px">ઉપ-ભાગ (પુસ્તકના ક્રમમાં)</div>'+r.subs.map(s=>'<div class="r"><span>'+esc(s.n)+(s.d?' (બાકીનો)':'')+'<small>'+pf(s.p)+' ભાગ</small></span><b>'+fe(s.h)+'</b></div>').join("")+'</div>':'';
+      return '<article class="card mc'+(i===sel?' on':'')+'" id="mc'+i+'" data-mi="'+i+'" tabindex="0">'+
+        '<div class="mh"><span class="mn">'+(i+1)+'</span><div><h3>'+esc(x.n)+'</h3>'+(x.site?'<span class="mt">સાઇટનું નામ: '+esc(x.site)+'</span>':'')+'</div><span class="mv">'+fe(r.h)+'</span></div>'+
+        '<div class="mfig">'+(r.pl?plateFig(r):lineFig(r))+'</div>'+
+        '<p class="mr">'+pf(x.p)+' ભાગ · પીઠના ઉપરથી '+fe(r.from)+' થી '+fe(r.to)+' સુધી'+(r.out!=null?' · નીકાળો '+fe(r.out):'')+'</p>'+
+        subs+(x.note?'<p class="hint">'+esc(x.note)+'</p>':'')+'</article>';}).join("");}
+
+  function pills(host,items,cur,fn,lab){
+    const el=$(host);el.innerHTML=items.map(it=>'<button class="pill" data-v="'+it.id+'" aria-pressed="'+(String(it.id)===String(cur))+'">'+(lab?lab(it):it.name)+'</button>').join("");
+    el.onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;fn(b.dataset.v);};}
+
+  function render(){
+    V=compute();const ok=!!(S.gw&&S.gd);
+    const rowsB=ok?(()=>{const w=wallV(),pw=PWv(),pd=PDv();const R=(l,v,s)=>'<div class="r"><span>'+l+(s?'<small>'+s+'</small>':'')+'</span><b>'+v+'</b></div>';
+      return R('ગર્ભગૃહ (અંદર)',fiI(S.gw)+' × '+fiI(S.gd))+R('દીવાલ',fiI(w),S.wallK==='c'?'તમારી જાડાઈ':S.wallK==='s6'?'પથ્થર, પ્રાસાદના ⅙':'ઈંટ, પ્રાસાદના ¼')+R('પ્રાસાદ (બહાર)',fiI(pw)+' × '+fiI(pd),'ખૂણેથી ખૂણે, દીવાલ + ગર્ભગૃહ + દીવાલ');})()
+      :'<div class="empty">પહેલાં પ્લાનિંગ ટેબમાં ગર્ભગૃહનું માપ લખો.</div>';
+    $('m-base').innerHTML='<div class="rows">'+rowsB+'</div>';
+    pills('m-type',TYPES,S.mt||'n144',v=>{S.mt=v;sel=-1;save();renderAll();});
+    pills('m-meth',METH,S.mm||2,v=>{S.mm=+v;save();renderAll();},it=>'રીત '+it.id+(ok?' · '+fe(V.hAll[it.id-1]):''));
+    pills('m-unit',[{id:8,name:"પૂરા ઇંચ"},{id:1,name:"⅛″ સુધી"}],unit(),v=>{S.mu=+v;save();renderAll();});
+    $('m-resetH').hidden=!V.hasOv;
+    if(!ok||!(V.g>0)){['m-stats','m-over','m-cards','m-warn'].forEach(i=>$(i).innerHTML='');return;}
+    $('m-stats').innerHTML='<div class="stat key"><small>મંડોવરની ઊંચાઈ</small><b>'+fe(V.H)+'</b></div><div class="stat"><small>1 ભાગ</small><b>'+fe(V.u)+'</b></div><div class="stat"><small>છજ્જાનો નીકાળો</small><b>'+(V.proj!=null?fe(V.proj):'—')+'</b></div>';
+    const w=[];
+    if(V.g<1||V.g>50)w.push("પુસ્તકનાં કોષ્ટક 1′-6″ થી 75′ ના પ્રાસાદ માટે છે. આ માપ તેની બહાર છે, એટલે ઊંચાઈ અંદાજિત છે.");
+    if(V.ty.id==="mine")w.push("આ તમારો પોતાનો મંડોવર છે (129 ભાગ). ઊંચાઈ 144 ભાગના હિસાબે લીધી છે, એટલે થરોની કુલ ઊંચાઈ "+fe(V.total)+" થાય છે.");
+    $('m-warn').innerHTML=w.map(x=>'<p class="warn">'+x+'</p>').join("");
+    $('m-over').innerHTML=overview();
+    $('m-cards').innerHTML=cards();
+  }
+  function pick(i){
+    sel=sel===i?-1:i;
+    document.querySelectorAll('#tab-mand [data-mi]').forEach(el=>{const on=+el.dataset.mi===sel;
+      if(el.classList.contains('mc')||el.classList.contains('band')||el.classList.contains('lbl'))el.classList.toggle('on',on);});
+    if(sel>=0){const el=$('mc'+sel);if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest',behavior:'smooth'});}}
+  $('tab-mand').addEventListener('click',e=>{const el=e.target.closest('[data-mi]');if(el)pick(+el.dataset.mi);});
+  $('tab-mand').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target.closest&&e.target.closest('[data-mi]');if(!el||e.target.tagName==='INPUT')return;e.preventDefault();pick(+el.dataset.mi);});
+  return {render};
+})();
+
+/* ---------- mount ---------- */
+mountDim('nak-dims','w','પહોળાઈ',()=>S.w,v=>S.w=v,true);
+mountDim('nak-dims','d','ઊંડાઈ',()=>S.d,v=>S.d=v,true);
+mountDim('h-dims','h','ગર્ભગૃહની ઊંચાઈ',()=>S.h,v=>S.h=v,false);
+mountDim('g-dims','gw','પહોળાઈ',()=>S.gw,v=>S.gw=v,true);
+mountDim('g-dims','gd','ઊંડાઈ',()=>S.gd,v=>S.gd=v,true);
+mountDim('wallc','wallc','જાડાઈ',()=>S.wallc,v=>S.wallc=v,false);
+mountDim('bp-dim','bp','ભદ્રનો નીકાળો',()=>bhV(),v=>S.bp=v,false);
+mountDim('pp-dim','pp','પઢરાનો નીકાળો',()=>ppV(),v=>S.pp=v,false);
+mountDim('m-ov','mov','ઊંચાઈ',()=>S.mov,v=>S.mov=v,false);
+
+document.querySelectorAll('#faceSeg button').forEach(b=>b.onclick=()=>{S.face=b.dataset.f;save();renderAll();});
+$('cntStep').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;S.cnt=Math.min(10,Math.max(1,(S.cnt||5)+ +b.dataset.s));save();renderAll();};
+$('onlyGood').onclick=()=>{S.onlyGood=!S.onlyGood;save();renderAll();};
+$('aayInfo').onclick=e=>{const b=e.target.closest('[data-h]');if(!b)return;S.h=+b.dataset.h;save();syncDims(null);renderAll();};
+$('sizes').onclick=e=>{const b=e.target.closest('.opt');if(!b)return;S.w=+b.dataset.w;S.d=+b.dataset.d;save();syncDims(null);renderAll();window.scrollTo({top:0,behavior:'smooth'});};
+$('fromNak').onclick=()=>{S.gw=S.w;S.gd=S.d;save();syncDims(null);renderAll();};
+document.querySelectorAll('#wallOpt button').forEach(b=>b.onclick=()=>{S.wallK=b.dataset.w;if(S.wallK==='c'&&!S.wallc)S.wallc=wallV()||24;save();syncDims(null);renderAll();});
+$('tMandap').onclick=()=>{S.mandap=!S.mandap;save();renderAll();};
+$('tDims').onclick=()=>{S.dims=S.dims===false;save();renderAll();};
+$('m-resetH').onclick=()=>{delete S.mov;save();syncDims(null);renderAll();};
+$('m-toPlan').onclick=()=>{S.tab='plan';save();applyTab(true);window.scrollTo({top:0});};
+$('resetProj').onclick=()=>{delete S.bp;delete S.pp;save();syncDims(null);renderAll();};
+
+const TABS=['nak','plan','mand'];
+function renderAll(){if(S.tab==='plan')renderPlan();else if(S.tab==='mand')MD.render();else renderNak();}
+function applyTab(anim){
+  const t=TABS.includes(S.tab)?S.tab:'nak';S.tab=t;
+  TABS.forEach(k=>$('tab-'+k).hidden=k!==t);
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));
+  syncDims(null);renderAll();
+  if(anim){const el=$('tab-'+t);el.classList.remove('enter');void el.offsetWidth;el.classList.add('enter');}
+}
+$('tabs').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;S.tab=b.dataset.t;save();applyTab(true);window.scrollTo({top:0});};
+$('logo').src=document.querySelector('link[rel="icon"]').href;
+applyTab(false);
+})();
+</script>
