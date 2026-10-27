@@ -143,7 +143,7 @@ export function PlannerScreen() {
         accessibilityRole="button"
         accessibilityLabel={`${tx(`slot_${sp.slot}` as StrKey)}: ${dishesOf(opt)}`}
         onPress={() => nav.go({ k: 'meal', date, i })}
-        style={({ pressed }) => [s.wRow, pressed && { opacity: 0.7 }]}
+        style={({ pressed }) => [s.wRow, (eaten || pressed) && { opacity: 0.5 }]}
       >
         <View style={[s.dot, { backgroundColor: col.strong }]} />
         <Text style={s.wSlot} numberOfLines={1}>
@@ -266,6 +266,7 @@ export function PlannerScreen() {
         const opt = pick(sp);
         if (!opt) return null;
         const eaten = eatenSlots.has(sp.slot);
+        if (eaten) return null; // eaten meals leave the list; they sit under "Eaten" below
         const col = MEAL[sp.slot];
         return (
           <Pressable
@@ -314,6 +315,19 @@ export function PlannerScreen() {
           </Pressable>
         );
       })}
+      {!out && plan && plan.slots.every((sp) => eatenSlots.has(sp.slot)) && <Muted>All meals eaten for this day.</Muted>}
+      {!out && plan && plan.slots.some((sp) => eatenSlots.has(sp.slot)) && (
+        <View style={{ gap: 8 }}>
+          <Text style={s.extrasTitle} numberOfLines={1}>
+            Eaten
+          </Text>
+          <Row>
+            {plan.slots.map((sp, i) =>
+              eatenSlots.has(sp.slot) ? <Chip key={sp.slot} label={`${tx(`slot_${sp.slot}` as StrKey)} ✓`} onPress={() => nav.go({ k: 'meal', date, i })} /> : null,
+            )}
+          </Row>
+        </View>
+      )}
       <Row>
         <Button icon="copy" kind="soft" label={copied ? 'Copied' : 'Copy week'} onPress={copyWeek} />
       </Row>
