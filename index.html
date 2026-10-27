@@ -291,6 +291,7 @@ canvas#donut{width:200px;height:200px}
 .srow small{white-space:normal}
 .panel .qrow{min-width:0}.panel .qrow input{min-width:0;width:100%}
 html,body{max-width:100vw;overflow-x:hidden}
+.otype.two{grid-template-columns:1fr 1fr}.brk[hidden]{display:none}.pend-f{margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -372,6 +373,9 @@ html,body{max-width:100vw;overflow-x:hidden}
       <div class="otype" id="otype"><button data-t="MARKET" class="on">Market</button><button data-t="LIMIT">Limit</button><button data-t="SL">Stop-loss</button></div>
       <div id="pricebox" hidden><span class="lbl" id="plabel"></span><div class="qrow"><input id="oprice" type="number" step="0.05" placeholder="Price"></div>
         <div class="quick" id="pquick" style="margin-bottom:0"><button data-p="0">LTP</button><button data-p="-1">−1%</button><button data-p="-5">−5%</button><button data-p="1">+1%</button><button data-p="5">+5%</button></div></div>
+      <div id="brk" class="brk"><span class="lbl" style="display:block;margin-bottom:6px;text-transform:none;letter-spacing:0;font-size:12px">Attach exits (optional): stop-loss &amp; target</span>
+        <div class="qrow"><input id="bSl" type="number" step="0.05" placeholder="Stop-loss ₹"><input id="bTp" type="number" step="0.05" placeholder="Target ₹"></div>
+        <div class="quick" id="bQ" style="margin-bottom:12px"><button data-s="2" data-t="4">SL 2% · T 4%</button><button data-s="5" data-t="10">SL 5% · T 10%</button><button data-s="10" data-t="20">SL 10% · T 20%</button></div></div>
       <div class="qrow"><button id="qm">−</button><input id="qty" type="number" min="1" value="10"><button id="qp">+</button></div>
       <div class="quick"><button data-q="1">1</button><button data-q="10">10</button><button data-q="50">50</button><button data-q="100">100</button><button data-q="max">MAX</button></div>
       <div class="sum num" id="sum"></div>
@@ -386,7 +390,7 @@ html,body{max-width:100vw;overflow-x:hidden}
     </aside>
   </section>
 
-  <section class="glass card t-pf" id="fnoCard" hidden><div class="lbl" style="margin-bottom:10px">My F&amp;O positions <span id="fnoPnl" class="num" style="margin-left:8px"></span></div><div id="fnoPos" class="plist"></div></section>
+  <section class="glass card t-pf" id="fnoCard" hidden><div class="lbl" style="margin-bottom:10px">My F&amp;O positions <span id="fnoPnl" class="num" style="margin-left:8px"></span></div><div id="fnoPend"></div><div id="fnoPos" class="plist"></div></section>
   <section class="glass card t-fno" id="fnoPage">
     <div class="lbl" style="margin-bottom:2px">Futures &amp; Options</div>
     <div class="fnogrid">
@@ -398,7 +402,13 @@ html,body{max-width:100vw;overflow-x:hidden}
       <div><div class="ticket">
           <div id="tkTitle" class="num" style="font-weight:700">Tap a Future or an option price above to select a contract</div>
           <div class="tr"><span class="mut">Lots</span><input id="fLots" type="number" min="1" value="1"><span id="tkReq" class="num mut"></span></div>
-          <div class="tr"><button class="tbtn" id="fBuy">BUY</button><button class="tbtn s" id="fSell">SELL</button></div>
+          <div class="seg" id="fSeg" style="margin:0"><button class="b on" data-s="1">BUY</button><button class="s" data-s="-1">SELL</button></div>
+          <div class="otype two" id="fType" style="margin:0"><button data-t="MKT" class="on">At market</button><button data-t="LMT">At my price</button></div>
+          <div id="fPriceBox" hidden><span class="lbl">Entry price (contract)</span><div class="qrow" style="margin-top:6px"><input id="fPrice" type="number" step="0.05" placeholder="Price you want"></div>
+            <div class="quick" id="fPQ" style="margin-bottom:0"><button data-p="-10">−10%</button><button data-p="-5">−5%</button><button data-p="0">Now</button><button data-p="5">+5%</button><button data-p="10">+10%</button></div></div>
+          <div><span class="lbl">Stop-loss &amp; target (optional)</span><div class="qrow" style="margin-top:6px"><input id="fSl" type="number" step="0.05" placeholder="Stop-loss"><input id="fTp" type="number" step="0.05" placeholder="Target"></div>
+            <div class="quick" id="fBQ" style="margin-bottom:0"><button data-s="20" data-t="40">SL 20% · T 40%</button><button data-s="30" data-t="60">SL 30% · T 60%</button><button data-s="50" data-t="100">SL 50% · T 100%</button></div></div>
+          <button class="go" id="fGo">BUY</button>
           <div class="err" id="fErr" style="margin:0"></div>
           <div class="hint">Simulated derivatives: prices come from a Black-Scholes model on the live spot (IV 15% index / 30% stocks, 7% rate). Futures need 15% margin; selling options blocks 15% margin. Cash-settled at expiry.</div>
         </div>
@@ -561,7 +571,7 @@ const STOCKS=RAW.map(([sym,name,sector,p])=>makeStock(sym,name,sector,p,true));
 let state=load()||{cash:START,pos:{},orders:[],nw:[]};
 // migrate older saves (positions were keyed by symbol only → NSE)
 for(const k of Object.keys(state.pos)) if(!k.includes(":")){state.pos["NSE:"+k]=state.pos[k];delete state.pos[k];}
-state.capital=state.capital>0?state.capital:START;state.recent=state.recent||[];state.nw=state.nw||[];state.extra=state.extra||[];state.pending=state.pending||[];state.alerts=state.alerts||[];state.fno=state.fno||[];state.lots=state.lots||{}; state.orders.forEach(o=>{o.ex=o.ex||"NSE"});
+state.capital=state.capital>0?state.capital:START;state.recent=state.recent||[];state.nw=state.nw||[];state.extra=state.extra||[];state.pending=state.pending||[];state.alerts=state.alerts||[];state.fno=state.fno||[];state.fnoPending=state.fnoPending||[];state.lots=state.lots||{}; state.orders.forEach(o=>{o.ex=o.ex||"NSE"});
 backfillTradebook();
 // Orders made before the tradebook existed have no buy/sell pairing or P&L: replay them oldest-first to rebuild it.
 function backfillTradebook(){
@@ -767,6 +777,7 @@ function renderDetail(){
   // order panel
   const q=Math.max(0,Math.floor(+$("qty").value)||0),opx=(otype!=="MARKET"&&+$("oprice").value>0)?+$("oprice").value:s.px[ex],val=q*opx,fee=val*FEE;
   $("sum").innerHTML=`<div><span class="mut">${otype==="MARKET"?"Price":(otype==="LIMIT"?"Limit price":"Trigger price")}</span><span>${inr(opx)}</span></div><div><span class="mut">Order value</span><span>${inr(val)}</span></div><div><span class="mut">Brokerage (0.03%)</span><span>${inr(fee)}</span></div><div><span class="mut">${side==="BUY"?"Total debit":"Net credit"}</span><b>${inr(side==="BUY"?val+fee:val-fee)}</b></div><div><span class="mut">${side==="BUY"?"Cash available":"Shares held"}</span><span>${side==="BUY"?inr(state.cash):(hp?hp.qty:0)}</span></div>`;
+  $("brk").hidden=!(side==="BUY"&&otype!=="SL");
   const g=$("go");g.className="go "+(side==="SELL"?"s":"");g.textContent=`${otype=="MARKET"?"":(otype==="LIMIT"?"LIMIT ":"STOP-LOSS ")}${side} ${s.sym} · ${ex}`;
   document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on",b.dataset.s===side));
 }
@@ -844,10 +855,15 @@ function trade(){
   const q=Math.floor(+$("qty").value);if(!(q>0))return setErr("Enter a valid quantity.");
   const s=cur();if(!s.on[ex])return setErr(`${s.sym} is not listed on ${ex} — trade it on the other exchange.`);
   const ltp=s.px[ex];
+  const wantExits=side==="BUY"&&otype!=="SL",entryPx=otype==="LIMIT"&&+$("oprice").value>0?+$("oprice").value:ltp;
+  const bsl=wantExits&&+$("bSl").value>0?+$("bSl").value:null,btp=wantExits&&+$("bTp").value>0?+$("bTp").value:null;
+  if(bsl&&bsl>=entryPx)return setErr(`Stop-loss must be below the buy price (${inr(entryPx)}).`);
+  if(btp&&btp<=entryPx)return setErr(`Target must be above the buy price (${inr(entryPx)}).`);
   if(otype==="MARKET"){
     if(!isOpen())return setErr(CLOSED_MSG);
     const err=fill(side,s,ex,q,ltp,"");if(err)return setErr(err);
-    save();doneToast(side,q,s,ex,ltp,"");render();return;
+    if(bsl||btp)addExits(s,ex,q,bsl,btp);
+    save();doneToast(side,q,s,ex,ltp,"");if(bsl||btp)toast(`<b>Exits placed</b><br><small>${bsl?"Stop-loss "+inr(bsl):""}${bsl&&btp?" · ":""}${btp?"Target "+inr(btp):""} (one cancels the other)</small>`,"#ff9933");render();return;
   }
   const price=+$("oprice").value;if(!(price>0))return setErr("Enter a price for this order.");
   if(otype==="SL"){
@@ -857,9 +873,16 @@ function trade(){
   if(side==="SELL"){const p=state.pos[key(ex,s.sym)];if(!p||p.qty<q)return setErr(`You only hold ${p?p.qty:0} shares on ${ex}.`)}
   else if(q*price*(1+FEE)>state.cash)return setErr("Not enough cash for this order at that price.");
   rememberStock(s);
-  state.pending.push({id:Date.now()+Math.random(),side,sym:s.sym,name:s.name,ex,qty:q,type:otype,price});
+  state.pending.push({id:Date.now()+Math.random(),side,sym:s.sym,name:s.name,ex,qty:q,type:otype,price,attach:(bsl||btp)?{sl:bsl,tp:btp}:null});
   save();toast(`<b>${otype==="LIMIT"?"Limit":"Stop-loss"} order placed</b><br><small>${side} ${q} × ${s.sym} (${ex}) at ${inr(price)}</small>`,"#ff9933");render();
 }
+// Two sell orders linked together: when one executes the other is cancelled (OCO)
+function addExits(s,e,q,sl,tp,ts){
+  const grp=Date.now()+Math.random(),base=ts||Date.now();
+  if(sl)state.pending.push({id:base+Math.random(),side:"SELL",sym:s.sym,name:s.name,ex:e,qty:q,type:"SL",price:sl,oco:grp});
+  if(tp)state.pending.push({id:base+Math.random(),side:"SELL",sym:s.sym,name:s.name,ex:e,qty:q,type:"LIMIT",price:tp,oco:grp});
+}
+function dropSiblings(o){if(o.oco)state.pending=state.pending.filter(x=>x.oco!==o.oco)}
 function checkPending(){
   if(!isOpen()||!state.pending.length||(liveEver&&!cuReady))return;
   let changed=false;
@@ -867,8 +890,10 @@ function checkPending(){
     const s=STOCKS.find(x=>x.sym===o.sym);if(!s||!s.on[o.ex]||priceErr(s,o.ex))continue;const ltp=s.px[o.ex];
     const hit=o.type==="LIMIT"?(o.side==="BUY"?ltp<=o.price:ltp>=o.price):(o.side==="SELL"?ltp<=o.price:ltp>=o.price);
     if(!hit)continue;
-    state.pending=state.pending.filter(x=>x!==o);changed=true;
+    if(!state.pending.includes(o))continue;
+    state.pending=state.pending.filter(x=>x!==o);dropSiblings(o);changed=true;
     const err=fill(o.side,s,o.ex,o.qty,ltp,o.type==="LIMIT"?"Limit":"Stop-loss");
+    if(!err&&o.attach)addExits(s,o.ex,o.qty,o.attach.sl,o.attach.tp);
     if(err)toast(`<b>Order cancelled</b><br><small>${o.side} ${o.qty} × ${o.sym}: ${err}</small>`,"#ff4d6d");
     else{doneToast(o.side,o.qty,s,o.ex,ltp,o.type==="LIMIT"?"Limit":"Stop-loss");notify(`${o.type==="LIMIT"?"Limit":"Stop-loss"} order executed`,`${o.side} ${o.qty} × ${o.sym} @ ${inr(ltp)}`);beep()}
   }
@@ -897,7 +922,7 @@ function checkAlerts(){
 }
 let lastOrdHtml="",lastAlHtml="";
 function renderOrders(){
-  const ph=state.pending.map(o=>`<div class="mini-row"><span><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b> ${o.qty} × ${o.sym} <span class="badge ${o.ex}" style="margin:0 0 0 4px">${o.ex}</span><br><small class="num">${o.type==="LIMIT"?"Limit":"Stop-loss trigger"} ${inr(o.price)}</small></span><button data-cancel="${o.id}" title="Cancel">✕</button></div>`).join("")||`<div class="hint">No open orders.</div>`;
+  const ph=state.pending.map(o=>`<div class="mini-row"><span><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b> ${o.qty} × ${o.sym} <span class="badge ${o.ex}" style="margin:0 0 0 4px">${o.ex}</span><br><small class="num">${o.oco?(o.type==="LIMIT"?"Target":"Stop-loss")+" exit (OCO)":(o.type==="LIMIT"?"Limit":"Stop-loss trigger")} ${inr(o.price)}${o.attach?` · then ${o.attach.sl?"SL "+fmt(o.attach.sl):""}${o.attach.sl&&o.attach.tp?" / ":""}${o.attach.tp?"T "+fmt(o.attach.tp):""}`:""}</small></span><button data-cancel="${o.id}" title="Cancel">✕</button></div>`).join("")||`<div class="hint">No open orders.</div>`;
   if(ph!==lastOrdHtml){$("pend").innerHTML=ph;lastOrdHtml=ph}
   const ah=state.alerts.map(a=>`<div class="mini-row"><span><b>${a.sym}</b> <span class="badge ${a.ex}" style="margin:0 0 0 4px">${a.ex}</span> ${a.dir==="above"?"≥":"≤"} <span class="num">${inr(a.price)}</span></span><button data-del="${a.id}" title="Delete">✕</button></div>`).join("")||`<div class="hint">No alerts set.</div>`;
   if(ah!==lastAlHtml){$("alerts").innerHTML=ah;lastAlHtml=ah}
@@ -942,19 +967,21 @@ const fnoValue=()=>state.fno.reduce((a,p)=>a+posValue(p),0);
 const netWorth=()=>state.cash+holdings().reduce((a,h)=>a+h.val,0)+fnoValue();
 const contractName=c=>`${c.under} ${c.kind==="FUT"?"FUT":c.strike+" "+c.kind} ${expLabel(c.expiry)}`;
 
-function openFno(c,sd,lots){
-  if(!isOpen())return "Market is closed. Turn on Practice mode in ⚙ Settings to trade derivatives.";
+function openFno(c,sd,lots,opt){
+  opt=opt||{};const past=!!opt.ts;
+  if(!past&&!isOpen())return "Market is closed. Turn on Practice mode in ⚙ Settings to trade derivatives.";
   if(!(lots>0))return "Enter the number of lots.";
-  const lot=lotOf(c.under),qty=lots*lot,S=spotOf(c.under,c.ex),m=markOf(c);
-  if(!IM(c.under)){const us=STOCKS.find(x=>x.sym===c.under),pe=us&&priceErr(us,c.ex);if(pe)return pe}
+  const lot=lotOf(c.under),qty=lots*lot,S=opt.spot!=null?opt.spot:spotOf(c.under,c.ex),m=opt.price!=null?opt.price:markOf(c);
+  if(!past&&!IM(c.under)){const us=STOCKS.find(x=>x.sym===c.under),pe=us&&priceErr(us,c.ex);if(pe)return pe}
   if(S==null||m==null)return "Waiting for the live price of this underlying…";
   if(m<=0.05&&c.kind!=="FUT"&&sd>0)return "This option is worthless — pick another strike.";
   const notional=S*qty;let margin=0;
   if(c.kind==="FUT"){margin=notional*MARGIN;if(margin>state.cash)return `Not enough cash — margin needed ${inr(margin)}.`;state.cash-=margin}
   else if(sd>0){const cost=m*qty;if(cost>state.cash)return `Not enough cash — premium is ${inr(cost)}.`;state.cash-=cost}
   else{margin=notional*MARGIN;if(margin>state.cash+m*qty)return `Not enough cash — margin needed ${inr(margin)}.`;state.cash+=m*qty-margin}
-  state.fno.push({id:Date.now()+Math.random(),kind:c.kind,under:c.under,ex:c.ex,expiry:c.expiry,strike:c.strike,lots,lot,qty,side:sd,entry:m,margin});
-  state.orders.unshift({side:sd>0?"BUY":"SELL",sym:contractName(c),ex:c.ex,qty,price:m,tag:"F&O",ts:Date.now(),fee:0});
+  const ts=opt.ts||Date.now();
+  state.fno.push({id:ts+Math.random(),kind:c.kind,under:c.under,ex:c.ex,expiry:c.expiry,strike:c.strike,lots,lot,qty,side:sd,entry:m,margin,sl:opt.sl||null,tp:opt.tp||null});
+  state.orders.unshift({side:sd>0?"BUY":"SELL",sym:contractName(c),ex:c.ex,qty,price:m,tag:opt.tag||"F&O",ts,fee:0});
   save();return "";
 }
 function underOk(p){
@@ -1009,13 +1036,39 @@ function renderTicket(base,S,lot){
   $("tkReq").textContent=`Qty ${qty} · Buy needs ${tk.kind==="FUT"?"margin "+inr(S*qty*MARGIN):"premium "+inr(m*qty)} · Sell blocks ${inr(S*qty*MARGIN)} margin`;
 }
 function fnoContract(){const{u,e}=fnoCtx();if(!fno.tk||!fno.exp)return null;return{under:u,ex:e,expiry:fno.exp,...fno.tk}}
-function fnoTrade(sd){
+let fSide=1,fType="MKT";
+function fnoPlace(){
   $("fErr").textContent="";const c=fnoContract();if(!c)return $("fErr").textContent="Select a contract first.";
-  const err=openFno(c,sd,Math.floor(+$("fLots").value));
-  if(err)return $("fErr").textContent=err;
-  toast(`<b class="${sd>0?"up":"down"}">${sd>0?"BUY":"SELL"}</b> · ${contractName(c)}<br><small class="num">${Math.floor(+$("fLots").value)} lot(s) @ ${inr(markOf(c))}</small>`,sd>0?"#00e0a0":"#ff4d6d");
+  const lots=Math.floor(+$("fLots").value),m=markOf(c),L=fSide>0;
+  if(m==null)return $("fErr").textContent="Waiting for the live price…";
+  const entry=fType==="LMT"?+$("fPrice").value:m;if(!(entry>0))return $("fErr").textContent="Enter your entry price.";
+  const sl=+$("fSl").value>0?+$("fSl").value:null,tp=+$("fTp").value>0?+$("fTp").value:null;
+  if(sl&&(L?sl>=entry:sl<=entry))return $("fErr").textContent=`For a ${L?"BUY":"SELL"}, stop-loss must be ${L?"below":"above"} the entry price (${fmt(entry)}).`;
+  if(tp&&(L?tp<=entry:tp>=entry))return $("fErr").textContent=`For a ${L?"BUY":"SELL"}, target must be ${L?"above":"below"} the entry price (${fmt(entry)}).`;
+  if(fType==="MKT"){
+    const err=openFno(c,fSide,lots,{sl,tp});if(err)return $("fErr").textContent=err;
+    toast(`<b class="${L?"up":"down"}">${L?"BUY":"SELL"}</b> · ${contractName(c)}<br><small class="num">${lots} lot(s) @ ${inr(m)}${sl?" · SL "+fmt(sl):""}${tp?" · T "+fmt(tp):""}</small>`,L?"#00e0a0":"#ff4d6d");
+  }else{
+    if(!isOpen()&&false)return;
+    state.fnoPending.push({id:Date.now()+Math.random(),c:{kind:c.kind,under:c.under,ex:c.ex,expiry:c.expiry,strike:c.strike},side:fSide,lots,price:entry,sl,tp});save();
+    toast(`<b>Order placed</b><br><small>${L?"BUY":"SELL"} ${lots} lot(s) ${contractName(c)} when price ${L?"≤":"≥"} ${fmt(entry)}${sl?" · SL "+fmt(sl):""}${tp?" · T "+fmt(tp):""}</small>`,"#ff9933");
+  }
   render();
 }
+function checkFnoPending(){
+  if(!state.fnoPending.length||!isOpen()||(liveEver&&!cuReady))return;
+  for(const o of [...state.fnoPending]){
+    if(o.c.expiry<=Date.now()){state.fnoPending=state.fnoPending.filter(x=>x!==o);save();toast("A pending F&O order expired and was cancelled.","#ff4d6d");continue}
+    const us=STOCKS.find(x=>x.sym===o.c.under);if(!IM(o.c.under)&&(!us||priceErr(us,o.c.ex)))continue;
+    const m=markOf(o.c);if(m==null)continue;const L=o.side>0;
+    if(!(L?m<=o.price:m>=o.price))continue;
+    state.fnoPending=state.fnoPending.filter(x=>x!==o);
+    const px=L?Math.min(o.price,m):Math.max(o.price,m),err=openFno(o.c,o.side,o.lots,{price:px,sl:o.sl,tp:o.tp,spot:spotOf(o.c.under,o.c.ex),ts:undefined});
+    if(err)toast(`<b>Order cancelled</b><br><small>${contractName(o.c)}: ${err}</small>`,"#ff4d6d");
+    else{toast(`<b class="${L?"up":"down"}">${L?"BUY":"SELL"} executed</b> · ${contractName(o.c)}<br><small class="num">@ ${inr(px)}${o.sl?" · SL "+fmt(o.sl):""}${o.tp?" · T "+fmt(o.tp):""}</small>`,L?"#00e0a0":"#ff4d6d");notify("F&O order executed",contractName(o.c));beep()}
+  }
+}
+const fnoPend=()=>state.fnoPending;
 /* ---------- tradebook ---------- */
 const dayOf=ts=>ts?new Date(ts).toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"}):"old";
 const dayLabel=d=>d==="old"?"Earlier (before tradebook)":new Date(d+"T12:00:00Z").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric",weekday:"short",timeZone:"UTC"});
@@ -1099,9 +1152,25 @@ async function histFor(under,e){
 let cuBusy=false,cuLast=0,cuReady=false;   // live exits wait for the first replay so a missed target is filled at its real time and price
 async function catchUp(force){
   if(cuBusy||!liveEver||!pollDone||(!force&&Date.now()-cuLast<20000))return;
-  if(!state.fno.length&&!state.pending.length&&!state.alerts.length){cuReady=true;return}
+  if(!state.fno.length&&!state.pending.length&&!state.alerts.length&&!state.fnoPending.length){cuReady=true;return}
   cuBusy=true;cuLast=Date.now();
   try{
+    // futures & options: orders waiting for their entry price
+    for(const o of [...state.fnoPending]){
+      const d=await histFor(o.c.under,o.c.ex).catch(()=>null);if(!d||!d.t||!d.t.length)continue;
+      if(!state.fnoPending.includes(o))continue;
+      const from=Math.max(Math.floor(o.id),o.scan||0),L=o.side>0;let hit=null,lastT=from;
+      for(let i=0;i<d.t.length;i++){
+        const t=d.t[i];if(t<=from)continue;if(t>=o.c.expiry)break;lastT=t;
+        const m=markAt(o.c,d.c[i],t);
+        if(L?m<=o.price:m>=o.price){hit={t,spot:d.c[i],px:L?Math.min(o.price,m):Math.max(o.price,m)};break}
+      }
+      if(hit){
+        state.fnoPending=state.fnoPending.filter(x=>x!==o);
+        const err=openFno(o.c,o.side,o.lots,{price:hit.px,ts:hit.t,spot:hit.spot,sl:o.sl,tp:o.tp});
+        toast(err?`<b>Order cancelled</b><br><small>${contractName(o.c)}: ${err}</small>`:`<b>${L?"BUY":"SELL"} executed while you were away</b><br><small class="num">${contractName(o.c)} @ ${fmt(hit.px)} · ${timeOf(hit.t,true)}</small>`,err?"#ff4d6d":"#ff9933");
+      }else if(o.c.expiry<=Date.now()){state.fnoPending=state.fnoPending.filter(x=>x!==o)}else o.scan=lastT;
+    }
     // futures & options: stop-loss, target and expiry
     for(const p of [...state.fno]){
       if(!p.sl&&!p.tp&&p.expiry>Date.now())continue;
@@ -1118,21 +1187,26 @@ async function catchUp(force){
       if(hit){closeFno(p.id,hit.why,{price:hit.price,ts:hit.ts});notify(`${hit.why} hit while you were away`,contractName(p))}
       else p.scan=lastT;
     }
-    // limit / stop-loss share orders
-    for(const o of [...state.pending]){
-      const s=STOCKS.find(x=>x.sym===o.sym);if(!s||priceErr(s,o.ex))continue;
-      const d=await histFor(o.sym,o.ex).catch(()=>null);if(!d||!d.t||!d.t.length)continue;
-      const from=Math.max(Math.floor(o.id),o.scan||0);let hit=null,lastT=from;
-      for(let i=0;i<d.t.length;i++){
-        const t=d.t[i];if(t<=from)continue;const c=d.c[i];lastT=t;
-        if(o.type==="LIMIT"?(o.side==="BUY"?c<=o.price:c>=o.price):(o.side==="SELL"?c<=o.price:c>=o.price)){hit={px:o.type==="LIMIT"?o.price:c,ts:t};break}
+    // limit / stop-loss share orders (including exits created by an order that filled while you were away)
+    const seen=new Set();let more=true;
+    while(more){more=false;
+      for(const o of [...state.pending]){
+        if(seen.has(o)||!state.pending.includes(o))continue;seen.add(o);more=true;
+        const s=STOCKS.find(x=>x.sym===o.sym);if(!s||priceErr(s,o.ex))continue;
+        const d=await histFor(o.sym,o.ex).catch(()=>null);if(!d||!d.t||!d.t.length)continue;
+        if(!state.pending.includes(o))continue;
+        const from=Math.max(Math.floor(o.id),o.scan||0);let hit=null,lastT=from;
+        for(let i=0;i<d.t.length;i++){
+          const t=d.t[i];if(t<=from)continue;const c=d.c[i];lastT=t;
+          if(o.type==="LIMIT"?(o.side==="BUY"?c<=o.price:c>=o.price):(o.side==="SELL"?c<=o.price:c>=o.price)){hit={px:o.type==="LIMIT"?o.price:c,ts:t};break}
+        }
+        if(hit){
+          state.pending=state.pending.filter(x=>x!==o);dropSiblings(o);
+          const err=fill(o.side,s,o.ex,o.qty,hit.px,o.type==="LIMIT"?"Limit":"Stop-loss",hit.ts);
+          if(err)toast(`<b>Order cancelled</b><br><small>${o.side} ${o.qty} × ${o.sym}: ${err}</small>`,"#ff4d6d");
+          else{doneToast(o.side,o.qty,s,o.ex,hit.px,(o.type==="LIMIT"?"Limit":"Stop-loss")+" (while away)");if(o.attach)addExits(s,o.ex,o.qty,o.attach.sl,o.attach.tp,hit.ts);save()}
+        }else o.scan=lastT;
       }
-      if(hit){
-        state.pending=state.pending.filter(x=>x!==o);
-        const err=fill(o.side,s,o.ex,o.qty,hit.px,o.type==="LIMIT"?"Limit":"Stop-loss",hit.ts);
-        if(err)toast(`<b>Order cancelled</b><br><small>${o.side} ${o.qty} × ${o.sym}: ${err}</small>`,"#ff4d6d");
-        else{doneToast(o.side,o.qty,s,o.ex,hit.px,(o.type==="LIMIT"?"Limit":"Stop-loss")+" (while away)");save()}
-      }else o.scan=lastT;
     }
     // price alerts
     for(const a of [...state.alerts]){
@@ -1148,9 +1222,11 @@ async function catchUp(force){
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)pollLive().then(()=>catchUp(true))});
 setInterval(()=>catchUp(),60000);
-let fnoKeyPos="";
+let fnoKeyPos="",fnoPendKey="";
 function renderFnoPos(){
-  $("fnoCard").hidden=!state.fno.length;
+  $("fnoCard").hidden=!state.fno.length&&!state.fnoPending.length;
+  const pk=state.fnoPending.map(o=>o.id).join("|");
+  if(pk!==fnoPendKey){fnoPendKey=pk;$("fnoPend").innerHTML=state.fnoPending.length?`<div class="lbl" style="margin-bottom:6px">Waiting to enter</div>`+state.fnoPending.map(o=>`<div class="mini-row pend-f"><span><b class="${o.side>0?"up":"down"}">${o.side>0?"BUY":"SELL"}</b> ${o.lots} lot(s) ${contractName(o.c)}<br><small class="num">when price ${o.side>0?"≤":"≥"} ${fmt(o.price)}${o.sl?" · SL "+fmt(o.sl):""}${o.tp?" · Target "+fmt(o.tp):""}</small></span><button data-fcancel="${o.id}" title="Cancel">✕</button></div>`).join(""):""}
   const k=state.fno.map(p=>p.id+":"+(p.sl||"")+":"+(p.tp||"")).join("|");
   if(k!==fnoKeyPos){fnoKeyPos=k;
     $("fnoPos").innerHTML=state.fno.map(p=>`<div class="pcard" data-pid="${p.id}"><div class="t"><span><b>${contractName(p)}</b> <span class="badge ${p.ex}" style="margin:0 0 0 4px">${p.ex}</span></span><b class="${p.side>0?"up":"down"}">${p.side>0?"LONG":"SHORT"}</b></div>
@@ -1264,7 +1340,7 @@ $("capBtn").onclick=()=>{
 $("always").onchange=()=>{try{localStorage.setItem("bseg_practice",$("always").checked?"1":"0")}catch(e){}render()};
 const sheet=$("sheet");$("gear").onclick=()=>{if(matchMedia("(max-width:820px)").matches)go("set");else sheet.hidden=false};$("sclose").onclick=()=>sheet.hidden=true;
 sheet.onclick=e=>{if(e.target===sheet)sheet.hidden=true};
-$("reset").onclick=()=>{if(confirm(`Restart with ${inr(state.capital)}? All holdings and history will be cleared.`)){const cap=state.capital;state={capital:cap,cash:cap,pos:{},orders:[],nw:[],extra:[],pending:[],alerts:[],fno:[],lots:{},recent:[],day:null};save();render();toast("Game reset ✓","#ff9933")}};
+$("reset").onclick=()=>{if(confirm(`Restart with ${inr(state.capital)}? All holdings and history will be cleared.`)){const cap=state.capital;state={capital:cap,cash:cap,pos:{},orders:[],nw:[],extra:[],pending:[],alerts:[],fno:[],lots:{},recent:[],day:null,fnoPending:[]};save();render();toast("Game reset ✓","#ff9933")}};
 const cv=$("chart");
 cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),n=cur().hist[ex].length;hoverI=Math.round((e.clientX-r.left)/(r.width-64)*(n-1));if(hoverI>=n)hoverI=-1;drawChart(cur())};
 cv.onmouseleave=()=>{hoverI=-1;drawChart(cur())};
@@ -1276,6 +1352,7 @@ function setOtype(t){otype=t;setPlabel();document.querySelectorAll("#otype butto
 $("otype").onclick=e=>{const t=e.target.dataset.t;if(t)setOtype(t)};
 $("pquick").onclick=e=>{const p=e.target.dataset.p;if(p===undefined)return;$("oprice").value=(cur().px[ex]*(1+ +p/100)).toFixed(2);renderDetail()};
 $("oprice").oninput=renderDetail;
+$("bQ").onclick=e=>{const s=+e.target.dataset.s,t=+e.target.dataset.t;if(!s)return;const px=(otype==="LIMIT"&&+$("oprice").value>0?+$("oprice").value:cur().px[ex]);$("bSl").value=(px*(1-s/100)).toFixed(2);$("bTp").value=(px*(1+t/100)).toFixed(2)};
 $("pend").onclick=e=>{const id=e.target.dataset.cancel;if(!id)return;state.pending=state.pending.filter(o=>String(o.id)!==id);save();lastOrdHtml="";render()};
 $("alerts").onclick=e=>{const id=e.target.dataset.del;if(!id)return;state.alerts=state.alerts.filter(a=>String(a.id)!==id);save();lastAlHtml="";render()};
 $("aAdd").onclick=addAlert;
@@ -1291,7 +1368,19 @@ $("fExp").onchange=()=>{fno.exp=+$("fExp").value;render()};
 $("futRow").onclick=()=>{fno.tk={kind:"FUT"};render()};
 $("chain").onclick=e=>{const c=e.target.closest("td[data-k]");if(!c)return;fno.tk={kind:c.dataset.k,strike:+c.dataset.s};render()};
 $("fLots").oninput=render;
-$("fBuy").onclick=()=>fnoTrade(1);$("fSell").onclick=()=>fnoTrade(-1);
+$("fGo").onclick=fnoPlace;
+function fnoTicketUi(){
+  const L=fSide>0;document.querySelectorAll("#fSeg button").forEach(b=>b.classList.toggle("on",+b.dataset.s===fSide));
+  document.querySelectorAll("#fType button").forEach(b=>b.classList.toggle("on",b.dataset.t===fType));
+  $("fPriceBox").hidden=fType!=="LMT";const g=$("fGo");g.className="go "+(L?"":"s");
+  g.textContent=`${fType==="LMT"?"PLACE ":""}${L?"BUY":"SELL"}${fType==="LMT"?" AT MY PRICE":" NOW"}`;
+}
+$("fSeg").onclick=e=>{const v=+e.target.dataset.s;if(!v)return;fSide=v;fnoTicketUi()};
+$("fType").onclick=e=>{const t=e.target.dataset.t;if(!t)return;fType=t;if(t==="LMT"&&!+$("fPrice").value){const c=fnoContract(),m=c&&markOf(c);if(m!=null)$("fPrice").value=m.toFixed(2)}fnoTicketUi()};
+$("fPQ").onclick=e=>{const p=e.target.dataset.p;if(p===undefined)return;const c=fnoContract(),m=c&&markOf(c);if(m!=null)$("fPrice").value=(m*(1+ +p/100)).toFixed(2)};
+$("fBQ").onclick=e=>{const s=+e.target.dataset.s,t=+e.target.dataset.t;if(!s)return;const c=fnoContract();if(!c)return;const entry=fType==="LMT"&&+$("fPrice").value>0?+$("fPrice").value:markOf(c);if(entry==null)return;const L=fSide>0;
+  $("fSl").value=(entry*(L?1-s/100:1+s/100)).toFixed(2);$("fTp").value=(entry*(L?1+t/100:1-t/100)).toFixed(2)};
+fnoTicketUi();
 // Void a closed trade: removes it (and the matching opening order) and takes its profit/loss back out of cash.
 $("tbClosed").onclick=e=>{
   const i=e.target.dataset.void;if(i===undefined)return;const o=state.orders[+i];if(!o||!o.closed)return;
@@ -1306,6 +1395,7 @@ $("tbClosed").onclick=e=>{
 };
 $("tbDay").onchange=()=>{tbDay=$("tbDay").value;tbKey="";render()};
 $("tbPdf").onclick=tradebookPdf;
+$("fnoPend").onclick=e=>{const id=e.target.dataset.fcancel;if(!id)return;state.fnoPending=state.fnoPending.filter(o=>String(o.id)!==id);save();fnoPendKey="";render()};
 $("fnoPos").onclick=e=>{
   const c=e.target.dataset.close;
   if(c){if(!isOpen())return toast("Market is closed. Turn on Practice mode to close positions.","#ff4d6d");closeFno(+c);render();return}
@@ -1323,7 +1413,7 @@ const isMobile=()=>matchMedia("(max-width:820px)").matches;
 $("qbar").onclick=e=>{const v=e.target.dataset.s;if(!v)return;side=v;setPlabel();render();$("colOrder").scrollIntoView({behavior:"smooth",block:"start"})};
 try{new IntersectionObserver(en=>$("qbar").classList.toggle("hide",en[0].isIntersecting),{threshold:.25}).observe($("colOrder"))}catch(e){}
 capPreview();
-setInterval(()=>{tick();checkPending();checkAlerts();checkFnoExits();settleExpired();render()},1000);
+setInterval(()=>{tick();checkPending();checkFnoPending();checkAlerts();checkFnoExits();settleExpired();render()},1000);
 setInterval(()=>{state.nw.push(netWorth());if(state.nw.length>150)state.nw.shift();save()},4000);
 applyView();loadAll();
 pollLive();setInterval(pollLive,5000);
