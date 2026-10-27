@@ -8,7 +8,7 @@ export function Ring({
   target,
   size = 150,
   stroke = 16,
-  track = '#ECEAF8',
+  track = '#EFEDE6',
   children,
 }: {
   parts: { v: number; color: string }[];

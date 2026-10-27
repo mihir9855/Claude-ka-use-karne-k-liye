@@ -5,22 +5,11 @@ import type { Cuisine } from '../core/types';
 import { BUILTIN_DISHES } from '../data/dishes';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
-import { CUISINE_TONE, DishArt } from './Art';
 import { Icon } from './Icon';
 import { Label, Muted, Toggle } from './kit';
 import { C, RADIUS, SHADOW } from './theme';
 
 export const CUISINES: Cuisine[] = ['north', 'west', 'south', 'east', 'northeast', 'continental', 'indochinese'];
-const ART: Record<Cuisine, 'dalBowl' | 'dosa' | 'idli' | 'riceBowl' | 'veggiePan' | 'salad' | 'paneerBowl'> = {
-  north: 'paneerBowl',
-  west: 'dalBowl',
-  south: 'dosa',
-  east: 'riceBowl',
-  northeast: 'veggiePan',
-  continental: 'salad',
-  indochinese: 'riceBowl',
-};
-
 function CuisineTile({ cuisine, count, on, star, onPress, onStar }: { cuisine: Cuisine; count: number; on: boolean; star: boolean; onPress: () => void; onStar?: () => void }) {
   const lang = useStore((s) => s.lang);
   const name = t(lang, `cuisine_${cuisine}` as StrKey);
@@ -31,7 +20,6 @@ function CuisineTile({ cuisine, count, on, star, onPress, onStar }: { cuisine: C
           <Icon name="heart" size={16} color={star ? C.danger : C.muted} />
         </Pressable>
       )}
-      <DishArt kind={ART[cuisine]} tone={CUISINE_TONE[cuisine]} size={64} />
       <Text style={[s.name, on && { color: C.primary }]} numberOfLines={1}>
         {name}
       </Text>
@@ -86,9 +74,9 @@ export function CuisineScreen() {
 
 const s = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tile: { flexBasis: '47%', flexGrow: 1, minWidth: 0, alignItems: 'center', gap: 6, paddingVertical: 16, paddingHorizontal: 8, backgroundColor: C.card, borderRadius: RADIUS.xl, borderWidth: 2, borderColor: 'transparent', ...SHADOW },
+  tile: { flexBasis: '47%', flexGrow: 1, minWidth: 0, alignItems: 'flex-start', gap: 2, paddingVertical: 14, paddingLeft: 14, paddingRight: 44, backgroundColor: C.card, borderRadius: RADIUS.xl, ...SHADOW },
   tileOn: { borderColor: C.primary, backgroundColor: C.primarySoft },
   name: { fontSize: 15, fontWeight: '700', color: C.text, maxWidth: '100%' },
   count: { fontSize: 12, color: C.muted, fontWeight: '600', maxWidth: '100%' },
-  star: { position: 'absolute', right: 8, top: 8, width: 32, height: 32, borderRadius: 16, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  star: { position: 'absolute', right: 8, top: 8, width: 30, height: 30, borderRadius: 8, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
 });

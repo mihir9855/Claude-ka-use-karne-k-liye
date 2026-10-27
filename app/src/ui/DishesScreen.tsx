@@ -12,14 +12,12 @@ import { useAllDishes, useStore } from '../state/store';
 import { dishName, ingName, r } from './helpers';
 import { Icon } from './Icon';
 import { ActivityIndicator } from 'react-native';
-import { artFor } from '../core/artFor';
-import { CUISINE_TONE, DishArt } from './Art';
 import { avoidWords, findDishes, type Suggestion } from '../core/finder';
 import { dishMacros as macrosOf } from '../core/nutrition';
 import { ScanError } from '../core/scan';
 import { INGREDIENT_BY_ID } from '../data/ingredients';
 import { Button, Card, Chip, Field, H, Label, Muted, Row, Search, Segmented } from './kit';
-import { C } from './theme';
+import { C, RADIUS, SHADOW } from './theme';
 
 const ROLES: DishRole[] = ['complete', 'main', 'staple', 'side', 'snack'];
 const CATS: MealCategory[] = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -149,7 +147,7 @@ function DishRow({ dish }: { dish: Dish }) {
   const tx = (k: StrKey) => t(lang, k);
 
   return (
-    <View style={{ backgroundColor: C.card, borderRadius: 22, padding: 12, marginBottom: 10, gap: 10 }}>
+    <View style={{ backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 12, marginBottom: 10, gap: 10, ...SHADOW }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={dishName(dish, lang)}
@@ -157,9 +155,6 @@ function DishRow({ dish }: { dish: Dish }) {
         onPress={() => setOpen(!open)}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pref === 'dislike' ? 0.45 : 1 }}
       >
-        <View style={{ width: 60, height: 60, borderRadius: 20, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
-          <DishArt kind={artFor(dish)} tone={CUISINE_TONE[dish.cuisine ?? 'north']} size={46} />
-        </View>
         <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
           <Row style={{ flexWrap: 'nowrap', gap: 6 }}>
             <Text style={{ fontSize: 16, fontWeight: '700', color: C.text, flexShrink: 1 }} numberOfLines={1}>

@@ -43,7 +43,7 @@ function PersonCard({ index }: { index: number }) {
     <Collapse
       icon="user"
       title={p.name || `${tx('person')} ${index + 1}`}
-      summary={`${tx(`goal_${p.goal}` as StrKey)} · ${r(tg.kcal)} ${tx('kcal')} · ${r(tg.protein)} ${tx('g')} ${tx('proteinShort')}`}
+      summary={`${r(tg.kcal)} ${tx('kcal')} · ${r(tg.protein)} ${tx('g')} ${tx('proteinShort')}`}
       defaultOpen={false}
     >
       <Row style={{ flexWrap: 'nowrap', alignItems: 'flex-end' }}>

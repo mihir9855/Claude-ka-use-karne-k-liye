@@ -1,14 +1,12 @@
 import { useMemo } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from './Text';
-import { artFor } from '../core/artFor';
 import { dishMacros } from '../core/nutrition';
 import { portionText } from '../core/portion';
 import type { Dish, MealOption } from '../core/types';
 import { INGREDIENT_BY_ID } from '../data/ingredients';
 import { t, type StrKey } from '../i18n/strings';
 import { useAllDishes, useStore } from '../state/store';
-import { CUISINE_TONE, DishArt, MealArt } from './Art';
 import { dateLabel, dishName, ingName, r } from './helpers';
 import { Icon } from './Icon';
 import { Button, Chip, Muted, Pill, Row, Segmented } from './kit';
@@ -45,16 +43,16 @@ export function MealDetail({ date, index }: { date: string; index: number }) {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 32 }}>
-      <View style={[s.hero, { backgroundColor: col.soft }]}>
-        <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-          <Text style={[s.heroLabel, { color: col.ink }]} numberOfLines={1}>
+      <View style={{ gap: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: col.strong }} />
+          <Text style={s.heroLabel} numberOfLines={1}>
             {tx(`slot_${sp.slot}` as StrKey)}
           </Text>
-          <Text style={s.heroDate} numberOfLines={1}>
-            {`${lab.weekday} ${lab.day} ${lab.month}`}
-          </Text>
         </View>
-        <MealArt slot={sp.slot} size={92} />
+        <Text style={s.heroDate} numberOfLines={1}>
+          {`${lab.weekday} ${lab.day} ${lab.month}`}
+        </Text>
       </View>
 
       {sp.options.length > 1 && !eaten && (
@@ -70,7 +68,7 @@ export function MealDetail({ date, index }: { date: string; index: number }) {
           accessibilityLabel={eaten ? tx('ate') : tx('markEaten')}
           accessibilityState={{ checked: eaten }}
           onPress={() => (eaten ? eatenEntries.forEach((e) => unlog(e.id)) : logMeal(date, sp.slot, opt.dishIds))}
-          style={[s.eatBtn, eaten ? { backgroundColor: C.good } : { backgroundColor: C.primary }]}
+          style={[s.eatBtn, eaten ? { backgroundColor: C.good } : { backgroundColor: C.ink }]}
         >
           <Icon name="check" size={18} color="#fff" width={3} />
           <Text style={s.eatText} numberOfLines={1}>
@@ -87,7 +85,6 @@ export function MealDetail({ date, index }: { date: string; index: number }) {
         return (
           <View key={id} style={s.dish}>
             <Row style={{ flexWrap: 'nowrap', gap: 12 }}>
-              <View style={s.dishArt}>{d && <DishArt kind={artFor(d)} tone={CUISINE_TONE[d.cuisine ?? 'north']} size={56} />}</View>
               <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
                 {d && <Pill label={tx(`role_${d.role}` as StrKey)} />}
                 {d && (
@@ -144,22 +141,20 @@ export function MealDetail({ date, index }: { date: string; index: number }) {
 }
 
 const s = StyleSheet.create({
-  hero: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: RADIUS.xl, padding: 20 },
-  heroLabel: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.1 },
-  heroDate: { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
-  eatBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 46, paddingHorizontal: 20, borderRadius: 999, maxWidth: '100%' },
-  eatText: { color: '#fff', fontSize: 15, fontWeight: '800', flexShrink: 1 },
+  heroLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.1, color: C.muted },
+  heroDate: { fontSize: 28, fontWeight: '700', color: C.text, letterSpacing: -0.6 },
+  eatBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 46, paddingHorizontal: 18, borderRadius: RADIUS.md, maxWidth: '100%' },
+  eatText: { color: '#fff', fontSize: 15, fontWeight: '600', flexShrink: 1 },
   dish: { backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 14, gap: 10, ...SHADOW },
-  dishArt: { width: 68, height: 68, borderRadius: 22, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
-  dishTitle: { fontSize: 20, fontWeight: '800', color: C.text, letterSpacing: -0.3 },
-  dishSub: { fontSize: 13, color: C.muted, fontWeight: '600' },
-  heart: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
-  ing: { backgroundColor: C.bg, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 12, maxWidth: '100%' },
-  ingText: { fontSize: 13, color: C.text, fontWeight: '600' },
-  portion: { backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: 16, gap: 12 },
-  portionTitle: { color: '#B5B1E6', fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.1 },
-  person: { flexBasis: '30%', flexGrow: 1, minWidth: 96, backgroundColor: C.inkSoft, borderRadius: RADIUS.lg, padding: 12, gap: 2 },
-  personName: { color: '#B5B1E6', fontSize: 12, fontWeight: '600' },
-  personPortion: { color: '#fff', fontSize: 26, fontWeight: '800' },
-  personSub: { color: '#8C88C4', fontSize: 12 },
+  dishTitle: { fontSize: 20, fontWeight: '700', color: C.text, letterSpacing: -0.3 },
+  dishSub: { fontSize: 13, color: C.muted, fontWeight: '500' },
+  heart: { width: 40, height: 40, borderRadius: RADIUS.md, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  ing: { backgroundColor: C.surface, borderRadius: RADIUS.sm, paddingVertical: 6, paddingHorizontal: 10, maxWidth: '100%' },
+  ingText: { fontSize: 13, color: C.text, fontWeight: '500' },
+  portion: { backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 16, gap: 12, ...SHADOW },
+  portionTitle: { color: C.muted, fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.1 },
+  person: { flexBasis: '30%', flexGrow: 1, minWidth: 96, backgroundColor: C.surface, borderRadius: RADIUS.lg, padding: 12, gap: 2 },
+  personName: { color: C.muted, fontSize: 12, fontWeight: '500' },
+  personPortion: { color: C.text, fontSize: 24, fontWeight: '700' },
+  personSub: { color: C.muted, fontSize: 12 },
 });

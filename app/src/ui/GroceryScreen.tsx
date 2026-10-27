@@ -60,7 +60,7 @@ export function GroceryScreen() {
       Object.entries(seen).map(([k, v]) => {
         const meals = new Set(v).size;
         const days = [...new Set(v.map((x) => x.split('|')[1]))];
-        return [k, `${meals} ${meals === 1 ? 'meal' : 'meals'} · ${days.join(', ')}`];
+        return [k, `${meals} ${meals === 1 ? 'meal' : 'meals'} · ${days.length > 4 ? `${days.length} days` : days.join(', ')}`];
       }),
     );
   }, [plans, dishes, ateOut]);

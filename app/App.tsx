@@ -1,8 +1,7 @@
-import { PlusJakartaSans_400Regular } from '@expo-google-fonts/plus-jakarta-sans/400Regular';
-import { PlusJakartaSans_500Medium } from '@expo-google-fonts/plus-jakarta-sans/500Medium';
-import { PlusJakartaSans_600SemiBold } from '@expo-google-fonts/plus-jakarta-sans/600SemiBold';
-import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans/700Bold';
-import { PlusJakartaSans_800ExtraBold } from '@expo-google-fonts/plus-jakarta-sans/800ExtraBold';
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
@@ -12,7 +11,6 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { todayStr } from './src/core/dates';
 import { t, type StrKey } from './src/i18n/strings';
 import { useStore } from './src/state/store';
-import { ArtSheet } from './src/ui/ArtSheet';
 import { AppHeader, BottomNav, Drawer, type DrawerItem, type NavItem } from './src/ui/Chrome';
 import { CuisineScreen } from './src/ui/CuisineScreen';
 import { CustomizeScreen } from './src/ui/CustomizeScreen';
@@ -80,9 +78,9 @@ const PAGE_TITLE: Record<string, StrKey> = {
 };
 
 const TABS: NavItem<Tab>[] = [
-  { key: 'planner', label: 'tabPlanner', art: 'plan' },
-  { key: 'grocery', label: 'tabGrocery', art: 'shop' },
-  { key: 'nutrition', label: 'tabNutrition', art: 'stats' },
+  { key: 'planner', label: 'tabPlanner' },
+  { key: 'grocery', label: 'tabGrocery' },
+  { key: 'nutrition', label: 'tabNutrition' },
 ];
 
 function Shell() {
@@ -93,13 +91,7 @@ function Shell() {
   const lang = useStore((st) => st.lang);
   const onboarded = useStore((st) => st.onboarded);
   const [hydrated, setHydrated] = useState(useStore.persist.hasHydrated());
-  const [fonts, fontError] = useFonts({
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    PlusJakartaSans_800ExtraBold,
-  });
+  const [fonts, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
   const [waited, setWaited] = useState(false);
   useEffect(() => {
     const off = useStore.persist.onFinishHydration(() => setHydrated(true));
@@ -143,25 +135,25 @@ function Shell() {
 
   const open = (k: Exclude<Page['k'], 'meal'>) => () => setStack([{ k }]);
   const sections: { title?: StrKey; items: DrawerItem[] }[] = [
-    { items: [{ key: 'home', label: 'tabPlanner', badge: 'home', onPress: () => { setStack([]); setTab('planner'); } }] },
+    { items: [{ key: 'home', label: 'tabPlanner', onPress: () => { setStack([]); setTab('planner'); } }] },
     {
       title: 'secPrefs',
       items: [
-        { key: 'family', label: 'navFamily', badge: 'family', onPress: open('family') },
-        { key: 'cuisine', label: 'navCuisine', badge: 'cuisine', onPress: open('cuisine') },
-        { key: 'rules', label: 'navRules', badge: 'rules', onPress: open('rules') },
+        { key: 'family', label: 'navFamily', onPress: open('family') },
+        { key: 'cuisine', label: 'navCuisine', onPress: open('cuisine') },
+        { key: 'rules', label: 'navRules', onPress: open('rules') },
       ],
     },
     {
       title: 'secKitchen',
       items: [
-        { key: 'menu', label: 'navMenu', badge: 'menu', onPress: open('menu') },
-        { key: 'customize', label: 'navCustomize', badge: 'customize', onPress: open('customize') },
-        { key: 'saved', label: 'navSaved', badge: 'saved', onPress: open('saved') },
-        { key: 'pantry', label: 'tabPantry', badge: 'pantry', onPress: open('pantry') },
+        { key: 'menu', label: 'navMenu', onPress: open('menu') },
+        { key: 'customize', label: 'navCustomize', onPress: open('customize') },
+        { key: 'saved', label: 'navSaved', onPress: open('saved') },
+        { key: 'pantry', label: 'tabPantry', onPress: open('pantry') },
       ],
     },
-    { items: [{ key: 'settings', label: 'navSettings', badge: 'settings', onPress: open('settings') }] },
+    { items: [{ key: 'settings', label: 'navSettings', onPress: open('settings') }] },
   ];
 
   let body: ReactNode = null;
@@ -200,10 +192,9 @@ function Shell() {
 }
 
 export default function App() {
-  const sheet = typeof location !== 'undefined' && String(location.search).includes('artsheet');
   return (
     <SafeAreaProvider>
-      <Guard>{sheet ? <ArtSheet /> : <Shell />}</Guard>
+      <Guard><Shell /></Guard>
     </SafeAreaProvider>
   );
 }

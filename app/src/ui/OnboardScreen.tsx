@@ -5,7 +5,6 @@ import { computeTargets } from '../core/nutrition';
 import type { Activity, Condition, Goal, Person } from '../core/types';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
-import { MealArt } from './Art';
 import { CuisinePicker } from './CuisineScreen';
 import { Button, Chip, Choice, Field, H, Label, Muted, Row, Segmented } from './kit';
 import { PantryShelves } from './PantryPicker';
@@ -136,18 +135,14 @@ export function OnboardScreen() {
   if (step === 0)
     return (
       <View style={s.welcome}>
-        <View style={s.blobA} />
-        <View style={s.blobB} />
-        <View style={s.welcomeArt}>
-          <MealArt slot="lunch" size={190} />
-        </View>
-        <View style={{ gap: 0 }}>
+        <View style={{ flex: 1 }} />
+        <View style={{ gap: 0, marginBottom: 28 }}>
           <Text style={s.welcomeTitle} numberOfLines={1}>Plan your</Text>
           <Text style={s.welcomeTitle} numberOfLines={1}>family's meals</Text>
           <Text style={s.welcomeSub}>{tx('obWelcomeSub')}</Text>
         </View>
         <View style={{ gap: 10 }}>
-          <Button label={tx('start')} kind="ink" onPress={() => setStep(1)} />
+          <Button label={tx('start')} onPress={() => setStep(1)} />
           <Button label="Instant start" kind="soft" onPress={finish} />
         </View>
       </View>
@@ -181,25 +176,22 @@ export function OnboardScreen() {
 }
 
 const o = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: RADIUS.lg, backgroundColor: C.card, borderWidth: 2, borderColor: 'transparent', ...SHADOW },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: RADIUS.lg, backgroundColor: C.card, ...SHADOW },
   rowOn: { borderColor: C.primary, backgroundColor: C.primarySoft },
   dot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   dotOn: { borderColor: C.primary },
   dotIn: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary },
   title: { fontSize: 16, fontWeight: '700', color: C.text },
   sub: { fontSize: 13, color: C.muted },
-  target: { backgroundColor: C.ink, borderRadius: RADIUS.xl, padding: 18, gap: 4 },
-  targetTop: { fontSize: 13, color: '#C9C4F5', fontWeight: '600' },
-  targetBig: { fontSize: 22, color: '#fff', fontWeight: '800' },
+  target: { backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 18, gap: 4, ...SHADOW },
+  targetTop: { fontSize: 12, color: C.muted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
+  targetBig: { fontSize: 22, color: C.text, fontWeight: '700' },
 });
 
 const s = StyleSheet.create({
   welcome: { flex: 1, padding: 24, justifyContent: 'space-between', overflow: 'hidden' },
-  blobA: { position: 'absolute', right: -90, top: -60, width: 300, height: 300, borderRadius: 150, backgroundColor: '#FFE3DC' },
-  blobB: { position: 'absolute', left: -80, top: 160, width: 220, height: 220, borderRadius: 110, backgroundColor: '#E5E0FF' },
-  welcomeArt: { alignItems: 'center', marginTop: 40 },
-  welcomeTitle: { fontSize: 34, fontWeight: '800', color: C.text, letterSpacing: -1, lineHeight: 40 },
-  welcomeSub: { fontSize: 16, color: C.muted },
+  welcomeTitle: { fontSize: 38, fontWeight: '700', color: C.text, letterSpacing: -1.2, lineHeight: 44 },
+  welcomeSub: { fontSize: 15, color: C.muted },
   dots: { flexDirection: 'row', gap: 6, paddingHorizontal: 20, paddingTop: 16 },
   dotBar: { flex: 1, height: 5, borderRadius: 3, backgroundColor: C.line },
   foot: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, backgroundColor: C.card, ...SHADOW, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl },

@@ -16,10 +16,10 @@ import { Ring } from './Ring';
 import { C, MEAL, RADIUS, SHADOW } from './theme';
 
 const MACRO_COLOR: Record<'protein' | 'carbs' | 'fat' | 'fiber', string> = {
-  protein: '#E8553A',
-  carbs: '#FFB020',
-  fat: '#35C2E0',
-  fiber: '#19B58A',
+  protein: '#C2410C',
+  carbs: '#D9A021',
+  fat: '#4B9DB3',
+  fiber: '#4E9E7A',
 };
 
 /** One bar split by meal, with a tick where the target is. */
@@ -198,8 +198,8 @@ export function NutritionScreen() {
 }
 
 const s = StyleSheet.create({
-  switcher: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderRadius: 999, padding: 6, ...SHADOW },
-  arrow: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' },
+  switcher: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderRadius: RADIUS.md, padding: 4, ...SHADOW },
+  arrow: { width: 40, height: 40, borderRadius: RADIUS.sm, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   switchText: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '800', color: C.text },
   heroCard: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 16, ...SHADOW },
   ringBig: { fontSize: 30, fontWeight: '800', color: C.text, maxWidth: 100, textAlign: 'center' },
