@@ -18,7 +18,7 @@ node server.js        # Node 18+, no npm install needed
 - **Price alerts** show a popup, play a beep and (if allowed) send a browser notification.
 - **Futures & Options** (simulated): any stock plus the indices — NIFTY 50, BANK NIFTY, FIN NIFTY, MIDCAP SELECT, NIFTY NEXT 50, SENSEX, BANKEX and the sector/broad NIFTY indices (an index is listed once Yahoo returns a price for it). Lot sizes and strike steps for indices are approximate. Option prices use Black-Scholes on the live spot, futures use cost-of-carry; 15% margin, cash-settled at expiry. Open positions can be given a **stop-loss and target** (tap a position). It has its own **Futures & Options tab** (⚡ F&O on phone, a tab strip under the header on desktop); positions are listed below the option chain.
 - **Tradebook & P&L** (Portfolio tab): every order with its time, day-wise filter, closed trades with bought → sold price, charges and net P&L, a **Void** button on every closed trade (removes a bad trade and takes its P&L back out of cash), plus a PDF report (📄 PDF button; jsPDF loads from a CDN, with a print-to-PDF fallback).
-- Pending orders, alerts and positions are stored in your browser and are only processed while the app is open.
+- Pending orders, alerts and positions are stored in your browser. While the app is closed nothing runs, but when you open it the game replays the last 5 sessions of 5-minute prices (`/api/history`) and fills any missed stop-loss, target, limit order, alert or expiry at the time and price it actually happened.
 
 Yahoo Finance is a free, unofficial source and may be delayed or rate-limited. This is a game, not trading advice.
 

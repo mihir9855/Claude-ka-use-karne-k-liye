@@ -152,11 +152,32 @@ async function yahooSearch(q) {
   return items;
 }
 
+// 5-minute closes of the last few sessions: lets the app replay what happened while it was closed
+const histCache = {};
+async function history(y) {
+  const c = histCache[y];
+  if (c && Date.now() - c.at < 60000) return c.d;
+  const j = await getJSON(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(y)}?interval=5m&range=5d`);
+  const r = j.chart.result[0], cl = r.indicators.quote[0].close || [], t = [], v = [];
+  (r.timestamp || []).forEach((ts, i) => { if (cl[i] != null) { t.push(ts * 1000); v.push(cl[i]); } });
+  const d = { t, c: v };
+  histCache[y] = { at: Date.now(), d };
+  return d;
+}
+
 http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x"), p = u.pathname, sp = u.searchParams;
   if (p === "/api/quotes") {
     for (const k of (sp.get("want") || "").split(",").slice(0, 200)) if (/^(NSE|BSE):[A-Z0-9&.-]{1,20}$/.test(k) || (/^IDX:[A-Z0-9]{2,20}$/.test(k) && IDX_BY_ID[k.slice(4)])) wanted[k] = Date.now();
     return json(res, { live: Date.now() - lastOk < TICK_MS * 6, updated: lastOk, quotes, unlisted: Object.keys(unlisted), indexMeta: INDICES.map(({ id, name, ex, lot, step, weekly }) => ({ id, name, ex, lot, step, weekly: !!weekly })) });
+  }
+  if (p === "/api/history") {
+    try {
+      const idx = sp.get("idx"), sym = (sp.get("sym") || "").toUpperCase(), ex = sp.get("ex") === "BSE" ? "BSE" : "NSE";
+      const y = idx ? (IDX_BY_ID[idx] || {}).y : (SYM_OK.test(sym) ? yahooFor(ex, sym) : null);
+      if (!y) return json(res, { t: [], c: [] });
+      return json(res, await history(y));
+    } catch (e) { return json(res, { t: [], c: [], error: e.message }); }
   }
   if (p === "/api/stocks") {            // browse / search the complete NSE + BSE list
     const q = (sp.get("q") || "").trim().toLowerCase().slice(0, 40), letter = (sp.get("letter") || "").toUpperCase().slice(0, 1);
