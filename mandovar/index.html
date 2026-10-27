@@ -1,0 +1,388 @@
+<title>આયામ મંડોવર</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;500;600;700&family=Noto+Serif+Gujarati:wght@600;700&display=swap">
+<style>
+/* Layout: controls and summary on top; below, a sticky elevation on the left and one card per thar (bottom to top) on the right. */
+:root{
+  --bg:#ffffff; --surface:#f5f7fb; --fg:#151a24; --muted:#586174; --line:#e1e5ee;
+  --accent:#2f55d4; --accent-ink:#ffffff; --accent-soft:#e8edfb;
+  --band-a:#dfe4f1; --band-b:#cdd4e6; --wall:#aab3c8; --warn:#a05a00; --warn-bg:#fff4e0;
+  --sans:"Noto Sans Gujarati","Noto Sans",system-ui,sans-serif; --serif:"Noto Serif Gujarati","Noto Serif",Georgia,serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101318; --surface:#181c24; --fg:#e8ebf2; --muted:#9aa3b5; --line:#2a303c;
+  --accent:#7f9bff; --accent-ink:#0c1020; --accent-soft:#1f2740;
+  --band-a:#2a3142; --band-b:#353d52; --wall:#4a5369; --warn:#ffc46b; --warn-bg:#35280f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101318; --surface:#181c24; --fg:#e8ebf2; --muted:#9aa3b5; --line:#2a303c;
+  --accent:#7f9bff; --accent-ink:#0c1020; --accent-soft:#1f2740;
+  --band-a:#2a3142; --band-b:#353d52; --wall:#4a5369; --warn:#ffc46b; --warn-bg:#35280f; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55;
+  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--serif);margin:0;text-wrap:balance;line-height:1.25}
+h1{font-size:26px}
+.lead{margin:4px 0 0;color:var(--muted)}
+h2{font-size:15px;letter-spacing:.02em}
+.card{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--bg)}
+.ctl{display:grid;gap:18px 28px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.f{display:flex;flex-direction:column;gap:8px;min-width:0}
+.f>label,.f>.lab{font-size:12.5px;color:var(--muted);font-weight:500}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.num{display:flex;align-items:center;gap:6px}
+.num input{width:76px;font:inherit;font-variant-numeric:tabular-nums;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.num span{color:var(--muted)}
+input:focus-visible,button:focus-visible,.thar:focus-visible,.band:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chip{font:inherit;font-size:13.5px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.link{font:inherit;font-size:13px;color:var(--accent);background:none;border:0;padding:4px 2px;cursor:pointer;text-decoration:underline}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat{background:var(--surface);border-radius:12px;padding:12px 14px;min-width:0}
+.stat .k{font-size:12.5px;color:var(--muted)}
+.stat .v{font-family:var(--serif);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.stat .s{font-size:12px;color:var(--muted)}
+.assume{font-size:13.5px;color:var(--muted);margin:0}
+.warn{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:13.5px}
+
+.grid{display:grid;grid-template-columns:minmax(0,390px) minmax(0,1fr);gap:20px;align-items:start}
+.draw{position:sticky;top:12px;padding:12px}
+.draw svg{display:block;width:100%;height:auto}
+.draw .cap{font-size:12px;color:var(--muted);margin:6px 4px 0}
+.band{fill:var(--band-a);stroke:var(--bg);stroke-width:1;cursor:pointer}
+.band.b{fill:var(--band-b)}
+.band.on{fill:var(--accent)}
+.wallr{fill:var(--wall)}
+.lead-l{stroke:var(--line);stroke-width:1;fill:none}
+.lbl{font-family:var(--sans);font-size:11.5px;fill:var(--fg);cursor:pointer}
+.lbl.on{font-weight:700;fill:var(--accent)}
+.lbl .h{fill:var(--muted);font-variant-numeric:tabular-nums}
+.base{stroke:var(--fg);stroke-width:1.2;stroke-dasharray:4 3}
+.basel{font-size:11px;fill:var(--muted)}
+
+.list{display:flex;flex-direction:column;gap:12px;min-width:0}
+.listhead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}
+.listhead p{margin:0;color:var(--muted);font-size:13px}
+.thar{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--bg);cursor:pointer;scroll-margin-top:16px}
+.thar.on{border-color:var(--accent);background:var(--accent-soft)}
+.th{display:flex;align-items:flex-start;gap:12px}
+.no{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:600;background:var(--surface);color:var(--muted);font-variant-numeric:tabular-nums}
+.thar.on .no{background:var(--accent);color:var(--accent-ink)}
+.nm{flex:1;min-width:0}
+.nm h3{font-size:17px}
+.tag{display:inline-block;font-size:12px;color:var(--muted);margin-top:2px}
+.hv{font-family:var(--serif);font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rng{margin:8px 0 0 40px;font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+table.sub{width:calc(100% - 40px);margin:10px 0 0 40px;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+table.sub td{padding:5px 0;border-top:1px solid var(--line)}
+table.sub td:nth-child(2){text-align:right;color:var(--muted);padding-right:14px;white-space:nowrap}
+table.sub td:last-child{text-align:right;white-space:nowrap}
+table.sub tr.d td:first-child{color:var(--muted)}
+.note{margin:8px 0 0 40px;font-size:13.5px}
+.foot{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.foot p{margin:0}
+
+@media (max-width:860px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .draw{position:static}
+  .rng,.note{margin-left:0}
+  table.sub{width:100%;margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>મંડોવર</h1>
+    <p class="lead">પીઠના મથાળાથી છજ્જાની ટોચ સુધી, દરેક થરનું અલગ માપ. ગર્ભગૃહ અને દીવાલ નાખો.</p>
+  </header>
+
+  <section class="card ctl" aria-label="માપ">
+    <div class="f">
+      <span class="lab">ગર્ભગૃહ (અંદરનું માપ, ચોરસ)</span>
+      <div class="num">
+        <input id="gf" type="number" inputmode="decimal" min="0" step="1" aria-label="ગર્ભગૃહ ફૂટ"><span>ફૂટ</span>
+        <input id="gi" type="number" inputmode="decimal" min="0" step="0.125" aria-label="ગર્ભગૃહ ઇંચ"><span>ઇંચ</span>
+      </div>
+    </div>
+    <div class="f">
+      <span class="lab">દીવાલની જાડાઈ</span>
+      <div class="row" id="wallChips"></div>
+      <div class="num" id="wownBox" hidden><input id="wown" type="number" inputmode="decimal" min="0" step="0.125" aria-label="દીવાલ ઇંચ"><span>ઇંચ</span></div>
+    </div>
+    <div class="f" style="grid-column:1/-1">
+      <span class="lab">મંડોવરનો પ્રકાર</span>
+      <div class="row" id="typeChips"></div>
+    </div>
+    <div class="f" style="grid-column:1/-1">
+      <span class="lab">ઊંચાઈની રીત (ચાર રીતનાં માપ)</span>
+      <div class="row" id="methChips"></div>
+    </div>
+    <div class="f">
+      <span class="lab">માપ કેટલા સુધી</span>
+      <div class="row" id="unitChips"></div>
+    </div>
+    <div class="f">
+      <label for="ovf">ઊંચાઈ જાતે નાખવી હોય તો (વૈકલ્પિક)</label>
+      <div class="num">
+        <input id="ovf" type="number" inputmode="decimal" min="0" step="1" aria-label="ઊંચાઈ ફૂટ"><span>ફૂટ</span>
+        <input id="ovi" type="number" inputmode="decimal" min="0" step="0.125" aria-label="ઊંચાઈ ઇંચ"><span>ઇંચ</span>
+        <button class="link" id="ovr" type="button">પાછું ગણતરી પ્રમાણે</button>
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="સારાંશ" class="stats" id="stats"></section>
+  <p class="assume" id="assume"></p>
+  <div id="warn"></div>
+
+  <div class="grid">
+    <aside class="card draw" aria-label="મંડોવરનું ચિત્ર">
+      <svg id="svg" role="img" aria-label="મંડોવરનું બાજુનું ચિત્ર, નીચેથી ઉપર થરો"></svg>
+      <p class="cap">ચિત્ર સમજ માટે છે. ઊંચાઈ માપસર છે; ખુરા અને છજ્જાનો નીકાળો પુસ્તક મુજબ, બાકીના થર સરખા નીકાળે દોર્યા છે. થર પર દબાવો.</p>
+    </aside>
+    <section class="list" aria-label="થર પ્રમાણે માપ">
+      <div class="listhead"><h2>થર પ્રમાણે માપ</h2><p>ક્રમ નીચેથી ઉપર, પીઠના મથાળેથી શરૂ</p></div>
+      <div id="cards" class="list"></div>
+    </section>
+  </div>
+
+  <div class="foot">
+    <p>આમાં કણપીઠ, પીઠ, ભીટ અને દ્વારનાં માપ નથી. એ અલગથી લેવાનાં છે.</p>
+    <p>ઊંચાઈનું માપ પ્રાસાદના બહારના માપ (ભીંતની બહારથી, ખૂણેથી ખૂણે) પરથી પુસ્તકના કોષ્ટક મુજબ કાઢ્યું છે. ઉપ-ભાગ ⅛″ સુધી બતાવ્યા છે.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var GL=["","⅛","¼","⅜","½","⅝","¾","⅞"];
+function fi(x){
+  var E=Math.round(x*8), neg=E<0; E=Math.abs(E);
+  var ft=Math.floor(E/96), r=E%96, i=Math.floor(r/8), g=GL[r%8];
+  var inch=i?(i+g):(g||"0");
+  return (neg?"−":"")+(ft?ft+"′-"+inch+"″":inch+"″");
+}
+function pf(p){
+  var w=Math.floor(p+1e-9), f=Math.round((p-w)*8);
+  if(f===8){w++;f=0}
+  if(Math.abs((p-w)*8-f)>1e-6) return String(Math.round(p*100)/100);
+  return (w?String(w):"")+GL[f]||"0";
+}
+/* round a list of inch values to `unit` eighths so that they add up exactly to the rounded total */
+function dist(vals,total,unit){
+  var T=Math.round(total*8/unit), S=vals.reduce(function(a,b){return a+b},0);
+  var raw=vals.map(function(v){return S?v/S*T:0}), fl=raw.map(Math.floor);
+  var left=T-fl.reduce(function(a,b){return a+b},0);
+  raw.map(function(v,i){return [v-fl[i],i]}).sort(function(a,b){return b[0]-a[0]}).forEach(function(o){if(left>0){fl[o[1]]++;left--}});
+  return fl.map(function(v){return v*unit/8});
+}
+
+/* ---- height of the mandovar: pitha top to chhajja top, in angul (1 angul = 3/4″) ---- */
+function pw(pts,x){
+  if(x<=pts[0][0]) return pts[0][1]*x/pts[0][0];
+  for(var i=1;i<pts.length;i++){
+    if(x<=pts[i][0]){var a=pts[i-1],c=pts[i];return a[1]+(c[1]-a[1])*(x-a[0])/(c[0]-a[0])}
+  }
+  var p=pts[pts.length-1],q=pts[pts.length-2];
+  return p[1]+(p[1]-q[1])*(x-p[0])/(p[0]-q[0]);
+}
+function grow(x,v1,segs){
+  var pts=[[1,v1]], v=v1, prev=1;
+  segs.forEach(function(s){v+=s[1]*(s[0]-prev);pts.push([s[0],v]);prev=s[0]});
+  return pw(pts,x);
+}
+var METH=[
+  {id:1,f:function(g){return g<=5?24*g+pw([[1,14],[2,14],[3,7],[4,5],[5,3]],Math.max(g,1)):grow(g-4,123,[[6,14],[26,12],[46,9]])}},
+  {id:2,f:function(g){return g<=5?24*g:grow(g-4,120,[[26,12],[46,9]])}},
+  {id:3,f:function(g){return pw([[1,33],[2,55],[3,77],[4,97],[5,120],[6,142],[7,161],[8,176],[9,187],[10,192],[15,246],[20,300],[25,354],[30,408],[35,510],[40,516],[45,570],[50,600]],g)}},
+  {id:4,f:function(g){return g<=5?24*g:grow(g-4,120,[[9,12],[17,11],[46,10]])}}
+];
+
+/* ---- thar tables (parts) ---- */
+var KH="ખુરો",KU="કુંભો",KA="કળશ",AN="અંતરાલ",KE="કેવાળ",MA="માંચી",JA="જંઘા",UD="ઉદ્‌ગમ (ડોઢિયો)",BH="ભરણી",SH="શિરાવટી",PK="પુષ્પકંઠ",CH="છજ્જુ";
+function t(n,p,o){o=o||{};o.n=n;o.p=p;return o}
+var SUB_KH=[["અંતરપત્ર",.5],["કર્ણ",2],["વાપીસ્કંધ",1.5],["કનક",1]];
+var SUB_KU=[["સ્કંધપટ્ટ",.5],["ચિપ્પિકા",1],["કુંભ (ઘડો)",null]];
+var SUB_KE=[["સ્કંધપટ્ટિકા",.5],["સ્કંધ",2.25],["મુખપટ્ટિકા",.25],["કર્ણ",2],["સ્કંધ",2.5],["સ્કંધપટ્ટ",.5]];
+var SUB_MA=[["અંતરપત્ર",1.25],["કામરૂપ",.75],["પટ્ટિકા",.25],["સ્કંધ",2],["મુખપટ્ટી",.25],["કર્ણ",1.25],["સ્કંધ",1.25],["અંતરપત્રિકા",1.25],["કનક",.5],["નિર્વાણપટ્ટિકા",.25]];
+var SUB_UD=[["છાદ્ય",.5],["કપોતાલી",.25],["અંતરપત્ર",.25],["પહેલો ઉદ્‌ગમ",5.5],["બીજો ઉદ્‌ગમ",8.5]];
+var SUB_SH=[["ભારપુત્તલિકા",3],["સ્કંધ",.75],["કર્ણ",.75],["અંતરપત્ર",.5],["પટ્ટ",5]];
+var N_JA="ખૂણે દિક્પાળ (પૂર્વથી શરૂ). પશ્ચિમ ભદ્રે નટેશ, દક્ષિણ ભદ્રે રુદ્ર–અંધકાસુર, ઉત્તર ભદ્રે દેવી. જંઘાની ચાર જાત: નાગરી (સાદી), લાટી (યુગલો, ગુજરાતમાં), વૈરાટી (પાંદડાં), દ્રાવિડી.";
+var N_CH="નીકાળો 10 ભાગ. ભીંતમાં પ્રવેશ 6 ભાગ, વારિમાર્ગ 6 ભાગ.";
+function n144(){return [
+  t(KH,5,{out:2,subs:SUB_KH,note:"ઊંચાઈ 5 ભાગ, નીકાળો 2 ભાગ. આગળ બે પટ્ટિકા 1 ભાગ બહાર."}),
+  t(KU,20,{site:"કુંભો",subs:SUB_KU,note:"ત્રણ બાજુ બ્રહ્મા, વિષ્ણુ, રુદ્ર."}),
+  t(KA,8,{site:"કળસો"}),
+  t(AN,2.5,{site:"મંડોવર કેવાર દાબડી"}),
+  t(KE,8,{site:"મંડોવર કેવાર દાબડી",subs:SUB_KE}),
+  t(MA,9,{site:"કેવાર",subs:SUB_MA}),
+  t(JA,35,{site:"જાંગી",note:N_JA}),
+  t(UD,15,{site:"ડોઢીયા વાદ",subs:SUB_UD,note:"બીજા ઉદ્‌ગમમાં અંતરપત્ર ½, અંધારિકા ½, ગ્રાસપટ્ટી 3 ભાગ આવે છે; પુસ્તકમાં ગોઠવણ સ્પષ્ટ નથી."}),
+  t(BH,8,{site:"પાલ",note:"ભરણી 13 નાના ભાગમાં વહેંચાય છે."}),
+  t(SH,10,{site:"ભેટી",subs:SUB_SH}),
+  t(PK,8,{site:"સુંઢીયું છાજુ"}),
+  t(AN,2.5,{site:"સુંઢીયું છાજુ"}),
+  t(CH,13,{site:"સુંઢીયું છાજુ",out:10,note:N_CH})
+]}
+function meru(){
+  var a=n144(), upper=[t(MA+" (ઉપરનો)",8),t(JA+" (ઉપરની)",25),t(UD.split(" ")[0]+" (ઉપરનો)",13),t(BH+" (ઉપરની)",8)];
+  return a.slice(0,9).concat(upper,a.slice(9));
+}
+var TYPES=[
+  {id:"n144",name:"144 ભાગ",base:144,thars:n144},
+  {id:"meru",name:"198 મેરુ",base:198,thars:meru},
+  {id:"m108",name:"108 ભાગ",base:108,thars:function(){return [t(KH,4,{out:2.5}),t(KU,15),t(KA,6),t(AN,3),t("કપોતાલી",6),t(MA,6),t(JA,32,{note:N_JA}),t(UD,11),t(BH,6),t("કપોતાલી",6),t(AN,3),t(CH,10,{out:7})]}},
+  {id:"m27",name:"27 ભાગ",base:27,thars:function(){return [t(KH,1),t(KU,4),t(KA,1.5),t(AN,.5),t("કેવાળ",1.5),t(MA,1.5),t(JA,8),t(UD,3),t(BH,1.5),t(PK,1.5),t(AN,.5),t(CH,2.5,{out:2})]}},
+  {id:"chatur",name:"57 ચતુર્મુખ",base:57,thars:function(){return [t(KH,2),t(KU,7),t(KA,3),t("અંતરપત્રિકા",1),t("કપોતાલી",3),t(AN,.5),t(MA,3),t(JA,15),t(UD,5),t(BH,3),t("અંતરપત્રિકા",.5),t(SH,4),t("કપોતાલી",3),t("માળા",3),t(CH,4,{out:4})]}},
+  {id:"sam",name:"સામાન્ય",base:75,thars:function(){return [t(KH,5,{out:2}),t(KU,20),t(KA,8),t(AN,2.5),t(KE,8),t(BH,8),t(PK,8),t(AN,2.5),t(CH,13,{out:10,note:N_CH})]}},
+  {id:"mine",name:"મારો મંડોવર",base:144,thars:function(){return [t("કુંભો",24),t("કળશો",9),t("કેવાર દાબડી",10),t("કેવાર",7),t("જાંઘી",28),t("પટ્ટી",6),t("ડોઢિયો",18),t("ભરણી",7),t("કપોતાલી",8),t("છાજું",12,{out:10})]}}
+];
+/* the chhajja projection of the standard types is the `out` of the last thar; the khuro projection is the `out` of the first */
+var WALLS=[{id:"s6",l:"પથ્થર ⅙"},{id:"b4",l:"ઈંટ ¼"},{id:"own",l:"પોતાની જાડાઈ"}];
+var UNITS=[{id:1,l:"⅛″ સુધી"},{id:8,l:"પૂરા ઇંચ"}];
+
+var KEY="aayam-mandovar";
+var S={gf:7,gi:11,wall:"s6",wown:24,type:"n144",meth:2,unit:1,ovf:"",ovi:""};
+try{var sv=JSON.parse(localStorage.getItem(KEY)||"null");if(sv&&typeof sv==="object")Object.keys(S).forEach(function(k){if(k in sv)S[k]=sv[k]})}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+var $=function(id){return document.getElementById(id)};
+var sel=-1, view=null;
+
+function chips(el,items,cur,fn,labelFn){
+  el.innerHTML=items.map(function(it){return '<button type="button" class="chip" data-v="'+it.id+'" aria-pressed="'+(String(it.id)===String(cur))+'">'+(labelFn?labelFn(it):it.l||it.name)+'</button>'}).join("");
+  el.onclick=function(e){var b=e.target.closest(".chip");if(!b)return;fn(b.getAttribute("data-v"))};
+}
+
+function compute(){
+  var g=(+S.gf||0)*12+(+S.gi||0);
+  var outer = S.wall==="s6"?g*1.5 : S.wall==="b4"?g*2 : g+2*(+S.wown||0);
+  var wall=(outer-g)/2, G=outer/18;
+  var ty=TYPES.filter(function(x){return x.id===S.type})[0]||TYPES[0];
+  var mm=METH.filter(function(x){return x.id==+S.meth})[0]||METH[1];
+  var hAll=METH.map(function(m){return m.f(G)*0.75});
+  var H=G>0?mm.f(G)*0.75:0;
+  var hasOv=(S.ovf!==""||S.ovi!=="")&&((+S.ovf||0)*12+(+S.ovi||0))>0;
+  if(hasOv) H=(+S.ovf||0)*12+(+S.ovi||0);
+  var thars=ty.thars();
+  var totalParts=thars.reduce(function(a,x){return a+x.p},0);
+  var u=H/ty.base;                       /* inches per part */
+  var tot=u*totalParts;                  /* height of this type's thars together */
+  var hs=dist(thars.map(function(x){return x.p}),tot,+S.unit);
+  var from=0, rows=thars.map(function(x,i){
+    var h=hs[i], r={x:x,h:h,from:from,to:from+h,out:x.out!=null?x.out*u:null};
+    from+=h;
+    if(x.subs){
+      var known=x.subs.reduce(function(a,s){return a+(s[1]||0)},0);
+      var parts=x.subs.map(function(s){return s[1]==null?x.p-known:s[1]});
+      var sh=dist(parts,h,1);
+      r.subs=x.subs.map(function(s,k){return {n:s[0],p:parts[k],h:sh[k],d:s[1]==null}});
+    }
+    return r;
+  });
+  var proj=rows.length&&rows[rows.length-1].out!=null?rows[rows.length-1].out:null;
+  return {g:g,outer:outer,wall:wall,G:G,ty:ty,H:H,hAll:hAll,hasOv:hasOv,u:u,total:from,rows:rows,proj:proj,totalParts:totalParts};
+}
+
+function render(){
+  view=compute(); var V=view;
+  /* chips */
+  chips($("wallChips"),WALLS,S.wall,function(v){S.wall=v;save();render()});
+  $("wownBox").hidden=S.wall!=="own";
+  chips($("typeChips"),TYPES,S.type,function(v){S.type=v;sel=-1;save();render()},function(it){return it.name});
+  chips($("methChips"),METH,S.meth,function(v){S.meth=+v;save();render()},function(it){return "રીત "+it.id+" · "+(V.G>0?fi(V.hAll[it.id-1]):"—")});
+  chips($("unitChips"),UNITS,S.unit,function(v){S.unit=+v;save();render()});
+
+  var ok=V.g>0;
+  $("stats").innerHTML=ok?[
+    ["બહારનું માપ",fi(V.outer),"દીવાલ "+fi(V.wall)+" + ગર્ભગૃહ + દીવાલ"],
+    ["મંડોવરની ઊંચાઈ",fi(V.H),V.hasOv?"તમે નાખેલી ઊંચાઈ":"પીઠના મથાળેથી છજ્જાની ટોચ સુધી"],
+    ["1 ભાગ",fi(V.u),"ઊંચાઈ ÷ "+V.ty.base+" ભાગ"],
+    ["છજ્જાનો નીકાળો",V.proj!=null?fi(V.proj):"—","ભીંતની બહાર"]
+  ].map(function(s){return '<div class="stat"><div class="k">'+s[0]+'</div><div class="v">'+s[1]+'</div><div class="s">'+s[2]+'</div></div>'}).join(""):"";
+  var wtxt=S.wall==="s6"?"પથ્થરની દીવાલ, પ્રાસાદના ⅙":S.wall==="b4"?"ઈંટની દીવાલ, પ્રાસાદના ¼":"તમે નાખેલી જાડાઈ";
+  $("assume").textContent=ok?"ગણતરી આ માપ પર: ગર્ભગૃહ "+fi(V.g)+" (અંદર), દીવાલ "+fi(V.wall)+" ("+wtxt+"), બહારનું માપ "+fi(V.outer)+" ખૂણેથી ખૂણે. દીવાલની જાડાઈ હજી નક્કી ન હોય તો આ ફક્ત અંદાજ છે.":"ગર્ભગૃહનું માપ નાખો.";
+  var w=[];
+  if(ok&&(V.G<1||V.G>50)) w.push("પુસ્તકનાં કોષ્ટક 1′-6″ થી 75′ ના બહારના માપ માટે છે. આ માપ તેની બહાર છે, એટલે ઊંચાઈ અંદાજિત છે.");
+  if(ok&&V.ty.id==="mine") w.push("આ તમારો પોતાનો મંડોવર છે (129 ભાગ). ઊંચાઈ 144 ભાગના હિસાબે લીધી છે, એટલે કુલ ઊંચાઈ "+fi(V.total)+" થાય છે.");
+  $("warn").innerHTML=w.map(function(x){return '<div class="warn">'+x+'</div>'}).join("");
+
+  drawSvg(); drawCards();
+}
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+
+function drawCards(){
+  var V=view; if(!(V.g>0)){$("cards").innerHTML="";return}
+  $("cards").innerHTML=V.rows.map(function(r,i){
+    var x=r.x;
+    var sub=r.subs?'<table class="sub"><tbody>'+r.subs.map(function(s){return '<tr'+(s.d?' class="d"':'')+'><td>'+esc(s.n)+(s.d?' (બાકીનો)':'')+'</td><td>'+pf(s.p)+' ભાગ</td><td>'+fi(s.h)+'</td></tr>'}).join("")+'</tbody></table>':"";
+    return '<article class="thar'+(i===sel?' on':'')+'" id="t'+i+'" data-i="'+i+'" tabindex="0" role="button" aria-pressed="'+(i===sel)+'">'
+      +'<div class="th"><span class="no">'+(i+1)+'</span><div class="nm"><h3>'+esc(x.n)+'</h3>'+(x.site?'<span class="tag">સાઇટનું નામ: '+esc(x.site)+'</span>':'')+'</div><div class="hv">'+fi(r.h)+'</div></div>'
+      +'<p class="rng">'+pf(x.p)+' ભાગ · પીઠના મથાળેથી '+fi(r.from)+' થી '+fi(r.to)+' સુધી'+(r.out!=null?' · નીકાળો '+fi(r.out):'')+'</p>'
+      +sub+(x.note?'<p class="note">'+esc(x.note)+'</p>':'')
+      +'</article>';
+  }).join("");
+}
+
+function drawSvg(){
+  var V=view, svg=$("svg"); if(!(V.g>0)||!(V.total>0)){svg.innerHTML="";return}
+  var W=380, top=16, bot=34, HH=560, sy=(HH-top-bot)/V.total, x0=46, wallW=26;
+  var maxOut=Math.max.apply(null,V.rows.map(function(r){return r.out!=null?r.out:V.u}));
+  var kx=Math.min(10, 80/Math.max(maxOut,0.001));
+  var yBase=top+V.total*sy, y=yBase, bands=[], lab=[];
+  V.rows.forEach(function(r,i){
+    var h=r.h*sy, yt=y-h;
+    var o=r.out!=null?r.out:(r.x.n.indexOf("જંઘ")===0||r.x.n.indexOf("જાંઘ")===0?0:V.u);   /* only khuro and chhajja projections are from the book */
+    var bw=Math.max(o*kx,0.5);
+    bands.push('<rect class="band '+(i%2?'b ':'')+(i===sel?'on':'')+'" data-i="'+i+'" x="'+x0+'" y="'+yt.toFixed(1)+'" width="'+(bw+14).toFixed(1)+'" height="'+Math.max(h,0.6).toFixed(1)+'" tabindex="0" role="button" aria-label="'+esc(r.x.n)+' '+fi(r.h)+'"/>');
+    lab.push({i:i,y:(yt+h/2)});
+    y=yt;
+  });
+  /* labels on the right, spread so they do not overlap */
+  var gap=15, pos=lab.map(function(l){return l.y});
+  for(var a=1;a<pos.length;a++){ if(pos[a]>pos[a-1]-gap) pos[a]=pos[a-1]-gap; }   /* index 0 is the bottom thar, so each next label sits higher */
+  var lo=Math.min.apply(null,pos); if(lo<top+6){var sh=top+6-lo;pos=pos.map(function(p){return p+sh})}
+  var lx=x0+14+80+18, out='';
+  out+='<rect class="wallr" x="'+(x0-wallW)+'" y="'+top+'" width="'+wallW+'" height="'+(yBase-top).toFixed(1)+'" opacity=".55"/>';
+  out+=bands.join("");
+  lab.forEach(function(l,k){
+    var r=V.rows[l.i], on=l.i===sel;
+    var bw=Math.max(((r.out!=null?r.out:V.u)*kx),0.5)+14;
+    out+='<path class="lead-l" d="M'+(x0+bw).toFixed(1)+' '+l.y.toFixed(1)+' L'+(lx-6)+' '+pos[k].toFixed(1)+'"/>';
+    out+='<text class="lbl'+(on?' on':'')+'" data-i="'+l.i+'" x="'+lx+'" y="'+(pos[k]+4).toFixed(1)+'">'+esc(r.x.n)+' <tspan class="h" dx="4">'+fi(r.h)+'</tspan></text>';
+  });
+  out+='<line class="base" x1="'+(x0-wallW-6)+'" x2="'+(W-6)+'" y1="'+yBase+'" y2="'+yBase+'"/>';
+  out+='<text class="basel" x="'+(x0-wallW-6)+'" y="'+(yBase+16)+'">પીઠનું મથાળું</text>';
+  out+='<text class="basel" x="'+(x0-wallW-6)+'" y="'+(yBase+30)+'">કુલ ઊંચાઈ '+fi(V.total)+'</text>';
+  svg.setAttribute("viewBox","0 0 "+W+" "+HH);
+  svg.innerHTML=out;
+}
+
+function pick(i){
+  sel=(sel===i)?-1:i; drawSvg(); drawCards();
+  if(sel>=0){var el=$("t"+sel); if(el&&el.scrollIntoView) el.scrollIntoView({block:"nearest",behavior:"smooth"})}
+}
+document.addEventListener("click",function(e){
+  var el=e.target.closest("[data-i]"); if(!el||el.classList.contains("chip")) return;
+  pick(+el.getAttribute("data-i"));
+});
+document.addEventListener("keydown",function(e){
+  if(e.key!=="Enter"&&e.key!==" ") return;
+  var el=e.target.closest&&e.target.closest("[data-i]"); if(!el||el.tagName==="INPUT") return;
+  e.preventDefault(); pick(+el.getAttribute("data-i"));
+});
+
+/* inputs */
+function bind(id,key){
+  var el=$(id); el.value=S[key];
+  el.addEventListener("input",function(){S[key]=el.value;save();render()});
+}
+bind("gf","gf");bind("gi","gi");bind("wown","wown");bind("ovf","ovf");bind("ovi","ovi");
+$("ovr").addEventListener("click",function(){S.ovf="";S.ovi="";$("ovf").value="";$("ovi").value="";save();render()});
+render();
+})();
+</script>
