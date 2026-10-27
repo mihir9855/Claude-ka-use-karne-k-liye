@@ -10,16 +10,13 @@ import { MealArt } from './Art';
 import { CuisinePicker } from './CuisineScreen';
 import { Button, Chip, Field, H, Label, Muted, Row, Segmented } from './kit';
 import { PantryShelves } from './PantryPicker';
+import { AddItem } from './PantryScreen';
 import { C, RADIUS, SHADOW } from './theme';
 
 const GOALS: Goal[] = ['fat_loss', 'maintain', 'muscle_gain'];
 const CONDITIONS: Condition[] = [
   'diabetes', 'bp', 'thyroid', 'pcos', 'cholesterol', 'lactose', 'gluten',
   'kidney', 'peanut', 'soy', 'nuts', 'no_onion_garlic',
-];
-const COMMON = [
-  'atta', 'rice', 'moong_dal', 'toor_dal', 'chana_dal', 'besan', 'oats', 'paneer', 'curd', 'milk',
-  'aloo', 'matar', 'tomato', 'onion', 'palak', 'cauliflower', 'bhindi', 'lauki', 'carrot', 'banana', 'peanuts',
 ];
 const ACTS: { id: Activity; title: string; sub: string }[] = [
   { id: 'sedentary', title: 'Sedentary', sub: 'Desk job, little exercise' },
@@ -124,6 +121,7 @@ export function OnboardScreen() {
   const setOnboarded = useStore((s) => s.setOnboarded);
   const makeWeek = useStore((s) => s.makeWeek);
   const [step, setStep] = useState(0);
+  const [adding, setAdding] = useState(false);
   const tx = (k: StrKey) => t(lang, k);
 
   // 0 welcome, 1 family size, then each member's profile, each member's health limits, cuisines, pantry
@@ -174,12 +172,13 @@ export function OnboardScreen() {
       </View>
       <ScrollView contentContainerStyle={{ padding: 20, gap: 18 }} keyboardShouldPersistTaps="handled">
         <H>{title}</H>
-        {step === LAST && <Muted>{tx('obHomeHint')}</Muted>}
+        {step === LAST && <Muted>Your plan uses these first.</Muted>}
         {step === 1 && <Segmented value={count} onChange={setMemberCount} options={[1, 2, 3, 4, 5, 6].map((n) => ({ value: n, label: String(n) }))} />}
         {isPerson && <PersonStep key={step} index={step - 2} />}
         {isHealth && <HealthStep key={step} index={hi} />}
         {isCuisine && <CuisinePicker />}
-        {step === LAST && <PantryShelves ids={COMMON} />}
+        {step === LAST && <PantryShelves collapsible />}
+        {step === LAST && (adding ? <AddItem to="have" onDone={() => setAdding(false)} /> : <Button kind="soft" label="Not listed? Add by name" onPress={() => setAdding(true)} />)}
       </ScrollView>
       <View style={s.foot}>
         <Button kind="soft" label={tx('back')} onPress={() => setStep(step - 1)} />
