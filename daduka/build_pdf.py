@@ -1,23 +1,39 @@
-"""Measurements-only sheets of DADUKA SHIHASHN: the drawing with the dimensions already in the file, no extra labels.
-Writes annotated.html; print it with `node topdf.js`. Images come from the repaired DXF (see README in this folder)."""
-import pathlib, base64
+"""Daduka Sinhasan: numbered drawing + a short list of part -> measurement (only measurements the file itself carries).
+Callout positions come from the first version (_old.py). Print with `node topdf.js`."""
+import pathlib, base64, importlib.util
 H = pathlib.Path(__file__).parent
-b64 = lambda f: base64.b64encode((H / f).read_bytes()).decode()
-PAGES = [
- ("એલિવેશન · આખો", "elev.png"), ("એલિવેશન · ડાબો ગોખ", "z_el_L.png"), ("એલિવેશન · વચલો ગોખ", "z_el_M.png"), ("એલિવેશન · જમણો ગોખ", "z_el_R.png"),
- ("પ્લાન · આખો", "plan.png"), ("પ્લાન · ડાબો ભાગ", "z_pl_L.png"), ("પ્લાન · વચલો ભાગ", "z_pl_M.png"), ("પ્લાન · જમણો ભાગ", "z_pl_R.png"),
+spec = importlib.util.spec_from_file_location("old", H / "_old.py"); old = importlib.util.module_from_spec(spec); spec.loader.exec_module(old)
+b64, fig, CSS, E_PTS, P_PTS = old.b64, old.fig, old.CSS, old.E_PTS, old.P_PTS
+
+ELEV = [  # (no, part, left, middle, right)  — heights/sizes exactly as written in the drawing
+ (6, "પીઠનો નીચેનો થર (ઊંચાઈ)", "0′-5″", "0′-7″", "0′-5″"),
+ (7, "પીઠનો વચલો થર (ઊંચાઈ)", "1′-0.5″", "1′-5.5″", "1′-3.5″"),
+ (8, "પીઠનો ઉપરનો થર (ઊંચાઈ)", "0′-5″", "0′-5″", "0′-5″"),
+ (0, "પીઠની કુલ ઊંચાઈ", "2′-2″", "2′-9″", "2′-5″"),
+ (6, "નીચેના થરના પથ્થર (પહોળાઈ)", "1′-1″ · 1′-2″ · 1′-2″ · 1′-1″ (કુલ 4′-6″)", "1′-4″ · 1′-5″", "1′-4″"),
+ (10, "બેઠક", "જાડાઈ 0′-4⅜″", "4′-1″ × 0′-6″", "4′-1″ પહોળી, જાડાઈ 0′-4¼″"),
+ (15, "મૂર્તિ", "ઊંચાઈ 3′-0″ અને 2′-4″, પહોળાઈ 3′-1″", "", ""),
+ (21, "મૂર્તિ-પેનલ (ત્રણ)", "", "", "ઊંચાઈ 2′-6″"),
+ (0, "બીજાં લખેલાં ઊભાં માપ", "5′-5″ · 1′-3.25″ · 3′-5″", "3′-5″ · 2′-6″ · 0′-6″", "3′-5″ · 2′-6″ · 1′-3.25″ · 5′-5″"),
+ (0, "ગોખ વચ્ચે પીઠની ઊંચાઈ", "ડાબા-વચલા વચ્ચે 2′-0.5″ · વચલા-જમણા વચ્ચે 2′-5″", "", ""),
+ (0, "ગોખ વચ્ચેનું અંતર (પીઠ પર)", "ડાબા-વચલા વચ્ચે 1′-10″ · વચલા-જમણા વચ્ચે 1′-4″", "", ""),
 ]
-CSS = f"""
-@font-face {{ font-family: G; src: url(data:font/ttf;base64,{b64('NotoSansGujarati-Regular.ttf')}); font-weight:400 }}
-@font-face {{ font-family: G; src: url(data:font/ttf;base64,{b64('NotoSansGujarati-Bold.ttf')}); font-weight:700 }}
-@page {{ size: A3 landscape; margin: 0 }}
-* {{ box-sizing: border-box }}
-html,body {{ margin:0; background:#fff; color:#14181f; font-family:G,sans-serif }}
-.page {{ width:420mm; height:297mm; padding:10mm 12mm 8mm; page-break-after:always; display:flex; flex-direction:column; gap:3mm }}
-h1 {{ font-size:15pt; margin:0; font-weight:700 }} h1 small {{ font-size:10pt; color:#667085; font-weight:400; margin-left:4mm }}
-.im {{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center }}
-.im img {{ max-width:100%; max-height:100%; display:block }}
-"""
-body = ''.join(f'<div class="page"><h1>દદુકા સિંહાસન · {t}<small>માપ ફૂટ-ઇંચમાં, ફાઇલમાં લખ્યા મુજબ</small></h1><div class="im"><img src="data:image/png;base64,{b64(f)}"></div></div>' for t, f in PAGES)
-(H / "annotated.html").write_text(f'<!doctype html><meta charset=utf-8><style>{CSS}</style>{body}', encoding="utf8")
-print("html written")
+PLAN = [
+ (3, "ગોખની ઊંડાઈ", "2′-6″", "2′-6″", "2′-6″"),
+ (3, "ગોખની પહોળાઈ", "4′-6″", "5′-6″", "5′-6″"),
+ (6, "થાંભલાની જોડી વચ્ચે", "3′-2″ (બહારથી 4′-1″)", "4′-1″", "4′-1″"),
+ (7, "આગળનાં સ્ટેપ", "1′-1″ · 1′-2″ · 1′-2″ · 1′-1″", "1′-4″ · 1′-5″ · 1′-5″ · 1′-4″", "1′-4″ · 2′-10″ · 1′-4″ (કુલ 3′-3″)"),
+ (2, "અંદરની પહોળાઈ (દીવાલ થી દીવાલ)", "6′-9″", "6′-11″", "6′-9″"),
+ (11, "ગોખ વચ્ચેનો ખાંચો", "1′-10″ · 1′-5″", "1′-4″", "1′-4″"),
+ (12, "નીચેના ખૂણિયા થાંભલા વચ્ચે", "3′-1″", "", ""),
+ (0, "બીજાં લખેલાં માપ", "1′-1.5″", "", "0′-7.5″ · 0′-5″"),
+]
+def table(rows):
+    tr = ''.join(f'<tr><td class="n">{"<span class=bd>%d</span>"%r[0] if r[0] else ""}</td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td><td>{r[4]}</td></tr>' for r in rows)
+    return f'<table><tr><th></th><th>ભાગ</th><th>ડાબો</th><th>વચલો</th><th>જમણો</th></tr>{tr}</table>'
+html = f"""<!doctype html><meta charset=utf-8><style>{CSS}</style>
+<div class="page"><h1>દદુકા સિંહાસન · એલિવેશન</h1>{fig('elev.png',2430,1314,E_PTS,17,21)}</div>
+<div class="page"><h2>એલિવેશનનાં માપ</h2>{table(ELEV)}</div>
+<div class="page"><h1>દદુકા સિંહાસન · પ્લાન</h1>{fig('plan.png',2790,1269,P_PTS,17,21)}</div>
+<div class="page"><h2>પ્લાનનાં માપ</h2>{table(PLAN)}</div>"""
+(H / "annotated.html").write_text(html, encoding="utf8"); print("html written")
