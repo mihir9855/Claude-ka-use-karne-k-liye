@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from './Text';
 import { artFor } from '../core/artFor';
 import { dishMacros } from '../core/nutrition';
@@ -11,7 +11,7 @@ import { useAllDishes, useStore } from '../state/store';
 import { CUISINE_TONE, DishArt, MealArt } from './Art';
 import { dateLabel, dishName, ingName, r } from './helpers';
 import { Icon } from './Icon';
-import { Button, Chip, Muted, Pill, Row } from './kit';
+import { Button, Chip, Muted, Pill, Row, Segmented } from './kit';
 import { C, MEAL, RADIUS, SHADOW } from './theme';
 
 /** What the cook needs for everyone eating this meal, in grams. */
@@ -28,7 +28,7 @@ export function MealDetail({ date, index }: { date: string; index: number }) {
   const log = useStore((s) => s.log);
   const prefs = useStore((s) => s.prefs);
   const menuOff = useStore((s) => s.menu.menuOff);
-  const { reshuffleSlot, logMeal, unlog, setPref, toggleMenuDish } = useStore.getState();
+  const { reshuffleSlot, logMeal, unlog, setPref, toggleMenuDish, choose } = useStore.getState();
   const dishes = useAllDishes();
   const byId = useMemo(() => new Map(dishes.map((d) => [d.id, d])), [dishes]);
   const tx = (k: StrKey) => t(lang, k);
@@ -57,6 +57,13 @@ export function MealDetail({ date, index }: { date: string; index: number }) {
         <MealArt slot={sp.slot} size={92} />
       </View>
 
+      {sp.options.length > 1 && !eaten && (
+        <Segmented
+          value={sp.chosen ?? 0}
+          onChange={(k) => choose(date, index, k)}
+          options={sp.options.slice(0, 3).map((_, k) => ({ value: k, label: `Option ${'ABC'[k]}` }))}
+        />
+      )}
       <Row>
         <Pressable
           accessibilityRole="checkbox"
@@ -104,11 +111,10 @@ export function MealDetail({ date, index }: { date: string; index: number }) {
                 </View>
               ))}
             </Row>
-            {!menuOff[id] && (
-              <Row>
-                <Chip tone="accent" label={tx('removeFromMenu')} onPress={() => toggleMenuDish(id)} />
-              </Row>
-            )}
+            <Row>
+              <Chip label="Watch recipe" onPress={() => Linking.openURL(`https://www.youtube.com/results?search_query=${encodeURIComponent(`${dishName(d, 'en')} recipe`)}`)} />
+              {!menuOff[id] && <Chip tone="accent" label={tx('removeFromMenu')} onPress={() => toggleMenuDish(id)} />}
+            </Row>
           </View>
         );
       })}

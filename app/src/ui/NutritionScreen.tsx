@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from './Text';
 import { addDays, todayStr } from '../core/dates';
+import { addonTotals } from '../core/addons';
 import { dayInsight, dayNutrition, type InsightMacro } from '../core/dayCheck';
 import { computeTargets } from '../core/nutrition';
 import type { Slot } from '../core/types';
@@ -41,6 +42,7 @@ export function NutritionScreen() {
   const nav = useNav();
   const lang = useStore((s) => s.lang);
   const persons = useStore((s) => s.persons);
+  const addons = useStore((s) => s.addons);
   const plans = useStore((s) => s.plans);
   const who = useStore((s) => s.nutPerson);
   const setWho = useStore((s) => s.setNutPerson);
@@ -56,7 +58,7 @@ export function NutritionScreen() {
   const plan = valid(date);
   const idx = Math.min(who, persons.length - 1);
   const target = computeTargets(persons[idx]);
-  const day = useMemo(() => (plan ? dayNutrition(plan, dishes, persons)[idx] : undefined), [plan, dishes, persons, idx]);
+  const day = useMemo(() => (plan ? dayNutrition(plan, dishes, persons, addonTotals(addons))[idx] : undefined), [plan, dishes, persons, idx, addons]);
   const lab = dateLabel(date, lang);
   const prev = addDays(date, -1);
   const next = addDays(date, 1);

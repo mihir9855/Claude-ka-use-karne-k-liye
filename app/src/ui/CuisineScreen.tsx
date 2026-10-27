@@ -21,7 +21,7 @@ const ART: Record<Cuisine, 'dalBowl' | 'dosa' | 'idli' | 'riceBowl' | 'veggiePan
   indochinese: 'riceBowl',
 };
 
-function CuisineTile({ cuisine, on, star, onPress, onStar }: { cuisine: Cuisine; on: boolean; star: boolean; onPress: () => void; onStar?: () => void }) {
+function CuisineTile({ cuisine, count, on, star, onPress, onStar }: { cuisine: Cuisine; count: number; on: boolean; star: boolean; onPress: () => void; onStar?: () => void }) {
   const lang = useStore((s) => s.lang);
   const name = t(lang, `cuisine_${cuisine}` as StrKey);
   return (
@@ -35,6 +35,7 @@ function CuisineTile({ cuisine, on, star, onPress, onStar }: { cuisine: Cuisine;
       <Text style={[s.name, on && { color: C.primary }]} numberOfLines={1}>
         {name}
       </Text>
+      <Text style={s.count} numberOfLines={1}>{`${count} dishes`}</Text>
     </Pressable>
   );
 }
@@ -49,7 +50,6 @@ export function CuisinePicker() {
     for (const d of BUILTIN_DISHES) if (d.cuisine) c[d.cuisine] = (c[d.cuisine] ?? 0) + 1;
     return c;
   }, []);
-  void counts;
   const toggle = (c: Cuisine) => {
     const on = menu.cuisines.includes(c);
     const cuisines = on ? menu.cuisines.filter((x) => x !== c) : [...menu.cuisines, c];
@@ -66,7 +66,7 @@ export function CuisinePicker() {
         <Muted>{tx('cuisinesHint')}</Muted>
         <View style={s.grid}>
           {CUISINES.map((c) => (
-            <CuisineTile key={c} cuisine={c} on={menu.cuisines.includes(c)} star={menu.usual.includes(c)} onPress={() => toggle(c)} onStar={() => toggleUsual(c)} />
+            <CuisineTile key={c} cuisine={c} count={counts[c] ?? 0} on={menu.cuisines.includes(c)} star={menu.usual.includes(c)} onPress={() => toggle(c)} onStar={() => toggleUsual(c)} />
           ))}
         </View>
         <Muted>{tx('usualQ')}</Muted>
@@ -89,5 +89,6 @@ const s = StyleSheet.create({
   tile: { flexBasis: '47%', flexGrow: 1, minWidth: 0, alignItems: 'center', gap: 6, paddingVertical: 16, paddingHorizontal: 8, backgroundColor: C.card, borderRadius: RADIUS.xl, borderWidth: 2, borderColor: 'transparent', ...SHADOW },
   tileOn: { borderColor: C.primary, backgroundColor: C.primarySoft },
   name: { fontSize: 15, fontWeight: '700', color: C.text, maxWidth: '100%' },
+  count: { fontSize: 12, color: C.muted, fontWeight: '600', maxWidth: '100%' },
   star: { position: 'absolute', right: 8, top: 8, width: 32, height: 32, borderRadius: 16, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
 });

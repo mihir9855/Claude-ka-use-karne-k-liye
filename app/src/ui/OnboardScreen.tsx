@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from './Text';
-import { Pressable } from 'react-native';
 import { computeTargets } from '../core/nutrition';
 import type { Activity, Condition, Goal, Person } from '../core/types';
 import { t, type StrKey } from '../i18n/strings';
 import { useStore } from '../state/store';
 import { MealArt } from './Art';
 import { CuisinePicker } from './CuisineScreen';
-import { Button, Chip, Field, H, Label, Muted, Row, Segmented } from './kit';
+import { Button, Chip, Choice, Field, H, Label, Muted, Row, Segmented } from './kit';
 import { PantryShelves } from './PantryPicker';
 import { AddItem } from './PantryScreen';
 import { C, RADIUS, SHADOW } from './theme';
@@ -30,18 +29,6 @@ const GOAL_INFO: Record<Goal, { title: string; sub: string }> = {
   muscle_gain: { title: 'Gain lean mass', sub: 'More protein and calories' },
 };
 const num = (v: string) => Number(v.replace(/[^0-9]/g, '')) || 0;
-
-function Choice({ title, sub, on, onPress }: { title: string; sub: string; on: boolean; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="radio" accessibilityLabel={title} accessibilityState={{ selected: on }} onPress={onPress} style={[o.row, on && o.rowOn]}>
-      <View style={[o.dot, on && o.dotOn]}>{on && <View style={o.dotIn} />}</View>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={o.title} numberOfLines={1}>{title}</Text>
-        <Text style={o.sub} numberOfLines={1}>{sub}</Text>
-      </View>
-    </Pressable>
-  );
-}
 
 function PersonStep({ index }: { index: number }) {
   const lang = useStore((s) => s.lang);
@@ -159,7 +146,10 @@ export function OnboardScreen() {
           <Text style={s.welcomeTitle} numberOfLines={1}>family's meals</Text>
           <Text style={s.welcomeSub}>{tx('obWelcomeSub')}</Text>
         </View>
-        <Button label={tx('start')} kind="ink" onPress={() => setStep(1)} />
+        <View style={{ gap: 10 }}>
+          <Button label={tx('start')} kind="ink" onPress={() => setStep(1)} />
+          <Button label="Instant start" kind="soft" onPress={finish} />
+        </View>
       </View>
     );
 

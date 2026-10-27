@@ -16,6 +16,7 @@ import type {
   Person,
   Slot,
   SlotPlan,
+  ThaliStyle,
 } from './types';
 
 export const SLOTS_BY_COUNT: Record<number, Slot[]> = {
@@ -94,7 +95,7 @@ interface Parts {
   snack: Dish[];
 }
 
-function compositions(cat: MealCategory, parts: Parts): Dish[][] {
+function compositions(cat: MealCategory, parts: Parts, style: ThaliStyle = 'any'): Dish[][] {
   const out: Dish[][] = [];
   if (cat === 'snack') {
     for (const d of [...parts.snack, ...parts.complete]) out.push([d]);
@@ -105,12 +106,23 @@ function compositions(cat: MealCategory, parts: Parts): Dish[][] {
     for (const s of parts.side) out.push([c, s]);
   }
   if (cat === 'breakfast') return out;
+  const bowls = out.slice();
+  const meals: Dish[][] = [];
+  const simple: Dish[][] = [];
+  const full: Dish[][] = [];
   for (const m of parts.main)
     for (const st of parts.staple) {
-      out.push([m, st]);
-      for (const s of parts.side) out.push([m, st, s]);
+      simple.push([m, st]);
+      for (const s of parts.side) full.push([m, st, s]);
     }
-  return out;
+  meals.push(...simple, ...full);
+  // a style with nothing to offer falls back to everything
+  const pick = (list: Dish[][]) => (list.length > 0 ? list : [...bowls, ...meals]);
+  if (style === 'full') return pick(full.length > 0 ? full : simple);
+  if (style === 'simple') return pick(simple);
+  if (style === 'onebowl') return pick(bowls);
+  if (style === 'light') return pick(parts.complete.map((c) => [c]));
+  return [...bowls, ...meals];
 }
 
 /** 'rice' or 'bread' for this date, or undefined when any staple will do. */
@@ -244,7 +256,7 @@ function planSlot(
     side: top('side', 6),
     snack: top('snack', 40),
   };
-  const comps = compositions(cat, parts);
+  const comps = compositions(cat, parts, slot === 'lunch' ? rules?.lunchStyle : slot === 'dinner' ? rules?.dinnerStyle : undefined);
 
   const score = (dishes: Dish[]): Scored => {
     let kcal = 0;
@@ -288,11 +300,12 @@ function planSlot(
     const spike = slotCategory(slot) === 'snack' ? 0 : Math.max(0, giShare(dishes) - 0.4) * 2.5;
 
     const { cov, soon } = hasPantry ? coverage(dishes, pantry) : { cov: 1, soon: 0 };
-    let s = 6 * (1 - Math.min(1, protErr)) - 2 * kcalErr;
+    let s = (rules?.highProtein ? 9 : 6) * (1 - Math.min(1, protErr)) - 2 * kcalErr;
     s += 2 * cov + 0.8 * soon + 1.0 * fiberScore - spike;
     const tags = new Set<FoodTag>();
     for (const d of dishes) for (const tg of dishTags(d)) tags.add(tg);
     for (const tg of tags) if (!covered.has(tg)) s += TAG_WEIGHT[tg];
+    if (rules?.dailyCurd && cat !== 'breakfast' && cat !== 'snack' && tags.has('dairy')) s += 1.2;
 
     for (const d of dishes) {
       s += habitScore(stats.get(d.id));

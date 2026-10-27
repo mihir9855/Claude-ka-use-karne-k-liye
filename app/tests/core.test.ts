@@ -385,6 +385,17 @@ test('rules: rice only, bread only, alternate, no fried, no sweet', () => {
   for (const id of idsOf(clean)) assert.ok(!dishOf.get(id)!.tags?.some((t) => t === 'fried' || t === 'sweet'), id);
 });
 
+test('thali style: simple lunch is main + staple, one-bowl dinner is one complete dish', () => {
+  const week = generateWeekPlan({ ...weekBase, mealCount: 3, rules: { ...noRules, lunchStyle: 'simple', dinnerStyle: 'onebowl' }, menu: allMenu }, '2026-10-26', 4);
+  for (const day of Object.values(week)) {
+    for (const sp of day.slots) {
+      const roles = sp.options.map((o) => o.dishIds.map((id) => dishOf.get(id)!.role));
+      if (sp.slot === 'lunch') for (const r of roles) assert.deepEqual([...r].sort(), ['main', 'staple'], r.join());
+      if (sp.slot === 'dinner') for (const r of roles) assert.equal(r[0], 'complete', r.join());
+    }
+  }
+});
+
 test('My Menu: removed dishes and unselected cuisines stay out, unless new dishes are allowed', () => {
   const south: MenuPrefs = { cuisines: ['south'], usual: ['south'], menuOff: { dosa: true }, includeNew: false };
   const week = generateWeekPlan({ ...weekBase, mealCount: 6, rules: noRules, menu: south }, '2026-10-26', 3);

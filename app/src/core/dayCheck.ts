@@ -61,7 +61,7 @@ export interface PersonDay {
 const zero = (): Macros => ({ kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
 
 /** Planned nutrition for one day, per person and per meal. */
-export function dayNutrition(plan: DayPlan, dishes: Dish[], persons: Person[]): PersonDay[] {
+export function dayNutrition(plan: DayPlan, dishes: Dish[], persons: Person[], extra?: { kcal: number; protein: number }): PersonDay[] {
   const byId = new Map(dishes.map((d) => [d.id, d]));
   const out: PersonDay[] = persons.map(() => ({ total: zero(), bySlot: {} }));
   for (const sp of plan.slots) {
@@ -84,6 +84,7 @@ export function dayNutrition(plan: DayPlan, dishes: Dish[], persons: Person[]): 
       for (const k of Object.keys(m) as (keyof Macros)[]) out[i].total[k] += m[k];
     });
   }
+  if (extra) for (const o of out) { o.total.kcal += extra.kcal; o.total.protein += extra.protein; }
   return out;
 }
 

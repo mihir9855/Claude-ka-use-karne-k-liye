@@ -42,7 +42,7 @@ function Picker({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function ShoppingList({ onAddOwn, planItems = {} }: { onAddOwn: () => void; /** what the week's plan needs, id -> grams */ planItems?: Record<string, number> }) {
+export function ShoppingList({ onAddOwn, planItems = {}, usedIn = {} }: { onAddOwn: () => void; /** what the week's plan needs, id -> grams */ planItems?: Record<string, number>; /** which dishes need an item, id -> short text */ usedIn?: Record<string, string> }) {
   const lang = useStore((s) => s.lang);
   const manual = useStore((s) => s.shopping);
   const bought = useStore((s) => s.markBought);
@@ -142,9 +142,16 @@ export function ShoppingList({ onAddOwn, planItems = {} }: { onAddOwn: () => voi
                 <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: false }} accessibilityLabel={it.name} onPress={() => bought(it.id)} hitSlop={8} style={s.check}>
                   <Icon name="check" size={15} color={C.primary} width={3.2} />
                 </Pressable>
-                <Text style={s.itemName} numberOfLines={1}>
-                  {it.name}
-                </Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={s.itemName} numberOfLines={1}>
+                    {it.name}
+                  </Text>
+                  {usedIn[it.id] ? (
+                    <Text style={s.itemUsed} numberOfLines={1}>
+                      {usedIn[it.id]}
+                    </Text>
+                  ) : null}
+                </View>
                 {it.grams > 0 && (
                   <Text style={s.itemQty} numberOfLines={1}>
                     {`${it.grams} ${tx('g')}`}
@@ -176,6 +183,7 @@ const s = StyleSheet.create({
   item: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 50 },
   itemLine: { borderTopWidth: 1, borderTopColor: C.line },
   check: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  itemName: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: '600', color: C.text },
+  itemUsed: { fontSize: 12, color: C.muted },
+  itemName: { minWidth: 0, fontSize: 16, fontWeight: '600', color: C.text },
   itemQty: { fontSize: 14, color: C.muted, fontWeight: '600', maxWidth: '40%' },
 });

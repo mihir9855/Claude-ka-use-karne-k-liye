@@ -131,6 +131,8 @@ export interface DayPlan {
 }
 
 /** How the week is planned: simple switches instead of free text. */
+export type ThaliStyle = 'any' | 'full' | 'simple' | 'onebowl' | 'light';
+
 export interface PlanRules {
   /** which staple goes with lunch and dinner */
   stapleRule: 'any' | 'rice' | 'bread' | 'alternate';
@@ -138,6 +140,15 @@ export interface PlanRules {
   avoidSweet: boolean;
   /** prefer quick dishes Monday to Friday */
   quickWeekdays: boolean;
+  /** how lunch and dinner are put together */
+  lunchStyle?: ThaliStyle;
+  dinnerStyle?: ThaliStyle;
+  /** weigh protein more when choosing dishes */
+  highProtein?: boolean;
+  /** prefer a curd, chaas or raita side with lunch and dinner */
+  dailyCurd?: boolean;
+  /** the household's own reminders; shown with the rules, not used by the planner */
+  notes?: string;
 }
 
 export interface MenuPrefs {

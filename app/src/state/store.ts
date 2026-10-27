@@ -1,3 +1,4 @@
+import { NO_ADDONS, type Addons, type AddonId } from '../core/addons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -47,6 +48,10 @@ interface State {
   saltByDate: Record<string, number>;
   /** what the current week plan was built from; differs once settings change */
   planSig: string;
+  /** daily extras counted in every day's totals */
+  addons: Addons;
+  /** days eaten out: no meals planned or bought for them */
+  ateOut: Record<string, true>;
   /** last delete, kept briefly so it can be undone (not saved to disk) */
   undoSnapshot:
     | { kind: 'person'; persons: Person[]; plans: Record<string, DayPlan> }
@@ -61,6 +66,8 @@ interface State {
   setMenu: (patch: Partial<MenuPrefs>) => void;
   toggleMenuDish: (id: string) => void;
   makeWeek: () => void;
+  toggleAddon: (id: AddonId) => void;
+  toggleAteOut: (date: string) => void;
   setOnboarded: (v: boolean) => void;
   setGeminiKey: (k: string) => void;
   addToPantry: (ids: string[]) => void;
@@ -128,6 +135,8 @@ export const useStore = create<State>()(
     (set, get) => ({
       lang: 'en',
       onboarded: false,
+      addons: NO_ADDONS,
+      ateOut: {},
       geminiKey: '',
       persons: [newPerson('', 'male'), newPerson('', 'female')],
       rules: DEFAULT_RULES,
@@ -188,6 +197,14 @@ export const useStore = create<State>()(
         }
         set({ plans, saltByDate: { ...s.saltByDate, ...salts }, planSig: planSignature(s) });
       },
+      toggleAddon: (id) => set((s) => ({ addons: { ...s.addons, [id]: !s.addons[id] } })),
+      toggleAteOut: (date) =>
+        set((s) => {
+          const ateOut = { ...s.ateOut };
+          if (ateOut[date]) delete ateOut[date];
+          else ateOut[date] = true;
+          return { ateOut };
+        }),
       setOnboarded: (onboarded) => set({ onboarded }),
       setGeminiKey: (geminiKey) => set({ geminiKey: geminiKey.trim() }),
       addToPantry: (ids) =>
@@ -260,6 +277,8 @@ export const useStore = create<State>()(
         setCustomIngredients([]);
         set({
           onboarded: false,
+          addons: NO_ADDONS,
+          ateOut: {},
           persons: [newPerson('', 'male'), newPerson('', 'female')],
           rules: DEFAULT_RULES,
           menu: DEFAULT_MENU,
