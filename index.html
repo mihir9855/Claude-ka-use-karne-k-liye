@@ -395,6 +395,12 @@ html,body{max-width:100vw;overflow-x:hidden}
 
 <div class="wrap">
   <section class="top t-home">
+    <div class="glass card" id="homeChart">
+      <div class="hch"><div><div class="lbl" id="hcName">NIFTY 50</div><div><b class="num" id="hcVal" style="font-size:24px"></b> <span class="num" id="hcChg" style="font-weight:700"></span></div></div>
+        <select id="hcIdx" class="hcsel"></select></div>
+      <div class="tfs" id="hcTf" style="margin:8px 0"><button data-tf="1m">1m</button><button data-tf="5m" class="on">5m</button><button data-tf="15m">15m</button><button data-tf="60m">1h</button><button data-tf="1d">1D</button></div>
+      <div id="hcBox" hidden></div><div id="hcFallback" class="hint"></div>
+    </div>
     <div class="glass card">
       <div class="lbl">Net worth</div>
       <div class="nwrow"><div><div class="big num" id="net">—</div><div class="num" id="pnl" style="margin-top:4px;font-weight:700"></div></div><div id="nwspark" style="width:46%"></div></div>
@@ -412,12 +418,6 @@ html,body{max-width:100vw;overflow-x:hidden}
     
     <div class="glass card idx" id="idxNSE" style="--c:#ff9933"><span class="exb">NSE</span><div class="lbl">NIFTY 50</div><div class="big num" id="vNSE"></div><div class="num" id="cNSE" style="font-weight:700"></div><div id="sNSE"></div></div>
     <div class="glass card idx" id="idxBSE" style="--c:#5b8cff"><span class="exb">BSE</span><div class="lbl">S&amp;P BSE SENSEX</div><div class="big num" id="vBSE"></div><div class="num" id="cBSE" style="font-weight:700"></div><div id="sBSE"></div></div>
-    <div class="glass card" id="homeChart">
-      <div class="hch"><div><div class="lbl" id="hcName">NIFTY 50</div><div><b class="num" id="hcVal" style="font-size:24px"></b> <span class="num" id="hcChg" style="font-weight:700"></span></div></div>
-        <select id="hcIdx" class="hcsel"></select></div>
-      <div class="tfs" id="hcTf" style="margin:8px 0"><button data-tf="1m">1m</button><button data-tf="5m" class="on">5m</button><button data-tf="15m">15m</button><button data-tf="60m">1h</button><button data-tf="1d">1D</button></div>
-      <div id="hcBox" hidden></div><div id="hcFallback" class="hint"></div>
-    </div>
     <div class="glass card" id="homeTrades">
     <div class="tbh"><div class="lbl">My trades <span id="htPnl" class="num" style="margin-left:8px"></span></div><button class="btn" id="homeAll">Full tradebook ›</button></div>
     <div id="htOpen"></div><div id="htPend"></div><div id="htRecent"></div>
