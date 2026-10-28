@@ -305,6 +305,30 @@ html,body{max-width:100vw;overflow-x:hidden}
 .hrow small{display:block;font-size:11px;color:var(--mut)}
 .hh{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:600;margin:14px 0 2px}
 .hh:first-child{margin-top:0}
+.pftabs{display:none}
+.tbt td{font-size:11.5px;padding:8px 4px}.tbt td.nm{text-align:left;white-space:nowrap;max-width:112px;overflow:hidden;text-overflow:ellipsis}
+.tbt td:first-child{max-width:none}
+.tbt th{white-space:nowrap}
+@media(max-width:820px){
+  .pftabs{display:flex;gap:6px;background:rgba(255,255,255,.05);border-radius:12px;padding:4px}
+  .pftabs button{flex:1;border:0;background:none;color:var(--mut);padding:9px;border-radius:9px;font:700 13px Inter;cursor:pointer}
+  .pftabs button.on{background:#fff;color:#0a0f1f}
+  body[data-tab="port"][data-pf="t"] .pf-h{display:none}
+  body[data-tab="port"]:not([data-pf="t"]) .pf-t{display:none}
+  #histCard{display:none}
+  .top{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .top>.glass.card:not(.idx){grid-column:1/-1}
+  .idx{padding:12px}.idx .big{font-size:19px;margin:6px 0 2px}.idx .lbl{font-size:10px;max-width:68%}.idx .exb{top:10px;right:10px}.idx svg{height:36px}
+  .idx .num{font-size:11px}
+}
+.qm{display:none}.tbt th.nmh{text-align:left}
+@media(max-width:820px){
+  .qm{display:inline;color:var(--mut);font-weight:500}
+  .tbt td.nm{max-width:118px}.tbt td.nm .badge{display:none}
+  .tbt td,.tbt th{padding-left:3px;padding-right:3px}.tbt td{font-size:11px}
+  .tbs7{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px}
+  .tbs7 div{padding:6px 8px}.tbs7 small{font-size:9px;letter-spacing:.04em}.tbs7 b{font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -411,7 +435,7 @@ html,body{max-width:100vw;overflow-x:hidden}
     </aside>
   </section>
 
-  <section class="glass card t-pf" id="fnoCard" hidden><div class="lbl" style="margin-bottom:10px">My F&amp;O positions <span id="fnoPnl" class="num" style="margin-left:8px"></span></div><div id="fnoPend"></div><div id="fnoPos" class="plist"></div></section>
+  <section class="glass card t-pf pf-h" id="fnoCard" hidden><div class="lbl" style="margin-bottom:10px">My F&amp;O positions <span id="fnoPnl" class="num" style="margin-left:8px"></span></div><div id="fnoPend"></div><div id="fnoPos" class="plist"></div></section>
   <section class="glass card t-fno" id="fnoPage">
     <div class="lbl" style="margin-bottom:2px">Futures &amp; Options</div>
     <div class="fnogrid">
@@ -436,22 +460,23 @@ html,body{max-width:100vw;overflow-x:hidden}
       </div>
     </div>
   </section>
-  <section class="bottom t-port">
+  <div class="pftabs t-port" id="pfTabs"><button data-p="h" class="on">Holdings</button><button data-p="t">Tradebook</button></div>
+  <section class="bottom t-port pf-h">
     <div class="glass card"><div class="lbl" style="margin-bottom:8px">My portfolio</div>
       <div class="scroll"><table class="hold"><thead><tr><th>Stock</th><th>Qty</th><th>Avg</th><th>LTP</th><th>Value</th><th>P&amp;L</th></tr></thead><tbody id="hold"></tbody></table></div></div>
     <div class="glass card"><div class="lbl">Allocation</div>
       <div class="donutw"><canvas id="donut" width="400" height="400"></canvas><div class="c"><small>Invested</small><div class="num" id="dpct" style="font-size:20px;font-weight:800"></div></div></div>
       <div class="legend" id="legend"></div></div>
-    <div class="glass card"><div class="lbl" style="margin-bottom:6px">Order history</div><div class="scroll" id="hist"></div></div>
+    <div class="glass card" id="histCard"><div class="lbl" style="margin-bottom:6px">Order history</div><div class="scroll" id="hist"></div></div>
   </section>
-  <section class="glass card t-port" id="tbCard">
+  <section class="glass card t-port pf-t" id="tbCard">
     <div class="tbh"><div class="lbl">Tradebook &amp; P&amp;L</div><div class="tbc"><select id="tbDay"></select><button class="btn" id="tbPdf">📄 PDF</button></div></div>
     <div id="tbSum" class="tbs"></div>
     <div class="lbl" style="margin:14px 0 6px">Charges breakdown <small style="text-transform:none;letter-spacing:0">(Zerodha / Kite schedule)</small></div><div id="tbChg" class="tbs tbs7"></div>
     <div class="lbl" style="margin:14px 0 6px">Closed trades (bought → sold)</div>
-    <div class="scroll"><table class="hold tbt"><thead><tr><th>Trade</th><th>Qty</th><th>Bought / Sold</th><th class="hm">Charges</th><th>P&amp;L</th><th></th></tr></thead><tbody id="tbClosed"></tbody></table></div>
+    <div class="scroll"><table class="hold tbt"><thead><tr><th class="hm">When</th><th class="nmh">Trade</th><th class="hm">Qty</th><th>Bought → Sold</th><th class="hm">Charges</th><th>P&amp;L</th></tr></thead><tbody id="tbClosed"></tbody></table></div>
     <div class="lbl" style="margin:14px 0 6px">All orders</div>
-    <div class="scroll"><table class="hold tbt"><thead><tr><th>Order</th><th>Side</th><th>Qty</th><th>Price</th><th>Charges</th></tr></thead><tbody id="tbAll"></tbody></table></div>
+    <div class="scroll"><table class="hold tbt"><thead><tr><th class="hm">When</th><th class="nmh">Order</th><th>Side</th><th class="hm">Qty</th><th>Price</th><th>Charges</th></tr></thead><tbody id="tbAll"></tbody></table></div>
   </section>
 </div>
 <div class="qbar t-trade" id="qbar"><button class="b" data-s="BUY">BUY</button><button class="s" data-s="SELL">SELL</button></div>
@@ -1165,8 +1190,9 @@ function renderTradebook(){
   const tot=emptyCh();for(const r of R){const c=r.chg||(r.fee?legacyCh(r.fee):null);if(!c)continue;for(const k of CH_KEYS)tot[k]+=c[k]||0}tot.total=CH_KEYS.reduce((a,k)=>a+tot[k],0);
   $("tbChg").innerHTML=CH_KEYS.map(k=>tile(CH_LABEL[k],inr(tot[k]))).join("")+tile("Total charges",inr(tot.total),"down");
   const wd=tbDay==="all";const tbWho=(o,wd)=>`<b>${o.sym}</b><br><small>${o.ex} · ${timeOf(o.ts,wd)}</small>`;
-  $("tbClosed").innerHTML=C.map(o=>`<tr data-ci="${state.orders.indexOf(o)}"><td>${tbWho(o,wd)}</td><td class="num">${o.qty}</td><td class="num"><span class="up">${fmt(o.buyPx)}</span><br><span class="down">${fmt(o.sellPx)}</span></td><td class="num hm">${fmt(o.charges)}</td><td class="num ${o.pnl>=0?"up":"down"}">${sg(o.pnl)}</td><td><button class="xb" data-void="${state.orders.indexOf(o)}" title="Void this trade">Void</button></td></tr>`).join("")||`<tr><td colspan="6" class="empty">No closed trades yet. A trade shows here once you sell what you bought.</td></tr>`;
-  $("tbAll").innerHTML=R.map(o=>`<tr data-oi="${state.orders.indexOf(o)}"><td>${tbWho(o,wd)}</td><td><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b></td><td class="num">${o.qty}</td><td class="num">${fmt(o.price)}</td><td class="num">${fmt(o.fee||0)}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">No orders yet.</td></tr>`;
+  const ex2=o=>`<span class="badge ${o.ex}" style="margin:0 4px 0 0;font-size:9px;padding:1px 5px">${o.ex}</span>`;
+  $("tbClosed").innerHTML=C.map(o=>`<tr data-ci="${state.orders.indexOf(o)}"><td class="hm num">${timeOf(o.ts,true)}</td><td class="nm">${ex2(o)}<b>${o.sym}</b><span class="qm"> ×${o.qty}</span></td><td class="num hm">${o.qty}</td><td class="num"><span class="up">${fmt(o.buyPx)}</span>→<span class="down">${fmt(o.sellPx)}</span></td><td class="hm num">${fmt(o.charges)}</td><td class="num ${o.pnl>=0?"up":"down"}"><b>${sg(o.pnl)}</b></td></tr>`).join("")||`<tr><td colspan="6" class="empty">No closed trades yet. A trade shows here once you sell what you bought.</td></tr>`;
+  $("tbAll").innerHTML=R.map(o=>`<tr data-oi="${state.orders.indexOf(o)}"><td class="hm num">${timeOf(o.ts,true)}</td><td class="nm">${ex2(o)}<b>${o.sym}</b><span class="qm"> ×${o.qty}</span></td><td><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b></td><td class="num hm">${o.qty}</td><td class="num">${fmt(o.price)}</td><td class="num">${fmt(o.fee||0)}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">No orders yet.</td></tr>`;
 }
 // ---- PDF report (jsPDF is loaded from a CDN the first time it is needed) ----
 function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>no(new Error("load "+src));document.head.append(s)})}
@@ -1478,7 +1504,7 @@ function showCharges(i){
     body=`<div class="tbs" style="margin-bottom:12px"><div><small>Qty</small><b>${o.qty}</b></div><div><small>Bought → Sold</small><b>${fmt(o.buyPx)} → ${fmt(o.sellPx)}</b></div><div><small>Gross P&amp;L</small><b class="${o.gross>=0?"up":"down"}">${o.gross>=0?"+":"−"}₹${fmt(Math.abs(o.gross))}</b></div><div><small>Net P&amp;L</small><b class="${o.pnl>=0?"up":"down"}">${o.pnl>=0?"+":"−"}₹${fmt(Math.abs(o.pnl))}</b></div></div>`
       +(legacy?`<div class="hint">This trade is from before the Zerodha schedule: a flat 0.03% brokerage per side was applied. Total charges ${inr(o.charges)}.</div>`:legs)
       +(o.prod?`<div class="hint">Product: ${o.prod==="CNC"?"Delivery (CNC)":"Intraday (MIS)"}${o.fno?"":" · DP charge applies once per stock per day when delivery shares are sold."}</div>`:"")
-      +(o.tag==="Expiry"?`<div class="hint">Cash-settled at expiry: no brokerage; STT 0.125% applies on in-the-money long options.</div>`:"");
+      +(o.tag==="Expiry"?`<div class="hint">Cash-settled at expiry: no brokerage; STT 0.125% applies on in-the-money long options.</div>`:"")+`<div class="hint">${timeOf(o.ts,true)} IST</div><button class="btn danger" data-void="${i}" style="width:100%;margin-top:10px;padding:11px">Void this trade (takes its P&amp;L back out of cash)</button>`;
   }else{
     const c=o.chg||(o.fee?legacyCh(o.fee):null);
     body=c?`<table class="chtab"><tr><th>Charge</th><th>Amount</th></tr>${CH_KEYS.filter(k=>c[k]).map(k=>`<tr><td>${CH_LABEL[k]}</td><td class="num">${inr(c[k])}</td></tr>`).join("")}<tr class="t"><td>Total charges</td><td class="num">${inr(c.total)}</td></tr></table>`
@@ -1488,7 +1514,8 @@ function showCharges(i){
   $("chmTitle").textContent=title;$("chmBody").innerHTML=body;$("chm").hidden=false;
 }
 $("chmX").onclick=()=>$("chm").hidden=true;$("chm").onclick=e=>{if(e.target.id==="chm")$("chm").hidden=true};
-$("homeAll").onclick=()=>{go("port");setTimeout(()=>$("tbCard").scrollIntoView({behavior:"smooth"}),50)};
+$("pfTabs").onclick=e=>{const p=e.target.dataset.p;if(!p)return;document.body.dataset.pf=p;document.querySelectorAll("#pfTabs button").forEach(b=>b.classList.toggle("on",b.dataset.p===p));window.scrollTo(0,0)};
+$("homeAll").onclick=()=>{document.body.dataset.pf="t";document.querySelectorAll("#pfTabs button").forEach(b=>b.classList.toggle("on",b.dataset.p==="t"));go("port");setTimeout(()=>$("tbCard").scrollIntoView({behavior:"smooth"}),50)};
 $("htOpen").onclick=e=>{
   const s=e.target.closest("[data-hs]");if(s){const[x,sym]=s.dataset.hs.split(":");ex=x;sel=sym;side="SELL";touchRecent(sym);render();go("trade");return}
   const f=e.target.closest("[data-hf]");if(f){go("fno");openPm(+f.dataset.hf)}};
@@ -1505,17 +1532,20 @@ $("rcBody").innerHTML=`<table class="rct"><tr><th></th><th>Delivery</th><th>Intr
 <p style="margin:8px 0 0;color:var(--mut)">These follow Zerodha's published schedule as known when this was added and can differ from today's actual rates. Delivery vs Intraday is whatever you choose on the order panel; intraday positions are not auto-squared-off in this game.</p>`;
 $("rcBtn").onclick=()=>$("rc").hidden=false;$("rcX").onclick=()=>$("rc").hidden=true;$("rc").onclick=e=>{if(e.target.id==="rc")$("rc").hidden=true};
 // Void a closed trade: removes it (and the matching opening order) and takes its profit/loss back out of cash.
-$("tbClosed").onclick=e=>{
-  const i=e.target.dataset.void;if(i===undefined){const r=e.target.closest("tr[data-ci]");if(r)showCharges(+r.dataset.ci);return}const o=state.orders[+i];if(!o||!o.closed)return;
+$("tbClosed").onclick=e=>{const r=e.target.closest("tr[data-ci]");if(r)showCharges(+r.dataset.ci)};
+function voidTrade(i){
+  const o=state.orders[i];if(!o||!o.closed)return;
   const lbl=`${o.sym} (${o.qty}): ${o.pnl>=0?"profit":"loss"} of ₹${fmt(Math.abs(o.pnl))}`;
   if(!confirm(`Void this trade?\n\n${lbl}\n\nThe trade is removed from the tradebook and ₹${fmt(Math.abs(o.pnl))} is ${o.pnl>=0?"deducted from":"added back to"} your cash. This cannot be undone.`))return;
   const opens=o.side==="SELL"?"BUY":"SELL";
-  let j=state.orders.findIndex((x,idx)=>idx>+i&&x.sym===o.sym&&x.ex===o.ex&&x.side===opens&&x.qty===o.qty&&!x.closed);
+  let j=state.orders.findIndex((x,idx)=>idx>i&&x.sym===o.sym&&x.ex===o.ex&&x.side===opens&&x.qty===o.qty&&!x.closed);
   state.cash-=o.pnl;
-  state.orders.splice(+i,1);if(j>+i)j--;if(j>=0)state.orders.splice(j,1);
-  save();tbKey="";render();
+  state.orders.splice(i,1);if(j>i)j--;if(j>=0)state.orders.splice(j,1);
+  $("chm").hidden=true;save();tbKey="";render();
   toast(`<b>Trade voided</b><br><small class="num">Cash ${o.pnl>=0?"−":"+"}${inr(Math.abs(o.pnl))}</small>`,"#ff9933");
-};
+}
+$("chmBody").onclick=e=>{const i=e.target.dataset.void;if(i!==undefined)voidTrade(+i)};
+
 $("tbDay").onchange=()=>{tbDay=$("tbDay").value;tbKey="";render()};
 $("tbPdf").onclick=tradebookPdf;
 $("fnoPend").onclick=e=>{const id=e.target.dataset.fcancel;if(!id)return;state.fnoPending=state.fnoPending.filter(o=>String(o.id)!==id);save();fnoPendKey="";render()};
@@ -1530,7 +1560,7 @@ const pmChip=(inp,e)=>{const v=e.target.dataset.p;const p=pmPos();if(v===undefin
 $("pmSlQ").onclick=e=>pmChip("pmSl",e);$("pmTpQ").onclick=e=>pmChip("pmTp",e);
 function go(t){document.body.dataset.tab=t;document.querySelectorAll("#bnav button,#dnav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));window.scrollTo(0,0);if(t==="fno")render()}
 $("bnav").onclick=e=>{const b=e.target.closest("button");if(b)go(b.dataset.t)};
-document.body.dataset.tab=matchMedia("(max-width:820px)").matches?"home":"trade";
+document.body.dataset.pf="h";document.body.dataset.tab=matchMedia("(max-width:820px)").matches?"home":"trade";
 matchMedia("(max-width:820px)").addEventListener("change",m=>go(m.matches?"home":"trade"));
 const isMobile=()=>matchMedia("(max-width:820px)").matches;
 $("qbar").onclick=e=>{const v=e.target.dataset.s;if(!v)return;side=v;setPlabel();render();$("colOrder").scrollIntoView({behavior:"smooth",block:"start"})};
