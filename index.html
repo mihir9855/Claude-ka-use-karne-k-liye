@@ -329,6 +329,35 @@ html,body{max-width:100vw;overflow-x:hidden}
   .tbs7{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px}
   .tbs7 div{padding:6px 8px}.tbs7 small{font-size:9px;letter-spacing:.04em}.tbs7 b{font-size:12px}
 }
+/* on-chart trading */
+#chartBox{margin-top:10px}
+.chtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.chsym{font-size:13px;margin-right:auto;display:none}
+.tfs{display:inline-flex;background:rgba(255,255,255,.05);border-radius:10px;padding:3px;gap:2px}
+.tfs button{border:0;background:none;color:var(--mut);font:700 11px Inter;padding:6px 9px;border-radius:8px;cursor:pointer}
+.tfs button.on{background:var(--glass2);color:#fff}
+.chex{display:none}
+#lwc{width:100%;height:330px;position:relative;touch-action:pan-y}
+#lwc[hidden]{display:none}
+.ctb{margin-top:8px;display:grid;gap:8px}.ctb[hidden]{display:none}
+.ctrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ctseg{display:grid;grid-template-columns:1fr 1fr;margin:0;min-width:130px}
+.ctseg button{padding:8px 12px;font-size:12px}
+.ctype{margin:0;min-width:150px}.ctype button{padding:8px 6px;font-size:11px}
+.ctq{display:flex;gap:4px;align-items:center}
+.ctq button{width:30px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--glass2);color:var(--txt);font:700 15px Inter;cursor:pointer}
+.ctq input{width:62px;height:34px;text-align:center;border-radius:9px;border:1px solid var(--line);background:rgba(0,0,0,.3);color:var(--txt);font:700 13px var(--mono);outline:none}
+.arm{border:1px dashed var(--line);background:none;color:var(--mut);border-radius:9px;padding:8px 10px;font:700 11px Inter;cursor:pointer}
+.arm.on{border-color:var(--saf);color:var(--saf);background:rgba(255,153,51,.1)}
+.arm:disabled{opacity:.35;cursor:default}.arm[hidden]{display:none}
+.ctgo{width:auto;flex:1;min-width:120px;padding:10px 14px;font-size:13px;border-radius:11px}
+#chartBox.fs{position:fixed;inset:0;z-index:80;background:var(--bg);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;margin:0;overflow:auto}
+#chartBox.fs .chsym,#chartBox.fs .chex{display:flex}
+#chartBox.fs .chsym{display:block;font-size:15px}
+#chartBox.fs #lwc{flex:1;height:auto;min-height:240px}
+#chartBox.fs .ctb{margin-top:8px}
+@media(max-width:820px){#lwc{height:270px}}
+.lw-on .qbar{display:none!important}
 </style>
 </head>
 <body>
@@ -404,7 +433,26 @@ html,body{max-width:100vw;overflow-x:hidden}
       <button class="btn" id="toFno" style="margin-top:12px">⚡ Trade futures &amp; options of this stock ›</button>
       <div id="chartView">
       <div class="exsw" id="exSwitch"></div>
-      <canvas id="chart"></canvas>
+      <div id="chartBox">
+        <div class="chtop"><div class="chsym"><b id="chS"></b> <span class="num" id="chP"></span></div>
+          <div class="tfs" id="tfs"><button data-tf="1m">1m</button><button data-tf="5m" class="on">5m</button><button data-tf="15m">15m</button><button data-tf="60m">1h</button><button data-tf="1d">1D</button></div>
+          <div class="tfs chex" id="chEx"><button data-e="NSE">NSE</button><button data-e="BSE">BSE</button></div>
+          <button class="btn" id="fsBtn" title="Full screen">⤢</button></div>
+        <div id="lwc" hidden></div>
+        <canvas id="chart"></canvas>
+        <div class="ctb" id="ctb" hidden>
+          <div class="ctrow">
+            <div class="seg ctseg" id="ctSide"><button class="b on" data-s="BUY">BUY</button><button class="s" data-s="SELL">SELL</button></div>
+            <div class="otype two ctype" id="ctType"><button data-t="MARKET" class="on">Market</button><button data-t="LIMIT">Limit</button></div>
+            <div class="ctq"><button id="ctQm">−</button><input id="ctQty" type="number" min="1"><button id="ctQp">+</button></div>
+          </div>
+          <div class="ctrow">
+            <button class="arm" data-arm="entry" id="armEntry">＋ Entry</button><button class="arm" data-arm="sl" id="armSl">＋ Stop-loss</button><button class="arm" data-arm="tp" id="armTp">＋ Target</button><button class="arm clr" id="ctClear" title="Remove stop-loss and target">✕</button>
+            <button class="go ctgo" id="ctGo">BUY</button>
+          </div>
+          <div class="hint" id="ctInfo"></div><div class="err" id="ctErr" style="margin:0"></div>
+        </div>
+      </div>
       <div class="facts" id="facts"></div>
       <div class="arb" id="arb"></div>
       </div>
@@ -777,7 +825,7 @@ function render(){
   $("cash").textContent="₹"+fmt(state.cash,0);$("inv").textContent="₹"+fmt(inv,0);$("nh").textContent=H.length+state.fno.length;
   $("nwspark").innerHTML=spark(state.nw.length>1?state.nw:[state.capital,net],200,54,colr(pnl),true);
 
-  if(localOnly)renderWatch();updateAllPrices();renderTape();renderDetail();renderHold(H,invS);renderOrders();renderFnoPos();renderTradebook();renderHomeTrades(H);if(!$("capIn").value)capPreview();if(document.body.dataset.tab==="fno")renderFno();
+  if(localOnly)renderWatch();updateAllPrices();renderTape();renderDetail();renderHold(H,invS);renderOrders();renderFnoPos();renderTradebook();renderHomeTrades(H);lwcTick();if(!$("capIn").value)capPreview();if(document.body.dataset.tab==="fno")renderFno();
 }
 
 function pxCell(s,e){if(!s.on[e])return `<div class="num mut">—</div><span class="mut" style="font-size:11px">not listed</span>`;const p=pct(s,e),c=p>=0?"up":"down",f=s.last[e]>0?"fu":s.last[e]<0?"fd":"";
@@ -842,7 +890,7 @@ function renderDetail(){
   $("arb").innerHTML=`⚡ The same stock trades at <b class="num">${inr(s.px[o])}</b> on <b>${o}</b> — ${ex} is <b class="${diff<=0?"up":"down"}">${diff<=0?"cheaper":"pricier"}</b> by <span class="num">${Math.abs(dp).toFixed(3)}%</span>. Buy where it is cheaper, sell where it is dearer!`;
   $("exSwitch").innerHTML=EX.map(e=>{const pp=pct(s,e),c=pp>=0?"up":"down";
     return `<div class="exc ${e} ${e===ex?"on":""}" data-ex="${e}"><div class="exh"><span class="badge ${e}" style="margin:0">${e}</span>${s.on[e]?"":"<small>not listed</small>"}</div><div class="num exp ${c}">${inr(s.px[e])}</div><div class="num ${c}" style="font-size:12px;font-weight:700">${pp>=0?"▲":"▼"} ${Math.abs(pp).toFixed(2)}%</div></div>`}).join("");
-  drawChart(s);
+  if(!LW.has)drawChart(s);
 
   // order panel
   const q=Math.max(0,Math.floor(+$("qty").value)||0),opx=(otype!=="MARKET"&&+$("oprice").value>0)?+$("oprice").value:s.px[ex],val=q*opx;
@@ -854,6 +902,7 @@ function renderDetail(){
   $("prodHint").textContent=side==="BUY"?(prodSel==="CNC"?"Delivery: zero brokerage, STT 0.1% each side, ₹15.93 DP charge when you sell.":"Intraday: brokerage ₹20 or 0.03% (lower), STT 0.025% on the sell side."):`This sale is charged as ${prodNow==="CNC"?"Delivery":"Intraday"} (the product of your holding).`;
   const g=$("go");g.className="go "+(side==="SELL"?"s":"");g.textContent=`${otype=="MARKET"?"":(otype==="LIMIT"?"LIMIT ":"STOP-LOSS ")}${side} ${s.sym} · ${ex}`;
   document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on",b.dataset.s===side));
+  lwcSync();
 }
 
 function drawChart(s){
@@ -1382,6 +1431,115 @@ function checkFnoExits(){
 }
 function maxQty(){const s=cur();if(side==="BUY"){const px=s.px[ex];let n=Math.floor(state.cash/px);while(n>0&&n*px+calcCharges({seg:"EQ",prod:prodSel,side:"BUY",ex,price:px,qty:n}).total>state.cash)n--;return n}const p=state.pos[key(ex,s.sym)];return p?p.qty:0}
 
+/* ---------- on-chart trading (TradingView Lightweight Charts) ---------- */
+const LW={chart:null,series:null,ok:false,has:false,key:"",tf:"5m",cdl:[],lines:{},armed:null,drag:null,loading:false,fs:false};
+const TFSEC={"1m":60,"5m":300,"15m":900,"60m":3600,"1d":86400},ISTSHIFT=19800,SESSION=33300;   // 9:15 IST in seconds
+const snap=p=>Math.round(p*20)/20;
+async function lwcInit(){
+  try{await loadScript("https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.1.3/lightweight-charts.standalone.production.min.js")}catch(e){return}
+  if(!window.LightweightCharts)return;
+  LW.chart=LightweightCharts.createChart($("lwc"),{autoSize:true,layout:{background:{type:"solid",color:"transparent"},textColor:"#8a94b2",fontFamily:"JetBrains Mono, monospace",fontSize:11},
+    grid:{vertLines:{color:"rgba(255,255,255,.04)"},horzLines:{color:"rgba(255,255,255,.06)"}},rightPriceScale:{borderVisible:false,scaleMargins:{top:.08,bottom:.08}},
+    timeScale:{borderVisible:false,timeVisible:true,secondsVisible:false,rightOffset:6},crosshair:{mode:0},localization:{priceFormatter:p=>fmt(p)}});
+  LW.series=LW.chart.addCandlestickSeries({upColor:"#00e0a0",downColor:"#ff4d6d",borderUpColor:"#00e0a0",borderDownColor:"#ff4d6d",wickUpColor:"#00e0a0",wickDownColor:"#ff4d6d"});
+  LW.ok=true;
+  // tap on the chart while a level is "armed" (Entry / Stop-loss / Target)
+  LW.chart.subscribeClick(p=>{
+    if(!LW.armed||!p.point)return;const price=snap(LW.series.coordinateToPrice(p.point.y));if(!(price>0))return;
+    setDraft(LW.armed,price);LW.armed=null;lwcSync();
+  });
+  // drag a level line up or down (mouse or touch); captured before the chart sees the event
+  const box=$("lwc"),yOf=e=>{const t=e.touches&&e.touches[0]||e.changedTouches&&e.changedTouches[0]||e;return t.clientY-box.getBoundingClientRect().top};
+  const hit=y=>{let best=null,bd=11;for(const L of lwcWanted()){if(!L.drag)continue;const yy=LW.series.priceToCoordinate(L.price);if(yy==null)continue;const d=Math.abs(yy-y);if(d<bd){bd=d;best=L}}return best};
+  const down=e=>{const L=hit(yOf(e));if(!L)return;LW.drag={L,price:L.price};e.stopPropagation();if(e.cancelable)e.preventDefault()};
+  const move=e=>{
+    if(LW.drag){const p=snap(LW.series.coordinateToPrice(yOf(e)));if(p>0){LW.drag.price=p;const pl=LW.lines[LW.drag.L.id];if(pl)pl.pl.applyOptions({price:p,title:lineTitle(LW.drag.L,p)})}e.stopPropagation();if(e.cancelable)e.preventDefault();return}
+    if(!e.touches)box.style.cursor=hit(yOf(e))?"ns-resize":"";
+  };
+  const up=e=>{if(!LW.drag)return;const d=LW.drag;LW.drag=null;commitLine(d.L,d.price);e.stopPropagation()};
+  for(const [n,f] of [["mousedown",down],["mousemove",move],["touchstart",down],["touchmove",move]])box.addEventListener(n,f,{capture:true,passive:false});
+  for(const n of ["mouseup","touchend","touchcancel"])window.addEventListener(n,up,true);
+  $("ctb").hidden=false;lwcLoad();
+}
+function setDraft(kind,price){
+  if(kind==="entry"){if(otype==="MARKET")setOtype("LIMIT");$("oprice").value=price.toFixed(2)}
+  else if(kind==="sl")$("bSl").value=price.toFixed(2);else if(kind==="tp")$("bTp").value=price.toFixed(2);
+  renderDetail();
+}
+function commitLine(L,price){
+  const ltp=cur().px[ex];
+  if(L.kind==="d-main")setDraft("entry",price);else if(L.kind==="d-sl")setDraft("sl",price);else if(L.kind==="d-tp")setDraft("tp",price);
+  else if(L.kind==="pend"){const o=L.ref;
+    if(o.type==="SL"&&o.side==="SELL"&&price>=ltp)toast(`A stop-loss must stay below the price (${inr(ltp)}).`,"#ff4d6d");
+    else if(o.type==="LIMIT"&&o.oco&&price<=ltp)toast(`A target must stay above the price (${inr(ltp)}).`,"#ff4d6d");
+    else{o.price=price;o.scan=Date.now();save();toast(`${o.oco?(o.type==="LIMIT"?"Target":"Stop-loss"):"Order"} moved to ${inr(price)}`,"#ff9933")}}
+  lwcSync();
+}
+async function lwcLoad(){
+  if(!LW.ok||LW.loading)return;const s=cur(),k=s.sym+"|"+ex+"|"+LW.tf;if(LW.key===k)return;LW.loading=true;
+  try{
+    const d=await (await fetch(`/api/history?sym=${encodeURIComponent(s.sym)}&ex=${ex}&iv=${LW.tf}`,{cache:"no-store"})).json();
+    if(!d.t||d.t.length<2||!d.o)throw 0;
+    LW.cdl=d.t.map((t,i)=>({time:Math.floor(t/1000)+ISTSHIFT,open:d.o[i],high:d.h[i],low:d.l[i],close:d.c[i]}));
+    LW.series.setData(LW.cdl);const n=LW.cdl.length;LW.chart.timeScale().setVisibleLogicalRange({from:Math.max(0,n-(LW.tf==="1d"?90:75)),to:n+6});
+    LW.has=true;
+  }catch(e){LW.has=false;LW.cdl=[]}
+  LW.key=k;LW.loading=false;document.body.classList.toggle("lw-on",LW.has);$("lwc").hidden=!LW.has;$("chart").style.display=LW.has?"none":"";$("ctb").hidden=!LW.has;lwcSync();
+}
+// keep the last candle moving with the live price
+function lwcLive(){
+  if(!LW.ok||!LW.has||!LW.cdl.length)return;const s=cur(),px=s.px[ex],last=LW.cdl[LW.cdl.length-1],sec=TFSEC[LW.tf],nowT=Math.floor(Date.now()/1000)+ISTSHIFT;
+  const b=LW.tf==="1d"?last.time:nowT-((((nowT-SESSION)%sec)+sec)%sec);
+  if(b>last.time&&isOpen()){const c={time:b,open:last.close,high:Math.max(px,last.close),low:Math.min(px,last.close),close:px};LW.cdl.push(c);LW.series.update(c)}
+  else{last.high=Math.max(last.high,px);last.low=Math.min(last.low,px);last.close=px;LW.series.update(last)}
+}
+// every level that should be drawn: my holding, waiting orders for this stock, and the order I am drafting
+function lwcWanted(){
+  const s=cur(),L=[],ltp=s.px[ex],hp=state.pos[key(ex,s.sym)],q=Math.floor(+$("qty").value)||0;
+  const money=v=>(v>=0?"+":"−")+"₹"+fmt(Math.abs(v),0);
+  if(hp)L.push({id:"avg",price:hp.avg,color:"#5b8cff",style:0,title:`AVG ${hp.qty} · ${money((ltp-hp.avg)*hp.qty)}`});
+  for(const o of state.pending)if(o.sym===s.sym&&o.ex===ex){const ex1=o.oco?(o.type==="LIMIT"?"TARGET":"SL"):(o.type==="LIMIT"?"LIMIT "+o.side:"STOP "+o.side);
+    L.push({id:"p"+o.id,ref:o,kind:"pend",drag:true,price:o.price,color:o.oco?(o.type==="LIMIT"?"#00e0a0":"#ff4d6d"):(o.type==="LIMIT"?"#ffb020":"#ff4d6d"),style:2,title:`${ex1} ${o.qty}`})}
+  const mainP=otype!=="MARKET"&&+$("oprice").value>0?+$("oprice").value:null,entry=mainP||ltp;
+  if(mainP)L.push({id:"d-main",kind:"d-main",drag:true,price:mainP,color:"#ffb020",style:2,title:`${otype==="LIMIT"?"ENTRY":"STOP"} ${side} ${q}`,q,entry});
+  if(side==="BUY"&&otype!=="SL"){
+    const sl=+$("bSl").value,tp=+$("bTp").value;
+    if(sl>0)L.push({id:"d-sl",kind:"d-sl",drag:true,price:sl,color:"#ff4d6d",style:2,title:"SL",q,entry});
+    if(tp>0)L.push({id:"d-tp",kind:"d-tp",drag:true,price:tp,color:"#00e0a0",style:2,title:"TARGET",q,entry});
+  }
+  return L;
+}
+function lineTitle(L,price){
+  if(L.kind==="d-sl"||L.kind==="d-tp"){const q=L.q||0,e=L.entry,d=(price-e)*q;return `${L.kind==="d-sl"?"SL":"TARGET"} ${((price/e-1)*100).toFixed(1)}% · ${d>=0?"+":"−"}₹${fmt(Math.abs(d),0)}`}
+  return L.title;
+}
+function lwcSync(){
+  if(!LW.ok||!LW.has)return;const want=lwcWanted(),keep=new Set();
+  for(const L of want){keep.add(L.id);const o={price:L.price,color:L.color,lineWidth:L.drag?2:1,lineStyle:L.style,axisLabelVisible:true,title:lineTitle(L,L.price)},cur0=LW.lines[L.id];
+    if(LW.drag&&LW.drag.L.id===L.id)continue;
+    if(!cur0)LW.lines[L.id]={pl:LW.series.createPriceLine(o),sig:""};LW.lines[L.id].pl.applyOptions(o)}
+  for(const id of Object.keys(LW.lines))if(!keep.has(id)){LW.series.removePriceLine(LW.lines[id].pl);delete LW.lines[id]}
+  // toolbar
+  const buy=side==="BUY";document.querySelectorAll("#ctSide button").forEach(b=>b.classList.toggle("on",b.dataset.s===side));
+  document.querySelectorAll("#ctType button").forEach(b=>b.classList.toggle("on",b.dataset.t===(otype==="LIMIT"?"LIMIT":"MARKET")));
+  if(document.activeElement!==$("ctQty"))$("ctQty").value=$("qty").value;
+  $("armEntry").hidden=otype!=="LIMIT";$("armSl").disabled=$("armTp").disabled=!buy||otype==="SL";
+  document.querySelectorAll(".arm[data-arm]").forEach(b=>b.classList.toggle("on",LW.armed===b.dataset.arm));
+  const g=$("ctGo"),q=Math.floor(+$("qty").value)||0;g.className="go ctgo"+(buy?"":" s");g.textContent=`${buy?"BUY":"SELL"} ${q} · ${otype==="LIMIT"?"@ "+(+$("oprice").value?fmt(+$("oprice").value):"price"):"MARKET"}`;
+  const s=cur(),entry=otype==="LIMIT"&&+$("oprice").value>0?+$("oprice").value:s.px[ex],sl=+$("bSl").value,tp=+$("bTp").value;
+  let info=LW.armed?`Tap the chart to place the ${LW.armed==="sl"?"stop-loss":LW.armed==="tp"?"target":"entry"} line`:"Drag the dashed lines to adjust";
+  if(buy&&sl>0&&tp>0&&entry>sl&&tp>entry)info+=` · Risk ₹${fmt((entry-sl)*q,0)} · Reward ₹${fmt((tp-entry)*q,0)} · 1:${((tp-entry)/(entry-sl)).toFixed(1)}`;
+  $("ctInfo").textContent=info;$("ctErr").textContent=$("err").textContent;
+  $("chS").textContent=`${s.sym} · ${ex}`;$("chP").textContent=inr(s.px[ex]);$("chP").className="num "+(pct(s,ex)>=0?"up":"down");
+  document.querySelectorAll("#chEx button").forEach(b=>b.classList.toggle("on",b.dataset.e===ex));
+  document.querySelectorAll("#tfs button").forEach(b=>b.classList.toggle("on",b.dataset.tf===LW.tf));
+}
+function lwcTick(){if(!LW.ok)return;lwcLoad();lwcLive();if(!LW.drag)lwcSync()}
+function placeFromChart(){
+  const n0=state.orders.length+state.pending.length;trade();
+  if(state.orders.length+state.pending.length>n0){$("bSl").value="";$("bTp").value="";if(otype==="LIMIT")$("oprice").value="";LW.armed=null}
+  lwcSync();
+}
 /* ---------- events ---------- */
 $("exSwitch").onclick=e=>{const c=e.target.closest("[data-ex]");if(c){ex=c.dataset.ex;render()}};
 ["NSE","BSE"].forEach(e=>$("idx"+e).onclick=()=>{ex=e;render()});
@@ -1463,6 +1621,23 @@ function setOtype(t){otype=t;setPlabel();document.querySelectorAll("#otype butto
 $("otype").onclick=e=>{const t=e.target.dataset.t;if(t)setOtype(t)};
 $("pquick").onclick=e=>{const p=e.target.dataset.p;if(p===undefined)return;$("oprice").value=(cur().px[ex]*(1+ +p/100)).toFixed(2);renderDetail()};
 $("oprice").oninput=renderDetail;
+$("tfs").onclick=e=>{const t=e.target.dataset.tf;if(!t)return;LW.tf=t;LW.key="";lwcLoad()};
+$("chEx").onclick=e=>{const x=e.target.dataset.e;if(x){ex=x;render()}};
+$("fsBtn").onclick=()=>{
+  // the card has a backdrop-filter, which would trap a fixed element: move the chart to <body> while it is full screen
+  const box=$("chartBox");LW.fs=!LW.fs;
+  if(LW.fs){LW.ph=document.createElement("div");box.before(LW.ph);document.body.append(box)}else if(LW.ph){LW.ph.replaceWith(box);LW.ph=null}
+  box.classList.toggle("fs",LW.fs);$("fsBtn").textContent=LW.fs?"✕":"⤢";document.body.style.overflow=LW.fs?"hidden":"";
+  setTimeout(()=>{if(LW.chart){LW.chart.timeScale().scrollToRealTime()}},80);
+};
+$("ctSide").onclick=e=>{const v=e.target.dataset.s;if(v){side=v;setPlabel();render()}};
+$("ctType").onclick=e=>{const t=e.target.dataset.t;if(t)setOtype(t==="LIMIT"?"LIMIT":"MARKET")};
+$("ctQm").onclick=()=>{$("qty").value=Math.max(1,(+$("qty").value||1)-1);renderDetail()};
+$("ctQp").onclick=()=>{$("qty").value=(+$("qty").value||0)+1;renderDetail()};
+$("ctQty").oninput=()=>{$("qty").value=$("ctQty").value;renderDetail()};
+document.querySelectorAll(".arm[data-arm]").forEach(b=>b.onclick=()=>{LW.armed=LW.armed===b.dataset.arm?null:b.dataset.arm;lwcSync()});
+$("ctClear").onclick=()=>{$("bSl").value="";$("bTp").value="";LW.armed=null;renderDetail()};
+$("ctGo").onclick=placeFromChart;
 $("prodSeg").onclick=e=>{const p=e.target.dataset.p;if(p){prodSel=p;renderDetail()}};
 $("bQ").onclick=e=>{const s=+e.target.dataset.s,t=+e.target.dataset.t;if(!s)return;const px=(otype==="LIMIT"&&+$("oprice").value>0?+$("oprice").value:cur().px[ex]);$("bSl").value=(px*(1-s/100)).toFixed(2);$("bTp").value=(px*(1+t/100)).toFixed(2)};
 $("pend").onclick=e=>{const id=e.target.dataset.cancel;if(!id)return;state.pending=state.pending.filter(o=>String(o.id)!==id);save();lastOrdHtml="";render()};
@@ -1569,7 +1744,7 @@ try{new IntersectionObserver(en=>$("qbar").classList.toggle("hide",en[0].isInter
 capPreview();
 setInterval(()=>{tick();checkPending();checkFnoPending();checkAlerts();checkFnoExits();settleExpired();render()},1000);
 setInterval(()=>{state.nw.push(netWorth());if(state.nw.length>150)state.nw.shift();save()},4000);
-applyView();loadAll();
+applyView();loadAll();lwcInit();
 pollLive();setInterval(pollLive,5000);
 render();
 if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("/sw.js").catch(()=>{});

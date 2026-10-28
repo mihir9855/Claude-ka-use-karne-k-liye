@@ -154,14 +154,15 @@ async function yahooSearch(q) {
 
 // 5-minute closes of the last few sessions: lets the app replay what happened while it was closed
 const histCache = {};
-async function history(y) {
-  const c = histCache[y];
-  if (c && Date.now() - c.at < 60000) return c.d;
-  const j = await getJSON(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(y)}?interval=5m&range=5d`);
-  const r = j.chart.result[0], cl = r.indicators.quote[0].close || [], t = [], v = [];
-  (r.timestamp || []).forEach((ts, i) => { if (cl[i] != null) { t.push(ts * 1000); v.push(cl[i]); } });
-  const d = { t, c: v };
-  histCache[y] = { at: Date.now(), d };
+const IV_RANGE = { "1m": "5d", "5m": "5d", "15m": "1mo", "60m": "3mo", "1d": "1y" };
+async function history(y, iv = "5m") {
+  const key = y + "|" + iv, c = histCache[key];
+  if (c && Date.now() - c.at < (iv === "1m" ? 20000 : 60000)) return c.d;
+  const j = await getJSON(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(y)}?interval=${iv}&range=${IV_RANGE[iv]}`);
+  const r = j.chart.result[0], q = r.indicators.quote[0], t = [], o = [], hi = [], lo = [], cl = [];
+  (r.timestamp || []).forEach((ts, i) => { if (q.close[i] != null && q.open[i] != null) { t.push(ts * 1000); o.push(q.open[i]); hi.push(q.high[i]); lo.push(q.low[i]); cl.push(q.close[i]); } });
+  const d = { t, o, h: hi, l: lo, c: cl };
+  histCache[key] = { at: Date.now(), d };
   return d;
 }
 
@@ -175,8 +176,8 @@ http.createServer(async (req, res) => {
     try {
       const idx = sp.get("idx"), sym = (sp.get("sym") || "").toUpperCase(), ex = sp.get("ex") === "BSE" ? "BSE" : "NSE";
       const y = idx ? (IDX_BY_ID[idx] || {}).y : (SYM_OK.test(sym) ? yahooFor(ex, sym) : null);
-      if (!y) return json(res, { t: [], c: [] });
-      return json(res, await history(y));
+      if (!y) return json(res, { t: [], o: [], h: [], l: [], c: [] });
+      return json(res, await history(y, IV_RANGE[sp.get("iv")] ? sp.get("iv") : "5m"));
     } catch (e) { return json(res, { t: [], c: [], error: e.message }); }
   }
   if (p === "/api/stocks") {            // browse / search the complete NSE + BSE list
