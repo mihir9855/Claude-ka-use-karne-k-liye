@@ -10,7 +10,7 @@ node server.js        # Node 18+, no npm install needed
 - **Live prices:** the backend fetches real NSE (`.NS`) and BSE (`.BO`) prices, plus the real NIFTY 50 / SENSEX, from Yahoo Finance and serves them at `/api/quotes`.
 - **Every listed stock:** it downloads the official listings (NSE `EQUITY_L.csv`, BSE `ListofScripData`), merges them by ISIN and refreshes them every 6 hours, so newly listed companies appear automatically. Browse A–Z or search by name/symbol; every stock on screen shows its live NSE and BSE price.
 - **Market hours:** Mon–Fri 9:15 AM–3:30 PM IST (exchange holidays are not handled). Outside these hours prices show the last close and trading is closed; **⚙ Settings → Practice mode** lets you keep playing.
-- **Trading capital** can be changed in ⚙ Settings without a reset (cash is topped up or reduced; holdings, history and P&L stay). Charges follow the **Zerodha (Kite)** schedule (brokerage, STT, exchange charges, GST, SEBI, stamp duty, DP) with a Delivery / Intraday choice for shares; see ⚙ Settings → Rate card. The portfolio is saved in your browser; **⚙ Settings → Reset game** starts over.
+- **Trading capital** can be changed in ⚙ Settings without a reset (cash is topped up or reduced; holdings, history and P&L stay). Charges are detailed like a real discount broker's (brokerage, STT, exchange charges, GST, SEBI, stamp duty, DP) with a Delivery / Intraday choice for shares; see ⚙ Settings → Rate card. The portfolio is saved in your browser; **⚙ Settings → Reset game** starts over.
 - Opening `index.html` directly (no server) runs a simulation with a built-in list of 97 stocks.
 
 ## Order types, alerts and F&O

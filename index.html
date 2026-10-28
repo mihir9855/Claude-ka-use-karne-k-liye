@@ -353,7 +353,7 @@ html,body{max-width:100vw;overflow-x:hidden}
     <div class="srow" style="align-items:flex-start"><span><b>Trading capital</b><small>Your money in the game. Change it without losing holdings, history or P&amp;L.</small></span></div>
     <div class="qrow"><input id="capIn" type="number" min="1000" step="1000" placeholder="e.g. 10000"><button class="btn" id="capBtn" style="width:auto;padding:0 16px;font-weight:700">Update</button></div>
     <div class="hint" id="capHint" style="margin-top:-6px"></div>
-    <div class="srow"><span><b>Brokerage &amp; charges</b><small>Zerodha (Kite) schedule: brokerage, STT, exchange, GST, SEBI, stamp duty, DP</small></span><button class="btn" id="rcBtn">Rate card</button></div>
+    <div class="srow"><span><b>Brokerage &amp; charges</b><small>Brokerage, STT, exchange, GST, SEBI, stamp duty, DP</small></span><button class="btn" id="rcBtn">Rate card</button></div>
     <button class="btn danger" id="reset">↻ Reset game (restart with your capital)</button>
   </div>
 </div>
@@ -499,7 +499,7 @@ html,body{max-width:100vw;overflow-x:hidden}
   <div class="tr" style="display:flex;gap:8px"><button class="tbtn" id="pmSave">Save</button><button class="tbtn s" id="pmClose">Close position</button></div>
 </div></div>
 <div id="chm" class="modal" hidden><div class="panel glass"><div class="ph"><b id="chmTitle"></b><button class="btn" id="chmX">✕</button></div><div id="chmBody"></div></div></div>
-<div id="rc" class="modal" hidden><div class="panel glass"><div class="ph"><b>Zerodha (Kite) rate card</b><button class="btn" id="rcX">✕</button></div>
+<div id="rc" class="modal" hidden><div class="panel glass"><div class="ph"><b>Charges rate card</b><button class="btn" id="rcX">✕</button></div>
 <div id="rcBody" style="font-size:12px;line-height:1.5"></div></div></div>
 <div id="toasts"></div>
 
@@ -624,7 +624,7 @@ let state=load()||{cash:START,pos:{},orders:[],nw:[]};
 for(const k of Object.keys(state.pos)) if(!k.includes(":")){state.pos["NSE:"+k]=state.pos[k];delete state.pos[k];}
 state.capital=state.capital>0?state.capital:START;state.recent=state.recent||[];state.nw=state.nw||[];state.extra=state.extra||[];state.pending=state.pending||[];state.alerts=state.alerts||[];state.fno=state.fno||[];state.fnoPending=state.fnoPending||[];state.dp=state.dp||{};state.lots=state.lots||{}; state.orders.forEach(o=>{o.ex=o.ex||"NSE"});
 backfillTradebook();
-/* ---------- brokerage & charges: Zerodha (Kite) schedule ---------- */
+/* ---------- brokerage & charges ---------- */
 const ZC={brokMax:20,brokPct:.0003,gst:.18,sebi:1e-6,dp:13.5,exStt:.00125,
   txn:{EQ:{NSE:.0000297,BSE:.0000375},FUT:{NSE:.0000173,BSE:0},OPT:{NSE:.0003503,BSE:.000325}},
   stt:{CNC:{BUY:.001,SELL:.001},MIS:{BUY:0,SELL:.00025},FUT:{BUY:0,SELL:.0002},OPT:{BUY:0,SELL:.001}},
@@ -642,7 +642,7 @@ function calcCharges({seg,prod,side,ex,price,qty,dp}){
   const txn=turn*ZC.txn[seg][ex],sebi=turn*ZC.sebi,c={brokerage,stt:turn*ZC.stt[P][side],txn,sebi,gst:(brokerage+txn+sebi)*ZC.gst,stamp:side==="BUY"?turn*ZC.stamp[P]:0,dp:dp?ZC.dp*(1+ZC.gst):0};
   c.total=0;for(const k of CH_KEYS){c[k]=r2(c[k]);c.total+=c[k]}c.total=r2(c.total);return c;
 }
-const legacyCh=amt=>{const c=emptyCh();c.brokerage=amt;c.total=amt;return c};   // orders made before the Zerodha schedule: flat 0.03%
+const legacyCh=amt=>{const c=emptyCh();c.brokerage=amt;c.total=amt;return c};   // orders made before the detailed charges: flat 0.03%
 // Orders made before the tradebook existed have no buy/sell pairing or P&L: replay them oldest-first to rebuild it.
 function backfillTradebook(){
   if(state.tbv===1)return;
@@ -847,7 +847,7 @@ function renderDetail(){
   // order panel
   const q=Math.max(0,Math.floor(+$("qty").value)||0),opx=(otype!=="MARKET"&&+$("oprice").value>0)?+$("oprice").value:s.px[ex],val=q*opx;
   const prodNow=side==="BUY"?prodSel:((hp&&hp.prod)||"CNC"),cg=calcCharges({seg:"EQ",prod:prodNow,side,ex,price:opx,qty:q,dp:side==="SELL"&&prodNow==="CNC"&&!state.dp[s.sym+"|"+dayOf(Date.now())]}),fee=cg.total;
-  $("sum").innerHTML=`<div><span class="mut">${otype==="MARKET"?"Price":(otype==="LIMIT"?"Limit price":"Trigger price")}</span><span>${inr(opx)}</span></div><div><span class="mut">Order value</span><span>${inr(val)}</span></div><div><span class="mut">Charges (Kite)</span><span>${inr(fee)}</span></div><div><span class="mut">${side==="BUY"?"Total debit":"Net credit"}</span><b>${inr(side==="BUY"?val+fee:val-fee)}</b></div><div><span class="mut">${side==="BUY"?"Cash available":"Shares held"}</span><span>${side==="BUY"?inr(state.cash):(hp?hp.qty:0)}</span></div>`;
+  $("sum").innerHTML=`<div><span class="mut">${otype==="MARKET"?"Price":(otype==="LIMIT"?"Limit price":"Trigger price")}</span><span>${inr(opx)}</span></div><div><span class="mut">Order value</span><span>${inr(val)}</span></div><div><span class="mut">Charges</span><span>${inr(fee)}</span></div><div><span class="mut">${side==="BUY"?"Total debit":"Net credit"}</span><b>${inr(side==="BUY"?val+fee:val-fee)}</b></div><div><span class="mut">${side==="BUY"?"Cash available":"Shares held"}</span><span>${side==="BUY"?inr(state.cash):(hp?hp.qty:0)}</span></div>`;
   $("brk").hidden=!(side==="BUY"&&otype!=="SL");
   $("chLine").textContent=q>0?CH_KEYS.filter(k=>cg[k]>0).map(k=>`${CH_LABEL[k].replace(" (18%)","")} ${fmt(cg[k])}`).join(" · "):"";
   $("prodSeg").hidden=side!=="BUY";document.querySelectorAll("#prodSeg button").forEach(b=>b.classList.toggle("on",b.dataset.p===prodSel));
@@ -1222,7 +1222,7 @@ async function tradebookPdf(){
     doc.autoTable({startY:80,body:sum,theme:"plain",styles:{fontSize:10,cellPadding:3},columnStyles:{0:{fontStyle:"bold",cellWidth:150},1:{halign:"left"}},margin:{left:40}});
     const col=(data,idx)=>{if(data.section==="body"&&data.column.index===idx){const v=d.C[data.row.index]?.pnl;if(v!=null)data.cell.styles.textColor=v>=0?[0,140,90]:[210,40,70]}};
     const tot=emptyCh();for(const r of d.R){const c=r.chg||(r.fee?legacyCh(r.fee):null);if(!c)continue;for(const k of CH_KEYS)tot[k]+=c[k]||0}tot.total=CH_KEYS.reduce((a,k)=>a+tot[k],0);
-    doc.setFont("helvetica","bold");doc.text("Charges breakdown (Zerodha / Kite schedule)",40,doc.lastAutoTable.finalY+22);
+    doc.setFont("helvetica","bold");doc.text("Charges breakdown",40,doc.lastAutoTable.finalY+22);
     doc.autoTable({startY:doc.lastAutoTable.finalY+30,theme:"grid",headStyles:{fillColor:[20,26,50]},styles:{fontSize:8,cellPadding:3},margin:{left:40,right:40},
       head:[CH_KEYS.map(k=>CH_LABEL[k]).concat(["Total"])],body:[CH_KEYS.map(k=>pn(tot[k])).concat([pn(tot.total)])]});
     doc.setFont("helvetica","bold");doc.text("Closed trades (bought -> sold)",40,doc.lastAutoTable.finalY+24);
@@ -1503,7 +1503,7 @@ function showCharges(i){
       ${CH_KEYS.filter(k=>(co&&co[k])||(cc&&cc[k])).map(k=>`<tr><td>${CH_LABEL[k]}</td><td class="num">${f(co&&co[k])}</td><td class="num">${f(cc&&cc[k])}</td><td class="num">${f((co?co[k]||0:0)+(cc?cc[k]||0:0))}</td></tr>`).join("")}
       <tr class="t"><td>Total charges</td><td class="num">${f(co&&co.total)}</td><td class="num">${f(cc&&cc.total)}</td><td class="num">${inr(o.charges)}</td></tr></table>`;
     body=`<div class="tbs" style="margin-bottom:12px"><div><small>Qty</small><b>${o.qty}</b></div><div><small>Bought → Sold</small><b>${fmt(o.buyPx)} → ${fmt(o.sellPx)}</b></div><div><small>Gross P&amp;L</small><b class="${o.gross>=0?"up":"down"}">${o.gross>=0?"+":"−"}₹${fmt(Math.abs(o.gross))}</b></div><div><small>Net P&amp;L</small><b class="${o.pnl>=0?"up":"down"}">${o.pnl>=0?"+":"−"}₹${fmt(Math.abs(o.pnl))}</b></div></div>`
-      +(legacy?`<div class="hint">This trade is from before the Zerodha schedule: a flat 0.03% brokerage per side was applied. Total charges ${inr(o.charges)}.</div>`:legs)
+      +(legacy?`<div class="hint">This is an older trade: a flat 0.03% brokerage per side was applied. Total charges ${inr(o.charges)}.</div>`:legs)
       +(o.prod?`<div class="hint">Product: ${o.prod==="CNC"?"Delivery (CNC)":"Intraday (MIS)"}${o.fno?"":" · DP charge applies once per stock per day when delivery shares are sold."}</div>`:"")
       +(o.tag==="Expiry"?`<div class="hint">Cash-settled at expiry: no brokerage; STT 0.125% applies on in-the-money long options.</div>`:"")+`<div class="hint">${timeOf(o.ts,true)} IST</div><button class="btn danger" data-void="${i}" style="width:100%;margin-top:10px;padding:11px">Void this trade (takes its P&amp;L back out of cash)</button>`;
   }else{
@@ -1530,7 +1530,7 @@ $("rcBody").innerHTML=`<table class="rct"><tr><th></th><th>Delivery</th><th>Intr
 <tr><th>Exchange (BSE)</th><td>0.00375%</td><td>0.00375%</td><td>0%</td><td>0.0325%</td></tr>
 <tr><th>Stamp (buy)</th><td>0.015%</td><td>0.003%</td><td>0.002%</td><td>0.003%</td></tr></table>
 <p style="margin:10px 0 0">GST 18% on brokerage + exchange + SEBI charges. SEBI ₹10 per crore. DP charge ₹13.5 + GST (₹15.93) once per stock per day on delivery sells. Options held to expiry: STT 0.125% of the settlement value if in the money.</p>
-<p style="margin:8px 0 0;color:var(--mut)">These follow Zerodha's published schedule as known when this was added and can differ from today's actual rates. Delivery vs Intraday is whatever you choose on the order panel; intraday positions are not auto-squared-off in this game.</p>`;
+<p style="margin:8px 0 0;color:var(--mut)">Rates are approximate and can differ from a real broker's current rates. Delivery vs Intraday is whatever you choose on the order panel; intraday positions are not auto-squared-off in this game.</p>`;
 $("rcBtn").onclick=()=>$("rc").hidden=false;$("rcX").onclick=()=>$("rc").hidden=true;$("rc").onclick=e=>{if(e.target.id==="rc")$("rc").hidden=true};
 // Void a closed trade: removes it (and the matching opening order) and takes its profit/loss back out of cash.
 $("tbClosed").onclick=e=>{const r=e.target.closest("tr[data-ci]");if(r)showCharges(+r.dataset.ci)};
