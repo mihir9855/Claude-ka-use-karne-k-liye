@@ -292,6 +292,12 @@ canvas#donut{width:200px;height:200px}
 .panel .qrow{min-width:0}.panel .qrow input{min-width:0;width:100%}
 html,body{max-width:100vw;overflow-x:hidden}
 .otype.two{grid-template-columns:1fr 1fr}.brk[hidden]{display:none}.pend-f{margin-bottom:12px}
+.tbs7{grid-template-columns:repeat(4,minmax(0,1fr))}.tbs7 b{font-size:13px}
+.chtab{width:100%;border-collapse:collapse;font-size:12px}.chtab td,.chtab th{padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.07);text-align:right}
+.chtab td:first-child,.chtab th:first-child{text-align:left}.chtab tr.t td{font-weight:800;border-top:2px solid var(--line)}
+.rct th,.rct td{padding:5px 4px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;vertical-align:top}.rct th{color:var(--mut);font-weight:600}
+#tbClosed tr[data-ci],#tbAll tr[data-oi]{cursor:pointer}
+@media(max-width:820px){.tbs7{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -316,6 +322,7 @@ html,body{max-width:100vw;overflow-x:hidden}
     <div class="srow" style="align-items:flex-start"><span><b>Trading capital</b><small>Your money in the game. Change it without losing holdings, history or P&amp;L.</small></span></div>
     <div class="qrow"><input id="capIn" type="number" min="1000" step="1000" placeholder="e.g. 10000"><button class="btn" id="capBtn" style="width:auto;padding:0 16px;font-weight:700">Update</button></div>
     <div class="hint" id="capHint" style="margin-top:-6px"></div>
+    <div class="srow"><span><b>Brokerage &amp; charges</b><small>Zerodha (Kite) schedule: brokerage, STT, exchange, GST, SEBI, stamp duty, DP</small></span><button class="btn" id="rcBtn">Rate card</button></div>
     <button class="btn danger" id="reset">↻ Reset game (restart with your capital)</button>
   </div>
 </div>
@@ -376,9 +383,12 @@ html,body{max-width:100vw;overflow-x:hidden}
       <div id="brk" class="brk"><span class="lbl" style="display:block;margin-bottom:6px;text-transform:none;letter-spacing:0;font-size:12px">Attach exits (optional): stop-loss &amp; target</span>
         <div class="qrow"><input id="bSl" type="number" step="0.05" placeholder="Stop-loss ₹"><input id="bTp" type="number" step="0.05" placeholder="Target ₹"></div>
         <div class="quick" id="bQ" style="margin-bottom:12px"><button data-s="2" data-t="4">SL 2% · T 4%</button><button data-s="5" data-t="10">SL 5% · T 10%</button><button data-s="10" data-t="20">SL 10% · T 20%</button></div></div>
+      <div id="prodBox"><div class="otype two" id="prodSeg" style="margin-bottom:6px"><button data-p="CNC" class="on">Delivery (CNC)</button><button data-p="MIS">Intraday (MIS)</button></div>
+        <div class="hint" id="prodHint" style="margin:0 0 12px"></div></div>
       <div class="qrow"><button id="qm">−</button><input id="qty" type="number" min="1" value="10"><button id="qp">+</button></div>
       <div class="quick"><button data-q="1">1</button><button data-q="10">10</button><button data-q="50">50</button><button data-q="100">100</button><button data-q="max">MAX</button></div>
       <div class="sum num" id="sum"></div>
+      <div class="hint" id="chLine" style="margin:-4px 0 10px"></div>
       <button class="go" id="go">BUY</button>
       <div class="err" id="err"></div>
       <div class="sep"></div>
@@ -426,10 +436,11 @@ html,body{max-width:100vw;overflow-x:hidden}
   <section class="glass card t-port" id="tbCard">
     <div class="tbh"><div class="lbl">Tradebook &amp; P&amp;L</div><div class="tbc"><select id="tbDay"></select><button class="btn" id="tbPdf">📄 PDF</button></div></div>
     <div id="tbSum" class="tbs"></div>
+    <div class="lbl" style="margin:14px 0 6px">Charges breakdown <small style="text-transform:none;letter-spacing:0">(Zerodha / Kite schedule)</small></div><div id="tbChg" class="tbs tbs7"></div>
     <div class="lbl" style="margin:14px 0 6px">Closed trades (bought → sold)</div>
     <div class="scroll"><table class="hold tbt"><thead><tr><th>Trade</th><th>Qty</th><th>Bought / Sold</th><th class="hm">Charges</th><th>P&amp;L</th><th></th></tr></thead><tbody id="tbClosed"></tbody></table></div>
     <div class="lbl" style="margin:14px 0 6px">All orders</div>
-    <div class="scroll"><table class="hold tbt"><thead><tr><th>Order</th><th>Side</th><th>Qty</th><th>Price</th><th class="hm">Type</th></tr></thead><tbody id="tbAll"></tbody></table></div>
+    <div class="scroll"><table class="hold tbt"><thead><tr><th>Order</th><th>Side</th><th>Qty</th><th>Price</th><th>Charges</th></tr></thead><tbody id="tbAll"></tbody></table></div>
   </section>
 </div>
 <div class="qbar t-trade" id="qbar"><button class="b" data-s="BUY">BUY</button><button class="s" data-s="SELL">SELL</button></div>
@@ -450,6 +461,9 @@ html,body{max-width:100vw;overflow-x:hidden}
   <div class="err" id="pmErr" style="margin:0"></div>
   <div class="tr" style="display:flex;gap:8px"><button class="tbtn" id="pmSave">Save</button><button class="tbtn s" id="pmClose">Close position</button></div>
 </div></div>
+<div id="chm" class="modal" hidden><div class="panel glass"><div class="ph"><b id="chmTitle"></b><button class="btn" id="chmX">✕</button></div><div id="chmBody"></div></div></div>
+<div id="rc" class="modal" hidden><div class="panel glass"><div class="ph"><b>Zerodha (Kite) rate card</b><button class="btn" id="rcX">✕</button></div>
+<div id="rcBody" style="font-size:12px;line-height:1.5"></div></div></div>
 <div id="toasts"></div>
 
 <script>
@@ -571,8 +585,27 @@ const STOCKS=RAW.map(([sym,name,sector,p])=>makeStock(sym,name,sector,p,true));
 let state=load()||{cash:START,pos:{},orders:[],nw:[]};
 // migrate older saves (positions were keyed by symbol only → NSE)
 for(const k of Object.keys(state.pos)) if(!k.includes(":")){state.pos["NSE:"+k]=state.pos[k];delete state.pos[k];}
-state.capital=state.capital>0?state.capital:START;state.recent=state.recent||[];state.nw=state.nw||[];state.extra=state.extra||[];state.pending=state.pending||[];state.alerts=state.alerts||[];state.fno=state.fno||[];state.fnoPending=state.fnoPending||[];state.lots=state.lots||{}; state.orders.forEach(o=>{o.ex=o.ex||"NSE"});
+state.capital=state.capital>0?state.capital:START;state.recent=state.recent||[];state.nw=state.nw||[];state.extra=state.extra||[];state.pending=state.pending||[];state.alerts=state.alerts||[];state.fno=state.fno||[];state.fnoPending=state.fnoPending||[];state.dp=state.dp||{};state.lots=state.lots||{}; state.orders.forEach(o=>{o.ex=o.ex||"NSE"});
 backfillTradebook();
+/* ---------- brokerage & charges: Zerodha (Kite) schedule ---------- */
+const ZC={brokMax:20,brokPct:.0003,gst:.18,sebi:1e-6,dp:13.5,exStt:.00125,
+  txn:{EQ:{NSE:.0000297,BSE:.0000375},FUT:{NSE:.0000173,BSE:0},OPT:{NSE:.0003503,BSE:.000325}},
+  stt:{CNC:{BUY:.001,SELL:.001},MIS:{BUY:0,SELL:.00025},FUT:{BUY:0,SELL:.0002},OPT:{BUY:0,SELL:.001}},
+  stamp:{CNC:.00015,MIS:.00003,FUT:.00002,OPT:.00003}};
+const CH_KEYS=["brokerage","stt","txn","gst","sebi","stamp","dp"];
+const CH_LABEL={brokerage:"Brokerage",stt:"STT / CTT",txn:"Exchange charges",gst:"GST (18%)",sebi:"SEBI charges",stamp:"Stamp duty",dp:"DP charges"};
+const r2=v=>Math.round(v*100)/100;
+const emptyCh=()=>({brokerage:0,stt:0,txn:0,gst:0,sebi:0,stamp:0,dp:0,total:0});
+function sumCh(...L){const o=emptyCh();for(const c of L){if(!c)continue;for(const k of CH_KEYS)o[k]+=c[k]||0}o.total=CH_KEYS.reduce((a,k)=>a+o[k],0);return o}
+function scaleCh(c,f){const o=emptyCh();if(!c)return o;for(const k of CH_KEYS)o[k]=(c[k]||0)*f;o.total=CH_KEYS.reduce((a,k)=>a+o[k],0);return o}
+// seg: EQ | FUT | OPT ; prod (EQ only): CNC = delivery, MIS = intraday
+function calcCharges({seg,prod,side,ex,price,qty,dp}){
+  const turn=price*qty,P=seg==="EQ"?(prod||"CNC"):seg;let brokerage=0;
+  if(seg==="OPT")brokerage=ZC.brokMax;else if(seg==="FUT"||P==="MIS")brokerage=Math.min(ZC.brokMax,turn*ZC.brokPct);
+  const txn=turn*ZC.txn[seg][ex],sebi=turn*ZC.sebi,c={brokerage,stt:turn*ZC.stt[P][side],txn,sebi,gst:(brokerage+txn+sebi)*ZC.gst,stamp:side==="BUY"?turn*ZC.stamp[P]:0,dp:dp?ZC.dp*(1+ZC.gst):0};
+  c.total=0;for(const k of CH_KEYS){c[k]=r2(c[k]);c.total+=c[k]}c.total=r2(c.total);return c;
+}
+const legacyCh=amt=>{const c=emptyCh();c.brokerage=amt;c.total=amt;return c};   // orders made before the Zerodha schedule: flat 0.03%
 // Orders made before the tradebook existed have no buy/sell pairing or P&L: replay them oldest-first to rebuild it.
 function backfillTradebook(){
   if(state.tbv===1)return;
@@ -775,9 +808,13 @@ function renderDetail(){
   drawChart(s);
 
   // order panel
-  const q=Math.max(0,Math.floor(+$("qty").value)||0),opx=(otype!=="MARKET"&&+$("oprice").value>0)?+$("oprice").value:s.px[ex],val=q*opx,fee=val*FEE;
-  $("sum").innerHTML=`<div><span class="mut">${otype==="MARKET"?"Price":(otype==="LIMIT"?"Limit price":"Trigger price")}</span><span>${inr(opx)}</span></div><div><span class="mut">Order value</span><span>${inr(val)}</span></div><div><span class="mut">Brokerage (0.03%)</span><span>${inr(fee)}</span></div><div><span class="mut">${side==="BUY"?"Total debit":"Net credit"}</span><b>${inr(side==="BUY"?val+fee:val-fee)}</b></div><div><span class="mut">${side==="BUY"?"Cash available":"Shares held"}</span><span>${side==="BUY"?inr(state.cash):(hp?hp.qty:0)}</span></div>`;
+  const q=Math.max(0,Math.floor(+$("qty").value)||0),opx=(otype!=="MARKET"&&+$("oprice").value>0)?+$("oprice").value:s.px[ex],val=q*opx;
+  const prodNow=side==="BUY"?prodSel:((hp&&hp.prod)||"CNC"),cg=calcCharges({seg:"EQ",prod:prodNow,side,ex,price:opx,qty:q,dp:side==="SELL"&&prodNow==="CNC"&&!state.dp[s.sym+"|"+dayOf(Date.now())]}),fee=cg.total;
+  $("sum").innerHTML=`<div><span class="mut">${otype==="MARKET"?"Price":(otype==="LIMIT"?"Limit price":"Trigger price")}</span><span>${inr(opx)}</span></div><div><span class="mut">Order value</span><span>${inr(val)}</span></div><div><span class="mut">Charges (Kite)</span><span>${inr(fee)}</span></div><div><span class="mut">${side==="BUY"?"Total debit":"Net credit"}</span><b>${inr(side==="BUY"?val+fee:val-fee)}</b></div><div><span class="mut">${side==="BUY"?"Cash available":"Shares held"}</span><span>${side==="BUY"?inr(state.cash):(hp?hp.qty:0)}</span></div>`;
   $("brk").hidden=!(side==="BUY"&&otype!=="SL");
+  $("chLine").textContent=q>0?CH_KEYS.filter(k=>cg[k]>0).map(k=>`${CH_LABEL[k].replace(" (18%)","")} ${fmt(cg[k])}`).join(" · "):"";
+  $("prodSeg").hidden=side!=="BUY";document.querySelectorAll("#prodSeg button").forEach(b=>b.classList.toggle("on",b.dataset.p===prodSel));
+  $("prodHint").textContent=side==="BUY"?(prodSel==="CNC"?"Delivery: zero brokerage, STT 0.1% each side, ₹15.93 DP charge when you sell.":"Intraday: brokerage ₹20 or 0.03% (lower), STT 0.025% on the sell side."):`This sale is charged as ${prodNow==="CNC"?"Delivery":"Intraday"} (the product of your holding).`;
   const g=$("go");g.className="go "+(side==="SELL"?"s":"");g.textContent=`${otype=="MARKET"?"":(otype==="LIMIT"?"LIMIT ":"STOP-LOSS ")}${side} ${s.sym} · ${ex}`;
   document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on",b.dataset.s===side));
 }
@@ -829,26 +866,31 @@ function setErr(t){$("err").textContent=t}
 const CLOSED_MSG="Market is closed (Mon–Fri, 9:15 AM–3:30 PM IST). Turn on Practice mode in ⚙ Settings to keep playing. Limit and stop-loss orders can still be placed and will trigger when the market opens.";
 function rememberStock(s){if(!s.core&&!state.extra.some(x=>x.sym===s.sym))state.extra.push({sym:s.sym,name:s.name})}
 // Executes an equity order at px. Returns "" on success or an error message.
-function fill(sd,s,e,q,px,tag,ts){
+function fill(sd,s,e,q,px,tag,ts,prodIn){
   const pe=priceErr(s,e);if(pe)return pe;
   if(!s.on[e])return `${s.sym} is not listed on ${e} — trade it on the other exchange.`;
-  const val=q*px,fee=val*FEE,k=key(e,s.sym);let avgBuy=0;
+  const val=q*px,k=key(e,s.sym),p0=state.pos[k],when=ts||Date.now();
+  const prod=sd==="BUY"?(prodIn||(p0&&p0.prod)||"CNC"):((p0&&p0.prod)||"CNC");
+  const dpKey=s.sym+"|"+dayOf(when),needDp=sd==="SELL"&&prod==="CNC"&&!state.dp[dpKey];
+  const c=calcCharges({seg:"EQ",prod,side:sd,ex:e,price:px,qty:q,dp:needDp}),fee=c.total;let avgBuy=0,buyPart=null;
   if(sd==="BUY"){
     if(val+fee>state.cash)return `Not enough cash — you need ${inr(val+fee)}.`;
-    const p=state.pos[k]||{qty:0,avg:0};p.avg=(p.avg*p.qty+val)/(p.qty+q);p.qty+=q;state.pos[k]=p;state.cash-=val+fee;
+    const p=p0||{qty:0,avg:0};p.avg=(p.avg*p.qty+val)/(p.qty+q);p.qty+=q;p.prod=prod;p.chBuy=sumCh(p.chBuy,c);state.pos[k]=p;state.cash-=val+fee;
   }else{
-    const p=state.pos[k];if(!p||p.qty<q)return `You only hold ${p?p.qty:0} shares on ${e}.`;
-    avgBuy=p.avg;p.qty-=q;if(!p.qty)delete state.pos[k];state.cash+=val-fee;
+    const p=p0;if(!p||p.qty<q)return `You only hold ${p?p.qty:0} shares on ${e}.`;
+    const share=q/p.qty;avgBuy=p.avg;buyPart=p.chBuy?scaleCh(p.chBuy,share):legacyCh(avgBuy*q*FEE);
+    p.chBuy=p.chBuy?scaleCh(p.chBuy,1-share):null;p.qty-=q;if(!p.qty)delete state.pos[k];state.cash+=val-fee;
+    if(needDp)state.dp[dpKey]=1;
   }
   rememberStock(s);
-  const rec={side:sd,sym:s.sym,ex:e,qty:q,price:px,tag:tag||"",ts:ts||Date.now(),fee};
-  if(sd==="SELL"){const gross=(px-avgBuy)*q,charges=fee+avgBuy*q*FEE;Object.assign(rec,{closed:true,buyPx:avgBuy,sellPx:px,gross,charges,pnl:gross-charges})}
+  const rec={side:sd,sym:s.sym,ex:e,qty:q,price:px,tag:tag||"",ts:when,fee,chg:c,prod};
+  if(sd==="SELL"){const gross=(px-avgBuy)*q,all=sumCh(buyPart,c);Object.assign(rec,{closed:true,buyPx:avgBuy,sellPx:px,gross,charges:all.total,chOpen:buyPart,chClose:c,pnl:gross-all.total})}
   state.orders.unshift(rec);
   return "";
 }
 function doneToast(sd,q,s,e,px,tag){
-  const px2=q*px*FEE;
-  toast(`<b class="${sd==="BUY"?"up":"down"}">${tag?tag+" ":""}${sd} done</b> · ${q} × ${s.sym} <span class="badge ${e}">${e}</span><br><small class="num">@ ${inr(px)} · fee ${inr(px2)}</small>`,sd==="BUY"?"#00e0a0":"#ff4d6d");
+  const px2=(state.orders[0]&&state.orders[0].fee)||0;
+  toast(`<b class="${sd==="BUY"?"up":"down"}">${tag?tag+" ":""}${sd} done</b> · ${q} × ${s.sym} <span class="badge ${e}">${e}</span><br><small class="num">@ ${inr(px)} · charges ${inr(px2)}</small>`,sd==="BUY"?"#00e0a0":"#ff4d6d");
 }
 function trade(){
   setErr("");
@@ -861,7 +903,7 @@ function trade(){
   if(btp&&btp<=entryPx)return setErr(`Target must be above the buy price (${inr(entryPx)}).`);
   if(otype==="MARKET"){
     if(!isOpen())return setErr(CLOSED_MSG);
-    const err=fill(side,s,ex,q,ltp,"");if(err)return setErr(err);
+    const err=fill(side,s,ex,q,ltp,"",undefined,prodSel);if(err)return setErr(err);
     if(bsl||btp)addExits(s,ex,q,bsl,btp);
     save();doneToast(side,q,s,ex,ltp,"");if(bsl||btp)toast(`<b>Exits placed</b><br><small>${bsl?"Stop-loss "+inr(bsl):""}${bsl&&btp?" · ":""}${btp?"Target "+inr(btp):""} (one cancels the other)</small>`,"#ff9933");render();return;
   }
@@ -871,9 +913,9 @@ function trade(){
     if(side==="BUY"&&price<=ltp)return setErr(`A buy stop order must trigger above the current price (${inr(ltp)}).`);
   }
   if(side==="SELL"){const p=state.pos[key(ex,s.sym)];if(!p||p.qty<q)return setErr(`You only hold ${p?p.qty:0} shares on ${ex}.`)}
-  else if(q*price*(1+FEE)>state.cash)return setErr("Not enough cash for this order at that price.");
+  else if(q*price+calcCharges({seg:"EQ",prod:prodSel,side:"BUY",ex,price,qty:q}).total>state.cash)return setErr("Not enough cash for this order at that price.");
   rememberStock(s);
-  state.pending.push({id:Date.now()+Math.random(),side,sym:s.sym,name:s.name,ex,qty:q,type:otype,price,attach:(bsl||btp)?{sl:bsl,tp:btp}:null});
+  state.pending.push({id:Date.now()+Math.random(),side,sym:s.sym,name:s.name,ex,qty:q,type:otype,price,prod:prodSel,attach:(bsl||btp)?{sl:bsl,tp:btp}:null});
   save();toast(`<b>${otype==="LIMIT"?"Limit":"Stop-loss"} order placed</b><br><small>${side} ${q} × ${s.sym} (${ex}) at ${inr(price)}</small>`,"#ff9933");render();
 }
 // Two sell orders linked together: when one executes the other is cancelled (OCO)
@@ -892,7 +934,7 @@ function checkPending(){
     if(!hit)continue;
     if(!state.pending.includes(o))continue;
     state.pending=state.pending.filter(x=>x!==o);dropSiblings(o);changed=true;
-    const err=fill(o.side,s,o.ex,o.qty,ltp,o.type==="LIMIT"?"Limit":"Stop-loss");
+    const err=fill(o.side,s,o.ex,o.qty,ltp,o.type==="LIMIT"?"Limit":"Stop-loss",undefined,o.prod);
     if(!err&&o.attach)addExits(s,o.ex,o.qty,o.attach.sl,o.attach.tp);
     if(err)toast(`<b>Order cancelled</b><br><small>${o.side} ${o.qty} × ${o.sym}: ${err}</small>`,"#ff4d6d");
     else{doneToast(o.side,o.qty,s,o.ex,ltp,o.type==="LIMIT"?"Limit":"Stop-loss");notify(`${o.type==="LIMIT"?"Limit":"Stop-loss"} order executed`,`${o.side} ${o.qty} × ${o.sym} @ ${inr(ltp)}`);beep()}
@@ -976,12 +1018,13 @@ function openFno(c,sd,lots,opt){
   if(S==null||m==null)return "Waiting for the live price of this underlying…";
   if(m<=0.05&&c.kind!=="FUT"&&sd>0)return "This option is worthless — pick another strike.";
   const notional=S*qty;let margin=0;
-  if(c.kind==="FUT"){margin=notional*MARGIN;if(margin>state.cash)return `Not enough cash — margin needed ${inr(margin)}.`;state.cash-=margin}
-  else if(sd>0){const cost=m*qty;if(cost>state.cash)return `Not enough cash — premium is ${inr(cost)}.`;state.cash-=cost}
-  else{margin=notional*MARGIN;if(margin>state.cash+m*qty)return `Not enough cash — margin needed ${inr(margin)}.`;state.cash+=m*qty-margin}
+  const cg=calcCharges({seg:c.kind==="FUT"?"FUT":"OPT",side:sd>0?"BUY":"SELL",ex:c.ex,price:m,qty}),fee=cg.total;
+  if(c.kind==="FUT"){margin=notional*MARGIN;if(margin+fee>state.cash)return `Not enough cash — margin ${inr(margin)} + charges ${inr(fee)} needed.`;state.cash-=margin+fee}
+  else if(sd>0){const cost=m*qty;if(cost+fee>state.cash)return `Not enough cash — premium ${inr(cost)} + charges ${inr(fee)} needed.`;state.cash-=cost+fee}
+  else{margin=notional*MARGIN;if(margin+fee>state.cash+m*qty)return `Not enough cash — margin ${inr(margin)} + charges ${inr(fee)} needed.`;state.cash+=m*qty-margin-fee}
   const ts=opt.ts||Date.now();
-  state.fno.push({id:ts+Math.random(),kind:c.kind,under:c.under,ex:c.ex,expiry:c.expiry,strike:c.strike,lots,lot,qty,side:sd,entry:m,margin,sl:opt.sl||null,tp:opt.tp||null});
-  state.orders.unshift({side:sd>0?"BUY":"SELL",sym:contractName(c),ex:c.ex,qty,price:m,tag:opt.tag||"F&O",ts,fee:0});
+  state.fno.push({id:ts+Math.random(),kind:c.kind,under:c.under,ex:c.ex,expiry:c.expiry,strike:c.strike,lots,lot,qty,side:sd,entry:m,margin,chOpen:cg,sl:opt.sl||null,tp:opt.tp||null});
+  state.orders.unshift({side:sd>0?"BUY":"SELL",sym:contractName(c),ex:c.ex,qty,price:m,tag:opt.tag||"F&O",ts,fee,chg:cg});
   save();return "";
 }
 function underOk(p){
@@ -992,12 +1035,17 @@ function underOk(p){
 function closeFno(id,why,opt){
   const p=state.fno.find(x=>x.id===id);if(!p)return;
   if(!opt&&!underOk(p)){toast("Live price is not available yet — try again in a moment.","#ff4d6d");return}
-  const m=opt?opt.price:markOf(p);const mk=m==null?p.entry:m,pnl=posPnl(p,mk),ts=opt?opt.ts:Date.now();
-  if(p.kind==="FUT")state.cash+=p.margin+pnl;else if(p.side>0)state.cash+=mk*p.qty;else state.cash+=p.margin-mk*p.qty;
+  const m=opt?opt.price:markOf(p);const mk=m==null?p.entry:m,gross=posPnl(p,mk),ts=opt?opt.ts:Date.now();
+  // closing-leg charges. Expiry is cash-settled: no brokerage, only STT on in-the-money long options (0.125% of the settlement value)
+  let cc;
+  if(why==="expiry"){cc=emptyCh();if(p.kind!=="FUT"&&p.side>0&&mk>0){cc.stt=r2(mk*p.qty*ZC.exStt);cc.total=cc.stt}}
+  else cc=calcCharges({seg:p.kind==="FUT"?"FUT":"OPT",side:p.side>0?"SELL":"BUY",ex:p.ex,price:mk,qty:p.qty});
+  const all=sumCh(p.chOpen,cc),pnl=gross-all.total;
+  if(p.kind==="FUT")state.cash+=p.margin+gross-cc.total;else if(p.side>0)state.cash+=mk*p.qty-cc.total;else state.cash+=p.margin-mk*p.qty-cc.total;
   state.fno=state.fno.filter(x=>x!==p);
-  state.orders.unshift({side:p.side>0?"SELL":"BUY",sym:contractName(p),ex:p.ex,qty:p.qty,price:mk,tag:why==="expiry"?"Expiry":(why||"F&O"),ts,fee:0,closed:true,fno:true,buyPx:p.side>0?p.entry:mk,sellPx:p.side>0?mk:p.entry,gross:pnl,charges:0,pnl});
+  state.orders.unshift({side:p.side>0?"SELL":"BUY",sym:contractName(p),ex:p.ex,qty:p.qty,price:mk,tag:why==="expiry"?"Expiry":(why||"F&O"),ts,fee:cc.total,chg:cc,closed:true,fno:true,buyPx:p.side>0?p.entry:mk,sellPx:p.side>0?mk:p.entry,gross,charges:all.total,chOpen:p.chOpen||emptyCh(),chClose:cc,pnl});
   save();
-  toast(`<b>${why==="expiry"?"Expired & settled":why?why+" hit — position closed":"Position closed"}</b> · ${contractName(p)}<br><small class="num ${pnl>=0?"up":"down"}">${opt?`at ${fmt(mk)} · ${timeOf(ts,true)} · while you were away<br>`:""}P&amp;L ${sgn(pnl)}</small>`,pnl>=0?"#00e0a0":"#ff4d6d");
+  toast(`<b>${why==="expiry"?"Expired & settled":why?why+" hit — position closed":"Position closed"}</b> · ${contractName(p)}<br><small class="num ${pnl>=0?"up":"down"}">${opt?`at ${fmt(mk)} · ${timeOf(ts,true)} · while you were away<br>`:""}P&amp;L ${sgn(pnl)} <span class="mut">(charges ${inr(all.total)})</span></small>`,pnl>=0?"#00e0a0":"#ff4d6d");
 }
 function settleExpired(){for(const p of [...state.fno])if(p.expiry<=Date.now()&&Date.now()-p.expiry<10*60e3&&underOk(p))closeFno(p.id,"expiry")}
 
@@ -1033,7 +1081,8 @@ function renderTicket(base,S,lot){
   const c={...base,...tk},m=markOf(c);if(m==null)return;
   const lots=Math.max(1,Math.floor(+$("fLots").value)||1),qty=lots*lot;
   $("tkTitle").textContent=`${contractName(c)} @ ${inr(m)}`;
-  $("tkReq").textContent=`Qty ${qty} · Buy needs ${tk.kind==="FUT"?"margin "+inr(S*qty*MARGIN):"premium "+inr(m*qty)} · Sell blocks ${inr(S*qty*MARGIN)} margin`;
+  const cg=calcCharges({seg:tk.kind==="FUT"?"FUT":"OPT",side:fSide>0?"BUY":"SELL",ex:c.ex,price:m,qty});
+  $("tkReq").textContent=`Qty ${qty} · Buy needs ${tk.kind==="FUT"?"margin "+inr(S*qty*MARGIN):"premium "+inr(m*qty)} · Sell blocks ${inr(S*qty*MARGIN)} margin · Charges ≈ ${inr(cg.total)} (brokerage ${fmt(cg.brokerage)}, STT ${fmt(cg.stt)}, other ${fmt(cg.total-cg.brokerage-cg.stt)})`;
 }
 function fnoContract(){const{u,e}=fnoCtx();if(!fno.tk||!fno.exp)return null;return{under:u,ex:e,expiry:fno.exp,...fno.tk}}
 let fSide=1,fType="MKT";
@@ -1084,9 +1133,11 @@ function renderTradebook(){
   const R=tbRows(),C=R.filter(o=>o.closed),net=C.reduce((a,o)=>a+o.pnl,0),ch=C.reduce((a,o)=>a+o.charges,0),w=C.filter(o=>o.pnl>0).length,l=C.filter(o=>o.pnl<0).length;
   const tile=(t,v,c)=>`<div><small>${t}</small><b class="${c||""}">${v}</b></div>`,sg=v=>(v>=0?"+":"−")+"₹"+fmt(Math.abs(v));
   $("tbSum").innerHTML=tile("Net P&L (after charges)",sg(net),net>=0?"up":"down")+tile("Charges",inr(ch))+tile("Wins / Losses",`${w} / ${l}`)+tile("Orders",R.length);
+  const tot=emptyCh();for(const r of R){const c=r.chg||(r.fee?legacyCh(r.fee):null);if(!c)continue;for(const k of CH_KEYS)tot[k]+=c[k]||0}tot.total=CH_KEYS.reduce((a,k)=>a+tot[k],0);
+  $("tbChg").innerHTML=CH_KEYS.map(k=>tile(CH_LABEL[k],inr(tot[k]))).join("")+tile("Total charges",inr(tot.total),"down");
   const wd=tbDay==="all";const tbWho=(o,wd)=>`<b>${o.sym}</b><br><small>${o.ex} · ${timeOf(o.ts,wd)}</small>`;
-  $("tbClosed").innerHTML=C.map(o=>`<tr><td>${tbWho(o,wd)}</td><td class="num">${o.qty}</td><td class="num"><span class="up">${fmt(o.buyPx)}</span><br><span class="down">${fmt(o.sellPx)}</span></td><td class="num hm">${fmt(o.charges)}</td><td class="num ${o.pnl>=0?"up":"down"}">${sg(o.pnl)}</td><td><button class="xb" data-void="${state.orders.indexOf(o)}" title="Void this trade">Void</button></td></tr>`).join("")||`<tr><td colspan="6" class="empty">No closed trades yet. A trade shows here once you sell what you bought.</td></tr>`;
-  $("tbAll").innerHTML=R.map(o=>`<tr><td>${tbWho(o,wd)}</td><td><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b></td><td class="num">${o.qty}</td><td class="num">${fmt(o.price)}</td><td class="hm">${o.tag||"Market"}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">No orders yet.</td></tr>`;
+  $("tbClosed").innerHTML=C.map(o=>`<tr data-ci="${state.orders.indexOf(o)}"><td>${tbWho(o,wd)}</td><td class="num">${o.qty}</td><td class="num"><span class="up">${fmt(o.buyPx)}</span><br><span class="down">${fmt(o.sellPx)}</span></td><td class="num hm">${fmt(o.charges)}</td><td class="num ${o.pnl>=0?"up":"down"}">${sg(o.pnl)}</td><td><button class="xb" data-void="${state.orders.indexOf(o)}" title="Void this trade">Void</button></td></tr>`).join("")||`<tr><td colspan="6" class="empty">No closed trades yet. A trade shows here once you sell what you bought.</td></tr>`;
+  $("tbAll").innerHTML=R.map(o=>`<tr data-oi="${state.orders.indexOf(o)}"><td>${tbWho(o,wd)}</td><td><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b></td><td class="num">${o.qty}</td><td class="num">${fmt(o.price)}</td><td class="num">${fmt(o.fee||0)}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">No orders yet.</td></tr>`;
 }
 // ---- PDF report (jsPDF is loaded from a CDN the first time it is needed) ----
 function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>no(new Error("load "+src));document.head.append(s)})}
@@ -1114,6 +1165,10 @@ async function tradebookPdf(){
     const sum=[["Net P&L (after charges)",pn(d.net)],["Total charges",pn(d.ch)],["Closed trades",String(d.C.length)],["Wins / Losses",`${d.wins} / ${d.loss}`],["Orders",String(d.R.length)]];
     doc.autoTable({startY:80,body:sum,theme:"plain",styles:{fontSize:10,cellPadding:3},columnStyles:{0:{fontStyle:"bold",cellWidth:150},1:{halign:"left"}},margin:{left:40}});
     const col=(data,idx)=>{if(data.section==="body"&&data.column.index===idx){const v=d.C[data.row.index]?.pnl;if(v!=null)data.cell.styles.textColor=v>=0?[0,140,90]:[210,40,70]}};
+    const tot=emptyCh();for(const r of d.R){const c=r.chg||(r.fee?legacyCh(r.fee):null);if(!c)continue;for(const k of CH_KEYS)tot[k]+=c[k]||0}tot.total=CH_KEYS.reduce((a,k)=>a+tot[k],0);
+    doc.setFont("helvetica","bold");doc.text("Charges breakdown (Zerodha / Kite schedule)",40,doc.lastAutoTable.finalY+22);
+    doc.autoTable({startY:doc.lastAutoTable.finalY+30,theme:"grid",headStyles:{fillColor:[20,26,50]},styles:{fontSize:8,cellPadding:3},margin:{left:40,right:40},
+      head:[CH_KEYS.map(k=>CH_LABEL[k]).concat(["Total"])],body:[CH_KEYS.map(k=>pn(tot[k])).concat([pn(tot.total)])]});
     doc.setFont("helvetica","bold");doc.text("Closed trades (bought -> sold)",40,doc.lastAutoTable.finalY+24);
     doc.autoTable({startY:doc.lastAutoTable.finalY+32,theme:"striped",headStyles:{fillColor:[20,26,50]},styles:{fontSize:8,cellPadding:4},margin:{left:40,right:40},
       head:[["Date","Time","Instrument","Ex","Qty","Bought","Sold","Charges","P&L"]],
@@ -1121,9 +1176,9 @@ async function tradebookPdf(){
       columnStyles:{4:{halign:"right"},5:{halign:"right"},6:{halign:"right"},7:{halign:"right"},8:{halign:"right",fontStyle:"bold"}},didParseCell:x=>col(x,8)});
     doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text("All orders",40,doc.lastAutoTable.finalY+26);
     doc.autoTable({startY:doc.lastAutoTable.finalY+34,theme:"striped",headStyles:{fillColor:[20,26,50]},styles:{fontSize:8,cellPadding:4},margin:{left:40,right:40},
-      head:[["Date","Time","Instrument","Ex","Side","Qty","Price","Type"]],
-      body:d.R.map(o=>[d.dt(o),d.tm(o),o.sym,o.ex,o.side,o.qty,fmt(o.price),o.tag||"Market"]).concat(d.R.length?[]:[[{content:"No orders.",colSpan:8}]]),
-      columnStyles:{5:{halign:"right"},6:{halign:"right"}}});
+      head:[["Date","Time","Instrument","Ex","Side","Qty","Price","Charges","Type"]],
+      body:d.R.map(o=>[d.dt(o),d.tm(o),o.sym,o.ex,o.side,o.qty,fmt(o.price),fmt(o.fee||0),o.tag||"Market"]).concat(d.R.length?[]:[[{content:"No orders.",colSpan:9}]]),
+      columnStyles:{5:{halign:"right"},6:{halign:"right"},7:{halign:"right"}}});
     const pages=doc.internal.getNumberOfPages();doc.setFontSize(8);doc.setTextColor(130);
     for(let i=1;i<=pages;i++){doc.setPage(i);doc.text(`Virtual trading game - not real money. Page ${i}/${pages}`,40,doc.internal.pageSize.getHeight()-20)}
     const name=`tradebook-${tbDay}.pdf`,blob=doc.output("blob"),file=new File([blob],name,{type:"application/pdf"});
@@ -1202,7 +1257,7 @@ async function catchUp(force){
         }
         if(hit){
           state.pending=state.pending.filter(x=>x!==o);dropSiblings(o);
-          const err=fill(o.side,s,o.ex,o.qty,hit.px,o.type==="LIMIT"?"Limit":"Stop-loss",hit.ts);
+          const err=fill(o.side,s,o.ex,o.qty,hit.px,o.type==="LIMIT"?"Limit":"Stop-loss",hit.ts,o.prod);
           if(err)toast(`<b>Order cancelled</b><br><small>${o.side} ${o.qty} × ${o.sym}: ${err}</small>`,"#ff4d6d");
           else{doneToast(o.side,o.qty,s,o.ex,hit.px,(o.type==="LIMIT"?"Limit":"Stop-loss")+" (while away)");if(o.attach)addExits(s,o.ex,o.qty,o.attach.sl,o.attach.tp,hit.ts);save()}
         }else o.scan=lastT;
@@ -1269,7 +1324,7 @@ function checkFnoExits(){
     if(why){closeFno(p.id,why);notify(`${why} hit`,`${contractName(p)} closed`);beep()}
   }
 }
-function maxQty(){const s=cur();if(side==="BUY")return Math.floor(state.cash/(s.px[ex]*(1+FEE)));const p=state.pos[key(ex,s.sym)];return p?p.qty:0}
+function maxQty(){const s=cur();if(side==="BUY"){const px=s.px[ex];let n=Math.floor(state.cash/px);while(n>0&&n*px+calcCharges({seg:"EQ",prod:prodSel,side:"BUY",ex,price:px,qty:n}).total>state.cash)n--;return n}const p=state.pos[key(ex,s.sym)];return p?p.qty:0}
 
 /* ---------- events ---------- */
 $("exSwitch").onclick=e=>{const c=e.target.closest("[data-ex]");if(c){ex=c.dataset.ex;render()}};
@@ -1340,18 +1395,19 @@ $("capBtn").onclick=()=>{
 $("always").onchange=()=>{try{localStorage.setItem("bseg_practice",$("always").checked?"1":"0")}catch(e){}render()};
 const sheet=$("sheet");$("gear").onclick=()=>{if(matchMedia("(max-width:820px)").matches)go("set");else sheet.hidden=false};$("sclose").onclick=()=>sheet.hidden=true;
 sheet.onclick=e=>{if(e.target===sheet)sheet.hidden=true};
-$("reset").onclick=()=>{if(confirm(`Restart with ${inr(state.capital)}? All holdings and history will be cleared.`)){const cap=state.capital;state={capital:cap,cash:cap,pos:{},orders:[],nw:[],extra:[],pending:[],alerts:[],fno:[],lots:{},recent:[],day:null,fnoPending:[]};save();render();toast("Game reset ✓","#ff9933")}};
+$("reset").onclick=()=>{if(confirm(`Restart with ${inr(state.capital)}? All holdings and history will be cleared.`)){const cap=state.capital;state={capital:cap,cash:cap,pos:{},orders:[],nw:[],extra:[],pending:[],alerts:[],fno:[],lots:{},recent:[],day:null,fnoPending:[],dp:{}};save();render();toast("Game reset ✓","#ff9933")}};
 const cv=$("chart");
 cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),n=cur().hist[ex].length;hoverI=Math.round((e.clientX-r.left)/(r.width-64)*(n-1));if(hoverI>=n)hoverI=-1;drawChart(cur())};
 cv.onmouseleave=()=>{hoverI=-1;drawChart(cur())};
 window.addEventListener("resize",()=>drawChart(cur()));
 
-let otype="MARKET";
+let otype="MARKET",prodSel="CNC";
 function setOtype(t){otype=t;setPlabel();document.querySelectorAll("#otype button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));$("pricebox").hidden=t==="MARKET";
   if(t!=="MARKET"&&!+$("oprice").value)$("oprice").value=cur().px[ex].toFixed(2);renderDetail()}
 $("otype").onclick=e=>{const t=e.target.dataset.t;if(t)setOtype(t)};
 $("pquick").onclick=e=>{const p=e.target.dataset.p;if(p===undefined)return;$("oprice").value=(cur().px[ex]*(1+ +p/100)).toFixed(2);renderDetail()};
 $("oprice").oninput=renderDetail;
+$("prodSeg").onclick=e=>{const p=e.target.dataset.p;if(p){prodSel=p;renderDetail()}};
 $("bQ").onclick=e=>{const s=+e.target.dataset.s,t=+e.target.dataset.t;if(!s)return;const px=(otype==="LIMIT"&&+$("oprice").value>0?+$("oprice").value:cur().px[ex]);$("bSl").value=(px*(1-s/100)).toFixed(2);$("bTp").value=(px*(1+t/100)).toFixed(2)};
 $("pend").onclick=e=>{const id=e.target.dataset.cancel;if(!id)return;state.pending=state.pending.filter(o=>String(o.id)!==id);save();lastOrdHtml="";render()};
 $("alerts").onclick=e=>{const id=e.target.dataset.del;if(!id)return;state.alerts=state.alerts.filter(a=>String(a.id)!==id);save();lastAlHtml="";render()};
@@ -1381,9 +1437,42 @@ $("fPQ").onclick=e=>{const p=e.target.dataset.p;if(p===undefined)return;const c=
 $("fBQ").onclick=e=>{const s=+e.target.dataset.s,t=+e.target.dataset.t;if(!s)return;const c=fnoContract();if(!c)return;const entry=fType==="LMT"&&+$("fPrice").value>0?+$("fPrice").value:markOf(c);if(entry==null)return;const L=fSide>0;
   $("fSl").value=(entry*(L?1-s/100:1+s/100)).toFixed(2);$("fTp").value=(entry*(L?1+t/100:1-t/100)).toFixed(2)};
 fnoTicketUi();
+// ---- charges detail window ----
+function showCharges(i){
+  const o=state.orders[i];if(!o)return;const f=v=>v?inr(v):"–";
+  let body="",title=`${o.sym} · ${o.ex}`;
+  if(o.closed){
+    const co=o.chOpen,cc=o.chClose,legacy=!cc;
+    const legs=legacy?"":`<table class="chtab"><tr><th>Charge</th><th>${o.fno?"Open leg":"Buy leg"}</th><th>${o.fno?"Close leg":"Sell leg"}</th><th>Total</th></tr>
+      ${CH_KEYS.filter(k=>(co&&co[k])||(cc&&cc[k])).map(k=>`<tr><td>${CH_LABEL[k]}</td><td class="num">${f(co&&co[k])}</td><td class="num">${f(cc&&cc[k])}</td><td class="num">${f((co?co[k]||0:0)+(cc?cc[k]||0:0))}</td></tr>`).join("")}
+      <tr class="t"><td>Total charges</td><td class="num">${f(co&&co.total)}</td><td class="num">${f(cc&&cc.total)}</td><td class="num">${inr(o.charges)}</td></tr></table>`;
+    body=`<div class="tbs" style="margin-bottom:12px"><div><small>Qty</small><b>${o.qty}</b></div><div><small>Bought → Sold</small><b>${fmt(o.buyPx)} → ${fmt(o.sellPx)}</b></div><div><small>Gross P&amp;L</small><b class="${o.gross>=0?"up":"down"}">${o.gross>=0?"+":"−"}₹${fmt(Math.abs(o.gross))}</b></div><div><small>Net P&amp;L</small><b class="${o.pnl>=0?"up":"down"}">${o.pnl>=0?"+":"−"}₹${fmt(Math.abs(o.pnl))}</b></div></div>`
+      +(legacy?`<div class="hint">This trade is from before the Zerodha schedule: a flat 0.03% brokerage per side was applied. Total charges ${inr(o.charges)}.</div>`:legs)
+      +(o.prod?`<div class="hint">Product: ${o.prod==="CNC"?"Delivery (CNC)":"Intraday (MIS)"}${o.fno?"":" · DP charge applies once per stock per day when delivery shares are sold."}</div>`:"")
+      +(o.tag==="Expiry"?`<div class="hint">Cash-settled at expiry: no brokerage; STT 0.125% applies on in-the-money long options.</div>`:"");
+  }else{
+    const c=o.chg||(o.fee?legacyCh(o.fee):null);
+    body=c?`<table class="chtab"><tr><th>Charge</th><th>Amount</th></tr>${CH_KEYS.filter(k=>c[k]).map(k=>`<tr><td>${CH_LABEL[k]}</td><td class="num">${inr(c[k])}</td></tr>`).join("")}<tr class="t"><td>Total charges</td><td class="num">${inr(c.total)}</td></tr></table>`
+      +(o.prod?`<div class="hint">Product: ${o.prod==="CNC"?"Delivery (CNC)":"Intraday (MIS)"}</div>`:"")+(o.chg?"":`<div class="hint">Old order: flat 0.03% brokerage.</div>`):`<div class="hint">No charges were recorded for this order.</div>`;
+    title=`${o.side} ${o.qty} × ${o.sym} @ ${fmt(o.price)}`;
+  }
+  $("chmTitle").textContent=title;$("chmBody").innerHTML=body;$("chm").hidden=false;
+}
+$("chmX").onclick=()=>$("chm").hidden=true;$("chm").onclick=e=>{if(e.target.id==="chm")$("chm").hidden=true};
+$("tbAll").onclick=e=>{const r=e.target.closest("tr[data-oi]");if(r)showCharges(+r.dataset.oi)};
+// ---- rate card ----
+$("rcBody").innerHTML=`<table class="rct"><tr><th></th><th>Delivery</th><th>Intraday</th><th>Futures</th><th>Options</th></tr>
+<tr><th>Brokerage</th><td>₹0</td><td>₹20 or 0.03%</td><td>₹20 or 0.03%</td><td>₹20 flat</td></tr>
+<tr><th>STT</th><td>0.1% buy &amp; sell</td><td>0.025% sell</td><td>0.02% sell</td><td>0.1% sell (premium)</td></tr>
+<tr><th>Exchange (NSE)</th><td>0.00297%</td><td>0.00297%</td><td>0.00173%</td><td>0.03503%</td></tr>
+<tr><th>Exchange (BSE)</th><td>0.00375%</td><td>0.00375%</td><td>0%</td><td>0.0325%</td></tr>
+<tr><th>Stamp (buy)</th><td>0.015%</td><td>0.003%</td><td>0.002%</td><td>0.003%</td></tr></table>
+<p style="margin:10px 0 0">GST 18% on brokerage + exchange + SEBI charges. SEBI ₹10 per crore. DP charge ₹13.5 + GST (₹15.93) once per stock per day on delivery sells. Options held to expiry: STT 0.125% of the settlement value if in the money.</p>
+<p style="margin:8px 0 0;color:var(--mut)">These follow Zerodha's published schedule as known when this was added and can differ from today's actual rates. Delivery vs Intraday is whatever you choose on the order panel; intraday positions are not auto-squared-off in this game.</p>`;
+$("rcBtn").onclick=()=>$("rc").hidden=false;$("rcX").onclick=()=>$("rc").hidden=true;$("rc").onclick=e=>{if(e.target.id==="rc")$("rc").hidden=true};
 // Void a closed trade: removes it (and the matching opening order) and takes its profit/loss back out of cash.
 $("tbClosed").onclick=e=>{
-  const i=e.target.dataset.void;if(i===undefined)return;const o=state.orders[+i];if(!o||!o.closed)return;
+  const i=e.target.dataset.void;if(i===undefined){const r=e.target.closest("tr[data-ci]");if(r)showCharges(+r.dataset.ci);return}const o=state.orders[+i];if(!o||!o.closed)return;
   const lbl=`${o.sym} (${o.qty}): ${o.pnl>=0?"profit":"loss"} of ₹${fmt(Math.abs(o.pnl))}`;
   if(!confirm(`Void this trade?\n\n${lbl}\n\nThe trade is removed from the tradebook and ₹${fmt(Math.abs(o.pnl))} is ${o.pnl>=0?"deducted from":"added back to"} your cash. This cannot be undone.`))return;
   const opens=o.side==="SELL"?"BUY":"SELL";
