@@ -318,7 +318,7 @@ html,body{max-width:100vw;overflow-x:hidden}
   #histCard{display:none}
   .top{grid-template-columns:repeat(2,minmax(0,1fr))!important}
   .top>.glass.card:not(.idx){grid-column:1/-1}
-  .idx{padding:12px}.idx .big{font-size:19px;margin:6px 0 2px}.idx .lbl{font-size:10px;max-width:68%}.idx .exb{top:10px;right:10px}.idx svg{height:36px}
+  .idx{padding:12px}.idx .big{font-size:20px!important;margin:6px 0 2px}.idx .lbl{font-size:10px;max-width:68%}.idx .exb{top:10px;right:10px}.idx svg{height:36px}
   .idx .num{font-size:11px}
 }
 .qm{display:none}.tbt th.nmh{text-align:left}
@@ -375,12 +375,13 @@ html,body{max-width:100vw;overflow-x:hidden}
         <div><span class="lbl">Realised</span><b class="num" id="pReal"></b></div>
       </div>
     </div>
+    
+    <div class="glass card idx" id="idxNSE" style="--c:#ff9933"><span class="exb">NSE</span><div class="lbl">NIFTY 50</div><div class="big num" id="vNSE"></div><div class="num" id="cNSE" style="font-weight:700"></div><div id="sNSE"></div></div>
+    <div class="glass card idx" id="idxBSE" style="--c:#5b8cff"><span class="exb">BSE</span><div class="lbl">S&amp;P BSE SENSEX</div><div class="big num" id="vBSE"></div><div class="num" id="cBSE" style="font-weight:700"></div><div id="sBSE"></div></div>
     <div class="glass card" id="homeTrades">
     <div class="tbh"><div class="lbl">My trades <span id="htPnl" class="num" style="margin-left:8px"></span></div><button class="btn" id="homeAll">Full tradebook ›</button></div>
     <div id="htOpen"></div><div id="htPend"></div><div id="htRecent"></div>
   </div>
-    <div class="glass card idx" id="idxNSE" style="--c:#ff9933"><span class="exb">NSE</span><div class="lbl">NIFTY 50</div><div class="big num" id="vNSE"></div><div class="num" id="cNSE" style="font-weight:700"></div><div id="sNSE"></div></div>
-    <div class="glass card idx" id="idxBSE" style="--c:#5b8cff"><span class="exb">BSE</span><div class="lbl">S&amp;P BSE SENSEX</div><div class="big num" id="vBSE"></div><div class="num" id="cBSE" style="font-weight:700"></div><div id="sBSE"></div></div>
   </section>
 
   <section class="main">
