@@ -298,6 +298,13 @@ html,body{max-width:100vw;overflow-x:hidden}
 .rct th,.rct td{padding:5px 4px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;vertical-align:top}.rct th{color:var(--mut);font-weight:600}
 #tbClosed tr[data-ci],#tbAll tr[data-oi]{cursor:pointer}
 @media(max-width:820px){.tbs7{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#homeTrades{display:none}
+@media(max-width:820px){body[data-tab="home"] #homeTrades{display:block}}
+.hrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer}
+.hrow:last-child{border-bottom:0}.hrow>div:last-child{text-align:right;flex:none}
+.hrow small{display:block;font-size:11px;color:var(--mut)}
+.hh{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:600;margin:14px 0 2px}
+.hh:first-child{margin-top:0}
 </style>
 </head>
 <body>
@@ -344,6 +351,10 @@ html,body{max-width:100vw;overflow-x:hidden}
         <div><span class="lbl">Realised</span><b class="num" id="pReal"></b></div>
       </div>
     </div>
+    <div class="glass card" id="homeTrades">
+    <div class="tbh"><div class="lbl">My trades <span id="htPnl" class="num" style="margin-left:8px"></span></div><button class="btn" id="homeAll">Full tradebook ›</button></div>
+    <div id="htOpen"></div><div id="htPend"></div><div id="htRecent"></div>
+  </div>
     <div class="glass card idx" id="idxNSE" style="--c:#ff9933"><span class="exb">NSE</span><div class="lbl">NIFTY 50</div><div class="big num" id="vNSE"></div><div class="num" id="cNSE" style="font-weight:700"></div><div id="sNSE"></div></div>
     <div class="glass card idx" id="idxBSE" style="--c:#5b8cff"><span class="exb">BSE</span><div class="lbl">S&amp;P BSE SENSEX</div><div class="big num" id="vBSE"></div><div class="num" id="cBSE" style="font-weight:700"></div><div id="sBSE"></div></div>
   </section>
@@ -740,7 +751,7 @@ function render(){
   $("cash").textContent="₹"+fmt(state.cash,0);$("inv").textContent="₹"+fmt(inv,0);$("nh").textContent=H.length+state.fno.length;
   $("nwspark").innerHTML=spark(state.nw.length>1?state.nw:[state.capital,net],200,54,colr(pnl),true);
 
-  if(localOnly)renderWatch();updateAllPrices();renderTape();renderDetail();renderHold(H,invS);renderOrders();renderFnoPos();renderTradebook();if(!$("capIn").value)capPreview();if(document.body.dataset.tab==="fno")renderFno();
+  if(localOnly)renderWatch();updateAllPrices();renderTape();renderDetail();renderHold(H,invS);renderOrders();renderFnoPos();renderTradebook();renderHomeTrades(H);if(!$("capIn").value)capPreview();if(document.body.dataset.tab==="fno")renderFno();
 }
 
 function pxCell(s,e){if(!s.on[e])return `<div class="num mut">—</div><span class="mut" style="font-size:11px">not listed</span>`;const p=pct(s,e),c=p>=0?"up":"down",f=s.last[e]>0?"fu":s.last[e]<0?"fd":"";
@@ -846,6 +857,24 @@ function drawChart(s){
   g.fillStyle="#8a94b2";g.textBaseline="alphabetic";g.fillText("◂ last "+a.length+" ticks",4,Hh-6);
 }
 
+// ---- Home tab: my open positions, waiting orders and recent trades ----
+let htKey="";
+function renderHomeTrades(H){
+  const recent=state.orders.slice(0,6),key=H.map(x=>x.k+":"+x.qty).join("|")+"#"+state.fno.map(p=>p.id).join("|")+"#"+state.pending.map(o=>o.id).join("|")+"#"+state.fnoPending.map(o=>o.id).join("|")+"#"+state.orders.length;
+  if(key!==htKey){htKey=key;
+    $("htOpen").innerHTML=(H.length||state.fno.length)?`<div class="hh">Open positions</div>`
+      +H.map(x=>`<div class="hrow" data-hs="${x.k}"><div><b>${x.sym}</b> <span class="badge ${x.e}" style="margin:0 0 0 4px">${x.e}</span><small>${x.qty} × ${fmt(x.avg)}${state.pos[x.k]&&state.pos[x.k].prod?" · "+(state.pos[x.k].prod==="MIS"?"Intraday":"Delivery"):""}</small></div><div class="num"><span data-f="ltp"></span><br><b data-f="pl"></b></div></div>`).join("")
+      +state.fno.map(p=>`<div class="hrow" data-hf="${p.id}"><div><b>${contractName(p)}</b> <span class="badge ${p.ex}" style="margin:0 0 0 4px">${p.ex}</span><small>${p.side>0?"LONG":"SHORT"} · ${p.lots}×${p.lot} · entry ${fmt(p.entry)}${p.sl?" · SL "+fmt(p.sl):""}${p.tp?" · T "+fmt(p.tp):""}</small></div><div class="num"><span data-f="ltp"></span><br><b data-f="pl"></b></div></div>`).join(""):"";
+    const pend=[...state.pending.map(o=>`<div class="hrow" data-hp><div><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b> ${o.qty} × ${o.sym} <small>${o.oco?(o.type==="LIMIT"?"Target exit":"Stop-loss exit"):(o.type==="LIMIT"?"Limit":"Stop-loss")} ${fmt(o.price)}</small></div><div class="mut">waiting</div></div>`),
+      ...state.fnoPending.map(o=>`<div class="hrow" data-hp><div><b class="${o.side>0?"up":"down"}">${o.side>0?"BUY":"SELL"}</b> ${o.lots} lot(s) ${contractName(o.c)} <small>when price ${o.side>0?"≤":"≥"} ${fmt(o.price)}</small></div><div class="mut">waiting</div></div>`)];
+    $("htPend").innerHTML=pend.length?`<div class="hh">Waiting orders</div>`+pend.join(""):"";
+    $("htRecent").innerHTML=`<div class="hh">Recent trades</div>`+(recent.map(o=>`<div class="hrow" data-hr="${state.orders.indexOf(o)}"><div><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b> ${o.sym} <small>${o.qty} @ ${fmt(o.price)} · ${timeOf(o.ts,true)}${o.fee?" · charges "+fmt(o.fee):""}</small></div><div class="num">${o.closed?`<b class="${o.pnl>=0?"up":"down"}">${o.pnl>=0?"+":"−"}₹${fmt(Math.abs(o.pnl),0)}</b>`:`<span class="mut">${o.tag||"Market"}</span>`}</div></div>`).join("")||`<div class="empty">No trades yet — your orders will show here.</div>`);
+  }
+  let tot=0;const set=(row,ltp,pl)=>{if(!row)return;row.querySelector('[data-f=ltp]').textContent=fmt(ltp);const e=row.querySelector('[data-f=pl]');e.textContent=(pl>=0?"+":"−")+"₹"+fmt(Math.abs(pl),0);e.className=pl>=0?"up":"down"};
+  for(const x of H){tot+=x.pl;set($("htOpen").querySelector(`[data-hs="${x.k}"]`),x.ltp,x.pl)}
+  for(const p of state.fno){const m=markOf(p),mk=m==null?p.entry:m,pl=posPnl(p,mk);tot+=pl;set($("htOpen").querySelector(`[data-hf="${p.id}"]`),mk,pl)}
+  const t=$("htPnl");t.textContent=(H.length||state.fno.length)?"Open P&L "+(tot>=0?"+":"−")+"₹"+fmt(Math.abs(tot),0):"";t.className="num "+(tot>=0?"up":"down");
+}
 function renderHold(H,inv){
   $("hold").innerHTML=H.map(h=>`<tr class="r" data-e="${h.e}" data-s="${h.sym}"><td><div class="sym"><i class="av" style="width:28px;height:28px;font-size:11px;background:hsl(${hue(h.sym)} 65% 45%)">${h.sym[0]}</i><div><b>${h.sym}</b> <span class="badge ${h.e}" style="margin:0">${h.e}</span></div></div></td><td class="num">${h.qty}</td><td class="num">${fmt(h.avg)}</td><td class="num">${fmt(h.ltp)}</td><td class="num">${fmt(h.val,0)}</td><td class="num ${h.pl>=0?"up":"down"}">${sgn(h.pl)}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">No holdings yet — buy your first stock! 🚀</td></tr>`;
   $("hist").innerHTML=state.orders.slice(0,25).map(o=>`<div class="ord"><span><b class="${o.side==="BUY"?"up":"down"}">${o.side}</b> ${o.sym} <span class="badge ${o.ex}" style="margin:0 0 0 4px">${o.ex}</span></span><span class="num mut">${o.qty} @ ${fmt(o.price)}</span></div>`).join("")||`<div class="empty">No orders yet</div>`;
@@ -1459,6 +1488,11 @@ function showCharges(i){
   $("chmTitle").textContent=title;$("chmBody").innerHTML=body;$("chm").hidden=false;
 }
 $("chmX").onclick=()=>$("chm").hidden=true;$("chm").onclick=e=>{if(e.target.id==="chm")$("chm").hidden=true};
+$("homeAll").onclick=()=>{go("port");setTimeout(()=>$("tbCard").scrollIntoView({behavior:"smooth"}),50)};
+$("htOpen").onclick=e=>{
+  const s=e.target.closest("[data-hs]");if(s){const[x,sym]=s.dataset.hs.split(":");ex=x;sel=sym;side="SELL";touchRecent(sym);render();go("trade");return}
+  const f=e.target.closest("[data-hf]");if(f){go("fno");openPm(+f.dataset.hf)}};
+$("htRecent").onclick=e=>{const r=e.target.closest("[data-hr]");if(r)showCharges(+r.dataset.hr)};
 $("tbAll").onclick=e=>{const r=e.target.closest("tr[data-oi]");if(r)showCharges(+r.dataset.oi)};
 // ---- rate card ----
 $("rcBody").innerHTML=`<table class="rct"><tr><th></th><th>Delivery</th><th>Intraday</th><th>Futures</th><th>Options</th></tr>
