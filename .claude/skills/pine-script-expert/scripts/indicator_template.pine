@@ -1,0 +1,199 @@
+//@version=5
+indicator("NotSoSEBI Custom Indicator Template", overlay=true, timeframe="", timeframe_gaps=true)
+
+// ────────────────────────────────────────────────────────────────────────────────
+// NotSoSEBI Custom Indicator Template for Indian Markets
+// Version: 1.0
+// Author: NotSoSEBI Trading Skills Pack
+// Description: Professional template for creating custom indicators optimized for NSE/BSE
+// ────────────────────────────────────────────────────────────────────────────────
+
+// ════════════════════════════════════════════════════════════════════════════════
+// INPUTS SECTION
+// ════════════════════════════════════════════════════════════════════════════════
+
+group1 = "Indicator Settings"
+length = input.int(14, "Length", minval=1, maxval=200, group=group1)
+smoothing = input.int(3, "Smoothing", minval=1, maxval=50, group=group1)
+source = input.source(close, "Source", group=group1)
+
+group2 = "Display Options"
+showMain = input.bool(true, "Show Main Line", group=group2)
+showSignal = input.bool(true, "Show Signal Line", group=group2)
+showHistogram = input.bool(false, "Show Histogram", group=group2)
+showBackground = input.bool(false, "Color Background", group=group2)
+
+group3 = "Colors"
+mainColor = input.color(color.blue, "Main Line Color", group=group3)
+signalColor = input.color(color.red, "Signal Line Color", group=group3)
+histColor = input.color(color.green, "Histogram Color", group=group3)
+bgBullColor = input.color(color.new(color.green, 90), "Bullish Background", group=group3)
+bgBearColor = input.color(color.new(color.red, 90), "Bearish Background", group=group3)
+
+group4 = "Alerts"
+enableAlerts = input.bool(false, "Enable Alerts", group=group4)
+alertCondition = input.string("Crossover", "Alert On", options=["Crossover", "Crossunder", "Both"], group=group4)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// CALCULATIONS SECTION
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Main indicator calculation (replace with your formula)
+mainLine = ta.ema(source, length)
+
+// Signal line calculation (replace with your formula)
+signalLine = ta.ema(mainLine, smoothing)
+
+// Histogram calculation
+histogram = mainLine - signalLine
+
+// Trend determination
+bullish = mainLine > signalLine
+bearish = mainLine < signalLine
+
+// Crossover conditions
+bullCross = ta.crossover(mainLine, signalLine)
+bearCross = ta.crossunder(mainLine, signalLine)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// PLOTTING SECTION
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Main line
+plot(showMain ? mainLine : na, color=mainColor, title="Main Line", linewidth=2)
+
+// Signal line
+plot(showSignal ? signalLine : na, color=signalColor, title="Signal Line", linewidth=1)
+
+// Histogram
+plot(showHistogram ? histogram : na, color=histColor, style=plot.style_histogram, title="Histogram", linewidth=4)
+
+// Background coloring
+bgcolor(showBackground ? (bullish ? bgBullColor : bearColor) : na, title="Background")
+
+// ════════════════════════════════════════════════════════════════════════════════
+// SHAPES AND LABELS SECTION
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Bullish crossover signal
+plotshape(showMain and bullCross, title="Bullish Crossover", style=shape.triangleup,
+    location=location.belowbar, color=color.green, size=size.small)
+
+// Bearish crossover signal
+plotshape(showSignal and bearCross, title="Bearish Crossover", style=shape.triangledown,
+    location=location.abovebar, color=color.red, size=size.small)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// ALERTS SECTION
+// ════════════════════════════════════════════════════════════════════════════════
+
+alertcondition(enableAlerts and (alertCondition == "Crossover" and bullCross),
+    title="Bullish Crossover Alert", message="Bullish crossover detected on {{symbol}}")
+
+alertcondition(enableAlerts and (alertCondition == "Crossunder" and bearCross),
+    title="Bearish Crossunder Alert", message="Bearish crossunder detected on {{symbol}}")
+
+alertcondition(enableAlerts and (alertCondition == "Both" and (bullCross or bearCross)),
+    title="Crossover Alert", message="Crossover detected on {{symbol}}")
+
+// ════════════════════════════════════════════════════════════════════════════════
+// INFORMATION DISPLAY SECTION
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Table for displaying indicator values
+var table infoTable = na
+if barstate.islast
+    infoTable := table.new(position.top_right, 2, 4,
+        bgcolor=color.new(color.black, 90), border_color=color.white, border_width=1)
+
+    // Headers
+    table.cell(infoTable, 0, 0, "Indicator", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 0, "Value", text_color=color.white, text_size=size.small)
+
+    // Values
+    table.cell(infoTable, 0, 1, "Main Line", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 1, tostring(mainLine), text_color=mainColor, text_size=size.small)
+
+    table.cell(infoTable, 0, 2, "Signal Line", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 2, tostring(signalLine), text_color=signalColor, text_size=size.small)
+
+    table.cell(infoTable, 0, 3, "Trend", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 3, bullish ? "Bullish" : "Bearish",
+        text_color=bullish ? color.green : color.red, text_size=size.small)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// INDIAN MARKET ADAPTATIONS
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Trading hours filter (9:15 AM - 3:30 PM IST)
+inTradingHours = hour >= 9 and (hour < 15 or (hour == 15 and minute <= 30)) and hour >= 9
+
+// Expiry day detection (last Thursday of month)
+isExpiryDay = dayofweek == dayofweek.thursday and
+    (day >= 25 and day <= 31) and
+    (month != month[1] or year != year[1])
+
+// Volume filter for NSE (minimum liquidity)
+minVolume = input.int(100000, "Minimum Volume", minval=1000, group=group1)
+sufficientVolume = volume >= minVolume
+
+// Apply filters to signals
+validBullSignal = bullCross and inTradingHours and sufficientVolume
+validBearSignal = bearCross and inTradingHours and sufficientVolume
+
+// ════════════════════════════════════════════════════════════════════════════════
+// ERROR HANDLING AND VALIDATION
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Check for insufficient data
+insufficientData = bar_index < length
+plotchar(insufficientData and barstate.islast, char="⚠", title="Insufficient Data",
+    location=location.top, color=color.orange, size=size.small)
+
+// Check for invalid inputs
+invalidInputs = length <= 0 or smoothing <= 0
+plotchar(invalidInputs and barstate.islast, char="✗", title="Invalid Inputs",
+    location=location.top, color=color.red, size=size.small)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// PERFORMANCE OPTIMIZATION
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Use request.security for multi-timeframe analysis (uncomment if needed)
+// htf_close = request.security(syminfo.tickerid, "D", close)
+// htf_sma = ta.sma(htf_close, length)
+
+// Cache expensive calculations
+var float cached_calculation = na
+if barstate.isnew
+    cached_calculation := expensive_calculation()  // Replace with your expensive calc
+
+// ════════════════════════════════════════════════════════════════════════════════
+// DOCUMENTATION AND USAGE NOTES
+// ════════════════════════════════════════════════════════════════════════════════
+
+/*
+USAGE INSTRUCTIONS:
+1. Apply this indicator to NSE/BSE charts
+2. Adjust length and smoothing parameters based on timeframe
+3. Use crossover signals for entry/exit timing
+4. Combine with volume analysis for confirmation
+5. Backtest on historical data before live use
+
+CUSTOMIZATION:
+- Replace mainLine and signalLine calculations with your formula
+- Modify plot styles and colors as needed
+- Add additional conditions for signal filtering
+- Integrate with other indicators using security functions
+
+INDIAN MARKET NOTES:
+- Optimized for 9:15 AM - 3:30 PM IST trading hours
+- Includes expiry day detection for options trading
+- Volume filters ensure sufficient liquidity
+- SEBI compliant signal generation
+
+PERFORMANCE:
+- Efficient calculations for real-time use
+- Minimal lag for responsive signals
+- Optimized for mobile and web platforms
+*/

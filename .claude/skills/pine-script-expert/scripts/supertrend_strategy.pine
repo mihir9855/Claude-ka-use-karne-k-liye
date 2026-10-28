@@ -1,0 +1,52 @@
+//@version=5
+indicator("NotSoSEBI SuperTrend Strategy", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// === INPUTS ===
+atrPeriod = input.int(10, "ATR Period", minval=1)
+factor = input.float(3.0, "Multiplier", minval=0.1, step=0.1)
+showSignals = input.bool(true, "Show Buy/Sell Signals")
+useVolumeFilter = input.bool(true, "Use Volume Filter")
+volumeMultiplier = input.float(1.5, "Volume Multiplier", minval=1.0)
+
+// === ATR CALCULATION ===
+atr = ta.atr(atrPeriod)
+
+// === SUPER TREND CALCULATION ===
+[superTrend, direction] = ta.supertrend(factor, atrPeriod)
+
+// === VOLUME FILTER ===
+avgVolume = ta.sma(volume, 20)
+volumeCondition = not useVolumeFilter or volume > avgVolume * volumeMultiplier
+
+// === TREND DETECTION ===
+bullishTrend = close > superTrend
+bearishTrend = close < superTrend
+
+// === ENTRY CONDITIONS ===
+longCondition = bullishTrend and bullishTrend[1] == false and volumeCondition
+shortCondition = bearishTrend and bearishTrend[1] == false and volumeCondition
+
+// === PLOT SUPER TREND ===
+superTrendPlot = plot(superTrend, color=direction > 0 ? color.green : color.red, linewidth=2, title="SuperTrend")
+
+// === EXECUTION ===
+if longCondition
+    strategy.entry("Long", strategy.long)
+    if showSignals
+        label.new(bar_index, low, "🟢 BUY", style=label.style_label_up, color=color.green, textcolor=color.white)
+
+if shortCondition
+    strategy.entry("Short", strategy.short)
+    if showSignals
+        label.new(bar_index, high, "🔴 SELL", style=label.style_label_down, color=color.red, textcolor=color.white)
+
+// === RISK MANAGEMENT ===
+strategy.exit("Exit Long", "Long", profit=close * 0.02, loss=close * 0.01)  // 2% profit, 1% stop
+strategy.exit("Exit Short", "Short", profit=close * 0.02, loss=close * 0.01)
+
+// === PERFORMANCE METRICS ===
+plot(strategy.equity, title="Equity Curve", color=color.blue, linewidth=2)
+
+// === ALERTS ===
+alertcondition(longCondition, title="SuperTrend Buy Signal", message="SuperTrend Buy Signal on {{ticker}}")
+alertcondition(shortCondition, title="SuperTrend Sell Signal", message="SuperTrend Sell Signal on {{ticker}}")

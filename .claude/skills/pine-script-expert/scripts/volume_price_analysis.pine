@@ -1,0 +1,72 @@
+//@version=5
+indicator("NotSoSEBI Volume Price Analysis (VPA)", overlay=true)
+
+// === INPUTS ===
+showVolumeProfile = input.bool(true, "Show Volume Profile")
+showVWAP = input.bool(true, "Show VWAP")
+showVolumeOscillator = input.bool(false, "Show Volume Oscillator")
+fastLength = input.int(5, "Fast MA", minval=1)
+slowLength = input.int(10, "Slow MA", minval=1)
+vpPercentile = input.float(70, "Volume Percentile", minval=0, maxval=100)
+
+// === VOLUME CALCULATIONS ===
+volumeMA = ta.sma(volume, 20)
+volumePercentile = ta.percentile_linear_interpolation(volume, vpPercentile)
+
+// === VOLUME PRICE ANALYSIS ===
+highVolume = volume >= volumePercentile
+lowVolume = volume < volumePercentile * 0.5
+
+// === VWAP CALCULATION ===
+vwap = ta.vwap(close)
+
+// === VOLUME OSCILLATOR ===
+fastMA = ta.sma(volume, fastLength)
+slowMA = ta.sma(volume, slowLength)
+volumeOsc = (fastMA - slowMA) / slowMA * 100
+
+// === PRICE ACTION ANALYSIS ===
+bullishVolume = close > open and highVolume
+bearishVolume = close < open and highVolume
+weakBullish = close > open and lowVolume
+weakBearish = close < open and lowVolume
+
+// === PLOTS ===
+// VWAP
+if showVWAP
+    plot(vwap, color=color.blue, title="VWAP", linewidth=2)
+
+// Volume Profile
+if showVolumeProfile
+    plot(volumeMA, color=color.gray, title="Volume MA", linewidth=1, style=plot.style_stepline)
+
+// Volume Oscillator
+if showVolumeOscillator
+    plot(volumeOsc, color=color.purple, title="Volume Oscillator", linewidth=1)
+
+// === SIGNAL LABELS ===
+if bullishVolume
+    label.new(bar_index, low, "💪 High Vol Up", style=label.style_label_up, color=color.green, textcolor=color.white)
+else if bearishVolume
+    label.new(bar_index, high, "📉 High Vol Down", style=label.style_label_down, color=color.red, textcolor=color.white)
+else if weakBullish
+    label.new(bar_index, low, "📈 Low Vol Up", style=label.style_label_up, color=color.orange, textcolor=color.black)
+else if weakBearish
+    label.new(bar_index, high, "📉 Low Vol Down", style=label.style_label_down, color=color.orange, textcolor=color.black)
+
+// === BACKGROUND COLORS ===
+bgcolor(bullishVolume ? color.new(color.green, 90) : na)
+bgcolor(bearishVolume ? color.new(color.red, 90) : na)
+
+// === ALERTS ===
+alertcondition(bullishVolume, title="High Volume Bullish", message="High Volume Bullish Candle on {{ticker}}")
+alertcondition(bearishVolume, title="High Volume Bearish", message="High Volume Bearish Candle on {{ticker}}")
+
+// === TABLE FOR VOLUME ANALYSIS ===
+var table volTable = table.new(position.top_right, 1, 4, bgcolor=color.new(color.black, 90), border_width=1)
+
+if barstate.islast
+    table.cell(volTable, 0, 0, "Volume Analysis", text_color=color.white, bgcolor=color.new(color.blue, 20))
+    table.cell(volTable, 0, 1, "Current: " + str.tostring(volume), text_color=color.white)
+    table.cell(volTable, 0, 2, "Average: " + str.tostring(math.round(volumeMA)), text_color=color.white)
+    table.cell(volTable, 0, 3, "Percentile: " + str.tostring(math.round(volumePercentile)), text_color=color.white)

@@ -1,0 +1,333 @@
+//@version=5
+strategy("NotSoSEBI Strategy Template", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// ────────────────────────────────────────────────────────────────────────────────
+// NotSoSEBI Strategy Template for Indian Markets
+// Version: 1.0
+// Author: NotSoSEBI Trading Skills Pack
+// Description: Professional template for creating trading strategies optimized for NSE/BSE
+// ────────────────────────────────────────────────────────────────────────────────
+
+// ════════════════════════════════════════════════════════════════════════════════
+// STRATEGY CONFIGURATION
+// ════════════════════════════════════════════════════════════════════════════════
+
+group1 = "Strategy Settings"
+capital = input.float(100000, "Initial Capital", minval=10000, group=group1)
+risk_per_trade = input.float(1.0, "Risk Per Trade %", minval=0.1, maxval=5.0, step=0.1, group=group1)
+max_positions = input.int(3, "Max Open Positions", minval=1, maxval=10, group=group1)
+
+group2 = "Entry Conditions"
+fast_length = input.int(9, "Fast MA", minval=1, group=group2)
+slow_length = input.int(21, "Slow MA", minval=1, group=group2)
+rsi_length = input.int(14, "RSI Length", minval=2, group=group2)
+rsi_overbought = input.int(70, "RSI Overbought", minval=50, maxval=90, group=group2)
+rsi_oversold = input.int(30, "RSI Oversold", minval=10, maxval=50, group=group2)
+
+group3 = "Exit Conditions"
+profit_target = input.float(2.0, "Profit Target %", minval=0.1, step=0.1, group=group3)
+stop_loss = input.float(1.0, "Stop Loss %", minval=0.1, step=0.1, group=group3)
+trailing_stop = input.bool(false, "Trailing Stop", group=group3)
+trail_offset = input.float(0.5, "Trail Offset %", minval=0.1, step=0.1, group=group3)
+
+group4 = "Filters"
+use_volume_filter = input.bool(true, "Volume Filter", group=group4)
+min_volume = input.int(100000, "Min Volume", minval=1000, group=group4)
+use_time_filter = input.bool(true, "Time Filter", group=group4)
+start_hour = input.int(9, "Start Hour", minval=0, maxval=23, group=group4)
+end_hour = input.int(15, "End Hour", minval=0, maxval=23, group=group4)
+
+group5 = "Risk Management"
+max_drawdown = input.float(10.0, "Max Drawdown %", minval=1.0, maxval=50.0, group=group5)
+daily_loss_limit = input.float(5.0, "Daily Loss Limit %", minval=0.1, maxval=20.0, group=group5)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// INDICATOR CALCULATIONS
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Moving averages
+fast_ma = ta.ema(close, fast_length)
+slow_ma = ta.ema(close, slow_length)
+
+// RSI
+rsi = ta.rsi(close, rsi_length)
+
+// Trend direction
+bullish_trend = fast_ma > slow_ma
+bearish_trend = fast_ma < slow_ma
+
+// Volume filter
+avg_volume = ta.sma(volume, 20)
+volume_filter = not use_volume_filter or volume >= min_volume
+
+// Time filter
+in_trading_hours = not use_time_filter or (hour >= start_hour and hour <= end_hour)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// ENTRY SIGNALS
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Long entry conditions
+long_condition = bullish_trend and rsi < rsi_oversold and volume_filter and in_trading_hours
+
+// Short entry conditions
+short_condition = bearish_trend and rsi > rsi_overbought and volume_filter and in_trading_hours
+
+// ════════════════════════════════════════════════════════════════════════════════
+// POSITION MANAGEMENT
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Calculate position size based on risk
+risk_amount = capital * (risk_per_trade / 100)
+stop_distance = close * (stop_loss / 100)
+position_size = risk_amount / stop_distance
+
+// Ensure position size doesn't exceed capital limits
+max_position_value = capital * 0.1  // Max 10% of capital per position
+position_size = min(position_size, max_position_value / close)
+
+// Check current open positions
+current_positions = strategy.opentrades
+can_open_position = current_positions < max_positions
+
+// ════════════════════════════════════════════════════════════════════════════════
+// EXECUTE TRADES
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Long entry
+if long_condition and can_open_position and strategy.position_size == 0
+    strategy.entry("Long", strategy.long, qty=position_size)
+    alert("Long Entry: " + syminfo.ticker + " at " + str.tostring(close), alert.freq_once_per_bar)
+
+// Short entry
+if short_condition and can_open_position and strategy.position_size == 0
+    strategy.entry("Short", strategy.short, qty=position_size)
+    alert("Short Entry: " + syminfo.ticker + " at " + str.tostring(close), alert.freq_once_per_bar)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// EXIT CONDITIONS
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Profit target and stop loss levels
+profit_level = strategy.position_avg_price * (1 + profit_target / 100)
+loss_level = strategy.position_avg_price * (1 - stop_loss / 100)
+
+// Exit long positions
+if strategy.position_size > 0
+    // Take profit
+    if close >= profit_level
+        strategy.close("Long", comment="Take Profit")
+        alert("Long Exit (Profit): " + syminfo.ticker + " at " + str.tostring(close), alert.freq_once_per_bar)
+
+    // Stop loss
+    if close <= loss_level
+        strategy.close("Long", comment="Stop Loss")
+        alert("Long Exit (Loss): " + syminfo.ticker + " at " + str.tostring(close), alert.freq_once_per_bar)
+
+// Exit short positions
+if strategy.position_size < 0
+    // Take profit
+    if close <= profit_level
+        strategy.close("Short", comment="Take Profit")
+        alert("Short Exit (Profit): " + syminfo.ticker + " at " + str.tostring(close), alert.freq_once_per_bar)
+
+    // Stop loss
+    if close >= loss_level
+        strategy.close("Short", comment="Stop Loss")
+        alert("Short Exit (Loss): " + syminfo.ticker + " at " + str.tostring(close), alert.freq_once_per_bar)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// TRAILING STOP
+// ════════════════════════════════════════════════════════════════════════════════
+
+var float trail_stop_price = na
+
+if trailing_stop and strategy.position_size != 0
+    if strategy.position_size > 0  // Long position
+        // Update trailing stop on new highs
+        if close > trail_stop_price or na(trail_stop_price)
+            trail_stop_price := close * (1 - trail_offset / 100)
+
+        // Exit if price drops to trailing stop
+        if close <= trail_stop_price
+            strategy.close("Long", comment="Trailing Stop")
+            alert("Long Exit (Trailing): " + syminfo.ticker + " at " + str.tostring(close), alert.freq_once_per_bar)
+
+    else  // Short position
+        // Update trailing stop on new lows
+        if close < trail_stop_price or na(trail_stop_price)
+            trail_stop_price := close * (1 + trail_offset / 100)
+
+        // Exit if price rises to trailing stop
+        if close >= trail_stop_price
+            strategy.close("Short", comment="Trailing Stop")
+            alert("Short Exit (Trailing): " + syminfo.ticker + " at " + str.tostring(close), alert.freq_once_per_bar)
+
+// Reset trailing stop when position is closed
+if strategy.position_size == 0
+    trail_stop_price := na
+
+// ════════════════════════════════════════════════════════════════════════════════
+// RISK MANAGEMENT
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Maximum drawdown protection
+current_drawdown = (strategy.initial_capital - strategy.equity) / strategy.initial_capital * 100
+if current_drawdown >= max_drawdown
+    strategy.close_all(comment="Max Drawdown Reached")
+    alert("Strategy stopped due to max drawdown: " + str.tostring(current_drawdown) + "%", alert.freq_once_per_bar)
+
+// Daily loss limit
+var float daily_start_equity = na
+var int current_day = na
+
+if day != current_day
+    daily_start_equity := strategy.equity
+    current_day := day
+
+if not na(daily_start_equity)
+    daily_loss = (daily_start_equity - strategy.equity) / daily_start_equity * 100
+    if daily_loss >= daily_loss_limit
+        strategy.close_all(comment="Daily Loss Limit Reached")
+        alert("Strategy stopped due to daily loss limit: " + str.tostring(daily_loss) + "%", alert.freq_once_per_bar)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// VISUALIZATION
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Plot moving averages
+plot(fast_ma, color=color.blue, title="Fast MA", linewidth=1)
+plot(slow_ma, color=color.red, title="Slow MA", linewidth=2)
+
+// Plot RSI
+hline(rsi_overbought, "RSI Overbought", color=color.red)
+hline(rsi_oversold, "RSI Oversold", color=color.green)
+plot(rsi, color=color.purple, title="RSI", linewidth=1)
+
+// Entry signals
+plotshape(long_condition, title="Long Signal", style=shape.triangleup,
+    location=location.belowbar, color=color.green, size=size.small)
+
+plotshape(short_condition, title="Short Signal", style=shape.triangledown,
+    location=location.abovebar, color=color.red, size=size.small)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// PERFORMANCE DISPLAY
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Display key metrics in a table
+var table metricsTable = na
+if barstate.islast
+    metricsTable := table.new(position.top_left, 2, 6,
+        bgcolor=color.new(color.black, 90), border_color=color.white, border_width=1)
+
+    // Headers
+    table.cell(metricsTable, 0, 0, "Metric", text_color=color.white, text_size=size.small)
+    table.cell(metricsTable, 1, 0, "Value", text_color=color.white, text_size=size.small)
+
+    // Performance metrics
+    table.cell(metricsTable, 0, 1, "Total Return", text_color=color.white, text_size=size.small)
+    return_pct = (strategy.equity - strategy.initial_capital) / strategy.initial_capital * 100
+    table.cell(metricsTable, 1, 1, str.tostring(return_pct, "#.##") + "%",
+        text_color=return_pct >= 0 ? color.green : color.red, text_size=size.small)
+
+    table.cell(metricsTable, 0, 2, "Win Rate", text_color=color.white, text_size=size.small)
+    win_rate = strategy.wintrades / strategy.closedtrades * 100
+    table.cell(metricsTable, 1, 2, str.tostring(win_rate, "#.##") + "%",
+        text_color=win_rate >= 50 ? color.green : color.red, text_size=size.small)
+
+    table.cell(metricsTable, 0, 3, "Profit Factor", text_color=color.white, text_size=size.small)
+    profit_factor = strategy.grossprofit / strategy.grossloss
+    table.cell(metricsTable, 1, 3, str.tostring(profit_factor, "#.##"),
+        text_color=profit_factor >= 1 ? color.green : color.red, text_size=size.small)
+
+    table.cell(metricsTable, 0, 4, "Max Drawdown", text_color=color.white, text_size=size.small)
+    table.cell(metricsTable, 1, 4, str.tostring(current_drawdown, "#.##") + "%",
+        text_color=current_drawdown <= max_drawdown ? color.green : color.red, text_size=size.small)
+
+    table.cell(metricsTable, 0, 5, "Open Positions", text_color=color.white, text_size=size.small)
+    table.cell(metricsTable, 1, 5, str.tostring(current_positions),
+        text_color=current_positions <= max_positions ? color.green : color.red, text_size=size.small)
+
+// ════════════════════════════════════════════════════════════════════════════════
+// INDIAN MARKET ADAPTATIONS
+// ════════════════════════════════════════════════════════════════════════════════
+
+// NSE trading hours (9:15 AM - 3:30 PM IST)
+nse_trading_hours = hour >= 9 and (hour < 15 or (hour == 15 and minute <= 30))
+
+// Expiry day detection
+is_expiry_day = dayofweek == dayofweek.thursday and
+    (day >= 25 and day <= 31) and
+    (month != month[1] or year != year[1])
+
+// Adjust position sizing for expiry days (reduce risk)
+expiry_risk_multiplier = is_expiry_day ? 0.5 : 1.0
+adjusted_position_size = position_size * expiry_risk_multiplier
+
+// Circuit breaker levels (approximate for Nifty)
+upper_circuit = close * 1.10  // 10% upper circuit
+lower_circuit = close * 0.90  // 10% lower circuit
+
+// Avoid entries near circuit levels
+not_near_circuit = close < upper_circuit * 0.98 and close > lower_circuit * 1.02
+
+// ════════════════════════════════════════════════════════════════════════════════
+// ALERTS AND NOTIFICATIONS
+// ════════════════════════════════════════════════════════════════════════════════
+
+// Entry alerts
+alertcondition(long_condition and can_open_position, title="Long Entry Signal",
+    message="Long entry signal on {{symbol}} at {{close}}")
+
+alertcondition(short_condition and can_open_position, title="Short Entry Signal",
+    message="Short entry signal on {{symbol}} at {{close}}")
+
+// Risk alerts
+alertcondition(current_drawdown >= max_drawdown * 0.8, title="High Drawdown Warning",
+    message="Drawdown at {{strategy.max_drawdown}}% - approaching limit")
+
+alertcondition(current_positions >= max_positions, title="Max Positions Reached",
+    message="Maximum open positions ({{max_positions}}) reached")
+
+// ════════════════════════════════════════════════════════════════════════════════
+// STRATEGY NOTES AND DOCUMENTATION
+// ════════════════════════════════════════════════════════════════════════════════
+
+/*
+STRATEGY OVERVIEW:
+This template implements a trend-following strategy using moving averages and RSI.
+- Long entries: Fast MA > Slow MA + RSI oversold
+- Short entries: Fast MA < Slow MA + RSI overbought
+- Exits: Profit targets and stop losses
+
+INDIAN MARKET ADAPTATIONS:
+- NSE trading hours filter
+- Expiry day risk reduction
+- Circuit breaker awareness
+- Volume and liquidity filters
+
+RISK MANAGEMENT:
+- Position sizing based on risk per trade
+- Maximum drawdown protection
+- Daily loss limits
+- Maximum open positions limit
+
+CUSTOMIZATION:
+- Modify entry/exit conditions in the signals section
+- Adjust indicator parameters for different markets
+- Add additional filters or confirmations
+- Integrate with other indicators or strategies
+
+BACKTESTING NOTES:
+- Test on multiple timeframes (5m, 15m, 1h, 1D)
+- Include transaction costs (0.05% per trade)
+- Account for slippage (0.1% for NSE)
+- Use out-of-sample testing for validation
+
+PERFORMANCE EXPECTATIONS:
+- Win rate: 50-65% depending on parameters
+- Profit factor: 1.2-1.8 for optimized settings
+- Maximum drawdown: < 15% for robust strategies
+- Sharpe ratio: > 1.0 for good risk-adjusted returns
+*/

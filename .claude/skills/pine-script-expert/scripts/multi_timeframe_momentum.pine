@@ -1,0 +1,81 @@
+//@version=5
+indicator("NotSoSEBI Multi-Timeframe Momentum", overlay=true)
+
+// === INPUTS ===
+fastLength = input.int(8, "Fast RSI", minval=1)
+slowLength = input.int(21, "Slow RSI", minval=1)
+showHigherTF = input.bool(true, "Show Higher Timeframe")
+higherTF = input.timeframe("D", "Higher Timeframe")
+showDivergence = input.bool(true, "Show Divergence Signals")
+divergenceThreshold = input.float(2.0, "Divergence Threshold", minval=0.1)
+
+// === CURRENT TIMEFRAME ANALYSIS ===
+rsiFast = ta.rsi(close, fastLength)
+rsiSlow = ta.rsi(close, slowLength)
+
+// Momentum signals
+fastAboveSlow = rsiFast > rsiSlow
+momentumUp = fastAboveSlow and fastAboveSlow[1] == false
+momentumDown = not fastAboveSlow and fastAboveSlow[1] == true
+
+// === HIGHER TIMEFRAME ANALYSIS ===
+[rsiFastHTF, rsiSlowHTF] = request.security(syminfo.tickerid, higherTF, [ta.rsi(close, fastLength), ta.rsi(close, slowLength)])
+
+higherTFBullish = showHigherTF ? rsiFastHTF > rsiSlowHTF : na
+higherTFBearish = showHigherTF ? rsiFastHTF < rsiSlowHTF : na
+
+// === DIVERGENCE DETECTION ===
+priceHigher = close > close[1]
+rsiHigher = rsiFast > rsiFast[1]
+
+bullishDivergence = showDivergence and priceHigher and not rsiHigher and abs(close - close[1]) > divergenceThreshold
+bearishDivergence = showDivergence and not priceHigher and rsiHigher and abs(close - close[1]) > divergenceThreshold
+
+// === PLOTS ===
+// RSI Lines
+plot(rsiFast, color=color.blue, title="Fast RSI", linewidth=1)
+plot(rsiSlow, color=color.red, title="Slow RSI", linewidth=1)
+
+// Higher TF RSI
+if showHigherTF
+    plot(rsiFastHTF, color=color.blue, title="HTF Fast RSI", linewidth=2, style=plot.style_stepline)
+    plot(rsiSlowHTF, color=color.red, title="HTF Slow RSI", linewidth=2, style=plot.style_stepline)
+
+// === BACKGROUND COLORS ===
+bgcolor(fastAboveSlow ? color.new(color.green, 95) : color.new(color.red, 95))
+
+// === SIGNAL LABELS ===
+// Momentum signals
+if momentumUp
+    label.new(bar_index, low, "🚀 Momentum Up", style=label.style_label_up, color=color.green, textcolor=color.white)
+else if momentumDown
+    label.new(bar_index, high, "📉 Momentum Down", style=label.style_label_down, color=color.red, textcolor=color.white)
+
+// Divergence signals
+if bullishDivergence
+    label.new(bar_index, low, "🔵 Bullish Divergence", style=label.style_label_up, color=color.blue, textcolor=color.white)
+else if bearishDivergence
+    label.new(bar_index, high, "🔴 Bearish Divergence", style=label.style_label_down, color=color.red, textcolor=color.white)
+
+// Higher TF signals
+if showHigherTF
+    if higherTFBullish and higherTFBullish[1] == false
+        label.new(bar_index, high, "📊 HTF Bullish", style=label.style_label_down, color=color.green, textcolor=color.white)
+    else if higherTFBearish and higherTFBearish[1] == false
+        label.new(bar_index, low, "📊 HTF Bearish", style=label.style_label_up, color=color.red, textcolor=color.white)
+
+// === ALERTS ===
+alertcondition(momentumUp, title="Momentum Up Signal", message="Momentum turning up on {{ticker}}")
+alertcondition(momentumDown, title="Momentum Down Signal", message="Momentum turning down on {{ticker}}")
+alertcondition(bullishDivergence, title="Bullish Divergence", message="Bullish divergence detected on {{ticker}}")
+alertcondition(bearishDivergence, title="Bearish Divergence", message="Bearish divergence detected on {{ticker}}")
+
+// === TABLE FOR MULTI-TF ANALYSIS ===
+var table mtfTable = table.new(position.top_left, 1, 5, bgcolor=color.new(color.black, 90), border_width=1)
+
+if barstate.islast
+    table.cell(mtfTable, 0, 0, "Multi-TF Momentum", text_color=color.white, bgcolor=color.new(color.blue, 20))
+    table.cell(mtfTable, 0, 1, "Fast RSI: " + str.tostring(math.round(rsiFast)), text_color=color.white)
+    table.cell(mtfTable, 0, 2, "Slow RSI: " + str.tostring(math.round(rsiSlow)), text_color=color.white)
+    table.cell(mtfTable, 0, 3, "Momentum: " + (fastAboveSlow ? "UP" : "DOWN"), text_color=fastAboveSlow ? color.green : color.red)
+    table.cell(mtfTable, 0, 4, "HTF: " + (higherTFBullish ? "BULLISH" : "BEARISH"), text_color=higherTFBullish ? color.green : color.red)
