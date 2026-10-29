@@ -316,7 +316,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 82 · 29 Oct 2026';
+const APP_VER='version 1.4 · build 83 · 29 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -2090,6 +2090,7 @@ function undoToast(msg,fn){
 let calcEl=null,calcTarget=null,calcExpr='';
 const CALC_OPS='+−×÷';
 function calcEval(str){
+  str=String(str).replace(/,/g,'');
   const tk=str.match(/\d+\.?\d*|\.\d+|[+−×÷%]/g);if(!tk)return NaN;
   const out=[];let neg=false;                         // numbers are {v,p} (p = followed by %), operators are strings
   for(const t of tk){
@@ -2124,7 +2125,7 @@ function calcRefresh(){
   if(!calcEl)return;
   const hasOp=/[+−×÷%]/.test(calcExpr.replace(/^−/,'')),v=calcEval(calcExpr);
   $('#cexp').textContent=hasOp?calcExpr:'';
-  $('#cres').textContent=calcExpr===''?'0':(hasOp?(isNaN(v)?'…':calcShow(v)):calcExpr);
+  $('#cres').textContent=calcExpr===''?'0':(hasOp?(isNaN(v)?'…':calcShow(v)):(isNaN(v)||/[.]\d?$|\.$/.test(calcExpr)?calcExpr:calcShow(v)));
   $('#cok').textContent=isNaN(v)&&calcExpr!==''?'Use amount':'Use ₹'+(calcExpr===''?'0':calcShow(isNaN(v)?0:v));
 }
 function openCalc(input){
@@ -2141,7 +2142,7 @@ function calcKey(k){
   const last=calcExpr.slice(-1);
   if(k==='C')calcExpr='';
   else if(k==='⌫')calcExpr=calcExpr.slice(0,-1);
-  else if(k==='='){const v=calcEval(calcExpr);if(!isNaN(v))calcExpr=calcShow(v)}
+  else if(k==='='){const v=calcEval(calcExpr);if(!isNaN(v))calcExpr=String(v).replace('-','−')}   // keep the plain number (no commas) so you can keep calculating
   else if(CALC_OPS.includes(k)){
     if(calcExpr===''){if(k==='−')calcExpr='−'}
     else if(CALC_OPS.includes(last)||last==='−'&&calcExpr.length===1){calcExpr=calcExpr.slice(0,-1)+k}
