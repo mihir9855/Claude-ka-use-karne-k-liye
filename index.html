@@ -1458,6 +1458,24 @@ function maxQty(){const s=cur();if(side==="BUY"){const px=s.px[ex];let n=Math.fl
 /* ---------- on-chart trading (TradingView Lightweight Charts) ---------- */
 let ctype="c";try{ctype=localStorage.getItem("bseg_ctype")==="l"?"l":"c"}catch(e){}
 const CLEAR="rgba(0,0,0,0)";
+// Yahoo data can contain duplicates, out-of-order or half-empty bars, which make the chart throw or draw spikes
+function cleanCandles(d){
+  const m=new Map();
+  for(let i=0;i<d.t.length;i++){
+    const o=+d.o[i],h2=+d.h[i],l=+d.l[i],c=+d.c[i],t=Math.floor(d.t[i]/1000)+ISTSHIFT;
+    if(![o,h2,l,c,t].every(Number.isFinite)||o<=0||c<=0)continue;
+    m.set(t,{time:t,open:o,high:Math.max(h2,o,c),low:Math.min(l,o,c),close:c});
+  }
+  return [...m.values()].sort((a,b)=>a.time-b.time);
+}
+// about one candle per 7px so candles stay readable on a phone
+function showRecent(chart,el,n){
+  const w=el.clientWidth;if(w<60||n<2)return false;          // not laid out yet (hidden tab): try again when the size is known
+  const cap=Math.max(28,Math.floor(w/7)),v=Math.min(n,cap);
+  chart.applyOptions({timeScale:{barSpacing:Math.max(3,w/(v+6))}});
+  chart.timeScale().setVisibleLogicalRange({from:Math.max(0,n-v),to:n+5});return true;
+}
+const mayStartCandle=()=>realOpen()||(!liveEver&&isOpen());
 function lineSeries(chart){return chart.addAreaSeries({lineColor:"#5b8cff",topColor:"rgba(91,140,255,.32)",bottomColor:"rgba(91,140,255,0)",lineWidth:2,priceLineVisible:false,lastValueVisible:false})}
 // candles stay in the chart (invisible in line mode) so price lines and dragging keep working
 function applyCtype(candle,line){
@@ -1479,7 +1497,8 @@ async function lwcInit(){
   if(!(await lwLib()))return;
   LW.chart=LightweightCharts.createChart($("lwc"),{autoSize:true,layout:{background:{type:"solid",color:"transparent"},textColor:"#8a94b2",fontFamily:"JetBrains Mono, monospace",fontSize:11},
     grid:{vertLines:{color:"rgba(255,255,255,.04)"},horzLines:{color:"rgba(255,255,255,.06)"}},rightPriceScale:{borderVisible:false,scaleMargins:{top:.08,bottom:.08}},
-    timeScale:{borderVisible:false,timeVisible:true,secondsVisible:false,rightOffset:6},crosshair:{mode:0},localization:{priceFormatter:p=>fmt(p)}});
+    timeScale:{borderVisible:false,timeVisible:true,secondsVisible:false,rightOffset:6,barSpacing:7,minBarSpacing:2},crosshair:{mode:0},localization:{priceFormatter:p=>fmt(p)}});
+  LW.chart.timeScale().subscribeSizeChange(()=>{if(LW.refit&&LW.cdl.length&&showRecent(LW.chart,$("lwc"),LW.cdl.length))LW.refit=false});
   LW.series=LW.chart.addCandlestickSeries({upColor:"#00e0a0",downColor:"#ff4d6d",borderUpColor:"#00e0a0",borderDownColor:"#ff4d6d",wickUpColor:"#00e0a0",wickDownColor:"#ff4d6d"});
   LW.line=lineSeries(LW.chart);applyCtype(LW.series,LW.line);LW.ok=true;
   // tap on the chart while a level is "armed" (Entry / Stop-loss / Target)
@@ -1519,9 +1538,9 @@ async function lwcLoad(){
   try{
     const d=await (await fetch(`/api/history?sym=${encodeURIComponent(s.sym)}&ex=${ex}&iv=${LW.tf}`,{cache:"no-store"})).json();
     if(!d.t||d.t.length<2||!d.o)throw 0;
-    LW.cdl=d.t.map((t,i)=>({time:Math.floor(t/1000)+ISTSHIFT,open:d.o[i],high:d.h[i],low:d.l[i],close:d.c[i]}));
-    LW.series.setData(LW.cdl);LW.line.setData(LW.cdl.map(c=>({time:c.time,value:c.close})));const n=LW.cdl.length;LW.chart.timeScale().setVisibleLogicalRange({from:Math.max(0,n-(LW.tf==="1d"?90:75)),to:n+6});
-    LW.has=true;
+    LW.cdl=cleanCandles(d);if(LW.cdl.length<2)throw 0;
+    LW.series.setData(LW.cdl);LW.line.setData(LW.cdl.map(c=>({time:c.time,value:c.close})));LW.refit=!showRecent(LW.chart,$("lwc"),LW.cdl.length);
+    LW.has=true;LW.at=Date.now();
   }catch(e){LW.has=false;LW.cdl=[]}
   LW.key=k;LW.loading=false;document.body.classList.toggle("lw-on",LW.has);$("lwc").hidden=!LW.has;$("chart").style.display=LW.has?"none":"";$("ctb").hidden=!LW.has;lwcSync();
 }
@@ -1529,7 +1548,7 @@ async function lwcLoad(){
 function lwcLive(){
   if(!LW.ok||!LW.has||!LW.cdl.length)return;const s=cur(),px=s.px[ex],last=LW.cdl[LW.cdl.length-1];if(Math.abs(px/last.close-1)>=.15)return;const sec=TFSEC[LW.tf],nowT=Math.floor(Date.now()/1000)+ISTSHIFT;
   const b=LW.tf==="1d"?last.time:nowT-((((nowT-SESSION)%sec)+sec)%sec);
-  if(b>last.time&&isOpen()){const c={time:b,open:last.close,high:Math.max(px,last.close),low:Math.min(px,last.close),close:px};LW.cdl.push(c);LW.series.update(c);LW.line.update({time:c.time,value:c.close})}
+  if(b>last.time&&mayStartCandle()){const c={time:b,open:last.close,high:Math.max(px,last.close),low:Math.min(px,last.close),close:px};LW.cdl.push(c);LW.series.update(c);LW.line.update({time:c.time,value:c.close})}
   else{last.high=Math.max(last.high,px);last.low=Math.min(last.low,px);last.close=px;LW.series.update(last);LW.line.update({time:last.time,value:last.close})}
 }
 // every level that should be drawn: my holding, waiting orders for this stock, and the order I am drafting
@@ -1577,7 +1596,7 @@ function lwcSync(){
   document.querySelectorAll("#chEx button").forEach(b=>b.classList.toggle("on",b.dataset.e===ex));
   document.querySelectorAll("#tfs button").forEach(b=>b.classList.toggle("on",b.dataset.tf===LW.tf));
 }
-function lwcTick(){if(!LW.ok)return;lwcLoad();lwcLive();if(!LW.drag)lwcSync()}
+function lwcTick(){if(!LW.ok)return;if(LW.has&&!LW.drag&&realOpen()&&Date.now()-(LW.at||0)>60000)LW.key="";lwcLoad();lwcLive();if(!LW.drag)lwcSync()}
 function placeFromChart(){
   const n0=state.orders.length+state.pending.length;trade();
   if(state.orders.length+state.pending.length>n0){$("bSl").value="";$("bTp").value="";if(otype==="LIMIT")$("oprice").value="";LW.armed=null}
@@ -1589,7 +1608,8 @@ async function hcInit(){
   if(!(await lwLib()))return;
   HC.chart=LightweightCharts.createChart($("hcBox"),{autoSize:true,layout:{background:{type:"solid",color:"transparent"},textColor:"#8a94b2",fontFamily:"JetBrains Mono, monospace",fontSize:11},
     grid:{vertLines:{color:"rgba(255,255,255,.04)"},horzLines:{color:"rgba(255,255,255,.06)"}},rightPriceScale:{borderVisible:false,scaleMargins:{top:.08,bottom:.08}},
-    timeScale:{borderVisible:false,timeVisible:true,secondsVisible:false,rightOffset:6},crosshair:{mode:0},localization:{priceFormatter:p=>fmt(p)}});
+    timeScale:{borderVisible:false,timeVisible:true,secondsVisible:false,rightOffset:6,barSpacing:7,minBarSpacing:2},crosshair:{mode:0},localization:{priceFormatter:p=>fmt(p)}});
+  HC.chart.timeScale().subscribeSizeChange(()=>{if(HC.refit&&HC.cdl.length&&showRecent(HC.chart,$("hcBox"),HC.cdl.length))HC.refit=false});
   HC.series=HC.chart.addCandlestickSeries({upColor:"#00e0a0",downColor:"#ff4d6d",borderUpColor:"#00e0a0",borderDownColor:"#ff4d6d",wickUpColor:"#00e0a0",wickDownColor:"#ff4d6d"});
   HC.line=lineSeries(HC.chart);applyCtype(HC.series,HC.line);HC.ok=true;hcLoad();
 }
@@ -1599,8 +1619,8 @@ async function hcLoad(){
   try{
     const d=await (await fetch(`/api/history?idx=${encodeURIComponent(HC.id)}&iv=${HC.tf}`,{cache:"no-store"})).json();
     if(!d.t||d.t.length<2||!d.o)throw 0;
-    HC.cdl=d.t.map((t,i)=>({time:Math.floor(t/1000)+ISTSHIFT,open:d.o[i],high:d.h[i],low:d.l[i],close:d.c[i]}));
-    HC.series.setData(HC.cdl);HC.line.setData(HC.cdl.map(c=>({time:c.time,value:c.close})));const n=HC.cdl.length;HC.chart.timeScale().setVisibleLogicalRange({from:Math.max(0,n-(HC.tf==="1d"?90:75)),to:n+6});HC.has=true;HC.local=false;HC.fails=0;
+    HC.cdl=cleanCandles(d);if(HC.cdl.length<2)throw 0;
+    HC.series.setData(HC.cdl);HC.line.setData(HC.cdl.map(c=>({time:c.time,value:c.close})));HC.refit=!showRecent(HC.chart,$("hcBox"),HC.cdl.length);HC.has=true;HC.local=false;HC.fails=0;HC.at=Date.now();
   }catch(e){HC.fails++;if(!HC.local){HC.cdl=[];HC.series.setData([]);HC.line.setData([])}HC.local=true;HC.has=true}
   HC.key=k;HC.loading=false;HC.tried=Date.now();$("hcBox").hidden=!HC.has;$("hcType").hidden=!HC.has;
 }
@@ -1614,12 +1634,12 @@ function hcTick(){
   if(price!=null){const c=(price/prev-1)*100;$("hcVal").textContent=fmt(price);$("hcChg").textContent=`${c>=0?"▲":"▼"} ${fmt(Math.abs(price-prev))} (${c>=0?"+":""}${c.toFixed(2)}%)`;$("hcChg").className="num "+(c>=0?"up":"down")}
   document.querySelectorAll("#hcTf button").forEach(b=>b.classList.toggle("on",b.dataset.tf===HC.tf));
   if(HC.ok){
-    if(HC.local&&Date.now()-(HC.tried||0)>60000)HC.key="";   // keep retrying the real history
+    if((HC.local&&Date.now()-(HC.tried||0)>60000)||(HC.has&&!HC.local&&realOpen()&&Date.now()-(HC.at||0)>60000))HC.key="";   // keep retrying the real history
     hcLoad();
     if(HC.has&&!HC.cdl.length&&price!=null){const sec0=TFSEC[HC.tf],n0=Math.floor(Date.now()/1000)+ISTSHIFT,c0={time:n0-((((n0-SESSION)%sec0)+sec0)%sec0),open:price,high:price,low:price,close:price};HC.cdl=[c0];HC.series.setData([c0]);HC.line.setData([{time:c0.time,value:price}])}
     if(HC.has&&HC.cdl.length&&price!=null&&Math.abs(price/HC.cdl[HC.cdl.length-1].close-1)<.15){   // ignore a price that doesn't match the chart data (avoids fake spikes)
       const last=HC.cdl[HC.cdl.length-1],sec=TFSEC[HC.tf],nowT=Math.floor(Date.now()/1000)+ISTSHIFT,b=HC.tf==="1d"?last.time:nowT-((((nowT-SESSION)%sec)+sec)%sec);
-      if(b>last.time&&(realOpen()||isOpen())){const c={time:b,open:last.close,high:Math.max(price,last.close),low:Math.min(price,last.close),close:price};HC.cdl.push(c);HC.series.update(c);HC.line.update({time:c.time,value:c.close})}
+      if(b>last.time&&mayStartCandle()){const c={time:b,open:last.close,high:Math.max(price,last.close),low:Math.min(price,last.close),close:price};HC.cdl.push(c);HC.series.update(c);HC.line.update({time:c.time,value:c.close})}
       else{last.high=Math.max(last.high,price);last.low=Math.min(last.low,price);last.close=price;HC.series.update(last);HC.line.update({time:last.time,value:last.close})}
     }
   }
