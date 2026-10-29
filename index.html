@@ -272,6 +272,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 .wcard small{font-size:11px;line-height:1.2;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcard b{font-size:14px;line-height:1.25}.wcard.on{border-color:var(--brand);background:var(--brand-soft)}
 .wdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--mute)}.wcard.on .wdot{border-color:var(--brand);box-shadow:inset 0 0 0 3px var(--card);background:var(--brand)}
 .wbar{display:flex;height:5px;border-radius:3px;overflow:hidden;background:var(--field);margin-top:8px}.wbar i{display:block;height:100%}.wlink{color:var(--brand);font-weight:700;cursor:pointer}
+.uprow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.uprow:last-child{border-bottom:0}.uppay{margin-top:4px;border:1px solid var(--brand);background:var(--brand-soft);color:var(--brand);border-radius:8px;padding:3px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}.warnc{color:var(--warn)}
 #lock{position:fixed;inset:0;z-index:10000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
 #lock.on{display:flex}#lock .lk{width:72px;height:72px;border-radius:20px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
 #intro{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#6a402d,#2b170f);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;transition:opacity .45s ease,transform .45s ease}
@@ -315,7 +316,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 80 · 25 Oct 2026';
+const APP_VER='version 1.4 · build 81 · 29 Oct 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -404,7 +405,7 @@ function purgeSms(){
 function normalize(){
   S.accounts.forEach(a=>{a.type=a.type||'bank'});
   if(!S.accounts.length)S.accounts.push({id:'cash',name:'Cash',type:'cash',last4:'',open:0});
-  S.emis=S.emis||[];S.smsPending=S.smsPending||[];S.salary=0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
+  S.emis=S.emis||[];S.upcoming=S.upcoming||[];S.smsPending=S.smsPending||[];S.salary=0;S.name=S.name||'';S.ignored=S.ignored||[];S.notify=!!S.notify;S.notified=S.notified||{};
   S.cats=S.cats||[];S.icons=S.icons||{};S.sources=S.sources||[];
   if(!S.sources.length)S.sources.push({id:'src_other',name:'Other income'});
   {const d=S.sources[0].id;S.tx.forEach(t=>{if(t.kind==='other'&&!t.source)t.source=d;if(projUse(t)&&!t.poolSrc)t.poolSrc=d})}S.hide=!!S.hide;S.appearance=['light','dark'].includes(S.appearance)?S.appearance:'auto';
@@ -1506,6 +1507,7 @@ function home(){
     <div class="row sp" style="margin-bottom:6px"><b>Budget jar · ${mlabel(month)}</b><span class="pill">Budget ›</span></div>
     ${jarViz(st.exp,tb,dlH)}
   </div>`:`<div class="card" style="margin-top:12px;cursor:pointer" data-a="nav" data-id="budget"><div class="row" style="gap:16px;align-items:center"><svg viewBox="0 0 98 132" width="70" height="94" style="flex:none"><rect x="28" y="5" width="42" height="10" rx="3" fill="var(--line)"/><rect x="6" y="14" width="86" height="112" rx="18" fill="var(--field)" stroke="var(--mute)" stroke-opacity=".45" stroke-width="2" stroke-dasharray="6 5"/><text x="49" y="76" text-anchor="middle" style="font-size:26px;font-weight:800;fill:var(--mute)">+</text></svg><div><b>Fill your budget jar</b><div class="small mute" style="margin-top:4px">Set a monthly budget and this jar shows how much is left to spend.</div><span class="pill" style="display:inline-block;margin-top:8px">Set budget ›</span></div></div></div>`}
+  ${upcomingHtml()}
   ${al.length?`<div class="alert ${al.some(x=>x.pct>100)?'':'soft'}" style="cursor:pointer" data-a="nav" data-id="budget"><b>Budget alert:</b> ${al.slice(0,3).map(x=>esc(cname(x.k))+(x.pct>100?' over by '+inr(x.used-x.lim):x.pct>=100?' at limit':' '+Math.round(x.pct)+'%')).join(' · ')}${al.length>3?' · +'+(al.length-3)+' more':''}</div>`:''}
   ${(()=>{const RG=[['w','Week'],['m','Month'],['y','Year']],T={'w':'This week (Mon to Sun)','m':'This month (from the 1st)','y':'This year (from January)'};
     const l7=spendSeries(homeRange),tot7=l7.reduce((a,b)=>a+b.v,0),cd=catData(st);
@@ -1567,7 +1569,8 @@ function jarViz(spent,lim,daysLeft){
    <div class="small mute">${over?'Over budget by':'Left to spend'}</div><div class="big num ${over?'debit':''}" style="font-size:26px">${inrH(Math.abs(left))}</div>
    <div class="small mute">of ${inrH(lim)} budget</div>
    <div style="margin-top:8px;font-weight:700" class="num">${inrH(spent)} spent</div>
-   ${daysLeft&&!over?`<div class="small mute">${daysLeft} days to go · ≈ ${inrH(Math.round(left/daysLeft))}/day safe</div>`:''}</div></div>`;
+   ${daysLeft&&!over?`<div class="small mute">${daysLeft} days to go · ≈ ${inrH(Math.round(left/daysLeft))}/day safe</div>`:''}
+   ${(()=>{if(!daysLeft)return '';const mk=todayISO().slice(0,7),up=(S.upcoming||[]).filter(u=>u.due.slice(0,7)<=mk).reduce((x,u)=>x+u.amt,0);return up?`<div class="small" style="margin-top:4px">After upcoming bills: <b class="num ${left-up<0?'debit':''}">${inrH(left-up)}</b></div>`:''})()}</div></div>`;
 }
 function spiralViz(series,today){
   const n=series.length,mx=Math.max(...series.map(x=>x.v),1),cx=150,cy=104,tot=series.reduce((a,x)=>a+Math.max(0,x.v),0);
@@ -1609,6 +1612,45 @@ function radarViz(items){
   g+=`<polygon points="${items.map((it,i)=>pt(i,f(it)).map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="var(--brand)" fill-opacity=".22" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round"/>`;
   items.forEach((it,i)=>{const [x,y]=pt(i,f(it));g+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${it.used>it.lim?'var(--debit)':'var(--brand)'}"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="12" fill="transparent" data-tip="${esc(cname(it.k)+' · '+inr(it.used)+' of '+inr(it.lim)+' ('+Math.round(it.used/it.lim*100)+'%)')}"/>`});
   return `<div class="chart"><svg viewBox="0 0 300 208" width="100%">${g}</svg></div><div class="lgd"><span><i style="background:var(--brand)"></i>Spent</span><span><i style="background:var(--warn)"></i>Budget limit</span></div>`;
+}
+/* ---------- UPCOMING: bills and planned spends with due dates ---------- */
+let upPay=null,upRep='m';
+const upDays=iso=>Math.round((new Date(iso+'T00:00')-new Date(todayISO()+'T00:00'))/864e5);
+const upWhen=d=>d<0?`overdue ${-d} day${d===-1?'':'s'}`:d===0?'today':d===1?'tomorrow':`in ${d} days`;
+function upNext(iso,rep){if(rep==='w'){const d=new Date(iso+'T00:00');d.setDate(d.getDate()+7);return isoDay(d.getTime())}if(rep==='m')return addMonthsISO(iso,1);if(rep==='y')return addMonthsISO(iso,12);return null}
+const upList=()=>S.upcoming.slice().sort((a,b)=>a.due.localeCompare(b.due));
+function upcomingHtml(){
+  const L=upList();
+  const mk=todayISO().slice(0,7),due30=L.filter(u=>upDays(u.due)<=30),thisM=L.filter(u=>u.due.slice(0,7)<=mk).reduce((a,u)=>a+u.amt,0);
+  const head=`<div class="ctitle"><b>Upcoming</b><span class="small mute">${thisM?inrH(thisM)+' due this month':L.length?'nothing more this month':''}</span></div>`;
+  if(!L.length)return `<div class="card" style="margin-top:12px;cursor:pointer" data-a="upadd">${head}<div class="small mute">Add rent, bills, fees or any spend coming up. You get a reminder here and one tap marks it paid.</div><span class="pill" style="display:inline-block;margin-top:8px">+ Add upcoming</span></div>`;
+  const show=(due30.length?due30:L).slice(0,4);
+  return `<div class="card" style="margin-top:12px">${head}${show.map(upRow).join('')}
+   <div class="row" style="gap:8px;margin-top:10px"><button class="btn ghost" data-a="upall" style="margin:0;flex:1;padding:10px">See all (${L.length})</button><button class="btn ghost" data-a="upadd" style="margin:0;flex:1;padding:10px">+ Add</button></div></div>`;
+}
+function upRow(u){
+  const d=upDays(u.due),late=d<0,soon=d>=0&&d<=3,a=acc(u.acc);
+  return `<div class="uprow"><div class="dot" style="background:${(CATCOL[u.cat]||'#94a3b8')}26;color:${CATCOL[u.cat]||'#94a3b8'}" data-a="upedit" data-id="${u.id}">${ic(CATS[u.cat]||'receipt',18)}</div>
+   <div class="grow" data-a="upedit" data-id="${u.id}" style="min-width:0;cursor:pointer"><b>${esc(u.name)}</b><div class="small tm"><span class="${late?'debit':soon?'warnc':'mute'}" style="font-weight:${late||soon?700:400}">${upWhen(d)}</span><span class="mute"> · ${new Date(u.due+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}${u.rep!=='o'?' · '+{w:'weekly',m:'monthly',y:'yearly'}[u.rep]:''}${a?' · '+esc(a.name):''}</span></div></div>
+   <div style="text-align:right"><b class="num">${inr(u.amt)}</b><div><button class="uppay" data-a="uppay" data-id="${u.id}">Paid</button></div></div></div>`;
+}
+function upAll(){
+  const L=upList(),tot=L.filter(u=>upDays(u.due)<=30).reduce((a,u)=>a+u.amt,0);
+  openSheet(`<div class="row sp"><h1>Upcoming</h1><button class="icon-btn" data-a="close">✕</button></div>
+  <div class="small mute" style="margin:6px 0 10px">${inr(tot)} due in the next 30 days. Tap <b>Paid</b> to add it as an expense; repeating ones move to their next date.</div>
+  <div class="card" style="padding:2px 14px">${L.map(upRow).join('')||'<div class="empty">Nothing coming up</div>'}</div>
+  <button class="btn" data-a="upadd">+ Add upcoming</button>`);
+}
+function upSheet(id){
+  const u=id?S.upcoming.find(x=>x.id===id):null;upRep=u?u.rep:'m';
+  const catOpts=Object.keys(CATS).filter(k=>k!=='EMI'&&k!=='Transfer').map(k=>[k,cname(k)]);
+  openSheet(`<div class="row sp"><h1>${u?'Edit':'Add'} upcoming</h1><div class="row" style="gap:8px">${u?delBtn('updel',u.id,'Delete'):''}<button class="icon-btn" data-a="close">✕</button></div></div>
+  <label>What is it?</label><input id="up-name" value="${u?esc(u.name):''}" placeholder="e.g. Electricity bill, School fees, Rent">
+  <label>Amount (₹)</label><input id="up-amt" readonly data-calc inputmode="decimal" placeholder="₹ 0" value="${u?u.amt:''}">
+  <label>Due date</label><input id="up-due" type="date" value="${u?u.due:todayISO()}">
+  <label>Repeats</label><div class="seg" id="upseg">${[['o','Once'],['w','Weekly'],['m','Monthly'],['y','Yearly']].map(([k,l])=>`<button type="button" data-a="uprep" data-id="${k}" class="${upRep===k?'on':''}">${l}</button>`).join('')}</div>
+  <div class="grid2"><div><label>Category</label><select id="up-cat">${opts(catOpts,u?u.cat:'Bills')}</select></div><div><label>Pay from</label><select id="up-acc">${opts(S.accounts.map(a=>[a.id,a.name]),u?u.acc:(S.accounts[0]||{}).id)}</select></div></div>
+  <button class="btn" data-a="upsave" data-id="${u?u.id:''}">Save</button>`);
 }
 /* ---------- BUDGET ---------- */
 function budgetView(){
@@ -2096,7 +2138,7 @@ function emiSuggest(){
   el.innerHTML=`<div class="small mute" style="margin:8px 0 4px">Your EMIs, tap to fill</div><div class="chips2">${L.map(({p,s})=>`<button type="button" class="chip" data-a="emipick" data-id="${p.id}">${esc(p.name)} · ${inrH(p.monthly)} · ${new Date(s.next+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}</button>`).join('')}</div>`;
 }
 function txSheet(t,preset){
-  emiPick=null;smsResolve=(preset&&preset.resolve)||null;
+  emiPick=null;upPay=(preset&&preset.upId)||null;if(preset)delete preset.upId;smsResolve=(preset&&preset.resolve)||null;
   const isNew=!t;t=t||{id:'',type:'debit',amt:'',acc:S.accounts[0].id,kind:'expense',cat:'Other',note:'',date:new Date().toISOString().slice(0,10),party:'',pool:false};
   if(isNew&&preset)Object.assign(t,preset);
   if(isNew&&t.cat==='Other'&&(!preset||!preset.cat)&&t.kind!=='expense'&&t.kind!=='pass')t.cat=t.kind==='other'?'Freelance':'Other';
@@ -2254,6 +2296,18 @@ document.addEventListener('click',e=>{
     $('#f-amt').value=calcShow(p.monthly);$('#f-acc').value=p.card;$('#f-note').value=`${p.name} EMI ${no}/${p.months}`;$('#f-date').value=s.next;
     emiPick={id:p.id,no};toast(`${p.name}: EMI ${no} of ${p.months} filled in`);
   }
+  else if(a==='upadd')upSheet(null);
+  else if(a==='upedit')upSheet(id);
+  else if(a==='upall')upAll();
+  else if(a==='uprep'){upRep=id;document.querySelectorAll('#upseg button').forEach(b=>b.classList.toggle('on',b.dataset.id===id))}
+  else if(a==='upsave'){
+    const name=$('#up-name').value.trim(),amt=pnum($('#up-amt').value),due=$('#up-due').value;
+    if(!name){toast('Give it a name');return}if(!(amt>0)){toast('Enter an amount');return}if(!due){toast('Pick a due date');return}
+    const o={name,amt,due,rep:upRep,cat:$('#up-cat').value,acc:$('#up-acc').value};
+    if(id){Object.assign(S.upcoming.find(x=>x.id===id),o)}else S.upcoming.push({id:uid(),...o});
+    save();closeSheet();render();toast(id?'Saved':'Added to upcoming')}
+  else if(a==='updel'){const i=S.upcoming.findIndex(x=>x.id===id);if(i<0)return;const g=S.upcoming.splice(i,1)[0];save();closeSheet();render();undoToast('"'+g.name+'" removed',()=>{S.upcoming.splice(i,0,g);save();render()})}
+  else if(a==='uppay'){const u=S.upcoming.find(x=>x.id===id);if(!u)return;tt='debit';txSheet(null,{type:'debit',kind:'expense',amt:u.amt,cat:u.cat,acc:u.acc,note:u.name,upId:u.id})}
   else if(a==='savetx'){
     const amt=pnum($('#f-amt').value);if(!(amt>0)){toast('Enter an amount');return}
     const kind=$('#f-kind').value;
@@ -2266,6 +2320,7 @@ document.addEventListener('click',e=>{
      else{t.pool=false;t.poolSrc=''}}
     if(kind==='expense'&&payMode()==='2'){const v=$('#f-via').value;if(!v){toast('Pick whose money it was');return}t.acc='';t.fromParty=true;t.party=v;t.pool=false;t.poolSrc=''}
     const i=S.tx.findIndex(x=>x.id===id);if(i>=0){const o=S.tx[i];t.src=o.src;if(o.hint4){if(t.acc)learnAcc(t.acc,o.hint4);else t.hint4=o.hint4}if(o.emiId){t.emiId=o.emiId;t.emiNo=o.emiNo}if(o.prepaid)t.prepaid=true;if(o.raw)t.raw=o.raw;if(o.ts)t.ts=o.ts;S.tx[i]=t}else{if(emiPick&&t.cat==='EMI'){t.emiId=emiPick.id;t.emiNo=emiPick.no;t.src='emi'}if(smsResolve){const r=smsResolve;smsResolve=null;S.smsPending=S.smsPending.filter(x=>x.id!==r.id);S.seen.push(r.key);t.raw=r.text;t.src='sms'}S.tx.push(t)}
+    if(upPay&&i<0){const u=S.upcoming.find(x=>x.id===upPay);if(u){const n=upNext(u.due,u.rep);if(n)u.due=n;else S.upcoming=S.upcoming.filter(x=>x!==u)}upPay=null}
     save();closeSheet();render();
     let msg='Saved',ms;
     if(t.kind==='expense'&&t.type==='debit'&&S.budgets[t.cat]>0){
