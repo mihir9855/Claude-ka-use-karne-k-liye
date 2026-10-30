@@ -40,9 +40,9 @@ export const SETS: Record<string, PageSet> = {
 };
 export const SET_IDS = Object.keys(SETS);
 
-/** Flat tile colours, used for meals. Brighter in the day, chalk pastels at night. Text on them is always TILE_INK. */
+/** Flat tile colours, used for meals. Bright in the day; at night even more saturated, so they glow on the black board. Text on them is always TILE_INK. */
 const TILE_DAY = { yellow: '#FFE14A', green: '#7BE0A4', lilac: '#B9A6FF', orange: '#FF9B6B', blue: '#8FD3FF', pink: '#FFB3D1' };
-const TILE_NIGHT = { yellow: '#F6E27A', green: '#9BD8B0', lilac: '#C6B8EE', orange: '#F2AD92', blue: '#9FCDE8', pink: '#F0B8CE' };
+const TILE_NIGHT = { yellow: '#FFD60A', green: '#2EE59D', lilac: '#A78BFA', orange: '#FF8A3D', blue: '#38BDF8', pink: '#FF6FB5' };
 export const TILE = new Proxy({} as typeof TILE_DAY, { get: (_t, k: string) => (current === 'dark' ? TILE_NIGHT : TILE_DAY)[k as keyof typeof TILE_DAY] });
 export const TILE_INK = '#14110E';
 const CYCLE_KEYS = ['green', 'lilac', 'orange', 'blue', 'pink'] as const;
@@ -56,12 +56,12 @@ function light(set: PageSet): Palette {
     header: set.bg, headerSoft: '#FFFFFF', hero: TILE.yellow, onHero: '#14110E', mint: '#2DBE7A', shadow: '#14110E',
   };
 }
-// Night is a blackboard: black board, chalk-white writing and outlines, chalk-pastel tiles, and shadows like chalk dust.
+// Night is a blackboard: black board, chalk-white writing and outlines, vivid tiles that glow, and shadows like chalk dust.
 const dark: Palette = {
   bg: '#161616', card: '#212121', surface: '#2D2D2D', text: '#F3F0E6', muted: '#B4B2AB', line: '#F3F0E6',
-  ink: '#F6E27A', inkSoft: '#F6E27A', primary: '#F6E27A', primarySoft: '#3A3720', onPrimary: '#161616',
-  accent: '#F6E27A', accentSoft: '#3A3720', good: '#9BD8B0', goodSoft: '#243A2E', danger: '#F4A99B', dangerSoft: '#42302D',
-  header: '#161616', headerSoft: '#212121', hero: '#F6E27A', onHero: '#161616', mint: '#9BD8B0', shadow: 'rgba(243,240,230,0.30)',
+  ink: '#FFD60A', inkSoft: '#FFD60A', primary: '#FFD60A', primarySoft: '#3A3410', onPrimary: '#161616',
+  accent: '#FFD60A', accentSoft: '#3A3410', good: '#2EE59D', goodSoft: '#173A2C', danger: '#FF7A7A', dangerSoft: '#3F2424',
+  header: '#161616', headerSoft: '#212121', hero: '#FFD60A', onHero: '#161616', mint: '#2EE59D', shadow: 'rgba(243,240,230,0.30)',
 };
 
 export type ThemeName = 'light' | 'dark';

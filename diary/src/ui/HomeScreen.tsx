@@ -48,11 +48,12 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
         <View style={s.chips}>
           {SLOT_ORDER.map((slot) => {
             const kcal = Math.round(h.menu.find((m) => m.slot === slot)?.eaten?.reduce((a, e) => a + (e.kcal ?? 0), 0) ?? 0);
+            const on = kcal > 0; // eaten: filled with the meal colour. Not yet: an empty chip in the theme's own colours.
             return (
-              <View key={slot} style={[s.legendChip, { backgroundColor: kcal > 0 ? SLOT_COLOR[slot] : '#FFFFFF' }]}>
-                <View style={[s.swatch, { backgroundColor: SLOT_COLOR[slot] }]} />
-                <Text style={s.legendName} numberOfLines={1}>{SLOT_LABEL[slot]}</Text>
-                <Text style={s.legendVal} numberOfLines={1}>{kcal > 0 ? String(kcal) : '-'}</Text>
+              <View key={slot} style={[s.legendChip, { backgroundColor: on ? SLOT_COLOR[slot] : C.card }]}>
+                <View style={[s.swatch, { backgroundColor: SLOT_COLOR[slot], borderColor: on ? TILE_INK : C.line }]} />
+                <Text style={[s.legendName, { color: on ? TILE_INK : C.text }]} numberOfLines={1}>{SLOT_LABEL[slot]}</Text>
+                <Text style={[s.legendVal, { color: on ? TILE_INK : C.text }]} numberOfLines={1}>{on ? String(kcal) : '-'}</Text>
               </View>
             );
           })}
