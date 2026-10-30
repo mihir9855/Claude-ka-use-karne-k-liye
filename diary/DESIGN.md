@@ -1,6 +1,6 @@
-# Design: Recipe-book
+# Design: Haldi
 
-A diary kept in a kitchen: warm paper, ink, one terracotta accent. Mode: Operate (task first, brand in details).
+Loud turmeric colour blocks, chunky grotesque type (Bricolage Grotesque), ivory or near-black pages, one chilli accent. Mode: Operate (task first, brand in details).
 
 ## World
 - **Paper (light):** page #F6F0E4, card #FFFBF3, ink #2B2118, muted #75675A (4.5:1 on paper), hairline #E3D8C3, accent terracotta #B5472B with #FFF8EE on it, olive #4F6B3A for done, brick #A32D2D for danger.

@@ -2,7 +2,7 @@ import { Platform, StyleSheet, Text as RNText, TextInput as RNTextInput, type Te
 import { DISPLAY, FONT } from './theme';
 
 const WEB_FALLBACK = ', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-const WEB_SERIF = ', Georgia, "Times New Roman", serif';
+const WEB_SERIF = ', system-ui, "Segoe UI", Roboto, sans-serif';
 
 function family(weight: TextStyle['fontWeight']): string {
   switch (String(weight ?? '400')) {

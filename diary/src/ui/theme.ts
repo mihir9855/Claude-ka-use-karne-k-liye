@@ -1,4 +1,4 @@
-// "Recipe-book": warm paper and ink with one terracotta accent, and a night-kitchen dark set. Colours are read through `C` at the moment they are used, so a theme change shows everywhere.
+// "Haldi": loud turmeric colour blocks on ivory (day) or near-black (night), ink-black type, one chilli accent. Colours are read through `C` at the moment they are used, so a theme change shows everywhere.
 export interface Palette {
   bg: string;
   card: string;
@@ -19,50 +19,60 @@ export interface Palette {
   dangerSoft: string;
   header: string;
   headerSoft: string;
+  /** the big colour block (turmeric) and the text on it */
+  hero: string;
+  onHero: string;
+  mint: string;
 }
 
 const dark: Palette = {
-  bg: '#1C1713',
-  card: '#26201A',
-  surface: '#30281F',
-  text: '#F2E9DA',
-  muted: '#A8998A',
-  line: '#3A3027',
-  ink: '#E0805F',
-  inkSoft: '#C96E4F',
-  primary: '#E0805F',
-  primarySoft: '#33231B',
-  onPrimary: '#1C1713',
-  accent: '#E0805F',
-  accentSoft: '#33231B',
-  good: '#A9C58C',
-  goodSoft: '#2A3322',
-  danger: '#F09A8C',
-  dangerSoft: '#3E2420',
-  header: '#1C1713',
-  headerSoft: '#26201A',
+  bg: '#0F0D0B',
+  card: '#1B1814',
+  surface: '#27221C',
+  text: '#FBF3E2',
+  muted: '#A39A8B',
+  line: '#2F2922',
+  ink: '#FFB800',
+  inkSoft: '#E0A000',
+  primary: '#FFB800',
+  primarySoft: '#33280A',
+  onPrimary: '#17120D',
+  accent: '#FFB800',
+  accentSoft: '#33280A',
+  good: '#5FD59B',
+  goodSoft: '#17301F',
+  danger: '#FF8A78',
+  dangerSoft: '#3E211C',
+  header: '#0F0D0B',
+  headerSoft: '#1B1814',
+  hero: '#FFB800',
+  onHero: '#17120D',
+  mint: '#5FD59B',
 };
 
 const light: Palette = {
-  bg: '#F6F0E4',
-  card: '#FFFBF3',
-  surface: '#EFE5D2',
-  text: '#2B2118',
-  muted: '#75675A',
-  line: '#E3D8C3',
-  ink: '#B5472B',
-  inkSoft: '#9C3B22',
-  primary: '#B5472B',
-  primarySoft: '#F6DDD2',
-  onPrimary: '#FFF8EE',
-  accent: '#B5472B',
-  accentSoft: '#F6DDD2',
-  good: '#4F6B3A',
-  goodSoft: '#E1E8D3',
-  danger: '#A32D2D',
-  dangerSoft: '#F5DAD6',
-  header: '#F6F0E4',
-  headerSoft: '#FFFBF3',
+  bg: '#FFF8E7',
+  card: '#FFFFFF',
+  surface: '#F6EBCF',
+  text: '#17120D',
+  muted: '#6B6254',
+  line: '#EADFC2',
+  ink: '#E8391D',
+  inkSoft: '#C92E15',
+  primary: '#E8391D',
+  primarySoft: '#FFE0D8',
+  onPrimary: '#FFFFFF',
+  accent: '#E8391D',
+  accentSoft: '#FFE0D8',
+  good: '#12804F',
+  goodSoft: '#D7F0E2',
+  danger: '#B3261E',
+  dangerSoft: '#F9DEDC',
+  header: '#FFF8E7',
+  headerSoft: '#FFFFFF',
+  hero: '#FFB800',
+  onHero: '#17120D',
+  mint: '#12804F',
 };
 
 export const PALETTES = { dark, light };
@@ -89,7 +99,7 @@ export function themed<T extends object>(make: () => T): T {
 }
 
 export const R = 14;
-export const RADIUS = { sm: 8, md: 10, lg: 14, xl: 18, pill: 999 };
+export const RADIUS = { sm: 10, md: 14, lg: 20, xl: 26, pill: 999 };
 
 /** Font families, one per weight (React Native cannot synthesise weights for custom fonts). */
 export const FONT = {
@@ -100,8 +110,8 @@ export const FONT = {
   heavy: 'Manrope_800ExtraBold',
 };
 
-/** Headings and numerals use this serif. Use as `fontFamily: 'display'` in a text style. */
-export const DISPLAY = { regular: 'Fraunces_400Regular', semi: 'Fraunces_600SemiBold', bold: 'Fraunces_700Bold' };
+/** Headings and numerals use this chunky grotesque. Use as `fontFamily: 'display'` in a text style. */
+export const DISPLAY = { regular: 'BricolageGrotesque_600SemiBold', semi: 'BricolageGrotesque_700Bold', bold: 'BricolageGrotesque_800ExtraBold' };
 
 /** Flat look: no shadow, a thin line around cards. */
 export const SHADOW = {

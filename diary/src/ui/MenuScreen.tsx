@@ -27,20 +27,20 @@ export function MenuScreen() {
 
   return (
     <ScrollView contentContainerStyle={s.page}>
-      <Card>
-        <Label>This week at a glance</Label>
+      <View style={s.heroCard}>
+        <Text style={s.heroTitle} numberOfLines={1}>This week at a glance</Text>
         <View style={s.glance}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={s.big} numberOfLines={1}>{`${avgK.toLocaleString('en-IN')} kcal`}</Text>
-            <Text style={s.small} numberOfLines={1}>{`a day, goal ${target.kcal.toLocaleString('en-IN')}`}</Text>
+            <Text style={[s.small, { color: C.onHero, opacity: 0.75, fontWeight: '600' }]} numberOfLines={1}>{`a day, goal ${target.kcal.toLocaleString('en-IN')}`}</Text>
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={s.big} numberOfLines={1}>{`${avgP} g`}</Text>
-            <Text style={s.small} numberOfLines={1}>{`protein a day, goal ${target.protein}`}</Text>
+            <Text style={[s.small, { color: C.onHero, opacity: 0.75, fontWeight: '600' }]} numberOfLines={1}>{`protein a day, goal ${target.protein}`}</Text>
           </View>
         </View>
-        <Muted>Built from what you eat often, and what you have not eaten in a while. Tap a dish to see another option.</Muted>
-      </Card>
+        <Text style={s.heroNote} numberOfLines={1}>Built from your habits. Tap a dish to swap.</Text>
+      </View>
 
       {week.map((d) => {
         const low = d.protein < target.protein * 0.8;
@@ -103,6 +103,9 @@ export function MenuScreen() {
 const s = themed(() => StyleSheet.create({
   page: { padding: 16, gap: 14, paddingBottom: 28 },
   glance: { flexDirection: 'row', gap: 16 },
+  heroCard: { backgroundColor: C.hero, borderRadius: RADIUS.xl, padding: 20, gap: 10 },
+  heroTitle: { fontFamily: 'display', fontSize: 20, fontWeight: '800', color: C.onHero },
+  heroNote: { fontSize: 13, fontWeight: '600', color: C.onHero, opacity: 0.75 },
   big: { fontFamily: 'display', fontSize: 26, fontWeight: '700', color: C.text, letterSpacing: -0.4 },
   small: { fontSize: 12, color: C.muted },
   day: { backgroundColor: C.card, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: C.line, padding: 14, gap: 10 },

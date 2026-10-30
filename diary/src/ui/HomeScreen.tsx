@@ -6,7 +6,7 @@ import { Icon } from './Icon';
 import { Bar } from './kit';
 import { SLOT_ICON_ID, slotLabel } from './slots';
 import { Text } from './Text';
-import { C, themed } from './theme';
+import { C, RADIUS, themed } from './theme';
 
 export type Tab = 'home' | 'chat' | 'menu' | 'nutrition' | 'lists' | 'profile';
 
@@ -27,29 +27,50 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
   const upcoming = useMemo(() => upcomingMeals(entries, target, picks, new Date(), person.conditions, 5), [entries, target, picks, person.conditions]);
   const days = streak(entries);
   const name = personName(person, persons.indexOf(person));
-  const nextSlot = menu.find((x) => !x.eaten && !x.missed)?.slot;
+  const nextRow = menu.find((x) => !x.eaten && !x.missed && x.options.length > 0);
+  const nextOpt = nextRow ? nextRow.options[(pick[nextRow.slot] ?? 0) % nextRow.options.length] : undefined;
+  const nextSlot = nextRow?.slot;
   const kcalLine = logged.length === 0 ? 'Nothing logged yet' : left >= 0 ? `${Math.round(left).toLocaleString('en-IN')} kcal left` : `${Math.round(-left).toLocaleString('en-IN')} kcal over`;
 
   return (
     <ScrollView contentContainerStyle={s.page}>
       <View style={{ gap: 2 }}>
-        <Text style={s.date} numberOfLines={1}>{now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         <Text style={s.hello} numberOfLines={1}>{`${greeting(now.getHours())}, ${name}`}</Text>
+        <Text style={s.date} numberOfLines={1}>{now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
       </View>
 
-      <Pressable accessibilityRole="button" accessibilityLabel="Open nutrition details" onPress={() => go('nutrition')} style={s.sum}>
-        <View style={s.sumTop}>
-          <Text style={s.kcal} numberOfLines={1}>{Math.round(tot.kcal).toLocaleString('en-IN')}</Text>
-          <Text style={s.kcalOf} numberOfLines={1}>{`of ${target.kcal.toLocaleString('en-IN')} kcal · ${kcalLine}`}</Text>
-          <Icon name="right" size={18} color={C.muted} width={2} />
-        </View>
-        <Bar value={tot.kcal} max={target.kcal} />
-        <View style={s.sumRow}>
-          <Text style={s.small} numberOfLines={1}>{`Protein ${Math.round(tot.protein)} of ${target.protein} g`}</Text>
-          <Text style={s.small} numberOfLines={1}>{`${days} day streak`}</Text>
-        </View>
-        <Bar value={tot.protein} max={target.protein} />
-      </Pressable>
+      <View style={s.heroBlock}>
+        <Text style={s.heroTag} numberOfLines={1}>{nextRow ? `Next up · ${clock(new Date(2000, 0, 1, SLOT_TIME[nextRow.slot][0], SLOT_TIME[nextRow.slot][1]))}` : 'All set'}</Text>
+        {nextRow && nextOpt ? (
+          <>
+            <Pressable accessibilityRole="button" accessibilityLabel={`${slotLabel(nextRow.slot)}: ${nextOpt.name}. Tap for another option`} onPress={() => setPick({ ...pick, [nextRow.slot]: (pick[nextRow.slot] ?? 0) + 1 })}>
+              <Text style={s.heroDish} numberOfLines={1}>{nextOpt.name}</Text>
+              <Text style={s.heroMeta} numberOfLines={1}>{[slotLabel(nextRow.slot), nextOpt.kcal != null ? `${nextOpt.kcal} kcal` : '', nextOpt.why[0]?.text].filter(Boolean).join(' · ')}</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={`I ate ${nextOpt.name}`} onPress={() => add(nextOpt.items, nextRow.slot, today)} style={s.heroBtn}>
+              <Icon name="check" size={20} color={C.hero} width={3} />
+              <Text style={s.heroBtnText} numberOfLines={1}>I ate this</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Text style={s.heroDish} numberOfLines={1}>{logged.length ? 'Nothing left today' : 'Log your first meal'}</Text>
+        )}
+      </View>
+
+      <View style={s.tiles}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Calories today. Open nutrition details" onPress={() => go('nutrition')} style={s.tile}>
+          <Text style={s.tileBig} numberOfLines={1}>{Math.round(tot.kcal).toLocaleString('en-IN')}</Text>
+          <Text style={s.tileSmall} numberOfLines={1}>{`kcal of ${target.kcal.toLocaleString('en-IN')}`}</Text>
+          <Bar value={tot.kcal} max={target.kcal} />
+          <Text style={s.tileSmall} numberOfLines={1}>{kcalLine}</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Protein today. Open nutrition details" onPress={() => go('nutrition')} style={s.tile}>
+          <Text style={s.tileBig} numberOfLines={1}>{Math.round(tot.protein)}</Text>
+          <Text style={s.tileSmall} numberOfLines={1}>{`g protein of ${target.protein}`}</Text>
+          <Bar value={tot.protein} max={target.protein} color={C.mint} />
+          <Text style={s.tileSmall} numberOfLines={1}>{`${days} day streak`}</Text>
+        </Pressable>
+      </View>
 
       <View style={s.head}>
         <Text style={s.h2} numberOfLines={1}>Today</Text>
@@ -138,26 +159,31 @@ function dayLabel(date: string, today: string): string {
 
 const s = themed(() => StyleSheet.create({
   page: { padding: 20, gap: 14, paddingBottom: 32 },
-  date: { fontFamily: 'display', fontSize: 30, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
-  hello: { fontSize: 14, color: C.muted, fontWeight: '500' },
-  sum: { gap: 8, paddingVertical: 14, borderTopWidth: 1, borderBottomWidth: 1, borderColor: C.line },
-  sumTop: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  kcal: { fontFamily: 'display', fontSize: 38, fontWeight: '700', color: C.text, letterSpacing: -1 },
-  kcalOf: { flex: 1, minWidth: 0, fontSize: 13, color: C.muted, fontWeight: '500' },
-  sumRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginTop: 4 },
+  hello: { fontSize: 14, color: C.muted, fontWeight: '600' },
+  date: { fontFamily: 'display', fontSize: 30, fontWeight: '800', color: C.text, letterSpacing: -1 },
+  heroBlock: { backgroundColor: C.hero, borderRadius: RADIUS.xl, padding: 20, gap: 6 },
+  heroTag: { fontSize: 13, fontWeight: '800', color: C.onHero, opacity: 0.7 },
+  heroDish: { fontFamily: 'display', fontSize: 26, fontWeight: '800', color: C.onHero, letterSpacing: -1 },
+  heroMeta: { fontSize: 13, fontWeight: '600', color: C.onHero, opacity: 0.75 },
+  heroBtn: { marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: RADIUS.pill, backgroundColor: C.onHero },
+  heroBtnText: { fontSize: 16, fontWeight: '800', color: C.hero },
+  tiles: { flexDirection: 'row', gap: 12 },
+  tile: { flex: 1, minWidth: 0, backgroundColor: C.card, borderRadius: RADIUS.lg, padding: 16, gap: 6, borderWidth: 1, borderColor: C.line },
+  tileBig: { fontFamily: 'display', fontSize: 42, fontWeight: '800', color: C.text, letterSpacing: -1.5 },
+  tileSmall: { fontSize: 12, color: C.muted, fontWeight: '600' },
   small: { fontSize: 12, color: C.muted, fontWeight: '500', flexShrink: 1 },
   head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginTop: 10 },
-  h2: { fontFamily: 'display', fontSize: 22, fontWeight: '700', color: C.text, flexShrink: 1 },
+  h2: { fontFamily: 'display', fontSize: 24, fontWeight: '800', color: C.text, flexShrink: 1 },
   link: { fontSize: 14, fontWeight: '700', color: C.accent },
   rule: { borderTopWidth: 1, borderTopColor: C.line },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 68, borderBottomWidth: 1, borderBottomColor: C.line },
   time: { width: 60, fontSize: 12, fontWeight: '600', color: C.muted },
   body: { flex: 1, minWidth: 0, paddingVertical: 8 },
   slot: { fontSize: 12, fontWeight: '600', color: C.muted },
-  dish: { fontFamily: 'display', fontSize: 18, fontWeight: '600', color: C.text },
+  dish: { fontFamily: 'display', fontSize: 19, fontWeight: '700', color: C.text },
   meta: { fontSize: 12, color: C.muted },
   soon: { fontSize: 12, fontWeight: '700', color: C.accent },
-  upDay: { fontFamily: 'display', fontSize: 16, fontWeight: '600', color: C.text, paddingTop: 14, paddingBottom: 4 },
+  upDay: { fontFamily: 'display', fontSize: 17, fontWeight: '700', color: C.text, paddingTop: 14, paddingBottom: 4 },
   tick: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: C.accent, alignItems: 'center', justifyContent: 'center' },
   tickOn: { backgroundColor: C.accent },
   done: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },

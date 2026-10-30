@@ -63,11 +63,11 @@ export function Pill({ label, warn }: { label: string; warn?: boolean }) {
   );
 }
 
-export function Bar({ value, max }: { value: number; max: number }) {
+export function Bar({ value, max, color }: { value: number; max: number; color?: string }) {
   const pct = Math.max(0, Math.min(1, max > 0 ? value / max : 0));
   return (
     <View style={s.barBg}>
-      <View style={[s.barFg, { width: `${pct * 100}%` }]} />
+      <View style={[s.barFg, { width: `${pct * 100}%` }, color ? { backgroundColor: color } : null]} />
     </View>
   );
 }
@@ -113,15 +113,15 @@ const s = themed(() => StyleSheet.create({
   choiceSub: { fontSize: 12, color: C.muted },
   fieldLabel: { fontSize: 12, fontWeight: '600', color: C.muted },
   input: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: C.text, minHeight: 46 },
-  label: { fontFamily: 'display', fontSize: 19, fontWeight: '600', color: C.text },
+  label: { fontFamily: 'display', fontSize: 20, fontWeight: '800', color: C.text },
   card: { backgroundColor: C.card, borderRadius: RADIUS.lg, padding: 16, gap: 12, ...SHADOW },
-  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 46, paddingHorizontal: 16, borderRadius: RADIUS.md },
+  btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 50, paddingHorizontal: 20, borderRadius: RADIUS.pill },
   btnText: { fontSize: 15, fontWeight: '600', flexShrink: 1 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: RADIUS.md, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, maxWidth: '100%' },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 14, borderRadius: RADIUS.pill, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, maxWidth: '100%' },
   chipText: { fontSize: 14, color: C.text, fontWeight: '500', flexShrink: 1 },
   pill: { alignSelf: 'flex-start', paddingVertical: 3, paddingHorizontal: 8, borderRadius: RADIUS.sm, maxWidth: '100%' },
   pillText: { fontSize: 12, fontWeight: '700' },
-  barBg: { height: 6, backgroundColor: C.surface, borderRadius: 3, overflow: 'hidden' },
-  barFg: { height: 6, borderRadius: 3, backgroundColor: C.ink },
+  barBg: { height: 12, backgroundColor: C.surface, borderRadius: 6, overflow: 'hidden' },
+  barFg: { height: 12, borderRadius: 6, backgroundColor: C.ink },
   muted: { fontSize: 14, color: C.muted, lineHeight: 20 },
 }));
