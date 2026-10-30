@@ -85,23 +85,26 @@ export interface Accent {
   light: Partial<Palette>;
   dark: Partial<Palette>;
 }
-const tint = (hero: string, accent: string, soft: string, onPrimary: string): Partial<Palette> => ({ hero, ink: accent, inkSoft: accent, primary: accent, accent, accentSoft: soft, primarySoft: soft, onPrimary });
+const tint = (hero: string, accent: string, soft: string, onPrimary: string, onHero = '#17120D'): Partial<Palette> => ({ hero, onHero, ink: accent, inkSoft: accent, primary: accent, accent, accentSoft: soft, primarySoft: soft, onPrimary });
 export const ACCENTS: Record<string, Accent> = {
+  mono: { name: 'Mono', swatch: '#17120D', light: tint('#17120D', '#17120D', '#E9E1CC', '#FFF8E7', '#FFF8E7'), dark: tint('#F4EFE3', '#F4EFE3', '#2A2620', '#17120D', '#17120D') },
+  kesari: { name: 'Kesari', swatch: '#FF6A13', light: tint('#FF6A13', '#C84600', '#FFE3D1', '#FFFFFF'), dark: tint('#FF7A2B', '#FF8A45', '#3A200F', '#1F0E00') },
+  laal: { name: 'Laal', swatch: '#D62839', light: tint('#D62839', '#C41E2E', '#FFDDE0', '#FFFFFF', '#FFFFFF'), dark: tint('#D62839', '#FF6B78', '#3D1519', '#2A0508', '#FFFFFF') },
+  zamurd: { name: 'Zamurd', swatch: '#0B8A5A', light: tint('#0B8A5A', '#0B7A50', '#D6F0E3', '#FFFFFF', '#FFFFFF'), dark: tint('#0B8A5A', '#3DDC97', '#12301F', '#04170F', '#FFFFFF') },
+  neel: { name: 'Neel', swatch: '#2B50E6', light: tint('#2B50E6', '#2B50E6', '#DCE4FF', '#FFFFFF', '#FFFFFF'), dark: tint('#2B50E6', '#7B97FF', '#161F45', '#0A1033', '#FFFFFF') },
+  firozi: { name: 'Firozi', swatch: '#08808C', light: tint('#08808C', '#08808C', '#D2EEF0', '#FFFFFF', '#FFFFFF'), dark: tint('#08808C', '#2FD0DE', '#0F2E32', '#021A1D', '#FFFFFF') },
+  magenta: { name: 'Magenta', swatch: '#A3128F', light: tint('#A3128F', '#A3128F', '#F6D9F1', '#FFFFFF', '#FFFFFF'), dark: tint('#A3128F', '#F06BDA', '#3A1536', '#2B0626', '#FFFFFF') },
   haldi: { name: 'Haldi', swatch: '#FFB800', light: {}, dark: {} },
-  pudina: { name: 'Pudina', swatch: '#6FD3A0', light: tint('#7FD8A8', '#0F7A4D', '#D3F0E0', '#FFFFFF'), dark: tint('#6FD3A0', '#6FD3A0', '#16301F', '#0F1A14') },
-  jamun: { name: 'Jamun', swatch: '#B79BFF', light: tint('#C4AEFF', '#5B34C9', '#E6DDFF', '#FFFFFF'), dark: tint('#B79BFF', '#B79BFF', '#2A2142', '#17112B') },
-  gulab: { name: 'Gulab', swatch: '#FF8FB3', light: tint('#FF9DBC', '#D6246E', '#FFDCE8', '#FFFFFF'), dark: tint('#FF8FB3', '#FF8FB3', '#3D1D2A', '#2A0F1A') },
-  neela: { name: 'Neela', swatch: '#7CB8FF', light: tint('#8CC3FF', '#1F5FD1', '#D9EAFF', '#FFFFFF'), dark: tint('#7CB8FF', '#7CB8FF', '#15283F', '#0B1829') },
 };
 export const ACCENT_IDS = Object.keys(ACCENTS);
 
 let current: ThemeName = 'dark';
-let accentId = 'haldi';
+let accentId = 'mono';
 
 export const themeName = () => current;
 export function setThemeName(n: ThemeName, accent: string = accentId) {
   current = n;
-  accentId = ACCENTS[accent] ? accent : 'haldi';
+  accentId = ACCENTS[accent] ? accent : 'mono';
 }
 
 /** The colours of the theme in use. */

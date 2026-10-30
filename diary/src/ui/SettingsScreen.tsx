@@ -88,7 +88,7 @@ function ThemePage() {
           const on = id === accent;
           return (
             <Pressable key={id} accessibilityRole="radio" accessibilityLabel={`${ACCENTS[id].name} colour`} accessibilityState={{ selected: on }} onPress={() => setAccent(id)} style={s.swatchCell}>
-              <View style={[s.swatch, { backgroundColor: ACCENTS[id].swatch }, on && s.swatchOn]}>{on && <Icon name="check" size={22} color="#17120D" width={3} />}</View>
+              <View style={[s.swatch, { backgroundColor: ACCENTS[id].swatch }, on && s.swatchOn]}>{on && <Icon name="check" size={22} color={ACCENTS[id].light.onHero ?? '#17120D'} width={3} />}</View>
               <Text style={[s.swatchName, on && { color: C.text, fontWeight: '800' }]} numberOfLines={1}>{ACCENTS[id].name}</Text>
             </Pressable>
           );
@@ -204,9 +204,9 @@ function NewsPage() {
 const s = themed(() => StyleSheet.create({
   page: { padding: 16, gap: 12, paddingBottom: 32 },
   group: { fontFamily: 'display', fontSize: 20, fontWeight: '800', color: C.text, marginTop: 4 },
-  swatches: { flexDirection: 'row', gap: 8 },
-  swatchCell: { flex: 1, minWidth: 0, alignItems: 'center', gap: 6 },
-  swatch: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'transparent' },
+  swatches: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 14 },
+  swatchCell: { width: '25%', minWidth: 0, alignItems: 'center', gap: 6 },
+  swatch: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.line },
   swatchOn: { borderColor: C.text },
   swatchName: { fontSize: 12, fontWeight: '600', color: C.muted, maxWidth: '100%' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: RADIUS.lg, backgroundColor: C.card, borderWidth: 1, borderColor: C.line },
