@@ -503,3 +503,16 @@ export function readMessage(text: string, fallback: SlotId): Reading {
   }
   return { items, slot: only };
 }
+
+/** How many days in a row, up to today, have at least one meal logged. Today may still be empty. */
+export function streak(entries: Entry[], now: Date = new Date()): number {
+  const days = new Set(entries.map((e) => e.date));
+  const today = ymd(now);
+  let n = 0;
+  let d = days.has(today) ? today : addDays(today, -1);
+  while (days.has(d)) {
+    n++;
+    d = addDays(d, -1);
+  }
+  return n;
+}

@@ -10,6 +10,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useStore } from './src/state/store';
 import { ChatScreen } from './src/ui/ChatScreen';
+import { HomeScreen, type Tab } from './src/ui/HomeScreen';
 import { Icon, type IconName } from './src/ui/Icon';
 import { MenuScreen } from './src/ui/MenuScreen';
 import { NutritionScreen } from './src/ui/NutritionScreen';
@@ -17,8 +18,8 @@ import { ProfileScreen } from './src/ui/ProfileScreen';
 import { Text } from './src/ui/Text';
 import { C } from './src/ui/theme';
 
-type Tab = 'chat' | 'menu' | 'nutrition' | 'profile';
 const TABS: { key: Tab; label: string; title: string; icon: IconName }[] = [
+  { key: 'home', label: 'Home', title: '', icon: 'home' },
   { key: 'chat', label: 'Chat', title: '', icon: 'pen' },
   { key: 'menu', label: 'Menu', title: 'Your menu', icon: 'calendar' },
   { key: 'nutrition', label: 'Nutrition', title: 'Nutrition', icon: 'chart' },
@@ -26,7 +27,7 @@ const TABS: { key: Tab; label: string; title: string; icon: IconName }[] = [
 ];
 
 function Shell() {
-  const [tab, setTab] = useState<Tab>('chat');
+  const [tab, setTab] = useState<Tab>('home');
   const [fonts, fontError] = useFonts({ Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold });
   const [hydrated, setHydrated] = useState(useStore.persist.hasHydrated());
   const [waited, setWaited] = useState(false);
@@ -58,7 +59,7 @@ function Shell() {
             </View>
           )}
           <View style={{ flex: 1 }}>
-            {tab === 'chat' ? <ChatScreen /> : tab === 'menu' ? <MenuScreen /> : tab === 'nutrition' ? <NutritionScreen /> : <ProfileScreen />}
+            {tab === 'home' ? <HomeScreen go={setTab} /> : tab === 'chat' ? <ChatScreen /> : tab === 'menu' ? <MenuScreen /> : tab === 'nutrition' ? <NutritionScreen /> : <ProfileScreen />}
           </View>
           <View style={s.nav}>
             {TABS.map((t) => {

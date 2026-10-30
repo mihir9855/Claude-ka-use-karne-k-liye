@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { LIBRARY } from '../src/data/library';
-import { readMessage } from '../src/core/diary';
+import { readMessage, streak } from '../src/core/diary';
 import { allowed, computeTargets, newPerson } from '../src/core/profile';
 import { dayMenu, hints, learned, makeEntry, match, nextSlot, sampleEntries, slotAt, splitNames, suggest, totalsFor, weekMenu, ymd, type Entry } from '../src/core/diary';
 
@@ -170,4 +170,13 @@ test('the meal is read from the words in the message', () => {
   assert.deepEqual(readMessage('poha, chai', 'l').items.map((x) => x.slot), ['l', 'l']);
   assert.deepEqual(readMessage('', 'l').items, []);
   assert.deepEqual(readMessage('lunch', 'b').items, []);
+});
+
+test('the streak counts days in a row up to today', () => {
+  const e = (back: number) => makeEntry('poha', 'b', ymd(new Date(2026, 9, 30 - back)));
+  assert.equal(streak([], NOW), 0);
+  assert.equal(streak([e(0), e(1), e(2)], NOW), 3);
+  assert.equal(streak([e(1), e(2)], NOW), 2); // today is not logged yet, the streak is still alive
+  assert.equal(streak([e(0), e(2)], NOW), 1);
+  assert.equal(streak([e(3)], NOW), 0);
 });
