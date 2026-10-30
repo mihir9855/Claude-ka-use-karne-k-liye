@@ -6,15 +6,27 @@ import { Manrope_800ExtraBold } from '@expo-google-fonts/manrope/800ExtraBold';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { BackHandler, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useStore } from './src/state/store';
-import { LearnedScreen } from './src/ui/LearnedScreen';
 import { ChatScreen } from './src/ui/ChatScreen';
+import { Icon, type IconName } from './src/ui/Icon';
+import { MenuScreen } from './src/ui/MenuScreen';
+import { NutritionScreen } from './src/ui/NutritionScreen';
+import { ProfileScreen } from './src/ui/ProfileScreen';
+import { Text } from './src/ui/Text';
 import { C } from './src/ui/theme';
 
+type Tab = 'chat' | 'menu' | 'nutrition' | 'profile';
+const TABS: { key: Tab; label: string; title: string; icon: IconName }[] = [
+  { key: 'chat', label: 'Chat', title: '', icon: 'pen' },
+  { key: 'menu', label: 'Menu', title: 'Your menu', icon: 'calendar' },
+  { key: 'nutrition', label: 'Nutrition', title: 'Nutrition', icon: 'chart' },
+  { key: 'profile', label: 'Profile', title: 'Profile', icon: 'user' },
+];
+
 function Shell() {
-  const [learned, setLearned] = useState(false);
+  const [tab, setTab] = useState<Tab>('chat');
   const [fonts, fontError] = useFonts({ Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold });
   const [hydrated, setHydrated] = useState(useStore.persist.hasHydrated());
   const [waited, setWaited] = useState(false);
@@ -30,22 +42,40 @@ function Shell() {
       clearTimeout(timer);
     };
   }, []);
-  useEffect(() => {
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (learned) {
-        setLearned(false);
-        return true;
-      }
-      return false;
-    });
-    return () => sub.remove();
-  }, [learned]);
   const ready = hydrated && (fonts || !!fontError || waited);
+  const cur = TABS.find((t) => t.key === tab)!;
 
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
       <StatusBar style="light" />
-      {ready && (learned ? <LearnedScreen onClose={() => setLearned(false)} /> : <ChatScreen onOpenLearned={() => setLearned(true)} />)}
+      {ready && (
+        <>
+          {cur.title !== '' && (
+            <View style={s.header}>
+              <Text style={s.title} numberOfLines={1}>
+                {cur.title}
+              </Text>
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            {tab === 'chat' ? <ChatScreen /> : tab === 'menu' ? <MenuScreen /> : tab === 'nutrition' ? <NutritionScreen /> : <ProfileScreen />}
+          </View>
+          <View style={s.nav}>
+            {TABS.map((t) => {
+              const on = t.key === tab;
+              return (
+                <Pressable key={t.key} accessibilityRole="tab" accessibilityLabel={t.label} accessibilityState={{ selected: on }} onPress={() => setTab(t.key)} style={s.navItem}>
+                  <View style={[s.navBar, on && { backgroundColor: C.accent }]} />
+                  <Icon name={t.icon} size={22} color={on ? C.accent : C.muted} width={on ? 2 : 1.6} />
+                  <Text style={[s.navText, on && { color: C.accent, fontWeight: '700' }]} numberOfLines={1}>
+                    {t.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -60,4 +90,10 @@ export default function App() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
+  header: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: C.line },
+  title: { fontSize: 24, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
+  nav: { flexDirection: 'row', backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.line },
+  navItem: { flex: 1, minWidth: 0, alignItems: 'center', gap: 4, paddingBottom: 8 },
+  navBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent', marginBottom: 6 },
+  navText: { fontSize: 12, fontWeight: '500', color: C.muted, maxWidth: '100%' },
 });

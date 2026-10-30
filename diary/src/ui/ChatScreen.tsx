@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type ScrollViewInstance } from 'react-native';
-import { SLOT_ORDER, dayMenu, daysAgo, hints, nextSlot, splitNames, totalsFor, ymd, type Entry, type SlotId } from '../core/diary';
-import { useStore } from '../state/store';
+import { SLOT_ORDER, dayMenu, daysAgo, hints, nextSlot, readMessage, totalsFor, ymd, type Entry, type SlotId } from '../core/diary';
+import { personName, useActive, useStore } from '../state/store';
 import { Icon } from './Icon';
 import { Muted } from './kit';
 import { SLOT_ICON_ID, slotLabel } from './slots';
@@ -38,10 +38,12 @@ function reply(batch: Batch, dayTotal: { kcal: number; protein: number }): strin
   return out;
 }
 
-export function ChatScreen({ onOpenLearned }: { onOpenLearned: () => void }) {
-  const entries = useStore((s) => s.entries);
-  const target = useStore((s) => s.target);
+export function ChatScreen() {
+  const { person, target, entries } = useActive();
+  const persons = useStore((s) => s.persons);
+  const setActive = useStore((s) => s.setActive);
   const add = useStore((s) => s.add);
+  const addItems = useStore((s) => s.addItems);
   const removeBatch = useStore((s) => s.removeBatch);
   const [slot, setSlot] = useState<SlotId>(() => nextSlot(entries));
   const [text, setText] = useState('');
@@ -69,7 +71,7 @@ export function ChatScreen({ onOpenLearned }: { onOpenLearned: () => void }) {
     return [...perDay.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([date, list]) => ({ date, list: list.sort((a, b) => a.at - b.at) }));
   }, [entries]);
   const tot = useMemo(() => totalsFor(entries, today), [entries, today]);
-  const menu = useMemo(() => dayMenu(entries, target), [entries, target]);
+  const menu = useMemo(() => dayMenu(entries, target, new Date(), person.conditions), [entries, target, person.conditions]);
   const suggestions = hints(text.split(',').pop() ?? '');
   const count = entries.length;
 
@@ -78,12 +80,15 @@ export function ChatScreen({ onOpenLearned }: { onOpenLearned: () => void }) {
     return () => clearTimeout(t);
   }, [count, menu.length]);
 
+  // the meal comes from the words: "rice in lunch", "chai evening snacks". Without any, it is the meal button.
+  const reading = useMemo(() => readMessage(text, slot), [text, slot]);
+  const shownSlot = reading.slot ?? slot;
   const send = () => {
-    const names = splitNames(text);
-    if (!names.length) return;
-    add(names, slot, today);
+    if (!reading.items.length) return;
+    addItems(reading.items, today);
     setText('');
-    setSlot(nextSlotAfter(slot));
+    const last = reading.items[reading.items.length - 1].slot;
+    setSlot(reading.slot ? nextAfter(last) : nextAfter(slot));
   };
   const fill = (name: string) => {
     const parts = text.split(',');
@@ -96,15 +101,25 @@ export function ChatScreen({ onOpenLearned }: { onOpenLearned: () => void }) {
       <View style={s.head}>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={s.title} numberOfLines={1}>
-            Khana
+            {persons.length > 1 ? personName(person, persons.indexOf(person)) : 'Khana'}
           </Text>
           <Text style={s.sub} numberOfLines={1}>
             {`${Math.round(tot.kcal)} / ${target.kcal} kcal · ${Math.round(tot.protein)} / ${target.protein} g protein`}
           </Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="What I have learned" onPress={onOpenLearned} hitSlop={8} style={s.iconBtn}>
-          <Icon name="chart" size={22} color={C.text} width={1.8} />
-        </Pressable>
+        {persons.length > 1 && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Diary of ${personName(person, persons.indexOf(person))}. Tap to switch`}
+            onPress={() => setActive(persons[(persons.indexOf(person) + 1) % persons.length].id)}
+            hitSlop={8}
+            style={s.avatar}
+          >
+            <Text style={s.avatarText} numberOfLines={1}>
+              {personName(person, persons.indexOf(person)).charAt(0).toUpperCase()}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       <ScrollView ref={scroll} contentContainerStyle={s.feed} keyboardShouldPersistTaps="handled">
@@ -195,24 +210,24 @@ export function ChatScreen({ onOpenLearned }: { onOpenLearned: () => void }) {
           </ScrollView>
         )}
         <View style={s.inputRow}>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Meal: ${slotLabel(slot)}. Tap to change`} onPress={() => setSlot(nextSlotAfter(slot))} style={s.slotBtn}>
-            <Icon name={SLOT_ICON_ID[slot]} size={17} color={C.text} width={1.8} />
+          <Pressable accessibilityRole="button" accessibilityLabel={`Meal: ${slotLabel(shownSlot)}. Tap to change`} onPress={() => setSlot(nextAfter(reading.slot ?? slot))} style={s.slotBtn}>
+            <Icon name={SLOT_ICON_ID[shownSlot]} size={17} color={C.text} width={1.8} />
             <Text style={s.slotText} numberOfLines={1}>
-              {slotLabel(slot)}
+              {slotLabel(shownSlot)}
             </Text>
           </Pressable>
           <TextInput
             style={s.input}
             value={text}
             onChangeText={setText}
-            placeholder="poha, chai, dal tadka"
+            placeholder="rice in lunch, chai evening"
             placeholderTextColor={C.muted}
             accessibilityLabel="What you ate"
             returnKeyType="send"
             onSubmitEditing={send}
             autoCapitalize="none"
           />
-          <Pressable accessibilityRole="button" accessibilityLabel="Send" onPress={send} style={[s.send, !text.trim() && { opacity: 0.4 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Send" onPress={send} style={[s.send, !reading.items.length && { opacity: 0.4 }]}>
             <Icon name="right" size={20} color={C.onPrimary} width={2.6} />
           </Pressable>
         </View>
@@ -221,7 +236,7 @@ export function ChatScreen({ onOpenLearned }: { onOpenLearned: () => void }) {
   );
 }
 
-const nextSlotAfter = (s: SlotId): SlotId => SLOT_ORDER[(SLOT_ORDER.indexOf(s) + 1) % SLOT_ORDER.length];
+const nextAfter = (s: SlotId): SlotId => SLOT_ORDER[(SLOT_ORDER.indexOf(s) + 1) % SLOT_ORDER.length];
 
 function Bubble({ side, children }: { side: 'me' | 'app'; children: React.ReactNode }) {
   return <View style={[s.bubble, side === 'me' ? s.me : s.app]}>{children}</View>;
@@ -231,6 +246,8 @@ const s = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.line },
   title: { fontSize: 24, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
   sub: { fontSize: 12, color: C.muted, fontWeight: '500' },
+  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 18, fontWeight: '800', color: C.onPrimary },
   iconBtn: { width: 42, height: 42, borderRadius: RADIUS.md, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.line },
   feed: { padding: 16, gap: 14, paddingBottom: 20 },
   dayTag: { alignSelf: 'center', fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 1.2 },

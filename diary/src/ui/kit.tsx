@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, type IconName } from './Icon';
-import { Text } from './Text';
+import { Text, TextInput } from './Text';
 import { C, RADIUS, SHADOW } from './theme';
 
 const ONE_LINE = { numberOfLines: 1, ellipsizeMode: 'tail' } as const;
@@ -72,11 +72,47 @@ export function Bar({ value, max }: { value: number; max: number }) {
   );
 }
 
+export function Choice({ title, sub, on, onPress }: { title: string; sub?: string; on: boolean; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="radio" accessibilityLabel={title} accessibilityState={{ selected: on }} onPress={onPress} style={[s.choice, on && { borderColor: C.accent, backgroundColor: C.accentSoft }]}>
+      <View style={[s.dot, on && { borderColor: C.accent }]}>{on && <View style={s.dotIn} />}</View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={s.choiceTitle} {...ONE_LINE}>
+          {title}
+        </Text>
+        {sub ? (
+          <Text style={s.choiceSub} {...ONE_LINE}>
+            {sub}
+          </Text>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
+export function Field({ label, value, onChangeText, numeric, placeholder }: { label: string; value: string; onChangeText: (v: string) => void; numeric?: boolean; placeholder?: string }) {
+  return (
+    <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+      <Text style={s.fieldLabel} {...ONE_LINE}>
+        {label}
+      </Text>
+      <TextInput style={s.input} value={value} onChangeText={onChangeText} keyboardType={numeric ? 'numeric' : 'default'} placeholder={placeholder} placeholderTextColor={C.muted} accessibilityLabel={label} />
+    </View>
+  );
+}
+
 export function Muted({ children }: { children: ReactNode }) {
   return <Text style={s.muted}>{children}</Text>;
 }
 
 const s = StyleSheet.create({
+  choice: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: RADIUS.md, backgroundColor: C.card, borderWidth: 1, borderColor: C.line },
+  dot: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  dotIn: { width: 9, height: 9, borderRadius: 5, backgroundColor: C.accent },
+  choiceTitle: { fontSize: 15, fontWeight: '700', color: C.text },
+  choiceSub: { fontSize: 12, color: C.muted },
+  fieldLabel: { fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
+  input: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: C.text, minHeight: 46 },
   label: { fontSize: 11, fontWeight: '600', color: C.muted, textTransform: 'uppercase', letterSpacing: 1.1 },
   card: { backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 14, gap: 12, ...SHADOW },
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 46, paddingHorizontal: 16, borderRadius: RADIUS.md },
