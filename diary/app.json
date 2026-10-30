@@ -8,16 +8,25 @@
     "userInterfaceStyle": "light",
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FAF9F6",
+        "backgroundColor": "#FFE14A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.khanadiary.app",
-      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "scheme": "khanadiary",
-    "platforms": ["android", "web"],
-    "web": { "bundler": "metro", "output": "single", "favicon": "./assets/favicon.png" }
+    "platforms": [
+      "android",
+      "web"
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    }
   }
 }

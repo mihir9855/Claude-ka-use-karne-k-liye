@@ -9,8 +9,6 @@ import { C, themed } from './theme';
 /** What the app has learned, the recent days, sample meals, and delete. */
 export function DataPage() {
   const { entries } = useActive();
-  const loadSample = useStore((s) => s.loadSample);
-  const clearSample = useStore((s) => s.clearSample);
   const clearAll = useStore((s) => s.clearAll);
   const [sure, setSure] = useState(false);
   const info = useMemo(() => learned(entries), [entries]);
@@ -19,7 +17,6 @@ export function DataPage() {
     for (const e of entries) by.set(e.date, [...(by.get(e.date) ?? []), entryLabel(e)]);
     return [...by.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 14);
   }, [entries]);
-  const hasSample = entries.some((e) => e.sample);
 
   return (
     <ScrollView contentContainerStyle={s.page}>
@@ -49,8 +46,6 @@ export function DataPage() {
       )}
 
       <View style={{ gap: 10 }}>
-        <Button kind="soft" label="Load sample meals" onPress={loadSample} />
-        {hasSample && <Button kind="soft" label="Remove sample meals" onPress={clearSample} />}
         {sure ? (
           <View style={{ gap: 8 }}>
             <Muted>This deletes every meal and profile on this phone. Make a backup first if you may want them back.</Muted>

@@ -11,23 +11,21 @@ import { pickTextFile, saveTextFile } from './saveFile';
 import { Text } from './Text';
 import { BORDER, C, RADIUS, SETS, SET_IDS, TILE, TILE_INK, themed } from './theme';
 
-type Page = 'profiles' | 'theme' | 'backup' | 'data' | 'features' | 'news' | 'welcome';
+type Page = 'profiles' | 'theme' | 'backup' | 'data' | 'features' | 'news';
 
 const ROWS: { page: Page; icon: IconName; title: string; sub: string }[] = [
   { page: 'profiles', icon: 'users', title: 'Profiles', sub: 'Name, body, goal, health and family' },
   { page: 'theme', icon: 'sparkle', title: 'Theme', sub: 'Dark, light or follow the phone' },
   { page: 'backup', icon: 'file', title: 'Backup and export', sub: 'Save a file to your phone, restore' },
-  { page: 'data', icon: 'chart', title: 'Learning and data', sub: 'What it learned, sample meals, delete' },
+  { page: 'data', icon: 'chart', title: 'Learning and data', sub: 'What it learned, delete my data' },
   { page: 'features', icon: 'heart', title: 'What this app can do', sub: 'Everything in one list' },
   { page: 'news', icon: 'flame', title: `What's new`, sub: `Version ${APP_VERSION}` },
-  { page: 'welcome', icon: 'sunrise', title: 'Show welcome again', sub: 'Replay the welcome and first questions' },
 ];
 
-const ROW_COLOR: Record<Page, string> = { profiles: TILE.green, theme: TILE.pink, backup: TILE.yellow, data: TILE.blue, features: TILE.orange, news: TILE.lilac, welcome: TILE.green };
+const ROW_COLOR: Record<Page, string> = { profiles: TILE.green, theme: TILE.pink, backup: TILE.yellow, data: TILE.blue, features: TILE.orange, news: TILE.lilac };
 
 export function SettingsScreen() {
   const [page, setPage] = useState<Page | null>(null);
-  const setOnboarded = useStore((st) => st.setOnboarded);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -44,7 +42,7 @@ export function SettingsScreen() {
     return (
       <ScrollView contentContainerStyle={s.page}>
         {ROWS.map((r) => (
-          <Tile key={r.page} onPress={() => (r.page === 'welcome' ? setOnboarded(false) : setPage(r.page))} label={r.title} style={s.row}>
+          <Tile key={r.page} onPress={() => setPage(r.page)} label={r.title} style={s.row}>
             <View style={[s.ico, { backgroundColor: ROW_COLOR[r.page] }]}>
               <Icon name={r.icon} size={20} color={TILE_INK} width={2} />
             </View>

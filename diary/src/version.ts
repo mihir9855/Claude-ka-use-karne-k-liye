@@ -22,7 +22,6 @@ export const CHANGELOG: { version: string; items: string[] }[] = [
       'Home dashboard with today\'s menu and the meals coming up by time',
       'Weekly menu, nutrition screen and family profiles',
       'Lists tab: grocery and other lists, filled straight from Chat',
-      'Settings: Show welcome again',
       'Dashboard with a calorie ring by meal, streak tracker and a one-tap Log button',
       'Sticker design: flat bright tiles, thick outlines, hard shadows, and page colours to choose from',
       'Dark and light themes, backup, restore and export',
