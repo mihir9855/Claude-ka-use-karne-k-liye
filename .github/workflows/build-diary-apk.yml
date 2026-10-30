@@ -1,8 +1,12 @@
 name: Build Khana Diary APK
 
-# Manual only: a build starts when someone presses "Run workflow", never on push.
+# A build starts only on purpose: from "Run workflow", or when the marker file diary/BUILD_APK is changed on this branch.
+# Ordinary pushes never build.
 on:
   workflow_dispatch:
+  push:
+    branches: [ccr-c05281a1-0o8b90]
+    paths: ['diary/BUILD_APK']
 
 permissions:
   contents: write
