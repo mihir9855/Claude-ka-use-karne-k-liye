@@ -57,23 +57,33 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
         </View>
       </Tile>
 
-      <View style={s.grid}>
+      <View style={s.stack}>
         {others.map((m, i) => {
           const o = h.optOf(m.slot);
           const eaten = !!m.eaten;
           const bg = eaten ? TILE.green : TILE_CYCLE[(i + 1) % TILE_CYCLE.length];
+          const kcal = eaten ? Math.round(m.eaten!.reduce((a, e) => a + (e.kcal ?? 0), 0)) : o?.kcal;
           return (
             <Tile
               key={m.slot}
-              wrap={s.half}
               bg={bg}
               onPress={() => (eaten ? go('chat') : h.cycle(m.slot))}
               label={`${SLOT_LABEL[m.slot]}: ${eaten ? m.eaten!.map(entryLabel).join(', ') : o?.name ?? ''}`}
-              style={s.tile}
+              style={s.meal}
             >
-              <Text style={s.tag} numberOfLines={1}>{SLOT_LABEL[m.slot].toUpperCase()}</Text>
-              <Text style={s.dish} numberOfLines={1}>{eaten ? m.eaten!.map(entryLabel).join(', ') : o?.name ?? '-'}</Text>
-              <Text style={s.tagSoft} numberOfLines={1}>{eaten ? `${slotClock(m.slot)} · ${Math.round(m.eaten!.reduce((a, e) => a + (e.kcal ?? 0), 0))} kcal` : `${slotClock(m.slot)}${o?.kcal != null ? ` · ${o.kcal} kcal` : ''}`}</Text>
+              <View style={s.col}>
+                <Text style={s.tag} numberOfLines={1}>{`${SLOT_LABEL[m.slot].toUpperCase()} · ${slotClock(m.slot).toUpperCase()}`}</Text>
+                <Text style={s.dish} numberOfLines={1}>{eaten ? m.eaten!.map(entryLabel).join(', ') : o?.name ?? '-'}</Text>
+              </View>
+              <View style={s.mealEnd}>
+                {eaten && (
+                  <View style={s.check}>
+                    <Icon name="check" size={16} color={TILE.green} width={3.4} />
+                  </View>
+                )}
+                <Text style={s.mealKcal} numberOfLines={1}>{kcal != null ? `${kcal}` : ''}</Text>
+                <Text style={s.tagSoft} numberOfLines={1}>{kcal != null ? 'kcal' : ''}</Text>
+              </View>
             </Tile>
           );
         })}
@@ -181,24 +191,29 @@ const s = themed(() => StyleSheet.create({
   legendVal: { fontSize: 12, fontWeight: '800', color: C.text },
   streakTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   flame: { width: 36, height: 36, borderRadius: 18, backgroundColor: TILE.orange, borderWidth: 2, borderColor: TILE_INK, alignItems: 'center', justifyContent: 'center' },
-  bigInk: { fontFamily: 'display', fontSize: 32, fontWeight: '800', color: TILE_INK, letterSpacing: -1.5 },
+  bigInk: { fontFamily: 'display', fontSize: 40, fontWeight: '800', color: TILE_INK, letterSpacing: -1.5 },
   dots: { flexDirection: 'row', gap: 3, marginTop: 6 },
   dot: { flex: 1, aspectRatio: 1, borderRadius: 99, borderWidth: 2, borderColor: TILE_INK, backgroundColor: 'rgba(255,255,255,0.7)', alignItems: 'center', justifyContent: 'center' },
   dotToday: { borderWidth: BORDER + 0.5 },
   dotText: { fontSize: 8, fontWeight: '800', color: TILE_INK },
   next: { padding: 16, gap: 2 },
-  nextDish: { fontFamily: 'display', fontSize: 21, fontWeight: '800', color: TILE_INK, letterSpacing: -0.5 },
+  nextDish: { fontFamily: 'display', fontSize: 24, fontWeight: '800', color: TILE_INK, letterSpacing: -0.5 },
   goWrap: { marginTop: 10 },
   go: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   goText: { color: TILE.yellow, fontSize: 14, fontWeight: '800' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 16 },
   half: { width: '48.5%' },
-  tile: { padding: 12, gap: 2, minHeight: 100, justifyContent: 'center' },
-  tag: { fontSize: 11, fontWeight: '800', color: TILE_INK },
-  tagSoft: { fontSize: 12, fontWeight: '700', color: TILE_INK, opacity: 0.75 },
-  dish: { fontFamily: 'display', fontSize: 15, fontWeight: '800', color: TILE_INK },
-  big: { fontFamily: 'display', fontSize: 32, fontWeight: '800', color: C.text, letterSpacing: -1.5 },
-  muted: { fontSize: 12, fontWeight: '700', color: C.muted },
+  tile: { padding: 14, gap: 4, justifyContent: 'center' },
+  tag: { fontSize: 12, fontWeight: '800', color: TILE_INK },
+  tagSoft: { fontSize: 13, fontWeight: '700', color: TILE_INK, opacity: 0.75 },
+  stack: { gap: 16 },
+  meal: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, minHeight: 76 },
+  mealEnd: { alignItems: 'flex-end', minWidth: 52 },
+  mealKcal: { fontFamily: 'display', fontSize: 20, color: TILE_INK },
+  check: { width: 24, height: 24, borderRadius: 12, backgroundColor: TILE_INK, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  dish: { fontFamily: 'display', fontSize: 20, fontWeight: '800', color: TILE_INK },
+  big: { fontFamily: 'display', fontSize: 40, fontWeight: '800', color: C.text, letterSpacing: -1.5 },
+  muted: { fontSize: 13, fontWeight: '700', color: C.muted },
   head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginTop: 4 },
   h2: { fontFamily: 'script', fontSize: 38, fontWeight: '800', color: C.text, flexShrink: 1 },
   link: { fontSize: 14, fontWeight: '800', color: C.text, textDecorationLine: 'underline' },
