@@ -4,7 +4,7 @@ export const APP_VERSION = '1.0.0';
 export const WHAT_IT_DOES: { icon: 'pen' | 'calendar' | 'chart' | 'users' | 'flame' | 'sparkle' | 'heart' | 'file' | 'cart'; title: string; text: string }[] = [
   { icon: 'pen', title: 'Log by typing names', text: 'Write "rice dal in lunch" or "5 roti dinner". It finds the meal and the count from your words.' },
   { icon: 'sparkle', title: 'Learns your habits', text: 'What you eat often, and what you eat together, becomes your usual meals.' },
-  { icon: 'calendar', title: 'Plans your menu', text: "Today's menu, what comes next by the clock, and a menu for the whole week. Swap any dish." },
+  { icon: 'calendar', title: 'Plans your menu', text: "For the first 3 days it only listens. After that it plans today, what comes next by the clock, and the whole week from the meals you ate. Swap any dish." },
   { icon: 'chart', title: 'Tracks nutrition', text: 'Calories, protein, carbs, fat and fibre against your own daily goal, with a 7-day chart.' },
   { icon: 'users', title: 'Profiles for the family', text: 'Up to six people, each with their own diary, goal and health conditions.' },
   { icon: 'heart', title: 'Health aware', text: 'Menus go easier on heavy dishes for diabetes, cholesterol or BP, and skip dairy or gluten when asked.' },

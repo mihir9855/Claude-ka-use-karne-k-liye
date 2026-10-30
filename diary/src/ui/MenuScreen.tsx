@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SLOT_ORDER, addDays, entryLabel, weekMenu, ymd } from '../core/diary';
+import { LEARN_DAYS, SLOT_ORDER, addDays, entryLabel, isLearned, learnedDays, weekMenu, ymd } from '../core/diary';
 import { useActive, useStore } from '../state/store';
 import { Icon } from './Icon';
 import { Button, Card, Label, Muted, Pill } from './kit';
@@ -25,6 +25,17 @@ export function MenuScreen() {
   const week = useMemo(() => weekMenu(entries, target, picks, new Date(), person.conditions), [entries, target, picks, person.conditions]);
   const avgK = Math.round(week.reduce((a, d) => a + d.kcal, 0) / week.length);
   const avgP = Math.round(week.reduce((a, d) => a + d.protein, 0) / week.length);
+
+  if (!isLearned(entries)) {
+    return (
+      <ScrollView contentContainerStyle={s.page}>
+        <Tile bg={TILE.yellow} style={s.heroCard}>
+          <Text style={s.heroTitle} numberOfLines={1}>{`Learning · day ${Math.min(learnedDays(entries), LEARN_DAYS)} of ${LEARN_DAYS}`}</Text>
+          <Text style={s.heroNote}>{`Your menu starts after ${LEARN_DAYS} days. Tell me what you ate in Chat, and I will plan from your own meals.`}</Text>
+        </Tile>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={s.page}>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { SLOT_TIME, addDays, streak, todayMenu, totalsFor, upcomingMeals, ymd, type SlotId } from '../core/diary';
+import { LEARN_DAYS, SLOT_TIME, addDays, isLearned, learnedDays, streak, todayMenu, totalsFor, upcomingMeals, ymd, type SlotId } from '../core/diary';
 import { personName, useActive, useStore } from '../state/store';
 
 export const clock = (d: Date) => d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
@@ -46,6 +46,8 @@ export function useHome() {
     return { date, letter: new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'narrow' }), has: entries.some((e) => e.date === date) };
   });
   return {
+    learned: isLearned(entries),
+    learnedDays: Math.min(learnedDays(entries), LEARN_DAYS),
     week, now, today, target, tot, logged, menu, upcoming, nextRow, optOf,
     nextOpt: nextRow ? optOf(nextRow.slot) : undefined,
     cycle: (slot: SlotId) => setPick((p) => ({ ...p, [slot]: (p[slot] ?? 0) + 1 })),

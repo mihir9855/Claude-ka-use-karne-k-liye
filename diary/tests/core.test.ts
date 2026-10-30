@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { LIBRARY } from '../src/data/library';
-import { entryLabel, readMessage, streak, todayMenu, upcomingMeals } from '../src/core/diary';
+import { LEARN_DAYS, entryLabel, isLearned, learnedDays, readMessage, streak, todayMenu, upcomingMeals } from '../src/core/diary';
 import { allowed, computeTargets, newPerson } from '../src/core/profile';
 import { dayMenu, hints, learned, makeEntry, match, nextSlot, sampleEntries, slotAt, splitNames, suggest, totalsFor, weekMenu, ymd, type Entry } from '../src/core/diary';
 
@@ -61,31 +61,6 @@ test('slots follow the clock and skip meals already logged', () => {
   assert.equal(nextSlot([makeEntry('poha', 'b', today)], NOW), 'm');
 });
 
-test('suggestions follow habit, and avoid what was just eaten', () => {
-  const entries: Entry[] = [];
-  for (let d = 10; d >= 4; d--) entries.push(makeEntry(d % 3 === 0 ? 'Upma' : 'Poha', 'b', `2026-10-${String(30 - d).padStart(2, '0')}`));
-  const s = suggest(entries, 'b', T, NOW);
-  assert.equal(s.length, 3);
-  assert.equal(s[0].name, 'Poha');
-  assert.ok(s[0].why.some((w) => /often have it at breakfast/i.test(w.text)));
-  // after eating Poha today it drops down
-  const after = suggest([...entries, makeEntry('Poha', 'b', ymd(NOW))], 'b', T, NOW);
-  assert.notEqual(after[0].name, 'Poha');
-});
-
-test('with no history the library still gives ideas for the meal', () => {
-  for (const slot of ['b', 'l', 's', 'd'] as const) {
-    const s = suggest([], slot, T, NOW);
-    assert.equal(s.length, 3, slot);
-    assert.ok(s.every((x) => x.why.some((w) => /New idea/.test(w.text))));
-  }
-});
-
-test('low protein pulls protein-rich dishes up', () => {
-  const s = suggest([], 'l', { ...T, protein: 90 }, NOW);
-  assert.ok(s.every((x) => (x.protein ?? 0) >= 10), s.map((x) => `${x.name} ${x.protein}`).join(', '));
-});
-
 test('sample meals teach habits', () => {
   const sample = sampleEntries(NOW);
   assert.ok(sample.length > 45 && sample.every((e) => e.sample));
@@ -93,17 +68,6 @@ test('sample meals teach habits', () => {
   assert.equal(l.days, 14);
   assert.ok(l.top && l.top.n >= 4);
   assert.ok(l.usual.b && l.usual.d);
-});
-
-test('the day menu does not offer one dish for two meals', () => {
-  const m = dayMenu([], T, new Date(2026, 9, 30, 7, 0, 0));
-  assert.equal(m.length, 5);
-  const firsts = m.map((x) => x.options[0].name);
-  assert.equal(new Set(firsts).size, firsts.length, firsts.join(', '));
-  assert.ok(m.every((x) => x.options.length === 3));
-  // meals already logged are left out
-  const done = dayMenu([makeEntry('poha', 'b', '2026-10-30')], T, new Date(2026, 9, 30, 7, 0, 0));
-  assert.deepEqual(done.map((x) => x.slot), ['m', 'l', 's', 'd']);
 });
 
 test('targets follow the profile and the goal', () => {
@@ -143,13 +107,6 @@ test('the week menu covers seven days with variety', () => {
   assert.ok(week.slice(1).every((d) => d.slots.length === 5 && d.kcal > 800));
 });
 
-test('swapped dishes stay in the week menu, and logged meals show as eaten', () => {
-  const picks = { [`${ymd(new Date(2026, 9, 31))}|d`]: 'Dal fry' };
-  const week = weekMenu([makeEntry('poha', 'b', ymd(NOW))], T, picks, NOW);
-  assert.equal(week[1].slots.find((s) => s.slot === 'd')?.chosen?.name, 'Dal fry');
-  assert.equal(week[0].slots[0].eaten?.[0].name, 'Poha');
-});
-
 test('typed names and typos still find the dish', () => {
   assert.equal(match('rice')?.[0], 'Steamed rice');
   assert.equal(match('daal')?.[0], 'Dal tadka');
@@ -187,36 +144,6 @@ function logLunch(date: string, text: string): Entry[] {
   return readMessage(text, 'l').items.map((it) => makeEntry(it.name, it.slot, date, false, 0, batch));
 }
 
-test('a few logged meals are enough to change the suggestions', () => {
-  // two lunches of dal and rice, a day apart
-  const entries = [...logLunch('2026-10-27', 'dal and rice in lunch'), ...logLunch('2026-10-28', 'rice dal lunch')];
-  const s = suggest(entries, 'l', T, NOW, 3);
-  assert.equal(s[0].name, 'Dal tadka + Steamed rice', s.map((x) => x.name).join(' | '));
-  assert.deepEqual(s[0].items, ['Dal tadka', 'Steamed rice']);
-  assert.ok(s[0].why.some((w) => /often have it at lunch/i.test(w.text)));
-  assert.equal(learned(entries).usual.l?.name, 'Dal tadka + Steamed rice');
-  // one single dish eaten once still moves up
-  const one = suggest([makeEntry('Palak paneer', 'l', '2026-10-27')], 'l', T, NOW, 3);
-  assert.equal(one[0].name, 'Palak paneer');
-});
-
-test("today's menu shows what was eaten and plans the rest, and it changes when you log", () => {
-  const noon = new Date(2026, 9, 30, 12, 0, 0);
-  const before = todayMenu([], T, noon);
-  assert.equal(before.length, 5);
-  assert.ok(before.every((m) => !m.eaten && m.options.length === 3));
-  assert.equal(before[0].missed, true); // breakfast time has passed
-  assert.equal(before[2].missed, false);
-  const names = before.map((m) => m.options[0].name);
-  assert.equal(new Set(names).size, 5, names.join(', '));
-  const after = todayMenu(logLunch(ymd(noon), 'dal rice in lunch'), T, noon);
-  assert.equal(after[2].eaten?.length, 2);
-  assert.ok(after[2].options.length === 0);
-  // what was eaten is not planned again for the other meals
-  const planned = after.filter((m) => !m.eaten).map((m) => m.options[0].name);
-  assert.ok(!planned.some((n) => /Dal tadka|Steamed rice/.test(n)), planned.join(', '));
-});
-
 test('messy messages: counts, glued words, units and typos', () => {
   const read = (t: string, f: 'b' | 'l' | 's' | 'd' = 'b') => readMessage(t, f).items.map((i) => {
     const e = makeEntry(i.name, i.slot, '2026-10-30', false, 0, 'x', undefined, i.qty);
@@ -248,7 +175,75 @@ test('morning snack, evening snack and bare snack are told apart', () => {
   assert.deepEqual(slots('makhana snack', 16), ['s']);
 });
 
-test('upcoming meals follow the clock and skip what is eaten', () => {
-  const up = upcomingMeals([makeEntry('poha', 'b', '2026-10-30')], T, {}, new Date(2026, 9, 30, 9, 0, 0));
+
+// ---- the app suggests nothing until it has learned, and then only what was eaten ----
+const logDay = (date: string, text: string): Entry[] => {
+  const batch = `b-${date}-${text}`; // one message is one batch, so dishes typed together are learned as a meal
+  return readMessage(text, 'b').items.map((it) => makeEntry(it.name, it.slot, date, false, 0, batch));
+};
+/** three days of a simple routine, enough to count as learned */
+const ROUTINE = ['2026-10-27', '2026-10-28', '2026-10-29'].flatMap((d, i) => [
+  ...logDay(d, i === 1 ? 'upma breakfast' : 'poha breakfast'),
+  ...logDay(d, 'banana morning snack'),
+  ...logDay(d, 'dal rice lunch'),
+  ...logDay(d, 'chai evening snack'),
+  ...logDay(d, 'roti sabji dinner'),
+]);
+
+test('a fresh app suggests nothing, even for an empty day', () => {
+  for (const slot of ['b', 'm', 'l', 's', 'd'] as const) assert.deepEqual(suggest([], slot, T, NOW), [], slot);
+  assert.ok(todayMenu([], T, new Date(2026, 9, 30, 12, 0, 0)).every((m) => m.options.length === 0));
+  assert.equal(weekMenu([], T, {}, NOW).every((d) => d.slots.every((s) => !s.chosen)), true);
+  assert.deepEqual(upcomingMeals([], T, {}, NOW), []);
+});
+
+test('it keeps quiet for the first days and starts after three days of logging', () => {
+  const two = ROUTINE.filter((e) => e.date !== '2026-10-29');
+  assert.equal(learnedDays(two), 2);
+  assert.equal(isLearned(two), false);
+  assert.deepEqual(suggest(two, 'l', T, NOW), []);
+  assert.equal(learnedDays(ROUTINE), LEARN_DAYS);
+  assert.equal(isLearned(ROUTINE), true);
+  assert.ok(suggest(ROUTINE, 'l', T, NOW).length > 0);
+});
+
+test('after learning it only offers what you ate, at the meal you ate it', () => {
+  const eaten = new Set(ROUTINE.map((e) => e.name));
+  for (const slot of ['b', 'm', 'l', 's', 'd'] as const) {
+    const s = suggest(ROUTINE, slot, T, NOW, 5);
+    assert.ok(s.length > 0, slot);
+    for (const x of s) assert.ok(x.items.every((n) => eaten.has(n)), `${slot}: ${x.name}`);
+  }
+  const b = suggest(ROUTINE, 'b', T, NOW);
+  assert.deepEqual(b.map((x) => x.name).sort(), ['Poha', 'Upma']); // only the two breakfasts that were eaten
+  assert.equal(b[0].name, 'Upma'); // Poha was yesterday, so it waits a day
+  assert.ok(b.find((x) => x.name === 'Poha')?.why.some((w) => /often have it at breakfast/i.test(w.text)));
+  // once Upma is eaten today, Poha comes first
+  const after = suggest([...ROUTINE, makeEntry('Upma', 'b', ymd(NOW))], 'b', T, NOW);
+  assert.equal(after[0].name, 'Poha');
+  // a slot nothing was logged for gets no idea
+  assert.deepEqual(suggest(ROUTINE.filter((e) => e.slot !== 'm'), 'm', T, NOW), []);
+});
+
+test('the day menu, today and the week follow what was learned', () => {
+  const now = new Date(2026, 9, 30, 7, 0, 0);
+  const m = dayMenu(ROUTINE, T, now);
+  assert.equal(m.length, 5);
+  assert.ok(m.every((x) => x.options.length > 0));
+  const done = dayMenu([...ROUTINE, makeEntry('poha', 'b', '2026-10-30')], T, now);
+  assert.deepEqual(done.map((x) => x.slot), ['m', 'l', 's', 'd']);
+  const today = todayMenu([...ROUTINE, makeEntry('poha', 'b', '2026-10-30')], T, now);
+  assert.equal(today[0].eaten?.[0].name, 'Poha');
+  assert.ok(today.slice(1).every((x) => !x.eaten && x.options.length > 0));
+  const week = weekMenu(ROUTINE, T, {}, NOW);
+  assert.equal(week.length, 7);
+  assert.ok(week.every((d) => d.slots.length === 5 && d.slots.every((s) => s.chosen)));
+  const up = upcomingMeals([...ROUTINE, makeEntry('poha', 'b', '2026-10-30')], T, {}, new Date(2026, 9, 30, 9, 0, 0));
   assert.deepEqual(up.slice(0, 4).map((u) => u.slot), ['m', 'l', 's', 'd']);
+});
+
+test('a combo you always eat together is suggested together', () => {
+  const s = suggest(ROUTINE, 'l', T, NOW, 3);
+  assert.equal(s[0].name, 'Dal tadka + Steamed rice');
+  assert.deepEqual(s[0].items, ['Dal tadka', 'Steamed rice']);
 });

@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
-import { SLOT_LABEL, SLOT_ORDER, entryLabel, type SlotId } from '../core/diary';
+import { LEARN_DAYS, SLOT_LABEL, SLOT_ORDER, entryLabel, type SlotId } from '../core/diary';
 import { Icon } from './Icon';
 import { Bar, Tile } from './kit';
 import { Text } from './Text';
@@ -13,7 +13,8 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
   const h = useHome();
   const next = h.nextRow;
   const opt = h.nextOpt;
-  const others = h.menu.filter((m) => m !== next);
+  // only what was eaten, or what a learned habit suggests: a fresh app shows no made-up meals
+  const others = h.menu.filter((m) => m !== next && (m.eaten || m.options.length > 0));
   return (
     <ScrollView contentContainerStyle={s.page}>
       <View style={s.headRow}>
@@ -27,6 +28,7 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
         </Tile>
       </View>
 
+      {h.learned || next ? (
       <Tile bg={TILE.yellow} style={s.next}>
         <Text style={s.tag} numberOfLines={1}>{next ? `NEXT · ${slotClock(next.slot).toUpperCase()} · ${SLOT_LABEL[next.slot].toUpperCase()}` : 'ALL DONE'}</Text>
         <Pressable accessibilityRole="button" accessibilityLabel={`${opt?.name ?? ''}. Tap for another option`} onPress={() => next && h.cycle(next.slot)}>
@@ -39,6 +41,16 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
           </Tile>
         )}
       </Tile>
+      ) : (
+      <Tile bg={TILE.yellow} style={s.next}>
+        <Text style={s.tag} numberOfLines={1}>{`LEARNING · DAY ${h.learnedDays} OF ${LEARN_DAYS}`}</Text>
+        <Text style={s.nextDish} numberOfLines={1}>Tell me what you ate</Text>
+        <Text style={s.tagSoft}>{`Write your meals in Chat for ${LEARN_DAYS} days. I will learn what you eat, and then I will start suggesting.`}</Text>
+        <Tile bg={TILE_INK} onPress={() => go('chat')} label="Log a meal" radius={RADIUS.pill} offset={3} wrap={s.goWrap} style={s.go}>
+          <Text style={s.goText} numberOfLines={1}>Log a meal</Text>
+        </Tile>
+      </Tile>
+      )}
 
       <Tile style={s.donutTile}>
         <Text style={s.legendTitle} numberOfLines={1}>Today by meal</Text>
@@ -124,7 +136,7 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
         </Pressable>
       </View>
       <Tile style={s.list}>
-        {h.upcoming.length === 0 && <Text style={s.muted}>Nothing planned yet.</Text>}
+        {h.upcoming.length === 0 && <Text style={s.muted}>{h.learned ? 'Nothing planned yet.' : `Suggestions start after ${LEARN_DAYS} days of logging.`}</Text>}
         {h.upcoming.map((u, i) => (
           <View key={`${u.date}${u.slot}`}>
             {(i === 0 || h.upcoming[i - 1].date !== u.date) && <Text style={s.day}>{dayLabel(u.date, h.today)}</Text>}

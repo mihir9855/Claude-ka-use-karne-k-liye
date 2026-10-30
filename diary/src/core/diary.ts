@@ -307,6 +307,11 @@ const HABIT = 2.5; // what one more time at that meal is worth: your own habits 
  * Three dishes for one meal. What you eat at that meal, alone or together, ranks first. What you ate today or
  * yesterday ranks lower, and the day's missing protein and calories pull the right dishes up.
  */
+/** How many different days must be logged before the app starts suggesting. */
+export const LEARN_DAYS = 3;
+export const learnedDays = (entries: Entry[]) => new Set(entries.map((e) => e.date)).size;
+export const isLearned = (entries: Entry[]) => learnedDays(entries) >= LEARN_DAYS;
+
 export function suggest(entries: Entry[], slot: SlotId, target: Target, now: Date = new Date(), count = 3, conditions: Condition[] = []): Suggestion[] {
   const today = ymd(now);
   const tot = totalsFor(entries, today);
@@ -315,7 +320,6 @@ export function suggest(entries: Entry[], slot: SlotId, target: Target, now: Dat
   const stats = statsOf(entries);
   const combos = combosOf(entries);
   const label = SLOT_LABEL[slot].toLowerCase();
-  const libSlot = slot === 'm' ? 's' : slot; // the library has one snack list for both snacks
 
   interface Cand {
     key: string;
@@ -330,14 +334,9 @@ export function suggest(entries: Entry[], slot: SlotId, target: Target, now: Dat
     last: string;
     combo?: boolean;
   }
+  // nothing is suggested until the app has learned: it needs a few days of what you ate, and it only offers what you ate
+  if (!isLearned(entries)) return [];
   const pool = new Map<string, Cand>();
-  for (const d of LIBRARY) {
-    if (d[4].includes(libSlot) && (slot === 'm' ? d[3] === 'sn' : d[3] === 'co' || d[3] === 'ma' || d[3] === 'sn')) {
-      const k = norm(d[0]);
-      const st = stats.get(k);
-      pool.set(k, { key: k, name: d[0], items: [d[0]], kcal: d[1], protein: d[2], carbs: d[5], fat: d[6], inSlot: st?.slotCount[slot] ?? 0, total: st?.total ?? 0, last: st?.last ?? '' });
-    }
-  }
   for (const [k, st] of stats) {
     if (st.slotCount[slot]) pool.set(k, { key: k, name: st.name, items: [st.name], kcal: st.kcal, protein: st.protein, carbs: st.carbs, fat: st.fat, inSlot: st.slotCount[slot] ?? 0, total: st.total, last: st.last });
   }

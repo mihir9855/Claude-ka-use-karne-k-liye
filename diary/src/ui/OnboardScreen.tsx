@@ -147,7 +147,7 @@ export function OnboardScreen() {
                 <Stat label="Fibre" v={`${target.fiber} g`} />
               </View>
             </Tile>
-            <Muted>Next, tell me what you ate in Chat, like "poha, chai" or "dal rice in lunch". I will start planning your menu from it. You can add family members in Settings.</Muted>
+            <Muted>Next, tell me what you ate in Chat, like "poha, chai" or "dal rice in lunch". For the first 3 days I will only listen and learn. After that I will suggest meals from your own habits. You can add family members in Settings.</Muted>
           </>
         )}
       </ScrollView>
