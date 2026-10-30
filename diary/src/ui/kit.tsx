@@ -26,7 +26,7 @@ export function Button({ label, onPress, icon, kind = 'primary' }: { label: stri
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      style={({ pressed }) => [s.btn, { backgroundColor: bg }, kind === 'outline' && { borderWidth: 1, borderColor: C.ink }, pressed && { opacity: 0.75 }]}
+      style={({ pressed }) => [s.btn, { backgroundColor: bg }, kind === 'outline' && { borderWidth: 1, borderColor: C.line }, pressed && { opacity: 0.75 }]}
     >
       {icon && <Icon name={icon} size={17} color={fg} width={2.2} />}
       <Text style={[s.btnText, { color: fg }]} {...ONE_LINE}>
@@ -45,8 +45,8 @@ export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean
       onPress={onPress}
       style={({ pressed }) => [s.chip, on && { backgroundColor: C.ink, borderColor: C.ink }, pressed && { opacity: 0.75 }]}
     >
-      {icon && <Icon name={icon} size={15} color={on ? '#fff' : C.muted} width={2} />}
-      <Text style={[s.chipText, on && { color: '#fff', fontWeight: '700' }]} {...ONE_LINE}>
+      {icon && <Icon name={icon} size={15} color={on ? C.onPrimary : C.muted} width={2} />}
+      <Text style={[s.chipText, on && { color: C.onPrimary, fontWeight: '700' }]} {...ONE_LINE}>
         {label}
       </Text>
     </Pressable>

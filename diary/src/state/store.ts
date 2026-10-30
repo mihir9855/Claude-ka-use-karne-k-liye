@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { makeEntry, sampleEntries, type Entry, type SlotId, type Target } from '../core/diary';
+import { makeEntry, newBatch, sampleEntries, type Entry, type SlotId, type Target } from '../core/diary';
 
 /** Phone storage, falling back to memory when the browser blocks it, so the app still opens. */
 const memory = new Map<string, string>();
@@ -37,6 +37,7 @@ interface State {
   /** type the names of what was eaten; each becomes one entry */
   add: (names: string[], slot: SlotId, date: string) => void;
   remove: (id: string) => void;
+  removeBatch: (batch: string) => void;
   setTarget: (patch: Partial<Target>) => void;
   loadSample: () => void;
   clearSample: () => void;
@@ -48,8 +49,14 @@ export const useStore = create<State>()(
     (set) => ({
       entries: [],
       target: DEFAULT_TARGET,
-      add: (names, slot, date) => set((s) => ({ entries: [...s.entries, ...names.map((n) => makeEntry(n, slot, date))] })),
+      add: (names, slot, date) =>
+        set((s) => {
+          const batch = newBatch();
+          const at = Date.now();
+          return { entries: [...s.entries, ...names.map((n) => makeEntry(n, slot, date, false, at, batch))] };
+        }),
       remove: (id) => set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
+      removeBatch: (batch) => set((s) => ({ entries: s.entries.filter((e) => e.batch !== batch) })),
       setTarget: (patch) => set((s) => ({ target: { ...s.target, ...patch } })),
       loadSample: () => set((s) => ({ entries: [...s.entries.filter((e) => !e.sample), ...sampleEntries()] })),
       clearSample: () => set((s) => ({ entries: s.entries.filter((e) => !e.sample) })),

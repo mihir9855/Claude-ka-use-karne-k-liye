@@ -15,6 +15,10 @@ export interface Entry {
   protein: number | null;
   /** true for the demo meals, so they can be cleared on their own */
   sample?: boolean;
+  /** when it was logged (ms); older saved entries may not have it */
+  at?: number;
+  /** entries typed in one go share a batch, like one chat message */
+  batch?: string;
 }
 
 export interface Target {
@@ -88,7 +92,9 @@ export function hints(text: string, limit = 6): string[] {
 let seq = 0;
 const uid = () => `${Date.now().toString(36)}${(seq++).toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-export function makeEntry(name: string, slot: SlotId, date: string, sample = false): Entry {
+export const newBatch = uid;
+
+export function makeEntry(name: string, slot: SlotId, date: string, sample = false, at: number = Date.now(), batch: string = uid()): Entry {
   const m = match(name);
   const clean = name.trim().replace(/\s+/g, ' ');
   return {
@@ -100,6 +106,8 @@ export function makeEntry(name: string, slot: SlotId, date: string, sample = fal
     kcal: m ? m[1] : null,
     protein: m ? m[2] : null,
     sample: sample || undefined,
+    at,
+    batch,
   };
 }
 
@@ -290,8 +298,24 @@ export function sampleEntries(now: Date = new Date()): Entry[] {
     for (const s of SLOT_ORDER) {
       if (s === 's' && rnd() < 0.35) continue;
       const list = habits[s];
-      out.push(makeEntry(list[Math.floor(rnd() * list.length)], s, date, true));
+      const hour = { b: 8, l: 13, s: 17, d: 20 }[s];
+      out.push(makeEntry(list[Math.floor(rnd() * list.length)], s, date, true, new Date(`${date}T${hour < 10 ? '0' : ''}${hour}:15:00`).getTime()));
     }
   }
   return out;
+}
+
+/* ---------- the menu for the rest of today ---------- */
+
+export interface MenuSlot {
+  slot: SlotId;
+  options: Suggestion[];
+}
+
+/** For each meal still to come today, three dishes, best first. Meals already logged are left out. */
+export function dayMenu(entries: Entry[], target: Target, now: Date = new Date()): MenuSlot[] {
+  const today = ymd(now);
+  const done = new Set(entries.filter((e) => e.date === today).map((e) => e.slot));
+  const cur = SLOT_ORDER.indexOf(slotAt(now.getHours()));
+  return SLOT_ORDER.filter((s, i) => i >= cur && !done.has(s)).map((slot) => ({ slot, options: suggest(entries, slot, target, now, 3) }));
 }

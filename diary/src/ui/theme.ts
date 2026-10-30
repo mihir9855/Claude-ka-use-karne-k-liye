@@ -1,51 +1,40 @@
-// "Paper and ink": a warm off-white page, near-black ink, thin lines, and one terracotta accent.
+// "Rasoi at night": a dark kitchen-green page, warm cream text, and one marigold accent.
 export const C = {
-  bg: '#FAF9F6',
-  card: '#FFFFFF',
-  surface: '#F1EFE9',
-  text: '#1A1A18',
-  muted: '#77746B',
-  line: '#E7E4DC',
-  ink: '#1A1A18',
-  inkSoft: '#2E2D2A',
-  primary: '#1A1A18',
-  primarySoft: '#EFEDE6',
-  onPrimary: '#FFFFFF',
-  accent: '#C2410C',
-  accentSoft: '#FBEADF',
-  good: '#2F7D5B',
-  goodSoft: '#E3F1EA',
-  danger: '#B42318',
-  dangerSoft: '#FBE7E4',
-  // legacy names used by older screens
-  header: '#1A1A18',
-  headerSoft: '#2E2D2A',
+  bg: '#101713',
+  card: '#1B261F',
+  surface: '#233128',
+  text: '#F3EFE4',
+  muted: '#9AA79C',
+  line: '#2E3E33',
+  ink: '#F2B138',
+  inkSoft: '#D99A1F',
+  primary: '#F2B138',
+  primarySoft: '#2A2A17',
+  onPrimary: '#1B1405',
+  accent: '#F2B138',
+  accentSoft: '#33290F',
+  good: '#7DD3A8',
+  goodSoft: '#1D3A2C',
+  danger: '#F28B82',
+  dangerSoft: '#3D2220',
+  header: '#101713',
+  headerSoft: '#1B261F',
 };
 
-/** One small dot colour per time of day. The tile itself stays plain. */
-export const MEAL = {
-  breakfast: { strong: '#1A1A18', soft: '#F6F3EC', ink: '#3A3833' },
-  midmorning: { strong: '#4A4843', soft: '#F6F3EC', ink: '#3A3833' },
-  lunch: { strong: '#77746B', soft: '#F6F3EC', ink: '#3A3833' },
-  evening: { strong: '#A19D91', soft: '#F6F3EC', ink: '#3A3833' },
-  dinner: { strong: '#C5C1B5', soft: '#F6F3EC', ink: '#3A3833' },
-  bedtime: { strong: '#DDD9CD', soft: '#F6F3EC', ink: '#3A3833' },
-} as const;
-
-export const R = 12;
-export const RADIUS = { sm: 8, md: 10, lg: 12, xl: 14, pill: 999 };
+export const R = 14;
+export const RADIUS = { sm: 8, md: 12, lg: 16, xl: 20, pill: 999 };
 
 /** Font families, one per weight (React Native cannot synthesise weights for custom fonts). */
 export const FONT = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semi: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
-  heavy: 'Inter_700Bold',
+  regular: 'Manrope_400Regular',
+  medium: 'Manrope_500Medium',
+  semi: 'Manrope_600SemiBold',
+  bold: 'Manrope_700Bold',
+  heavy: 'Manrope_800ExtraBold',
 };
 
-/** Flat look: no shadow, just a thin line around cards. */
+/** Flat look: no shadow, a thin line around cards. */
 export const SHADOW = {
   borderWidth: 1,
-  borderColor: '#E7E4DC',
+  borderColor: '#2E3E33',
 } as const;

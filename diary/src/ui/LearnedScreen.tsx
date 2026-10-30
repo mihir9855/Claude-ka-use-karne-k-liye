@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Icon } from './Icon';
 import { SLOT_ORDER, SLOT_LABEL, learned } from '../core/diary';
 import { useStore } from '../state/store';
 import { Button, Card, Label, Muted } from './kit';
@@ -8,7 +9,7 @@ import { C, RADIUS } from './theme';
 
 const num = (v: string) => Number(v.replace(/[^0-9]/g, '')) || 0;
 
-export function LearnedScreen() {
+export function LearnedScreen({ onClose }: { onClose: () => void }) {
   const entries = useStore((s) => s.entries);
   const target = useStore((s) => s.target);
   const setTarget = useStore((s) => s.setTarget);
@@ -25,6 +26,15 @@ export function LearnedScreen() {
   const hasSample = entries.some((e) => e.sample);
 
   return (
+    <View style={{ flex: 1 }}>
+      <View style={s.bar}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onClose} hitSlop={8} style={s.back}>
+          <Icon name="back" size={22} color={C.text} width={2} />
+        </Pressable>
+        <Text style={s.barTitle} numberOfLines={1}>
+          What I have learned
+        </Text>
+      </View>
     <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
       <Card>
         <Label>What the app has learned</Label>
@@ -88,6 +98,7 @@ export function LearnedScreen() {
         )}
       </View>
     </ScrollView>
+    </View>
   );
 }
 
@@ -106,6 +117,9 @@ function Line({ tag, value, n }: { tag: string; value: string; n?: number }) {
 }
 
 const s = StyleSheet.create({
+  bar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.line },
+  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  barTitle: { flex: 1, minWidth: 0, fontSize: 22, fontWeight: '800', color: C.text, letterSpacing: -0.4 },
   page: { padding: 16, gap: 16, paddingBottom: 28 },
   line: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 42, borderTopWidth: 1, borderTopColor: C.line },
   tag: { width: 92, fontSize: 11, fontWeight: '600', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
