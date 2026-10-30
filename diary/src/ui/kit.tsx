@@ -1,9 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { ChalkFill } from './Chalk';
 import { Icon, type IconName } from './Icon';
 import { Text, TextInput } from './Text';
-import { BORDER, C, OFFSET, RADIUS, TILE, TILE_INK, themeName, themed } from './theme';
+import { BORDER, C, OFFSET, RADIUS, TILE_INK, themed } from './theme';
 
 const ONE_LINE = { numberOfLines: 1, ellipsizeMode: 'tail' } as const;
 
@@ -27,8 +26,6 @@ export function Tile({
   disabled?: boolean;
 }) {
   const [down, setDown] = useState(false);
-  // at night the bright tiles look rubbed in with chalk
-  const chalky = themeName() === 'dark' && bg != null && [TILE.yellow, TILE.green, TILE.lilac, TILE.orange, TILE.blue, TILE.pink].includes(bg);
   const box: StyleProp<ViewStyle> = [
     { backgroundColor: bg ?? C.card, borderWidth: BORDER, borderColor: C.line, borderRadius: radius },
     style,
@@ -39,14 +36,10 @@ export function Tile({
       <View pointerEvents="none" style={{ position: 'absolute', left: offset, top: offset, right: 0, bottom: 0, borderRadius: radius, backgroundColor: C.shadow }} />
       {onPress ? (
         <Pressable accessibilityRole={role} accessibilityLabel={label} accessibilityState={{ selected, disabled }} disabled={disabled} onPress={onPress} onPressIn={() => setDown(true)} onPressOut={() => setDown(false)} style={box}>
-          {chalky && <ChalkFill radius={radius - BORDER} />}
           {children}
         </Pressable>
       ) : (
-        <View style={box}>
-          {chalky && <ChalkFill radius={radius - BORDER} />}
-          {children}
-        </View>
+        <View style={box}>{children}</View>
       )}
     </View>
   );

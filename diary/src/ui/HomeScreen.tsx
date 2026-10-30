@@ -1,10 +1,10 @@
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, Line, Pattern, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import { SLOT_LABEL, SLOT_ORDER, entryLabel, type SlotId } from '../core/diary';
 import { Icon } from './Icon';
 import { Bar, Tile } from './kit';
 import { Text } from './Text';
-import { BORDER, C, RADIUS, TILE, TILE_CYCLE, TILE_INK, displayFonts, themeName, themed } from './theme';
+import { BORDER, C, RADIUS, TILE, TILE_CYCLE, TILE_INK, displayFonts, themed } from './theme';
 import { dayLabel, inText, slotClock, useHome } from './useHome';
 
 export type Tab = 'home' | 'chat' | 'menu' | 'nutrition' | 'lists' | 'profile';
@@ -166,14 +166,6 @@ function Donut({ h }: { h: ReturnType<typeof useHome> }) {
   return (
     <View style={{ width: '100%', aspectRatio: 1, maxWidth: 270 }}>
       <Svg width="100%" height="100%" viewBox="0 0 250 250">
-        <Defs>
-          <Pattern id="ringchalk" patternUnits="userSpaceOnUse" width="26" height="22">
-            <Line x1="1" y1="5" x2="19" y2="1" stroke="#FFFFFF" strokeOpacity="0.3" strokeWidth="2" strokeLinecap="round" />
-            <Line x1="6" y1="13" x2="25" y2="9" stroke="#FFFFFF" strokeOpacity="0.22" strokeWidth="2" strokeLinecap="round" />
-            <Line x1="0" y1="20" x2="14" y2="17" stroke="#14110E" strokeOpacity="0.1" strokeWidth="1.5" strokeLinecap="round" />
-            <Line x1="15" y1="21" x2="26" y2="18" stroke="#FFFFFF" strokeOpacity="0.26" strokeWidth="1.6" strokeLinecap="round" />
-          </Pattern>
-        </Defs>
         {/* hard shadow */}
         {ring(7, C.shadow, W + 6)}
         {/* empty track */}
@@ -182,7 +174,6 @@ function Donut({ h }: { h: ReturnType<typeof useHome> }) {
         <Circle cx={C0} cy={C0} r={R - W / 2} fill="none" stroke={C.line} strokeWidth="3.5" />
         {segs.map((g) => ring(0, C.line, W + 3, { key: `i${g.slot}`, strokeDasharray: `${Math.min(LEN, g.len + 4)} ${LEN}`, strokeDashoffset: -g.start + 2, transform: `rotate(-90 ${C0} ${C0})` }))}
         {segs.map((g) => ring(0, SLOT_COLOR[g.slot], W - 4, { key: `c${g.slot}`, strokeDasharray: `${Math.max(0, g.len - 1)} ${LEN}`, strokeDashoffset: -g.start, transform: `rotate(-90 ${C0} ${C0})` }))}
-        {themeName() === 'dark' && segs.map((g) => ring(0, 'url(#ringchalk)', W - 4, { key: `k${g.slot}`, strokeDasharray: `${Math.max(0, g.len - 1)} ${LEN}`, strokeDashoffset: -g.start, transform: `rotate(-90 ${C0} ${C0})` }))}
         {/* yellow sticker in the middle */}
         <Circle cx={C0 + 4} cy={C0 + 4} r="47" fill={C.shadow} />
         <Circle cx={C0} cy={C0} r="47" fill={TILE.yellow} stroke={C.line} strokeWidth="3.5" />

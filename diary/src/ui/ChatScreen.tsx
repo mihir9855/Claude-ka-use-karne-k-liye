@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type ScrollViewInstance } from 'react-native';
-import { SLOT_LABEL, SLOT_ORDER, dayMenu, daysAgo, entryLabel, hints, nextSlot, readMessage, totalsFor, ymd, type Entry, type SlotId } from '../core/diary';
+import { SLOT_LABEL, SLOT_ORDER, daysAgo, entryLabel, hints, nextSlot, readMessage, totalsFor, ymd, type Entry, type SlotId } from '../core/diary';
 import { readListCommand } from '../core/lists';
 import { personName, useActive, useStore } from '../state/store';
 import { Icon } from './Icon';
@@ -44,7 +44,6 @@ export function ChatScreen() {
   const { person, target, entries } = useActive();
   const persons = useStore((s) => s.persons);
   const setActive = useStore((s) => s.setActive);
-  const add = useStore((s) => s.add);
   const addItems = useStore((s) => s.addItems);
   const addListItems = useStore((s) => s.addListItems);
   const [listNote, setListNote] = useState('');
@@ -52,7 +51,6 @@ export function ChatScreen() {
   const [slot, setSlot] = useState<SlotId>(() => nextSlot(entries));
   const [text, setText] = useState('');
   const [open, setOpen] = useState<string | null>(null);
-  const [pick, setPick] = useState<Record<string, number>>({});
   const scroll = useRef<ScrollViewInstance>(null);
   const today = ymd(new Date());
 
@@ -75,14 +73,13 @@ export function ChatScreen() {
     return [...perDay.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([date, list]) => ({ date, list: list.sort((a, b) => a.at - b.at) }));
   }, [entries]);
   const tot = useMemo(() => totalsFor(entries, today), [entries, today]);
-  const menu = useMemo(() => dayMenu(entries, target, new Date(), person.conditions), [entries, target, person.conditions]);
   const suggestions = hints(text.split(',').pop() ?? '');
   const count = entries.length;
 
   useEffect(() => {
     const t = setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 120);
     return () => clearTimeout(t);
-  }, [count, menu.length]);
+  }, [count]);
 
   // the meal comes from the words: "rice in lunch", "chai evening snacks". Without any, it is the meal button.
   const reading = useMemo(() => readMessage(text, slot), [text, slot]);
@@ -181,38 +178,6 @@ export function ChatScreen() {
           </Bubble>
         )}
 
-        {menu.length > 0 && (
-          <Tile style={s.menu}>
-            <Text style={s.menuTitle} numberOfLines={1}>{entries.length === 0 ? 'Ideas for today' : 'Menu for the rest of today'}</Text>
-            {entries.length < 6 && <Muted>{entries.length === 0 ? 'Log a few meals and these will follow your habits.' : 'These get better as you log more days.'}</Muted>}
-            {menu.map((m) => {
-              const idx = (pick[m.slot] ?? 0) % m.options.length;
-              const o = m.options[idx];
-              return (
-                <View key={m.slot} style={s.menuRow}>
-                  <View style={s.menuIcon}>
-                    <Icon name={SLOT_ICON_ID[m.slot]} size={18} color={TILE_INK} width={2} />
-                  </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`Other options for ${slotLabel(m.slot)}`} onPress={() => setPick({ ...pick, [m.slot]: idx + 1 })} style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                    <Text style={s.menuSlot} numberOfLines={1}>
-                      {slotLabel(m.slot)}
-                    </Text>
-                    <Text style={s.menuName} numberOfLines={1}>
-                      {o.name}
-                    </Text>
-                    <Text style={s.menuWhy} numberOfLines={1}>
-                      {[o.kcal != null ? `${o.kcal} kcal` : '', o.why[0]?.text].filter(Boolean).join(' · ')}
-                    </Text>
-                  </Pressable>
-                  <Tile bg={TILE_INK} onPress={() => add(o.items, m.slot, today)} label={`I ate ${o.name}`} radius={RADIUS.pill} offset={3} style={s.ate}>
-                    <Icon name="check" size={18} color={TILE.yellow} width={3} />
-                  </Tile>
-                </View>
-              );
-            })}
-            <Text style={s.hint}>Tap a dish to see another option. Tap the tick when you eat it.</Text>
-          </Tile>
-        )}
       </ScrollView>
 
       <View style={s.composer}>
@@ -292,15 +257,6 @@ const s = themed(() => StyleSheet.create({
   appText: { fontSize: 15, color: C.text, lineHeight: 21, fontWeight: '500' },
   remove: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10, borderRadius: RADIUS.sm, backgroundColor: C.dangerSoft, borderWidth: 2, borderColor: C.line },
   removeText: { fontSize: 13, fontWeight: '800', color: C.danger },
-  menu: { padding: 14, gap: 10 },
-  menuTitle: { fontFamily: 'script', fontSize: 30, lineHeight: 36, fontWeight: '800', color: C.text },
-  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 10, borderTopWidth: 2, borderTopColor: C.line },
-  menuIcon: { width: 42, height: 42, borderRadius: RADIUS.md, backgroundColor: TILE.green, borderWidth: 2, borderColor: TILE_INK, alignItems: 'center', justifyContent: 'center' },
-  menuSlot: { fontSize: 12, fontWeight: '700', color: C.muted },
-  menuName: { fontFamily: 'script', fontSize: 24, lineHeight: 28, fontWeight: '800', color: C.text },
-  menuWhy: { fontSize: 12, color: C.muted, fontWeight: '600' },
-  ate: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  hint: { fontSize: 12, color: C.muted, fontWeight: '600' },
   composer: { gap: 10, paddingTop: 10, paddingBottom: 10, borderTopWidth: BORDER, borderTopColor: C.line, backgroundColor: C.bg },
   hintChip: { paddingHorizontal: 12, minHeight: 36, borderRadius: RADIUS.pill, backgroundColor: C.card, borderWidth: 2, borderColor: C.line, justifyContent: 'center' },
   hintText: { fontSize: 14, color: C.text, fontWeight: '700' },
