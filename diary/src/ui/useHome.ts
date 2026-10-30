@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { SLOT_TIME, addDays, streak, todayMenu, totalsFor, upcomingMeals, ymd, type SlotId } from '../../core/diary';
-import { personName, useActive, useStore } from '../../state/store';
+import { SLOT_TIME, addDays, streak, todayMenu, totalsFor, upcomingMeals, ymd, type SlotId } from '../core/diary';
+import { personName, useActive, useStore } from '../state/store';
 
 export const clock = (d: Date) => d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
 export const slotClock = (s: SlotId) => clock(new Date(2000, 0, 1, SLOT_TIME[s][0], SLOT_TIME[s][1]));

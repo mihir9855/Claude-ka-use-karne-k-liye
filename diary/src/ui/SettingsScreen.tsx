@@ -5,11 +5,11 @@ import { personName, useStore } from '../state/store';
 import { APP_VERSION, CHANGELOG, WHAT_IT_DOES } from '../version';
 import { DataPage } from './DataPage';
 import { Icon, type IconName } from './Icon';
-import { Button, Card, Choice, Label, Muted } from './kit';
+import { Button, Card, Choice, Label, Muted, Tile } from './kit';
 import { ProfilesPage } from './ProfilesPage';
 import { pickTextFile, saveTextFile } from './saveFile';
 import { Text } from './Text';
-import { ACCENTS, ACCENT_IDS, C, LOOKS, LOOK_IDS, RADIUS, themed } from './theme';
+import { BORDER, C, RADIUS, SETS, SET_IDS, TILE, TILE_INK, themed } from './theme';
 
 type Page = 'profiles' | 'theme' | 'backup' | 'data' | 'features' | 'news';
 
@@ -21,6 +21,8 @@ const ROWS: { page: Page; icon: IconName; title: string; sub: string }[] = [
   { page: 'features', icon: 'heart', title: 'What this app can do', sub: 'Everything in one list' },
   { page: 'news', icon: 'flame', title: `What's new`, sub: `Version ${APP_VERSION}` },
 ];
+
+const ROW_COLOR: Record<Page, string> = { profiles: TILE.green, theme: TILE.pink, backup: TILE.yellow, data: TILE.blue, features: TILE.orange, news: TILE.lilac };
 
 export function SettingsScreen() {
   const [page, setPage] = useState<Page | null>(null);
@@ -40,16 +42,16 @@ export function SettingsScreen() {
     return (
       <ScrollView contentContainerStyle={s.page}>
         {ROWS.map((r) => (
-          <Pressable key={r.page} accessibilityRole="button" accessibilityLabel={r.title} onPress={() => setPage(r.page)} style={s.row}>
-            <View style={s.ico}>
-              <Icon name={r.icon} size={20} color={C.text} width={1.8} />
+          <Tile key={r.page} onPress={() => setPage(r.page)} label={r.title} style={s.row}>
+            <View style={[s.ico, { backgroundColor: ROW_COLOR[r.page] }]}>
+              <Icon name={r.icon} size={20} color={TILE_INK} width={2} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={s.rowTitle} numberOfLines={1}>{r.title}</Text>
               <Text style={s.rowSub} numberOfLines={1}>{r.sub}</Text>
             </View>
-            <Icon name="right" size={18} color={C.muted} width={2} />
-          </Pressable>
+            <Icon name="right" size={18} color={C.text} width={2.4} />
+          </Tile>
         ))}
         <Text style={s.version}>{`Khana Diary · version ${APP_VERSION}`}</Text>
       </ScrollView>
@@ -80,32 +82,25 @@ function ThemePage() {
   const setTheme = useStore((st) => st.setTheme);
   const accent = useStore((st) => st.accent);
   const setAccent = useStore((st) => st.setAccent);
-  const look = useStore((st) => st.look);
-  const setLook = useStore((st) => st.setLook);
-  const classic = look === 'classic';
   return (
     <ScrollView contentContainerStyle={s.page}>
-      <Text style={s.group}>Design</Text>
-      {LOOK_IDS.map((id) => (
-        <Choice key={id} title={LOOKS[id].name} sub={LOOKS[id].sub} on={look === id} onPress={() => setLook(id)} />
-      ))}
-      {!classic && <Muted>Light, dark and colours apply to the Classic design. The other designs bring their own colours.</Muted>}
-      {classic && <Text style={s.group}>Colour</Text>}
-      {classic && <View style={s.swatches}>
-        {ACCENT_IDS.map((id) => {
+      <Text style={s.group}>Page colour</Text>
+      <View style={s.swatches}>
+        {SET_IDS.map((id) => {
           const on = id === accent;
           return (
-            <Pressable key={id} accessibilityRole="radio" accessibilityLabel={`${ACCENTS[id].name} colour`} accessibilityState={{ selected: on }} onPress={() => setAccent(id)} style={s.swatchCell}>
-              <View style={[s.swatch, { backgroundColor: ACCENTS[id].swatch }, on && s.swatchOn]}>{on && <Icon name="check" size={22} color={ACCENTS[id].light.onHero ?? '#17120D'} width={3} />}</View>
-              <Text style={[s.swatchName, on && { color: C.text, fontWeight: '800' }]} numberOfLines={1}>{ACCENTS[id].name}</Text>
+            <Pressable key={id} accessibilityRole="radio" accessibilityLabel={`${SETS[id].name} page colour`} accessibilityState={{ selected: on }} onPress={() => setAccent(id)} style={s.swatchCell}>
+              <View style={[s.swatch, { backgroundColor: SETS[id].swatch }, on && s.swatchOn]}>{on && <Icon name="check" size={22} color="#14110E" width={3.2} />}</View>
+              <Text style={[s.swatchName, on && { fontWeight: '800' }]} numberOfLines={1}>{SETS[id].name}</Text>
             </Pressable>
           );
         })}
-      </View>}
-      {classic && <Text style={s.group}>Light or dark</Text>}
-      {classic && <Choice title="Follow my phone" sub="Light by day, dark at night, as the phone is set" on={theme === 'system'} onPress={() => setTheme('system')} />}
-      {classic && <Choice title="Dark" sub="Easy on the eyes in the evening" on={theme === 'dark'} onPress={() => setTheme('dark')} />}
-      {classic && <Choice title="Light" sub="Bright and clear in daylight" on={theme === 'light'} onPress={() => setTheme('light')} />}
+      </View>
+      <Muted>Used in the light theme. The tiles keep their bright colours.</Muted>
+      <Text style={s.group}>Light or dark</Text>
+      <Choice title="Follow my phone" sub="Light by day, dark at night, as the phone is set" on={theme === 'system'} onPress={() => setTheme('system')} />
+      <Choice title="Light" sub="Bright page with black outlines" on={theme === 'light'} onPress={() => setTheme('light')} />
+      <Choice title="Dark" sub="Dark page with cream outlines" on={theme === 'dark'} onPress={() => setTheme('dark')} />
     </ScrollView>
   );
 }
@@ -176,15 +171,15 @@ function FeaturesPage() {
   return (
     <ScrollView contentContainerStyle={s.page}>
       {WHAT_IT_DOES.map((f) => (
-        <View key={f.title} style={s.feature}>
-          <View style={s.ico}>
-            <Icon name={f.icon} size={20} color={C.accent} width={1.8} />
+        <Tile key={f.title} style={s.feature}>
+          <View style={[s.ico, { backgroundColor: TILE.yellow }]}>
+            <Icon name={f.icon} size={20} color={TILE_INK} width={2} />
           </View>
           <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
             <Text style={s.rowTitle}>{f.title}</Text>
             <Text style={s.featText}>{f.text}</Text>
           </View>
-        </View>
+        </Tile>
       ))}
     </ScrollView>
   );
@@ -210,27 +205,27 @@ function NewsPage() {
 }
 
 const s = themed(() => StyleSheet.create({
-  page: { padding: 16, gap: 12, paddingBottom: 32 },
+  page: { paddingLeft: 20, paddingRight: 16, paddingTop: 8, gap: 16, paddingBottom: 32 },
   group: { fontFamily: 'display', fontSize: 20, fontWeight: '800', color: C.text, marginTop: 4 },
   swatches: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 14 },
   swatchCell: { width: '25%', minWidth: 0, alignItems: 'center', gap: 6 },
-  swatch: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.line },
-  swatchOn: { borderColor: C.text },
-  swatchName: { fontSize: 12, fontWeight: '600', color: C.muted, maxWidth: '100%' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: RADIUS.lg, backgroundColor: C.card, borderWidth: 1, borderColor: C.line },
-  ico: { width: 40, height: 40, borderRadius: RADIUS.md, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  rowTitle: { fontFamily: 'display', fontSize: 18, fontWeight: '600', color: C.text },
-  rowSub: { fontSize: 12, color: C.muted },
-  version: { textAlign: 'center', color: C.muted, fontSize: 12, marginTop: 8 },
-  bar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line },
+  swatch: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: BORDER, borderColor: C.line },
+  swatchOn: { borderWidth: 4 },
+  swatchName: { fontSize: 12, fontWeight: '700', color: C.text, maxWidth: '100%' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, minHeight: 68 },
+  ico: { width: 42, height: 42, borderRadius: RADIUS.md, borderWidth: 2, borderColor: TILE_INK, alignItems: 'center', justifyContent: 'center' },
+  rowTitle: { fontFamily: 'display', fontSize: 18, fontWeight: '800', color: C.text },
+  rowSub: { fontSize: 12, fontWeight: '600', color: C.muted },
+  version: { textAlign: 'center', color: C.muted, fontSize: 12, fontWeight: '700', marginTop: 4 },
+  bar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 12, paddingRight: 20, paddingVertical: 6 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  barTitle: { flex: 1, minWidth: 0, fontFamily: 'display', fontSize: 26, fontWeight: '700', color: C.text, letterSpacing: -0.4 },
-  big: { fontFamily: 'display', fontSize: 22, fontWeight: '700', color: C.text },
+  barTitle: { flex: 1, minWidth: 0, fontFamily: 'display', fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
+  big: { fontFamily: 'display', fontSize: 22, fontWeight: '800', color: C.text },
   paste: { minHeight: 90, maxHeight: 160, backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 12, fontSize: 14, color: C.text, textAlignVertical: 'top' },
-  err: { color: C.danger, fontWeight: '600', fontSize: 14 },
-  ok: { color: C.good, fontWeight: '600', fontSize: 14 },
-  feature: { flexDirection: 'row', gap: 12, padding: 14, borderRadius: RADIUS.lg, backgroundColor: C.card, borderWidth: 1, borderColor: C.line },
-  featText: { fontSize: 14, color: C.muted, lineHeight: 20, flexShrink: 1 },
+  err: { color: C.danger, fontWeight: '800', fontSize: 14 },
+  ok: { color: C.good, fontWeight: '800', fontSize: 14 },
+  feature: { flexDirection: 'row', gap: 12, padding: 14 },
+  featText: { fontSize: 14, color: C.muted, lineHeight: 20, flexShrink: 1, fontWeight: '500' },
   item: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.accent, marginTop: 7 },
 }));

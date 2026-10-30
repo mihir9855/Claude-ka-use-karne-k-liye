@@ -5,7 +5,8 @@ import { FIRST_ID, useStore } from '../state/store';
 import { Icon } from './Icon';
 import { Button, Chip, Choice, Field, Muted } from './kit';
 import { Text } from './Text';
-import { C, FONT, RADIUS, themed } from './theme';
+import { Tile } from './kit';
+import { BORDER, C, FONT, RADIUS, TILE, TILE_INK, displayFonts, themed } from './theme';
 
 const NATIVE = Platform.OS !== 'web';
 const num = (v: string) => Number(v.replace(/[^0-9]/g, '')) || 0;
@@ -43,7 +44,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
       <View style={s.stage}>
         <Animated.View style={[s.ring, { opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }), transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1.5] }) }] }]} />
         <Animated.View style={[s.disc, { opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }, { translateY: steam.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) }] }]}>
-          <Icon name="bowl" size={92} color={C.accent} width={1.3} />
+          <Icon name="bowl" size={92} color={TILE_INK} width={1.8} />
         </Animated.View>
       </View>
       <Animated.Text style={[s.brand, rise(title)]}>Khana</Animated.Text>
@@ -136,7 +137,7 @@ export function OnboardScreen() {
         {key === 'target' && (
           <>
             <Text style={s.q}>{person.name.trim() ? `${person.name.trim()}, this is your day` : 'This is your day'}</Text>
-            <View style={s.targetCard}>
+            <Tile style={s.targetCard}>
               <Text style={s.kcal}>{target.kcal.toLocaleString('en-IN')}</Text>
               <Text style={s.kcalUnit}>kcal a day</Text>
               <View style={s.row}>
@@ -145,7 +146,7 @@ export function OnboardScreen() {
                 <Stat label="Fat" v={`${target.fat} g`} />
                 <Stat label="Fibre" v={`${target.fiber} g`} />
               </View>
-            </View>
+            </Tile>
             <Muted>Next, tell me what you ate in Chat, like "poha, chai" or "dal rice in lunch". I will start planning your menu from it. You can add family members in Settings.</Muted>
           </>
         )}
@@ -173,21 +174,21 @@ function Stat({ label, v }: { label: string; v: string }) {
 const s = themed(() => StyleSheet.create({
   welcome: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 28 },
   stage: { width: 220, height: 220, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  ring: { position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: 2, borderColor: C.accent },
-  disc: { width: 160, height: 160, borderRadius: 80, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
-  brand: { fontFamily: 'display', fontSize: 52, fontWeight: '700', color: C.text, letterSpacing: -1.5 },
-  tag: { fontSize: 16, color: C.muted, textAlign: 'center', lineHeight: 23, maxWidth: 300, marginBottom: 14, fontFamily: FONT.regular },
+  ring: { position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: BORDER, borderColor: C.line },
+  disc: { width: 160, height: 160, borderRadius: 80, backgroundColor: TILE.yellow, borderWidth: BORDER + 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  brand: { fontFamily: displayFonts().bold, fontSize: 56, color: C.text, letterSpacing: -2 },
+  tag: { fontSize: 16, fontWeight: '600', color: C.muted, textAlign: 'center', lineHeight: 23, maxWidth: 300, marginBottom: 14, fontFamily: FONT.regular },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 14 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   progress: { flex: 1, flexDirection: 'row', gap: 6 },
-  seg: { flex: 1, height: 4, borderRadius: 2, backgroundColor: C.surface },
-  page: { padding: 20, gap: 16, paddingBottom: 24 },
-  q: { fontFamily: 'display', fontSize: 30, fontWeight: '700', color: C.text, letterSpacing: -0.7, lineHeight: 34 },
+  seg: { flex: 1, height: 8, borderRadius: 4, backgroundColor: C.card, borderWidth: 2, borderColor: C.line },
+  page: { paddingLeft: 20, paddingRight: 16, paddingTop: 12, gap: 16, paddingBottom: 24 },
+  q: { fontFamily: 'display', fontSize: 34, fontWeight: '800', color: C.text, letterSpacing: -1.2, lineHeight: 38 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   three: { flexDirection: 'row', gap: 10 },
-  foot: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: C.line },
-  targetCard: { backgroundColor: C.card, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: C.line, padding: 18, gap: 10 },
-  kcal: { fontFamily: 'display', fontSize: 56, fontWeight: '700', color: C.accent, letterSpacing: -1.5 },
+  foot: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingLeft: 20, paddingRight: 16, borderTopWidth: BORDER, borderTopColor: C.line },
+  targetCard: { padding: 18, gap: 10 },
+  kcal: { fontFamily: 'display', fontSize: 56, fontWeight: '800', color: C.text, letterSpacing: -1.5 },
   kcalUnit: { fontSize: 14, color: C.muted, fontWeight: '600', marginTop: -8 },
   stat: { flexBasis: '22%', flexGrow: 1, minWidth: 0 },
   statV: { fontSize: 17, fontWeight: '800', color: C.text },

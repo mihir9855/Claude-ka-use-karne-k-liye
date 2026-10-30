@@ -76,12 +76,12 @@ function Line({ tag, value, n }: { tag: string; value: string; n?: number }) {
 }
 
 const s = themed(() => StyleSheet.create({
-  page: { padding: 16, gap: 16, paddingBottom: 32 },
-  line: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 42, borderTopWidth: 1, borderTopColor: C.line },
+  page: { paddingLeft: 20, paddingRight: 16, paddingTop: 8, gap: 16, paddingBottom: 32 },
+  line: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 42, borderTopWidth: 2, borderTopColor: C.line },
   tag: { width: 92, fontSize: 12, fontWeight: '700', color: C.muted },
   value: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: '600', color: C.text },
   n: { fontSize: 13, color: C.muted },
-  day: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 38, borderTopWidth: 1, borderTopColor: C.line },
+  day: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 38, borderTopWidth: 2, borderTopColor: C.line },
   dayDate: { width: 44, fontSize: 13, fontWeight: '700', color: C.muted },
   dayNames: { flex: 1, minWidth: 0, fontSize: 14, color: C.text },
 }));

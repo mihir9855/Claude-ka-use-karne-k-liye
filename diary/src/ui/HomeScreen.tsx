@@ -1,137 +1,73 @@
-import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SLOT_TIME, addDays, entryLabel, streak, todayMenu, totalsFor, upcomingMeals, ymd } from '../core/diary';
-import { personName, useActive, useStore } from '../state/store';
-import { Icon } from './Icon';
-import { Bar } from './kit';
-import { SLOT_ICON_ID, slotLabel } from './slots';
+import { SLOT_LABEL, entryLabel } from '../core/diary';
+import { Bar, Tile } from './kit';
 import { Text } from './Text';
-import { SlipHome } from './looks/SlipHome';
-import { StickerHome } from './looks/StickerHome';
-import { SunHome } from './looks/SunHome';
-import { ThaliHome } from './looks/ThaliHome';
-import { useHome } from './looks/useHome';
-import { C, RADIUS, themed, type LookId } from './theme';
+import { C, RADIUS, TILE, TILE_CYCLE, TILE_INK, themed } from './theme';
+import { dayLabel, inText, slotClock, useHome } from './useHome';
 
 export type Tab = 'home' | 'chat' | 'menu' | 'nutrition' | 'lists' | 'profile';
 
-const greeting = (h: number) => (h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
-
 export function HomeScreen({ go }: { go: (t: Tab) => void }) {
-  const look = useStore((st) => st.look);
-  if (look === 'classic') return <ClassicHome go={go} />;
-  return <LookHome look={look} go={go} />;
-}
-
-function LookHome({ look, go }: { look: LookId; go: (t: Tab) => void }) {
   const h = useHome();
-  if (look === 'thali') return <ThaliHome h={h} go={go} />;
-  if (look === 'slip') return <SlipHome h={h} go={go} />;
-  if (look === 'sun') return <SunHome h={h} go={go} />;
-  return <StickerHome h={h} go={go} />;
-}
-
-function ClassicHome({ go }: { go: (t: Tab) => void }) {
-  const { person, target, entries } = useActive();
-  const persons = useStore((s) => s.persons);
-  const add = useStore((s) => s.add);
-  const [pick, setPick] = useState<Record<string, number>>({});
-  const now = new Date();
-  const today = ymd(now);
-  const tot = totalsFor(entries, today);
-  const left = target.kcal - tot.kcal;
-  const logged = entries.filter((e) => e.date === today);
-  const menu = useMemo(() => todayMenu(entries, target, new Date(), person.conditions), [entries, target, person.conditions]);
-  const picks = useStore((s) => s.picks);
-  const upcoming = useMemo(() => upcomingMeals(entries, target, picks, new Date(), person.conditions, 5), [entries, target, picks, person.conditions]);
-  const days = streak(entries);
-  const name = personName(person, persons.indexOf(person));
-  const nextRow = menu.find((x) => !x.eaten && !x.missed && x.options.length > 0);
-  const nextOpt = nextRow ? nextRow.options[(pick[nextRow.slot] ?? 0) % nextRow.options.length] : undefined;
-  const nextSlot = nextRow?.slot;
-  const kcalLine = logged.length === 0 ? 'Nothing logged yet' : left >= 0 ? `${Math.round(left).toLocaleString('en-IN')} kcal left` : `${Math.round(-left).toLocaleString('en-IN')} kcal over`;
-
+  const next = h.nextRow;
+  const opt = h.nextOpt;
+  const others = h.menu.filter((m) => m !== next);
   return (
     <ScrollView contentContainerStyle={s.page}>
-      <View style={{ gap: 2 }}>
-        <Text style={s.hello} numberOfLines={1}>{`${greeting(now.getHours())}, ${name}`}</Text>
-        <Text style={s.date} numberOfLines={1}>{now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+      <View>
+        <Text style={s.date} numberOfLines={1}>{h.now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+        <Text style={s.title} numberOfLines={1}>{"What's on"}</Text>
+        <Text style={s.title} numberOfLines={1}>{h.name === 'Me' ? 'your plate?' : `${h.name}'s plate?`}</Text>
       </View>
 
-      <View style={s.heroBlock}>
-        <Text style={s.heroTag} numberOfLines={1}>{nextRow ? `Next up · ${clock(new Date(2000, 0, 1, SLOT_TIME[nextRow.slot][0], SLOT_TIME[nextRow.slot][1]))}` : 'All set'}</Text>
-        {nextRow && nextOpt ? (
-          <>
-            <Pressable accessibilityRole="button" accessibilityLabel={`${slotLabel(nextRow.slot)}: ${nextOpt.name}. Tap for another option`} onPress={() => setPick({ ...pick, [nextRow.slot]: (pick[nextRow.slot] ?? 0) + 1 })}>
-              <Text style={s.heroDish} numberOfLines={1}>{nextOpt.name}</Text>
-              <Text style={s.heroMeta} numberOfLines={1}>{[slotLabel(nextRow.slot), nextOpt.kcal != null ? `${nextOpt.kcal} kcal` : '', nextOpt.why[0]?.text].filter(Boolean).join(' · ')}</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel={`I ate ${nextOpt.name}`} onPress={() => add(nextOpt.items, nextRow.slot, today)} style={s.heroBtn}>
-              <Icon name="check" size={20} color={C.hero} width={3} />
-              <Text style={s.heroBtnText} numberOfLines={1}>I ate this</Text>
-            </Pressable>
-          </>
-        ) : (
-          <Text style={s.heroDish} numberOfLines={1}>{logged.length ? 'Nothing left today' : 'Log your first meal'}</Text>
+      <Tile bg={TILE.yellow} style={s.next}>
+        <Text style={s.tag} numberOfLines={1}>{next ? `NEXT · ${slotClock(next.slot).toUpperCase()} · ${SLOT_LABEL[next.slot].toUpperCase()}` : 'ALL DONE'}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={`${opt?.name ?? ''}. Tap for another option`} onPress={() => next && h.cycle(next.slot)}>
+          <Text style={s.nextDish} numberOfLines={1}>{opt ? opt.name : h.logged.length ? 'Nothing left today' : 'Log your first meal'}</Text>
+        </Pressable>
+        <Text style={s.tagSoft} numberOfLines={1}>{opt ? [opt.kcal != null ? `${opt.kcal} kcal` : '', opt.why[0]?.text].filter(Boolean).join(' · ') : 'Tap Chat to add what you ate'}</Text>
+        {next && opt && (
+          <Tile bg={TILE_INK} onPress={() => h.eat(next.slot)} label={`I ate ${opt.name}`} radius={RADIUS.pill} offset={3} wrap={s.goWrap} style={s.go}>
+            <Text style={s.goText} numberOfLines={1}>I ate it</Text>
+          </Tile>
         )}
-      </View>
+      </Tile>
 
-      <View style={s.tiles}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Calories today. Open nutrition details" onPress={() => go('nutrition')} style={s.tile}>
-          <Text style={s.tileBig} numberOfLines={1}>{Math.round(tot.kcal).toLocaleString('en-IN')}</Text>
-          <Text style={s.tileSmall} numberOfLines={1}>{`kcal of ${target.kcal.toLocaleString('en-IN')}`}</Text>
-          <Bar value={tot.kcal} max={target.kcal} />
-          <Text style={s.tileSmall} numberOfLines={1}>{kcalLine}</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Protein today. Open nutrition details" onPress={() => go('nutrition')} style={s.tile}>
-          <Text style={s.tileBig} numberOfLines={1}>{Math.round(tot.protein)}</Text>
-          <Text style={s.tileSmall} numberOfLines={1}>{`g protein of ${target.protein}`}</Text>
-          <Bar value={tot.protein} max={target.protein} color={C.mint} />
-          <Text style={s.tileSmall} numberOfLines={1}>{`${days} day streak`}</Text>
-        </Pressable>
-      </View>
-
-      <View style={s.head}>
-        <Text style={s.h2} numberOfLines={1}>Today</Text>
-        <Text style={s.small} numberOfLines={1}>Tap a dish for another idea</Text>
-      </View>
-      <View style={s.rule}>
-        {menu.map((m) => {
-          const [h, mi] = SLOT_TIME[m.slot];
-          const time = clock(new Date(2000, 0, 1, h, mi));
-          if (m.eaten) {
-            return (
-              <Pressable key={m.slot} accessibilityRole="button" accessibilityLabel={`${slotLabel(m.slot)}: ${m.eaten.map(entryLabel).join(', ')}`} onPress={() => go('chat')} style={s.row}>
-                <Text style={s.time} numberOfLines={1}>{time}</Text>
-                <View style={s.body}>
-                  <Text style={s.slot} numberOfLines={1}>{`${slotLabel(m.slot)} · eaten`}</Text>
-                  <Text style={s.dish} numberOfLines={1}>{m.eaten.map(entryLabel).join(', ')}</Text>
-                  <Text style={s.meta} numberOfLines={1}>{`${Math.round(m.eaten.reduce((a, e) => a + (e.kcal ?? 0), 0))} kcal`}</Text>
-                </View>
-                <View style={s.done}>
-                  <Icon name="check" size={18} color={C.good} width={2.6} />
-                </View>
-              </Pressable>
-            );
-          }
-          const o = m.options[(pick[m.slot] ?? 0) % Math.max(1, m.options.length)];
-          if (!o) return null;
-          const isNext = m.slot === nextSlot;
+      <View style={s.grid}>
+        {others.map((m, i) => {
+          const o = h.optOf(m.slot);
+          const eaten = !!m.eaten;
+          const bg = eaten ? TILE.green : TILE_CYCLE[(i + 1) % TILE_CYCLE.length];
           return (
-            <View key={m.slot} style={s.row}>
-              <Text style={s.time} numberOfLines={1}>{time}</Text>
-              <Pressable accessibilityRole="button" accessibilityLabel={`${slotLabel(m.slot)}: ${o.name}. Tap for another option`} onPress={() => setPick({ ...pick, [m.slot]: (pick[m.slot] ?? 0) + 1 })} style={s.body}>
-                <Text style={s.slot} numberOfLines={1}>{m.missed ? `${slotLabel(m.slot)} · not logged` : isNext ? `${slotLabel(m.slot)} · next` : slotLabel(m.slot)}</Text>
-                <Text style={s.dish} numberOfLines={1}>{o.name}</Text>
-                <Text style={s.meta} numberOfLines={1}>{[o.kcal != null ? `${o.kcal} kcal` : '', o.why[0]?.text].filter(Boolean).join(' · ')}</Text>
-              </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel={`I ate ${o.name}`} onPress={() => add(o.items, m.slot, today)} style={[s.tick, isNext && s.tickOn]}>
-                <Icon name="check" size={18} color={isNext ? C.onPrimary : C.accent} width={2.6} />
-              </Pressable>
-            </View>
+            <Tile
+              key={m.slot}
+              wrap={s.half}
+              bg={bg}
+              onPress={() => (eaten ? go('chat') : h.cycle(m.slot))}
+              label={`${SLOT_LABEL[m.slot]}: ${eaten ? m.eaten!.map(entryLabel).join(', ') : o?.name ?? ''}`}
+              style={s.tile}
+            >
+              <Text style={s.tag} numberOfLines={1}>{SLOT_LABEL[m.slot].toUpperCase()}</Text>
+              <Text style={s.dish} numberOfLines={1}>{eaten ? m.eaten!.map(entryLabel).join(', ') : o?.name ?? '-'}</Text>
+              <Text style={s.tagSoft} numberOfLines={1}>{eaten ? `${slotClock(m.slot)} · done · ${Math.round(m.eaten!.reduce((a, e) => a + (e.kcal ?? 0), 0))} kcal` : `${slotClock(m.slot)}${o?.kcal != null ? ` · ${o.kcal} kcal` : ''}`}</Text>
+            </Tile>
           );
         })}
       </View>
+
+      <View style={s.grid}>
+        <Tile wrap={s.half} bg={C.card} onPress={() => go('nutrition')} label="Calories today. Open nutrition details" style={s.tile}>
+          <Text style={s.big} numberOfLines={1}>{Math.round(h.tot.kcal).toLocaleString('en-IN')}</Text>
+          <Text style={s.muted} numberOfLines={1}>{`kcal of ${h.target.kcal.toLocaleString('en-IN')}`}</Text>
+          <Bar value={h.tot.kcal} max={h.target.kcal} color={TILE.orange} />
+        </Tile>
+        <Tile wrap={s.half} bg={C.card} onPress={() => go('nutrition')} label="Protein today. Open nutrition details" style={s.tile}>
+          <Text style={s.big} numberOfLines={1}>{Math.round(h.tot.protein)}</Text>
+          <Text style={s.muted} numberOfLines={1}>{`g protein of ${h.target.protein}`}</Text>
+          <Bar value={h.tot.protein} max={h.target.protein} color={TILE.green} />
+        </Tile>
+      </View>
+      <Text style={s.muted} numberOfLines={1}>{`${h.left >= 0 ? `${Math.round(h.left).toLocaleString('en-IN')} kcal left` : `${Math.round(-h.left)} kcal over`} · ${h.days} day streak`}</Text>
 
       <View style={s.head}>
         <Text style={s.h2} numberOfLines={1}>Coming up</Text>
@@ -139,71 +75,54 @@ function ClassicHome({ go }: { go: (t: Tab) => void }) {
           <Text style={s.link} numberOfLines={1}>Whole week</Text>
         </Pressable>
       </View>
-      <View style={s.rule}>
-        {upcoming.length === 0 && <Text style={[s.meta, { paddingVertical: 14 }]}>Nothing planned yet.</Text>}
-        {upcoming.map((u, i) => (
+      <Tile style={s.list}>
+        {h.upcoming.length === 0 && <Text style={s.muted}>Nothing planned yet.</Text>}
+        {h.upcoming.map((u, i) => (
           <View key={`${u.date}${u.slot}`}>
-            {(i === 0 || upcoming[i - 1].date !== u.date) && <Text style={s.upDay}>{dayLabel(u.date, today)}</Text>}
-            <Pressable accessibilityRole="button" accessibilityLabel={`${slotLabel(u.slot)} at ${clock(u.at)}: ${u.dish.name}`} onPress={() => go('menu')} style={s.row}>
-              <Text style={s.time} numberOfLines={1}>{clock(u.at)}</Text>
-              <View style={s.body}>
-                <Text style={s.slot} numberOfLines={1}>{slotLabel(u.slot)}</Text>
-                <Text style={s.dish} numberOfLines={1}>{u.dish.name}</Text>
+            {(i === 0 || h.upcoming[i - 1].date !== u.date) && <Text style={s.day}>{dayLabel(u.date, h.today)}</Text>}
+            <Pressable accessibilityRole="button" accessibilityLabel={`${SLOT_LABEL[u.slot]} at ${u.at.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}: ${u.dish.name}`} onPress={() => go('menu')} style={[s.row, i > 0 && h.upcoming[i - 1].date === u.date && s.rowLine]}>
+              <Text style={s.time} numberOfLines={1}>{u.at.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}</Text>
+              <View style={s.col}>
+                <Text style={s.rowSlot} numberOfLines={1}>{SLOT_LABEL[u.slot]}</Text>
+                <Text style={s.rowDish} numberOfLines={1}>{u.dish.name}</Text>
               </View>
-              {i === 0 ? <Text style={s.soon} numberOfLines={1}>{inText(u.at.getTime() - Date.now())}</Text> : u.dish.kcal != null ? <Text style={s.meta} numberOfLines={1}>{`${u.dish.kcal} kcal`}</Text> : null}
+              {i === 0 && <Text style={s.soon} numberOfLines={1}>{inText(u.at.getTime() - Date.now())}</Text>}
             </Pressable>
           </View>
         ))}
-      </View>
+      </Tile>
     </ScrollView>
   );
 }
 
-const clock = (d: Date) => d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
-
-function inText(ms: number): string {
-  const min = Math.round(ms / 60000);
-  if (min <= 5) return 'Now';
-  if (min < 60) return `in ${min} min`;
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return m ? `in ${h} h ${m} min` : `in ${h} h`;
-}
-
-function dayLabel(date: string, today: string): string {
-  if (date === today) return 'Today';
-  if (date === addDays(today, 1)) return 'Tomorrow';
-  return new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
-}
-
 const s = themed(() => StyleSheet.create({
-  page: { padding: 20, gap: 14, paddingBottom: 32 },
-  hello: { fontSize: 14, color: C.muted, fontWeight: '600' },
-  date: { fontFamily: 'display', fontSize: 30, fontWeight: '800', color: C.text, letterSpacing: -1 },
-  heroBlock: { backgroundColor: C.hero, borderRadius: RADIUS.xl, padding: 20, gap: 6 },
-  heroTag: { fontSize: 13, fontWeight: '800', color: C.onHero, opacity: 0.7 },
-  heroDish: { fontFamily: 'display', fontSize: 26, fontWeight: '800', color: C.onHero, letterSpacing: -1 },
-  heroMeta: { fontSize: 13, fontWeight: '600', color: C.onHero, opacity: 0.75 },
-  heroBtn: { marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 52, borderRadius: RADIUS.pill, backgroundColor: C.onHero },
-  heroBtnText: { fontSize: 16, fontWeight: '800', color: C.hero },
-  tiles: { flexDirection: 'row', gap: 12 },
-  tile: { flex: 1, minWidth: 0, backgroundColor: C.card, borderRadius: RADIUS.lg, padding: 16, gap: 6, borderWidth: 1, borderColor: C.line },
-  tileBig: { fontFamily: 'display', fontSize: 42, fontWeight: '800', color: C.text, letterSpacing: -1.5 },
-  tileSmall: { fontSize: 12, color: C.muted, fontWeight: '600' },
-  small: { fontSize: 12, color: C.muted, fontWeight: '500', flexShrink: 1 },
-  head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginTop: 10 },
-  h2: { fontFamily: 'display', fontSize: 24, fontWeight: '800', color: C.text, flexShrink: 1 },
-  link: { fontSize: 14, fontWeight: '700', color: C.accent },
-  rule: { borderTopWidth: 1, borderTopColor: C.line },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 68, borderBottomWidth: 1, borderBottomColor: C.line },
-  time: { width: 60, fontSize: 12, fontWeight: '600', color: C.muted },
-  body: { flex: 1, minWidth: 0, paddingVertical: 8 },
-  slot: { fontSize: 12, fontWeight: '600', color: C.muted },
-  dish: { fontFamily: 'display', fontSize: 19, fontWeight: '700', color: C.text },
-  meta: { fontSize: 12, color: C.muted },
-  soon: { fontSize: 12, fontWeight: '700', color: C.accent },
-  upDay: { fontFamily: 'display', fontSize: 17, fontWeight: '700', color: C.text, paddingTop: 14, paddingBottom: 4 },
-  tick: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: C.accent, alignItems: 'center', justifyContent: 'center' },
-  tickOn: { backgroundColor: C.accent },
-  done: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  // the right padding is 4 smaller so the tiles' shadows end where the left edge begins
+  page: { paddingLeft: 20, paddingRight: 16, paddingTop: 8, paddingBottom: 32, gap: 16 },
+  date: { fontSize: 13, fontWeight: '700', color: C.muted, marginBottom: 2 },
+  title: { fontFamily: 'display', fontSize: 40, fontWeight: '800', color: C.text, letterSpacing: -1.6, lineHeight: 42 },
+  col: { flex: 1, minWidth: 0 },
+  next: { padding: 16, gap: 2 },
+  nextDish: { fontFamily: 'display', fontSize: 24, fontWeight: '800', color: TILE_INK, letterSpacing: -0.5 },
+  goWrap: { marginTop: 10 },
+  go: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  goText: { color: TILE.yellow, fontSize: 14, fontWeight: '800' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 16 },
+  half: { width: '48.5%' },
+  tile: { padding: 12, gap: 2, minHeight: 100, justifyContent: 'center' },
+  tag: { fontSize: 11, fontWeight: '800', color: TILE_INK },
+  tagSoft: { fontSize: 12, fontWeight: '700', color: TILE_INK, opacity: 0.75 },
+  dish: { fontFamily: 'display', fontSize: 18, fontWeight: '800', color: TILE_INK },
+  big: { fontFamily: 'display', fontSize: 38, fontWeight: '800', color: C.text, letterSpacing: -1.5 },
+  muted: { fontSize: 12, fontWeight: '700', color: C.muted },
+  head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginTop: 4 },
+  h2: { fontFamily: 'display', fontSize: 26, fontWeight: '800', color: C.text, flexShrink: 1 },
+  link: { fontSize: 14, fontWeight: '800', color: C.text, textDecorationLine: 'underline' },
+  list: { paddingHorizontal: 14, paddingVertical: 6 },
+  day: { fontFamily: 'display', fontSize: 16, fontWeight: '800', color: C.text, paddingTop: 10, paddingBottom: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 58 },
+  rowLine: { borderTopWidth: 2, borderTopColor: C.line },
+  time: { width: 66, fontSize: 12, fontWeight: '800', color: C.text },
+  rowSlot: { fontSize: 12, fontWeight: '700', color: C.muted },
+  rowDish: { fontFamily: 'display', fontSize: 16, fontWeight: '800', color: C.text },
+  soon: { fontSize: 12, fontWeight: '800', color: C.text },
 }));

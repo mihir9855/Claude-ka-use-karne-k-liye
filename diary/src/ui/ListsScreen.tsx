@@ -4,9 +4,9 @@ import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { listToText } from '../core/lists';
 import { useStore } from '../state/store';
 import { Icon } from './Icon';
-import { Muted } from './kit';
+import { Muted, Tile } from './kit';
 import { Text, TextInput } from './Text';
-import { C, RADIUS, themed } from './theme';
+import { BORDER, C, RADIUS, TILE, TILE_INK, themed } from './theme';
 
 export function ListsScreen() {
   const lists = useStore((st) => st.lists);
@@ -57,36 +57,36 @@ export function ListsScreen() {
 
   return (
     <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={s.chips}>
         {lists.map((l) => {
           const on = l.id === list.id;
           const left = l.items.filter((i) => !i.done).length;
           return (
-            <Pressable key={l.id} accessibilityRole="button" accessibilityLabel={`${l.name} list`} onPress={() => { setSel(l.id); setSure(false); setNote(''); }} style={[s.chip, on && s.chipOn]}>
+            <Tile key={l.id} bg={on ? TILE_INK : C.card} onPress={() => { setSel(l.id); setSure(false); setNote(''); }} label={`${l.name} list`} selected={on} radius={RADIUS.pill} offset={3} style={s.chip}>
               <Text style={[s.chipText, on && s.chipTextOn]} numberOfLines={1}>{`${l.name} · ${left}`}</Text>
-            </Pressable>
+            </Tile>
           );
         })}
-        <Pressable accessibilityRole="button" accessibilityLabel="New list" onPress={() => setAdding(!adding)} style={s.chip}>
-          <Icon name="plus" size={16} color={C.text} width={2.2} />
-          <Text style={s.chipText} numberOfLines={1}>New list</Text>
-        </Pressable>
+        <Tile bg={TILE.yellow} onPress={() => setAdding(!adding)} label="New list" radius={RADIUS.pill} offset={3} style={s.chip}>
+          <Icon name="plus" size={16} color={TILE_INK} width={2.6} />
+          <Text style={[s.chipText, { color: TILE_INK }]} numberOfLines={1}>New list</Text>
+        </Tile>
       </ScrollView>
 
       {adding && (
         <View style={s.addRow}>
           <TextInput style={s.input} value={newName} onChangeText={setNewName} placeholder="List name, like Pharmacy" placeholderTextColor={C.muted} accessibilityLabel="List name" onSubmitEditing={() => { addList(newName); setNewName(''); setAdding(false); }} />
-          <Pressable accessibilityRole="button" accessibilityLabel="Create list" onPress={() => { addList(newName); setNewName(''); setAdding(false); }} style={s.go}>
-            <Icon name="check" size={18} color={C.onPrimary} width={2.6} />
-          </Pressable>
+          <Tile bg={TILE_INK} onPress={() => { addList(newName); setNewName(''); setAdding(false); }} label="Create list" radius={RADIUS.pill} offset={3} style={s.go}>
+            <Icon name="check" size={18} color={TILE.yellow} width={3} />
+          </Tile>
         </View>
       )}
 
       <View style={s.addRow}>
         <TextInput style={s.input} value={text} onChangeText={setText} placeholder={`Add to ${list.name}: rice, oil`} placeholderTextColor={C.muted} accessibilityLabel={`Add to ${list.name}`} returnKeyType="done" onSubmitEditing={put} />
-        <Pressable accessibilityRole="button" accessibilityLabel="Add items" onPress={put} style={[s.go, !text.trim() && { opacity: 0.4 }]}>
-          <Icon name="plus" size={20} color={C.onPrimary} width={2.6} />
-        </Pressable>
+        <Tile bg={TILE_INK} onPress={put} label="Add items" radius={RADIUS.pill} offset={3} wrap={!text.trim() ? { opacity: 0.45 } : undefined} style={s.go}>
+          <Icon name="plus" size={20} color={TILE.yellow} width={3} />
+        </Tile>
       </View>
       <Muted>You can also add from Chat: type "add grocery list rice, daal, sugar, oil".</Muted>
 
@@ -98,15 +98,15 @@ export function ListsScreen() {
       )}
 
       {open.length > 0 && (
-        <View style={s.group}>
+        <Tile style={s.group}>
           <Text style={s.head}>{`To get · ${open.length}`}</Text>
           {open.map((i) => (
             <Row key={i.id} text={i.text} done={false} onToggle={() => toggle(list.id, i.id)} onRemove={() => removeItem(list.id, i.id)} />
           ))}
-        </View>
+        </Tile>
       )}
       {done.length > 0 && (
-        <View style={s.group}>
+        <Tile style={s.group}>
           <View style={s.headRow}>
             <Text style={[s.head, { flex: 1 }]} numberOfLines={1}>{`Done · ${done.length}`}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Clear done items" onPress={() => clearDone(list.id)} hitSlop={8}>
@@ -116,19 +116,19 @@ export function ListsScreen() {
           {done.map((i) => (
             <Row key={i.id} text={i.text} done onToggle={() => toggle(list.id, i.id)} onRemove={() => removeItem(list.id, i.id)} />
           ))}
-        </View>
+        </Tile>
       )}
 
       {list.items.length > 0 && (
         <View style={s.actions}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Share list" onPress={shareList} style={s.act}>
+          <Tile wrap={s.actWrap} onPress={shareList} label="Share list" radius={RADIUS.pill} offset={3} style={s.act}>
             <Icon name="share" size={17} color={C.text} width={1.9} />
             <Text style={s.actText} numberOfLines={1}>Share</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Copy list" onPress={copyList} style={s.act}>
+          </Tile>
+          <Tile wrap={s.actWrap} onPress={copyList} label="Copy list" radius={RADIUS.pill} offset={3} style={s.act}>
             <Icon name="copy" size={17} color={C.text} width={1.9} />
             <Text style={s.actText} numberOfLines={1}>Copy</Text>
-          </Pressable>
+          </Tile>
         </View>
       )}
       {!!note && <Text style={s.note}>{note}</Text>}
@@ -136,18 +136,18 @@ export function ListsScreen() {
       {lists.length > 1 && (
         sure ? (
           <View style={s.actions}>
-            <Pressable accessibilityRole="button" accessibilityLabel={`Yes, delete ${list.name}`} onPress={() => { removeList(list.id); setSel(''); setSure(false); }} style={[s.act, { borderColor: C.danger }]}>
+            <Tile wrap={s.actWrap} bg={C.dangerSoft} onPress={() => { removeList(list.id); setSel(''); setSure(false); }} label={`Yes, delete ${list.name}`} radius={RADIUS.pill} offset={3} style={s.act}>
               <Text style={[s.actText, { color: C.danger }]} numberOfLines={1}>Yes, delete list</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Keep list" onPress={() => setSure(false)} style={s.act}>
+            </Tile>
+            <Tile wrap={s.actWrap} onPress={() => setSure(false)} label="Keep list" radius={RADIUS.pill} offset={3} style={s.act}>
               <Text style={s.actText} numberOfLines={1}>Keep it</Text>
-            </Pressable>
+            </Tile>
           </View>
         ) : (
-          <Pressable accessibilityRole="button" accessibilityLabel={`Delete ${list.name} list`} onPress={() => setSure(true)} style={s.delete}>
-            <Icon name="trash" size={16} color={C.danger} width={2} />
+          <Tile bg={C.dangerSoft} onPress={() => setSure(true)} label={`Delete ${list.name} list`} radius={RADIUS.pill} offset={3} style={s.delete}>
+            <Icon name="trash" size={16} color={C.danger} width={2.2} />
             <Text style={s.deleteText} numberOfLines={1}>{`Delete ${list.name}`}</Text>
-          </Pressable>
+          </Tile>
         )
       )}
     </ScrollView>
@@ -158,7 +158,7 @@ function Row({ text, done, onToggle, onRemove }: { text: string; done: boolean; 
   return (
     <View style={s.item}>
       <Pressable accessibilityRole="checkbox" accessibilityLabel={text} accessibilityState={{ checked: done }} onPress={onToggle} style={s.itemMain}>
-        <View style={[s.box, done && s.boxOn]}>{done && <Icon name="check" size={14} color={C.onPrimary} width={3} />}</View>
+        <View style={[s.box, done && s.boxOn]}>{done && <Icon name="check" size={14} color={TILE_INK} width={3.4} />}</View>
         <Text style={[s.itemText, done && s.itemDone]} numberOfLines={1}>{text}</Text>
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${text}`} onPress={onRemove} hitSlop={8} style={s.x}>
@@ -169,31 +169,32 @@ function Row({ text, done, onToggle, onRemove }: { text: string; done: boolean; 
 }
 
 const s = themed(() => StyleSheet.create({
-  page: { padding: 16, gap: 12, paddingBottom: 32 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, height: 38, borderRadius: 19, backgroundColor: C.card, borderWidth: 1, borderColor: C.line },
-  chipOn: { backgroundColor: C.accent, borderColor: C.accent },
-  chipText: { fontSize: 14, fontWeight: '600', color: C.text, maxWidth: 160 },
-  chipTextOn: { color: C.onPrimary, fontWeight: '800' },
-  addRow: { flexDirection: 'row', gap: 8 },
-  input: { flex: 1, minWidth: 0, height: 46, borderRadius: RADIUS.md, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, paddingHorizontal: 14, fontSize: 15, color: C.text },
-  go: { width: 46, height: 46, borderRadius: RADIUS.md, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
+  page: { paddingLeft: 20, paddingRight: 16, paddingTop: 8, gap: 16, paddingBottom: 32 },
+  chips: { gap: 10, paddingRight: 8 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, minHeight: 44 },
+  chipText: { fontSize: 14, fontWeight: '800', color: C.text, maxWidth: 160 },
+  chipTextOn: { color: TILE.yellow },
+  addRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  input: { flex: 1, minWidth: 0, height: 48, borderRadius: RADIUS.pill, backgroundColor: C.card, borderWidth: BORDER, borderColor: C.line, paddingHorizontal: 16, fontSize: 15, color: C.text },
+  go: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', gap: 8, paddingVertical: 28 },
-  emptyText: { fontSize: 15, fontWeight: '600', color: C.muted },
-  group: { borderRadius: RADIUS.lg, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, paddingHorizontal: 14, paddingVertical: 8 },
+  emptyText: { fontSize: 15, fontWeight: '800', color: C.muted },
+  group: { paddingHorizontal: 14, paddingVertical: 8 },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  head: { fontFamily: 'display', fontSize: 17, fontWeight: '600', color: C.text, paddingVertical: 8 },
-  link: { fontSize: 13, fontWeight: '700', color: C.accent },
-  item: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, borderTopWidth: 1, borderTopColor: C.line },
-  itemMain: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 },
-  box: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: C.muted, alignItems: 'center', justifyContent: 'center' },
-  boxOn: { backgroundColor: C.accent, borderColor: C.accent },
-  itemText: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: '600', color: C.text },
-  itemDone: { color: C.muted, textDecorationLine: 'line-through', fontWeight: '500' },
-  x: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  actions: { flexDirection: 'row', gap: 8 },
-  act: { flex: 1, minWidth: 0, height: 44, borderRadius: RADIUS.md, borderWidth: 1, borderColor: C.line, backgroundColor: C.card, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
-  actText: { fontSize: 14, fontWeight: '700', color: C.text },
-  note: { color: C.good, fontWeight: '600', fontSize: 14 },
-  delete: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', height: 44 },
-  deleteText: { fontSize: 14, fontWeight: '700', color: C.danger },
+  head: { fontFamily: 'display', fontSize: 20, fontWeight: '800', color: C.text, paddingVertical: 8 },
+  link: { fontSize: 13, fontWeight: '800', color: C.text, textDecorationLine: 'underline' },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 52, borderTopWidth: 2, borderTopColor: C.line },
+  itemMain: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 },
+  box: { width: 26, height: 26, borderRadius: 8, borderWidth: BORDER, borderColor: C.line, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  boxOn: { backgroundColor: TILE.green },
+  itemText: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: '700', color: C.text },
+  itemDone: { color: C.muted, textDecorationLine: 'line-through', fontWeight: '600' },
+  x: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  actions: { flexDirection: 'row', gap: 12 },
+  actWrap: { flex: 1, minWidth: 0 },
+  act: { minHeight: 48, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
+  actText: { fontSize: 14, fontWeight: '800', color: C.text },
+  note: { color: C.good, fontWeight: '800', fontSize: 14 },
+  delete: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
+  deleteText: { fontSize: 14, fontWeight: '800', color: C.danger },
 }));

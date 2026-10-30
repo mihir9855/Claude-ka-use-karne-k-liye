@@ -107,7 +107,7 @@ function Stat({ label, v }: { label: string; v: string }) {
 }
 
 const s = themed(() => StyleSheet.create({
-  page: { padding: 16, gap: 16, paddingBottom: 32 },
+  page: { paddingLeft: 20, paddingRight: 16, paddingTop: 8, gap: 16, paddingBottom: 32 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   three: { flexDirection: 'row', gap: 10 },
   kcal: { fontFamily: 'display', fontSize: 34, fontWeight: '700', color: C.text, letterSpacing: -0.8 },

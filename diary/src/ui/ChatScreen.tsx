@@ -4,10 +4,10 @@ import { SLOT_LABEL, SLOT_ORDER, dayMenu, daysAgo, entryLabel, hints, nextSlot, 
 import { readListCommand } from '../core/lists';
 import { personName, useActive, useStore } from '../state/store';
 import { Icon } from './Icon';
-import { Muted } from './kit';
+import { Muted, Tile } from './kit';
 import { SLOT_ICON_ID, slotLabel } from './slots';
 import { Text, TextInput } from './Text';
-import { C, RADIUS, themed } from './theme';
+import { BORDER, C, RADIUS, TILE, TILE_INK, themed } from './theme';
 
 const SHOWN_DAYS = 3;
 
@@ -149,7 +149,7 @@ export function ChatScreen() {
                 <Bubble side="me">
                   <Pressable accessibilityRole="button" accessibilityLabel="Show options" onPress={() => setOpen(open === b.id ? null : b.id)} style={{ gap: 6 }}>
                     <View style={s.meta}>
-                      <Icon name={SLOT_ICON_ID[b.slot]} size={14} color={C.onPrimary} width={2} />
+                      <Icon name={SLOT_ICON_ID[b.slot]} size={14} color={TILE_INK} width={2.2} />
                       <Text style={s.metaText} numberOfLines={1}>{`${slotLabel(b.slot)} · ${clock(b.at)}`}</Text>
                     </View>
                     {b.entries.map((e) => (
@@ -182,8 +182,8 @@ export function ChatScreen() {
         )}
 
         {menu.length > 0 && (
-          <View style={s.menu}>
-            <Text style={s.menuTitle} numberOfLines={1}>{entries.length === 0 ? 'Ideas for today' : 'Your menu for the rest of today'}</Text>
+          <Tile style={s.menu}>
+            <Text style={s.menuTitle} numberOfLines={1}>{entries.length === 0 ? 'Ideas for today' : 'Menu for the rest of today'}</Text>
             {entries.length < 6 && <Muted>{entries.length === 0 ? 'Log a few meals and these will follow your habits.' : 'These get better as you log more days.'}</Muted>}
             {menu.map((m) => {
               const idx = (pick[m.slot] ?? 0) % m.options.length;
@@ -191,7 +191,7 @@ export function ChatScreen() {
               return (
                 <View key={m.slot} style={s.menuRow}>
                   <View style={s.menuIcon}>
-                    <Icon name={SLOT_ICON_ID[m.slot]} size={18} color={C.text} width={1.7} />
+                    <Icon name={SLOT_ICON_ID[m.slot]} size={18} color={TILE_INK} width={2} />
                   </View>
                   <Pressable accessibilityRole="button" accessibilityLabel={`Other options for ${slotLabel(m.slot)}`} onPress={() => setPick({ ...pick, [m.slot]: idx + 1 })} style={{ flex: 1, minWidth: 0, gap: 2 }}>
                     <Text style={s.menuSlot} numberOfLines={1}>
@@ -204,14 +204,14 @@ export function ChatScreen() {
                       {[o.kcal != null ? `${o.kcal} kcal` : '', o.why[0]?.text].filter(Boolean).join(' · ')}
                     </Text>
                   </Pressable>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`I ate ${o.name}`} onPress={() => add(o.items, m.slot, today)} style={s.ate}>
-                    <Icon name="check" size={18} color={C.onPrimary} width={2.6} />
-                  </Pressable>
+                  <Tile bg={TILE_INK} onPress={() => add(o.items, m.slot, today)} label={`I ate ${o.name}`} radius={RADIUS.pill} offset={3} style={s.ate}>
+                    <Icon name="check" size={18} color={TILE.yellow} width={3} />
+                  </Tile>
                 </View>
               );
             })}
             <Text style={s.hint}>Tap a dish to see another option. Tap the tick when you eat it.</Text>
-          </View>
+          </Tile>
         )}
       </ScrollView>
 
@@ -230,14 +230,14 @@ export function ChatScreen() {
         <View style={s.chipRow}>
             {cmd ? (
               <View style={s.slotBtn} accessibilityLabel={`List: ${cmd.list}`}>
-                <Icon name="cart" size={17} color={C.text} width={1.8} />
+                <Icon name="cart" size={17} color={TILE_INK} width={2} />
                 <Text style={s.slotText} numberOfLines={1}>
                   {cmd.list}
                 </Text>
               </View>
             ) : (
               <Pressable accessibilityRole="button" accessibilityLabel={`Meal: ${slotLabel(shownSlot)}. Tap to change`} onPress={() => setSlot(nextAfter(reading.slot ?? slot))} style={s.slotBtn}>
-                <Icon name={SLOT_ICON_ID[shownSlot]} size={17} color={C.text} width={1.8} />
+                <Icon name={SLOT_ICON_ID[shownSlot]} size={17} color={TILE_INK} width={2} />
                 <Text style={s.slotText} numberOfLines={1}>
                   {slotLabel(shownSlot)}
                 </Text>
@@ -256,9 +256,9 @@ export function ChatScreen() {
             onSubmitEditing={send}
             autoCapitalize="none"
           />
-          <Pressable accessibilityRole="button" accessibilityLabel="Send" onPress={send} style={[s.send, !reading.items.length && !cmd && { opacity: 0.4 }]}>
-            <Icon name="right" size={20} color={C.onPrimary} width={2.6} />
-          </Pressable>
+          <Tile bg={TILE_INK} onPress={send} label="Send" radius={RADIUS.pill} offset={3} wrap={!reading.items.length && !cmd ? { opacity: 0.45 } : undefined} style={s.send}>
+            <Icon name="right" size={20} color={TILE.yellow} width={3} />
+          </Tile>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -268,43 +268,46 @@ export function ChatScreen() {
 const nextAfter = (s: SlotId): SlotId => SLOT_ORDER[(SLOT_ORDER.indexOf(s) + 1) % SLOT_ORDER.length];
 
 function Bubble({ side, children }: { side: 'me' | 'app'; children: React.ReactNode }) {
-  return <View style={[s.bubble, side === 'me' ? s.me : s.app]}>{children}</View>;
+  return (
+    <Tile bg={side === 'me' ? TILE.yellow : C.card} wrap={side === 'me' ? s.meWrap : s.appWrap} style={s.bubble} offset={3}>
+      {children}
+    </Tile>
+  );
 }
 
 const s = themed(() => StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
-  title: { fontFamily: 'display', fontSize: 28, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
-  sub: { fontSize: 12, color: C.muted, fontWeight: '500' },
-  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 18, fontWeight: '800', color: C.onPrimary },
-  iconBtn: { width: 42, height: 42, borderRadius: RADIUS.md, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.line },
-  feed: { padding: 16, gap: 14, paddingBottom: 20 },
-  dayTag: { alignSelf: 'center', fontSize: 12, fontWeight: '700', color: C.muted },
-  bubble: { maxWidth: '86%', paddingVertical: 10, paddingHorizontal: 14, borderRadius: RADIUS.xl },
-  me: { alignSelf: 'flex-end', backgroundColor: C.accent, borderBottomRightRadius: 6 },
-  app: { alignSelf: 'flex-start', backgroundColor: C.card, borderBottomLeftRadius: 6, borderWidth: 1, borderColor: C.line },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 20, paddingRight: 20, paddingTop: 12, paddingBottom: 10 },
+  title: { fontFamily: 'display', fontSize: 36, fontWeight: '800', color: C.text, letterSpacing: -1.4 },
+  sub: { fontSize: 12, color: C.muted, fontWeight: '700' },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: TILE.yellow, borderWidth: BORDER, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 18, fontWeight: '800', color: TILE_INK },
+  feed: { paddingLeft: 20, paddingRight: 16, paddingTop: 8, gap: 16, paddingBottom: 20 },
+  dayTag: { alignSelf: 'center', fontSize: 12, fontWeight: '800', color: C.muted },
+  bubble: { paddingVertical: 10, paddingHorizontal: 14, gap: 4 },
+  meWrap: { alignSelf: 'flex-end', maxWidth: '88%' },
+  appWrap: { alignSelf: 'flex-start', maxWidth: '88%' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { fontSize: 12, fontWeight: '700', color: C.onPrimary, opacity: 0.75, flexShrink: 1 },
-  meText: { fontSize: 16, fontWeight: '700', color: C.onPrimary },
-  appText: { fontSize: 15, color: C.text, lineHeight: 21 },
-  remove: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10, borderRadius: RADIUS.sm, backgroundColor: C.dangerSoft },
-  removeText: { fontSize: 13, fontWeight: '700', color: C.danger },
-  menu: { backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 14, gap: 10, borderWidth: 1, borderColor: C.line },
-  menuTitle: { fontFamily: 'display', fontSize: 20, fontWeight: '600', color: C.text },
-  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
-  menuIcon: { width: 40, height: 40, borderRadius: RADIUS.md, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  metaText: { fontSize: 12, fontWeight: '800', color: TILE_INK, opacity: 0.75, flexShrink: 1 },
+  meText: { fontSize: 16, fontWeight: '800', color: TILE_INK },
+  appText: { fontSize: 15, color: C.text, lineHeight: 21, fontWeight: '500' },
+  remove: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10, borderRadius: RADIUS.sm, backgroundColor: C.dangerSoft, borderWidth: 2, borderColor: C.line },
+  removeText: { fontSize: 13, fontWeight: '800', color: C.danger },
+  menu: { padding: 14, gap: 10 },
+  menuTitle: { fontFamily: 'display', fontSize: 22, fontWeight: '800', color: C.text },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 10, borderTopWidth: 2, borderTopColor: C.line },
+  menuIcon: { width: 42, height: 42, borderRadius: RADIUS.md, backgroundColor: TILE.green, borderWidth: 2, borderColor: TILE_INK, alignItems: 'center', justifyContent: 'center' },
   menuSlot: { fontSize: 12, fontWeight: '700', color: C.muted },
-  menuName: { fontFamily: 'display', fontSize: 18, fontWeight: '600', color: C.text },
-  menuWhy: { fontSize: 12, color: C.muted },
-  ate: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
-  hint: { fontSize: 12, color: C.muted },
-  composer: { gap: 8, paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: C.bg },
-  hintChip: { paddingHorizontal: 12, minHeight: 34, borderRadius: RADIUS.md, backgroundColor: C.surface, justifyContent: 'center' },
-  hintText: { fontSize: 14, color: C.text, fontWeight: '500' },
-  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 },
-  chipRow: { flexDirection: 'row', paddingHorizontal: 12 },
-  slotBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, paddingHorizontal: 12, borderRadius: RADIUS.pill, backgroundColor: C.surface, maxWidth: '100%' },
-  slotText: { fontSize: 14, fontWeight: '700', color: C.text, flexShrink: 1 },
-  input: { flex: 1, minWidth: 0, height: 46, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 14, fontSize: 16, color: C.text },
-  send: { width: 46, height: 46, borderRadius: RADIUS.md, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
+  menuName: { fontFamily: 'display', fontSize: 18, fontWeight: '800', color: C.text },
+  menuWhy: { fontSize: 12, color: C.muted, fontWeight: '600' },
+  ate: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  hint: { fontSize: 12, color: C.muted, fontWeight: '600' },
+  composer: { gap: 10, paddingTop: 10, paddingBottom: 10, borderTopWidth: BORDER, borderTopColor: C.line, backgroundColor: C.bg },
+  hintChip: { paddingHorizontal: 12, minHeight: 36, borderRadius: RADIUS.pill, backgroundColor: C.card, borderWidth: 2, borderColor: C.line, justifyContent: 'center' },
+  hintText: { fontSize: 14, color: C.text, fontWeight: '700' },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 20, paddingRight: 16 },
+  chipRow: { flexDirection: 'row', paddingLeft: 20, paddingRight: 16 },
+  slotBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 14, borderRadius: RADIUS.pill, backgroundColor: TILE.green, borderWidth: BORDER, borderColor: C.line, maxWidth: '100%' },
+  slotText: { fontSize: 14, fontWeight: '800', color: TILE_INK, flexShrink: 1 },
+  input: { flex: 1, minWidth: 0, height: 48, backgroundColor: C.card, borderWidth: BORDER, borderColor: C.line, borderRadius: RADIUS.pill, paddingHorizontal: 16, fontSize: 16, color: C.text },
+  send: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
 }));

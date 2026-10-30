@@ -4,7 +4,7 @@ import { addDays, totalsFor, ymd } from '../core/diary';
 import { useActive } from '../state/store';
 import { Bar, Card, Label, Muted, Pill } from './kit';
 import { Text } from './Text';
-import { C, RADIUS, themed } from './theme';
+import { C, RADIUS, TILE, themed } from './theme';
 
 const MACROS = [
   { key: 'protein', label: 'Protein' },
@@ -62,7 +62,7 @@ export function NutritionScreen() {
             const d = new Date(`${p.date}T12:00:00`);
             return (
               <Pressable key={p.date} accessibilityRole="button" accessibilityLabel={`${d.toDateString()}, ${Math.round(p.kcal)} kcal`} accessibilityState={{ selected: on }} onPress={() => setDate(p.date)} style={s.col}>
-                <View style={[s.bar, { height: Math.max(3, (p.kcal / maxK) * CHART_H), backgroundColor: on ? C.accent : C.line }]} />
+                <View style={[s.bar, { height: Math.max(3, (p.kcal / maxK) * CHART_H), backgroundColor: on ? TILE.orange : C.surface, borderWidth: 2, borderColor: C.line }]} />
                 <Text style={[s.dayLetter, on && { color: C.text, fontWeight: '800' }]} numberOfLines={1}>
                   {d.toLocaleDateString('en-IN', { weekday: 'short' }).slice(0, 2)}
                 </Text>
@@ -109,12 +109,12 @@ export function NutritionScreen() {
 }
 
 const s = themed(() => StyleSheet.create({
-  page: { padding: 16, gap: 14, paddingBottom: 28 },
-  hero: { fontFamily: 'display', fontSize: 40, fontWeight: '700', color: C.text, letterSpacing: -0.8 },
+  page: { paddingLeft: 20, paddingRight: 16, paddingTop: 8, gap: 16, paddingBottom: 32 },
+  hero: { fontFamily: 'display', fontSize: 44, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
   heroSmall: { fontSize: 14, fontWeight: '500', color: C.muted, letterSpacing: 0 },
   left: { fontSize: 14, fontWeight: '600', color: C.text },
   chart: { flexDirection: 'row', alignItems: 'flex-end', height: CHART_H + 26, gap: 8 },
-  targetLine: { position: 'absolute', left: 0, right: 0, height: 1, backgroundColor: C.muted, opacity: 0.6 },
+  targetLine: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: C.line },
   col: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'flex-end', gap: 6, height: CHART_H + 26 },
   bar: { width: '70%', borderRadius: 6 },
   dayLetter: { fontSize: 12, fontWeight: '600', color: C.muted, height: 16 },
@@ -122,7 +122,7 @@ const s = themed(() => StyleSheet.create({
   macroHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   macroName: { fontSize: 15, fontWeight: '700', color: C.text, width: 64 },
   macroVal: { flex: 1, minWidth: 0, fontSize: 13, color: C.muted, textAlign: 'right' },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 38, borderTopWidth: 1, borderTopColor: C.line },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 42, borderTopWidth: 2, borderTopColor: C.line },
   topName: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: '600', color: C.text },
   topN: { fontSize: 13, color: C.muted },
 }));
