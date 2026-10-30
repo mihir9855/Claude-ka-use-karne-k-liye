@@ -1,5 +1,5 @@
 import { Platform, StyleSheet, Text as RNText, TextInput as RNTextInput, type TextInputProps, type TextProps, type TextStyle } from 'react-native';
-import { DISPLAY, FONT } from './theme';
+import { FONT, displayFonts } from './theme';
 
 const WEB_FALLBACK = ', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const WEB_SERIF = ', system-ui, "Segoe UI", Roboto, sans-serif';
@@ -26,7 +26,7 @@ function resolve(style: TextProps['style']): TextStyle {
   const flat = (StyleSheet.flatten(style) ?? {}) as TextStyle;
   const { fontWeight, fontFamily, ...rest } = flat;
   const w = String(fontWeight ?? '400');
-  const fam = fontFamily === 'display' ? (w === '700' || w === '800' || w === 'bold' ? DISPLAY.bold : w === '600' || w === '500' ? DISPLAY.semi : DISPLAY.regular) : family(fontWeight);
+  const fam = fontFamily === 'display' ? (w === '700' || w === '800' || w === 'bold' ? displayFonts().bold : w === '600' || w === '500' ? displayFonts().semi : displayFonts().regular) : family(fontWeight);
   return { ...rest, fontFamily: Platform.OS === 'web' ? `${fam}${fontFamily === 'display' ? WEB_SERIF : WEB_FALLBACK}` : fam };
 }
 

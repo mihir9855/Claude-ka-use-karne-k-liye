@@ -9,7 +9,7 @@ import { Button, Card, Choice, Label, Muted } from './kit';
 import { ProfilesPage } from './ProfilesPage';
 import { pickTextFile, saveTextFile } from './saveFile';
 import { Text } from './Text';
-import { ACCENTS, ACCENT_IDS, C, RADIUS, themed } from './theme';
+import { ACCENTS, ACCENT_IDS, C, LOOKS, LOOK_IDS, RADIUS, themed } from './theme';
 
 type Page = 'profiles' | 'theme' | 'backup' | 'data' | 'features' | 'news';
 
@@ -80,10 +80,18 @@ function ThemePage() {
   const setTheme = useStore((st) => st.setTheme);
   const accent = useStore((st) => st.accent);
   const setAccent = useStore((st) => st.setAccent);
+  const look = useStore((st) => st.look);
+  const setLook = useStore((st) => st.setLook);
+  const classic = look === 'classic';
   return (
     <ScrollView contentContainerStyle={s.page}>
-      <Text style={s.group}>Colour</Text>
-      <View style={s.swatches}>
+      <Text style={s.group}>Design</Text>
+      {LOOK_IDS.map((id) => (
+        <Choice key={id} title={LOOKS[id].name} sub={LOOKS[id].sub} on={look === id} onPress={() => setLook(id)} />
+      ))}
+      {!classic && <Muted>Light, dark and colours apply to the Classic design. The other designs bring their own colours.</Muted>}
+      {classic && <Text style={s.group}>Colour</Text>}
+      {classic && <View style={s.swatches}>
         {ACCENT_IDS.map((id) => {
           const on = id === accent;
           return (
@@ -93,11 +101,11 @@ function ThemePage() {
             </Pressable>
           );
         })}
-      </View>
-      <Text style={s.group}>Light or dark</Text>
-      <Choice title="Follow my phone" sub="Light by day, dark at night, as the phone is set" on={theme === 'system'} onPress={() => setTheme('system')} />
-      <Choice title="Dark" sub="Easy on the eyes in the evening" on={theme === 'dark'} onPress={() => setTheme('dark')} />
-      <Choice title="Light" sub="Bright and clear in daylight" on={theme === 'light'} onPress={() => setTheme('light')} />
+      </View>}
+      {classic && <Text style={s.group}>Light or dark</Text>}
+      {classic && <Choice title="Follow my phone" sub="Light by day, dark at night, as the phone is set" on={theme === 'system'} onPress={() => setTheme('system')} />}
+      {classic && <Choice title="Dark" sub="Easy on the eyes in the evening" on={theme === 'dark'} onPress={() => setTheme('dark')} />}
+      {classic && <Choice title="Light" sub="Bright and clear in daylight" on={theme === 'light'} onPress={() => setTheme('light')} />}
     </ScrollView>
   );
 }

@@ -31,11 +31,11 @@ export function MenuScreen() {
         <Text style={s.heroTitle} numberOfLines={1}>This week at a glance</Text>
         <View style={s.glance}>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={s.big} numberOfLines={1}>{`${avgK.toLocaleString('en-IN')} kcal`}</Text>
+            <Text style={[s.big, { color: C.onHero, fontSize: 28 }]} numberOfLines={1}>{`${avgK.toLocaleString('en-IN')} kcal`}</Text>
             <Text style={[s.small, { color: C.onHero, opacity: 0.75, fontWeight: '600' }]} numberOfLines={1}>{`a day, goal ${target.kcal.toLocaleString('en-IN')}`}</Text>
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={s.big} numberOfLines={1}>{`${avgP} g`}</Text>
+            <Text style={[s.big, { color: C.onHero, fontSize: 28 }]} numberOfLines={1}>{`${avgP} g`}</Text>
             <Text style={[s.small, { color: C.onHero, opacity: 0.75, fontWeight: '600' }]} numberOfLines={1}>{`protein a day, goal ${target.protein}`}</Text>
           </View>
         </View>

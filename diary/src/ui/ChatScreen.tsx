@@ -183,7 +183,7 @@ export function ChatScreen() {
 
         {menu.length > 0 && (
           <View style={s.menu}>
-            <Text style={s.menuTitle}>{entries.length === 0 ? 'Ideas for today' : 'Your menu for the rest of today'}</Text>
+            <Text style={s.menuTitle} numberOfLines={1}>{entries.length === 0 ? 'Ideas for today' : 'Your menu for the rest of today'}</Text>
             {entries.length < 6 && <Muted>{entries.length === 0 ? 'Log a few meals and these will follow your habits.' : 'These get better as you log more days.'}</Muted>}
             {menu.map((m) => {
               const idx = (pick[m.slot] ?? 0) % m.options.length;

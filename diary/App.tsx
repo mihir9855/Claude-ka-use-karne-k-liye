@@ -3,6 +3,9 @@ import { Manrope_500Medium } from '@expo-google-fonts/manrope/500Medium';
 import { Manrope_600SemiBold } from '@expo-google-fonts/manrope/600SemiBold';
 import { Manrope_700Bold } from '@expo-google-fonts/manrope/700Bold';
 import { Manrope_800ExtraBold } from '@expo-google-fonts/manrope/800ExtraBold';
+import { DMSerifDisplay_400Regular } from '@expo-google-fonts/dm-serif-display/400Regular';
+import { IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono/600SemiBold';
+import { IBMPlexMono_700Bold } from '@expo-google-fonts/ibm-plex-mono/700Bold';
 import { BricolageGrotesque_600SemiBold } from '@expo-google-fonts/bricolage-grotesque/600SemiBold';
 import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque/700Bold';
 import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque/800ExtraBold';
@@ -21,7 +24,7 @@ import { OnboardScreen } from './src/ui/OnboardScreen';
 import { NutritionScreen } from './src/ui/NutritionScreen';
 import { SettingsScreen } from './src/ui/SettingsScreen';
 import { Text } from './src/ui/Text';
-import { C, setThemeName, themed } from './src/ui/theme';
+import { C, LOOKS, LOOK_IDS, setThemeName, themed } from './src/ui/theme';
 
 const TABS: { key: Tab; label: string; title: string; icon: IconName }[] = [
   { key: 'home', label: 'Home', title: '', icon: 'home' },
@@ -32,8 +35,10 @@ const TABS: { key: Tab; label: string; title: string; icon: IconName }[] = [
 ];
 
 function Shell({ dark }: { dark: boolean }) {
+  const look = useStore((st) => st.look);
+  const setLook = useStore((st) => st.setLook);
   const [tab, setTab] = useState<Tab>('home');
-  const [fonts, fontError] = useFonts({ Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold });
+  const [fonts, fontError] = useFonts({ Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold, DMSerifDisplay_400Regular, IBMPlexMono_600SemiBold, IBMPlexMono_700Bold });
   const [hydrated, setHydrated] = useState(useStore.persist.hasHydrated());
   const [waited, setWaited] = useState(false);
   useEffect(() => {
@@ -81,6 +86,12 @@ function Shell({ dark }: { dark: boolean }) {
               </Text>
             </View>
           )}
+          {tab === 'home' && (
+            <Pressable accessibilityRole="button" accessibilityLabel={`Design: ${LOOKS[look].name}. Tap to try the next design`} onPress={() => setLook(LOOK_IDS[(LOOK_IDS.indexOf(look) + 1) % LOOK_IDS.length])} style={s.lookBar}>
+              <Text style={s.lookText} numberOfLines={1}>{`Design: ${LOOKS[look].name}`}</Text>
+              <Text style={s.lookTry} numberOfLines={1}>Try next</Text>
+            </Pressable>
+          )}
           <View style={{ flex: 1 }}>
             {tab === 'home' ? <HomeScreen go={setTab} /> : tab === 'chat' ? <ChatScreen /> : tab === 'menu' ? <MenuScreen /> : tab === 'nutrition' ? <NutritionScreen /> : tab === 'lists' ? <ListsScreen /> : <SettingsScreen />}
           </View>
@@ -108,13 +119,15 @@ function Shell({ dark }: { dark: boolean }) {
 export default function App() {
   const pref = useStore((st) => st.theme);
   const accent = useStore((st) => st.accent);
+  const look = useStore((st) => st.look);
   const system = useColorScheme();
-  const name = pref === 'system' ? (system === 'light' ? 'light' : 'dark') : pref;
+  const base = pref === 'system' ? (system === 'light' ? 'light' : 'dark') : pref;
+  const name = LOOKS[look].palette ? (LOOKS[look].dark ? 'dark' : 'light') : base;
   // styles read the palette when they are first used, so set it before the tree renders
-  setThemeName(name, accent);
+  setThemeName(name, accent, look);
   return (
     <SafeAreaProvider>
-      <Shell key={`${name}:${accent}`} dark={name === 'dark'} />
+      <Shell key={`${look}:${name}:${accent}`} dark={name === 'dark'} />
     </SafeAreaProvider>
   );
 }
@@ -122,6 +135,9 @@ export default function App() {
 const s = themed(() => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
+  lookBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 36, paddingHorizontal: 20, backgroundColor: C.surface },
+  lookText: { flex: 1, minWidth: 0, fontSize: 12, fontWeight: '700', color: C.text },
+  lookTry: { fontSize: 12, fontWeight: '800', color: C.accent },
   back: { width: 40, height: 40, marginLeft: -10, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, minWidth: 0, fontFamily: 'display', fontSize: 34, fontWeight: '800', color: C.text, letterSpacing: -1 },
   nav: { flexDirection: 'row', backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.line },

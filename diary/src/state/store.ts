@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { makeEntry, newBatch, sampleEntries, type Entry, type SlotId } from '../core/diary';
 import type { BackupData } from '../core/backup';
+import type { LookId } from '../ui/theme';
 import { addToList, defaultLists, type ShopList } from '../core/lists';
 import { MAX_PEOPLE, computeTargets, newPerson, type Person, type Target } from '../core/profile';
 
@@ -44,6 +45,8 @@ interface State {
   theme: 'system' | 'dark' | 'light';
   /** colour theme id, see ACCENTS */
   accent: string;
+  /** whole-app design, see LOOKS */
+  look: LookId;
   /** folder (Android SAF uri) where backups are saved, remembered after the first pick */
   saveDir: string;
   /** false until the welcome and the first questions are done */
@@ -63,6 +66,7 @@ interface State {
   clearPicks: () => void;
   setTheme: (t: 'system' | 'dark' | 'light') => void;
   setAccent: (id: string) => void;
+  setLook: (id: LookId) => void;
   setSaveDir: (dir: string) => void;
   /** replace everything with a backup that was checked by parseBackup */
   restore: (data: BackupData) => void;
@@ -92,6 +96,7 @@ export const useStore = create<State>()(
       onboarded: false,
       theme: 'system',
       accent: 'mono',
+      look: 'classic',
       saveDir: '',
       picks: {},
       lists: defaultLists(),
@@ -124,6 +129,7 @@ export const useStore = create<State>()(
       clearPicks: () => set({ picks: {} }),
       setTheme: (theme) => set({ theme }),
       setAccent: (accent) => set({ accent }),
+      setLook: (look) => set({ look }),
       setSaveDir: (saveDir) => set({ saveDir }),
       restore: (d) => set({ entries: d.entries, persons: d.persons, activeId: d.activeId, picks: d.picks, lists: d.lists ?? defaultLists(), onboarded: true }),
       setOnboarded: (onboarded) => set({ onboarded }),
@@ -163,7 +169,7 @@ export const useStore = create<State>()(
     {
       name: 'khana-diary-v1',
       storage: createJSONStorage(() => safeStorage),
-      partialize: ({ entries, persons, activeId, picks, onboarded, theme, accent, saveDir, lists }) => ({ entries, persons, activeId, picks, onboarded, theme, accent, saveDir, lists }) as State,
+      partialize: ({ entries, persons, activeId, picks, onboarded, theme, accent, look, saveDir, lists }) => ({ entries, persons, activeId, picks, onboarded, theme, accent, look, saveDir, lists }) as State,
     },
   ),
 );

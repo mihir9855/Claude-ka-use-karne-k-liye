@@ -22,6 +22,7 @@ export const CHANGELOG: { version: string; items: string[] }[] = [
       'Home dashboard with today\'s menu and the meals coming up by time',
       'Weekly menu, nutrition screen and family profiles',
       'Lists tab: grocery and other lists, filled straight from Chat',
+      'Four designs to try: Thali, Order Slip, Sun Arc and Stickers (Settings > Theme, or the Design bar on Home)',
       'Bold turmeric look: big colour blocks and chunky type',
       'Dark and light themes, backup, restore and export',
     ],

@@ -6,13 +6,32 @@ import { Icon } from './Icon';
 import { Bar } from './kit';
 import { SLOT_ICON_ID, slotLabel } from './slots';
 import { Text } from './Text';
-import { C, RADIUS, themed } from './theme';
+import { SlipHome } from './looks/SlipHome';
+import { StickerHome } from './looks/StickerHome';
+import { SunHome } from './looks/SunHome';
+import { ThaliHome } from './looks/ThaliHome';
+import { useHome } from './looks/useHome';
+import { C, RADIUS, themed, type LookId } from './theme';
 
 export type Tab = 'home' | 'chat' | 'menu' | 'nutrition' | 'lists' | 'profile';
 
 const greeting = (h: number) => (h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
 
 export function HomeScreen({ go }: { go: (t: Tab) => void }) {
+  const look = useStore((st) => st.look);
+  if (look === 'classic') return <ClassicHome go={go} />;
+  return <LookHome look={look} go={go} />;
+}
+
+function LookHome({ look, go }: { look: LookId; go: (t: Tab) => void }) {
+  const h = useHome();
+  if (look === 'thali') return <ThaliHome h={h} go={go} />;
+  if (look === 'slip') return <SlipHome h={h} go={go} />;
+  if (look === 'sun') return <SunHome h={h} go={go} />;
+  return <StickerHome h={h} go={go} />;
+}
+
+function ClassicHome({ go }: { go: (t: Tab) => void }) {
   const { person, target, entries } = useActive();
   const persons = useStore((s) => s.persons);
   const add = useStore((s) => s.add);

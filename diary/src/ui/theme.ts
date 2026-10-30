@@ -98,18 +98,63 @@ export const ACCENTS: Record<string, Accent> = {
 };
 export const ACCENT_IDS = Object.keys(ACCENTS);
 
+/** Looks: whole-app designs. "classic" follows the light/dark and colour settings; the others carry their own palette. */
+export type LookId = 'classic' | 'thali' | 'slip' | 'sun' | 'sticker';
+export interface Look {
+  name: string;
+  sub: string;
+  dark: boolean;
+  palette?: Palette;
+  display?: { regular: string; semi: string; bold: string };
+  borderWidth?: number;
+}
+const base = (o: Partial<Palette> & Pick<Palette, 'bg' | 'card' | 'surface' | 'text' | 'muted' | 'line' | 'accent' | 'onPrimary' | 'hero' | 'onHero'>): Palette => ({
+  ink: o.accent, inkSoft: o.accent, primary: o.accent, primarySoft: o.surface, accentSoft: o.surface,
+  good: '#2E9E63', goodSoft: o.surface, danger: '#C0392B', dangerSoft: o.surface, header: o.bg, headerSoft: o.card, mint: '#2E9E63', ...o,
+});
+export const LOOKS: Record<LookId, Look> = {
+  classic: { name: 'Classic', sub: 'Bold colour blocks. Light, dark and colours you choose', dark: false },
+  thali: {
+    name: 'The Thali', sub: 'Your day on a steel plate with five bowls', dark: true,
+    palette: base({ bg: '#24170F', card: '#33231A', surface: '#3E2B20', text: '#F6E9D2', muted: '#BBA78C', line: '#4A3526', accent: '#F2B33D', onPrimary: '#241508', hero: '#F2B33D', onHero: '#241508', good: '#8BD3A0', goodSoft: '#27402F', danger: '#FF8A78', dangerSoft: '#4A2620', mint: '#8BD3A0' }),
+  },
+  slip: {
+    name: 'The Order Slip', sub: 'Your day printed like a tiffin bill', dark: false,
+    palette: base({ bg: '#F5F0E3', card: '#FFFBF0', surface: '#E9E2CF', text: '#1D1A14', muted: '#6A6354', line: '#CFC6AF', accent: '#C2371F', onPrimary: '#FFF8EE', hero: '#12372A', onHero: '#F5F0E3', good: '#1F6B4A', goodSoft: '#D9EBDD', danger: '#B3261E', dangerSoft: '#F5DAD6', mint: '#1F6B4A' }),
+    display: { regular: 'IBMPlexMono_600SemiBold', semi: 'IBMPlexMono_600SemiBold', bold: 'IBMPlexMono_700Bold' },
+  },
+  sun: {
+    name: 'The Sun Arc', sub: 'The sky changes with the time of day', dark: true,
+    palette: base({ bg: '#1B1A4B', card: 'rgba(255,255,255,0.10)', surface: 'rgba(255,255,255,0.16)', text: '#FFF4E2', muted: '#CBC0E4', line: 'rgba(255,255,255,0.20)', accent: '#FFC857', onPrimary: '#2A1550', hero: '#FFC857', onHero: '#2A1550', good: '#8FE3B0', goodSoft: 'rgba(143,227,176,0.18)', danger: '#FFA090', dangerSoft: 'rgba(255,160,144,0.18)', mint: '#8FE3B0' }),
+    display: { regular: 'DMSerifDisplay_400Regular', semi: 'DMSerifDisplay_400Regular', bold: 'DMSerifDisplay_400Regular' },
+  },
+  sticker: {
+    name: 'Stickers', sub: 'Loud tiles with thick outlines', dark: false,
+    palette: base({ bg: '#FFD9E8', card: '#FFFFFF', surface: '#FFEAF2', text: '#14110E', muted: '#5E5058', line: '#14110E', accent: '#14110E', onPrimary: '#FFE14A', hero: '#FFE14A', onHero: '#14110E', good: '#0E7A46', goodSoft: '#7BE0A4', danger: '#B3261E', dangerSoft: '#FFD0C7', mint: '#2DBE7A' }),
+    borderWidth: 2.5,
+  },
+};
+export const LOOK_IDS = Object.keys(LOOKS) as LookId[];
+
 let current: ThemeName = 'dark';
+let lookId: LookId = 'classic';
 let accentId = 'mono';
 
 export const themeName = () => current;
-export function setThemeName(n: ThemeName, accent: string = accentId) {
+export const lookName = () => lookId;
+export function setThemeName(n: ThemeName, accent: string = accentId, look: LookId = lookId) {
   current = n;
+  lookId = LOOKS[look] ? look : 'classic';
   accentId = ACCENTS[accent] ? accent : 'mono';
 }
 
 /** The colours of the theme in use. */
 export const C = new Proxy({} as Palette, {
-  get: (_t, k: string) => (ACCENTS[accentId][current] as Record<string, string>)[k] ?? PALETTES[current][k as keyof Palette],
+  get: (_t, k: string) => {
+    const pal = LOOKS[lookId].palette;
+    if (pal) return pal[k as keyof Palette];
+    return (ACCENTS[accentId][current] as Record<string, string>)[k] ?? PALETTES[current][k as keyof Palette];
+  },
 });
 
 /** Styles that are built once per theme, the first time a screen asks for them. */
@@ -117,7 +162,7 @@ export function themed<T extends object>(make: () => T): T {
   const cache: Record<string, T> = {};
   return new Proxy({} as T, {
     get: (_t, prop) => {
-      const set = (cache[`${current}:${accentId}`] ??= make());
+      const set = (cache[`${lookId}:${current}:${accentId}`] ??= make());
       return set[prop as keyof T];
     },
   });
@@ -136,12 +181,13 @@ export const FONT = {
 };
 
 /** Headings and numerals use this chunky grotesque. Use as `fontFamily: 'display'` in a text style. */
-export const DISPLAY = { regular: 'BricolageGrotesque_600SemiBold', semi: 'BricolageGrotesque_700Bold', bold: 'BricolageGrotesque_800ExtraBold' };
+const GROTESK = { regular: 'BricolageGrotesque_600SemiBold', semi: 'BricolageGrotesque_700Bold', bold: 'BricolageGrotesque_800ExtraBold' };
+export const displayFonts = () => LOOKS[lookId].display ?? GROTESK;
 
 /** Flat look: no shadow, a thin line around cards. */
 export const SHADOW = {
   get borderWidth() {
-    return 1;
+    return LOOKS[lookId].borderWidth ?? 1;
   },
   get borderColor() {
     return C.line;
