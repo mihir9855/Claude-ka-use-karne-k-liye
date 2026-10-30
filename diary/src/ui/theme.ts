@@ -24,6 +24,8 @@ export interface Palette {
   hero: string;
   onHero: string;
   mint: string;
+  /** colour of the hard shadow under tiles (ink in the day, chalk dust at night) */
+  shadow: string;
 }
 
 /** Page colours to choose from. The bright tile colours stay the same on every page colour. */
@@ -34,43 +36,42 @@ export interface PageSet {
   surface: string;
 }
 export const SETS: Record<string, PageSet> = {
-  butter: { name: 'Butter', swatch: '#FFF1C1', bg: '#FFF1C1', surface: '#FFE49A' },
-  mint: { name: 'Mint', swatch: '#D8F3E3', bg: '#D8F3E3', surface: '#B9E8CE' },
-  sky: { name: 'Sky', swatch: '#D9ECFF', bg: '#D9ECFF', surface: '#B9DAF7' },
-  lilac: { name: 'Lilac', swatch: '#E8DEFF', bg: '#E8DEFF', surface: '#D3C2FA' },
-  pink: { name: 'Pink', swatch: '#FFD9E8', bg: '#FFD9E8', surface: '#FFB9D3' },
   paper: { name: 'Paper', swatch: '#F3EFE6', bg: '#F3EFE6', surface: '#E4DDCC' },
 };
 export const SET_IDS = Object.keys(SETS);
 
-/** Flat tile colours, used for meals. Text on them is always TILE_INK. */
-export const TILE = { yellow: '#FFE14A', green: '#7BE0A4', lilac: '#B9A6FF', orange: '#FF9B6B', blue: '#8FD3FF', pink: '#FFB3D1' };
+/** Flat tile colours, used for meals. Brighter in the day, chalk pastels at night. Text on them is always TILE_INK. */
+const TILE_DAY = { yellow: '#FFE14A', green: '#7BE0A4', lilac: '#B9A6FF', orange: '#FF9B6B', blue: '#8FD3FF', pink: '#FFB3D1' };
+const TILE_NIGHT = { yellow: '#F6E27A', green: '#9BD8B0', lilac: '#C6B8EE', orange: '#F2AD92', blue: '#9FCDE8', pink: '#F0B8CE' };
+export const TILE = new Proxy({} as typeof TILE_DAY, { get: (_t, k: string) => (current === 'dark' ? TILE_NIGHT : TILE_DAY)[k as keyof typeof TILE_DAY] });
 export const TILE_INK = '#14110E';
-export const TILE_CYCLE = [TILE.green, TILE.lilac, TILE.orange, TILE.blue, TILE.pink];
+const CYCLE_KEYS = ['green', 'lilac', 'orange', 'blue', 'pink'] as const;
+export const TILE_CYCLE = new Proxy([] as string[], { get: (_t, k) => (k === 'length' ? CYCLE_KEYS.length : typeof k === 'string' && /^\d+$/.test(k) ? TILE[CYCLE_KEYS[Number(k)]] : undefined) });
 
 function light(set: PageSet): Palette {
   return {
     bg: set.bg, card: '#FFFFFF', surface: set.surface, text: '#14110E', muted: '#5A5148', line: '#14110E',
     ink: '#14110E', inkSoft: '#14110E', primary: '#14110E', primarySoft: set.surface, onPrimary: '#FFE14A',
     accent: '#14110E', accentSoft: set.surface, good: '#0E7A46', goodSoft: '#7BE0A4', danger: '#B3261E', dangerSoft: '#FFD0C7',
-    header: set.bg, headerSoft: '#FFFFFF', hero: TILE.yellow, onHero: '#14110E', mint: '#2DBE7A',
+    header: set.bg, headerSoft: '#FFFFFF', hero: TILE.yellow, onHero: '#14110E', mint: '#2DBE7A', shadow: '#14110E',
   };
 }
+// Night is a blackboard: black board, chalk-white writing and outlines, chalk-pastel tiles, and shadows like chalk dust.
 const dark: Palette = {
-  bg: '#141210', card: '#211E1A', surface: '#2C2823', text: '#F5F0E6', muted: '#ABA397', line: '#F5F0E6',
-  ink: '#FFE14A', inkSoft: '#FFE14A', primary: '#FFE14A', primarySoft: '#3A3419', onPrimary: '#14110E',
-  accent: '#FFE14A', accentSoft: '#3A3419', good: '#7BE0A4', goodSoft: '#1D3A2A', danger: '#FF9A8A', dangerSoft: '#40231F',
-  header: '#141210', headerSoft: '#211E1A', hero: TILE.yellow, onHero: '#14110E', mint: '#7BE0A4',
+  bg: '#161616', card: '#212121', surface: '#2D2D2D', text: '#F3F0E6', muted: '#B4B2AB', line: '#F3F0E6',
+  ink: '#F6E27A', inkSoft: '#F6E27A', primary: '#F6E27A', primarySoft: '#3A3720', onPrimary: '#161616',
+  accent: '#F6E27A', accentSoft: '#3A3720', good: '#9BD8B0', goodSoft: '#243A2E', danger: '#F4A99B', dangerSoft: '#42302D',
+  header: '#161616', headerSoft: '#212121', hero: '#F6E27A', onHero: '#161616', mint: '#9BD8B0', shadow: 'rgba(243,240,230,0.30)',
 };
 
 export type ThemeName = 'light' | 'dark';
 let current: ThemeName = 'light';
-let setId = 'butter';
+let setId = 'paper';
 
 export const themeName = () => current;
 export function setThemeName(n: ThemeName, set: string = setId) {
   current = n;
-  setId = SETS[set] ? set : 'butter';
+  setId = SETS[set] ? set : 'paper';
 }
 
 /** The colours of the theme in use. */

@@ -60,14 +60,14 @@ export function MenuScreen() {
                 return (
                   <View key={sl.slot} style={s.row}>
                     <View style={s.ico}>
-                      <Icon name={SLOT_ICON_ID[sl.slot]} size={18} color={C.muted} width={1.7} />
+                      <Icon name={SLOT_ICON_ID[sl.slot]} size={18} color={TILE_INK} width={2} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={s.slot} numberOfLines={1}>{slotLabel(sl.slot)}</Text>
                       <Text style={s.name} numberOfLines={1}>{sl.eaten.map(entryLabel).join(', ')}</Text>
                     </View>
                     <View style={[s.tick, s.tickDone]}>
-                      <Icon name="check" size={18} color={C.good} width={2.6} />
+                      <Icon name="check" size={18} color={TILE_INK} width={3.2} />
                     </View>
                   </View>
                 );
@@ -78,7 +78,7 @@ export function MenuScreen() {
               return (
                 <View key={sl.slot} style={s.row}>
                   <View style={s.ico}>
-                    <Icon name={SLOT_ICON_ID[sl.slot]} size={18} color={C.text} width={1.7} />
+                    <Icon name={SLOT_ICON_ID[sl.slot]} size={18} color={TILE_INK} width={2} />
                   </View>
                   <Pressable accessibilityRole="button" accessibilityLabel={`${slotLabel(sl.slot)}: ${c.name}. Tap for another option`} onPress={() => setPick(key, next.name)} style={{ flex: 1, minWidth: 0 }}>
                     <Text style={s.slot} numberOfLines={1}>{slotLabel(sl.slot)}</Text>

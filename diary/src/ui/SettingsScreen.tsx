@@ -9,13 +9,13 @@ import { Button, Card, Choice, Label, Muted, Tile } from './kit';
 import { ProfilesPage } from './ProfilesPage';
 import { pickTextFile, saveTextFile } from './saveFile';
 import { Text } from './Text';
-import { BORDER, C, RADIUS, SETS, SET_IDS, TILE, TILE_INK, themed } from './theme';
+import { BORDER, C, RADIUS, TILE, TILE_INK, themed } from './theme';
 
 type Page = 'profiles' | 'theme' | 'backup' | 'data' | 'features' | 'news';
 
 const ROWS: { page: Page; icon: IconName; title: string; sub: string }[] = [
   { page: 'profiles', icon: 'users', title: 'Profiles', sub: 'Name, body, goal, health and family' },
-  { page: 'theme', icon: 'sparkle', title: 'Theme', sub: 'Dark, light or follow the phone' },
+  { page: 'theme', icon: 'sparkle', title: 'Theme', sub: 'Paper by day, blackboard at night' },
   { page: 'backup', icon: 'file', title: 'Backup and export', sub: 'Save a file to your phone, restore' },
   { page: 'data', icon: 'chart', title: 'Learning and data', sub: 'What it learned, delete my data' },
   { page: 'features', icon: 'heart', title: 'What this app can do', sub: 'Everything in one list' },
@@ -80,27 +80,12 @@ export function SettingsScreen() {
 function ThemePage() {
   const theme = useStore((st) => st.theme);
   const setTheme = useStore((st) => st.setTheme);
-  const accent = useStore((st) => st.accent);
-  const setAccent = useStore((st) => st.setAccent);
   return (
     <ScrollView contentContainerStyle={s.page}>
-      <Text style={s.group}>Page colour</Text>
-      <View style={s.swatches}>
-        {SET_IDS.map((id) => {
-          const on = id === accent;
-          return (
-            <Pressable key={id} accessibilityRole="radio" accessibilityLabel={`${SETS[id].name} page colour`} accessibilityState={{ selected: on }} onPress={() => setAccent(id)} style={s.swatchCell}>
-              <View style={[s.swatch, { backgroundColor: SETS[id].swatch }, on && s.swatchOn]}>{on && <Icon name="check" size={22} color="#14110E" width={3.2} />}</View>
-              <Text style={[s.swatchName, on && { fontWeight: '800' }]} numberOfLines={1}>{SETS[id].name}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      <Muted>Used in the light theme. The tiles keep their bright colours.</Muted>
       <Text style={s.group}>Light or dark</Text>
       <Choice title="Follow my phone" sub="Light by day, dark at night, as the phone is set" on={theme === 'system'} onPress={() => setTheme('system')} />
-      <Choice title="Light" sub="Bright page with black outlines" on={theme === 'light'} onPress={() => setTheme('light')} />
-      <Choice title="Dark" sub="Dark page with cream outlines" on={theme === 'dark'} onPress={() => setTheme('dark')} />
+      <Choice title="Light" sub="Paper with black outlines" on={theme === 'light'} onPress={() => setTheme('light')} />
+      <Choice title="Dark" sub="A blackboard with chalk writing" on={theme === 'dark'} onPress={() => setTheme('dark')} />
     </ScrollView>
   );
 }

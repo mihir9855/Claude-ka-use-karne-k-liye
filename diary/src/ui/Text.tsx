@@ -28,8 +28,10 @@ function resolve(style: TextProps['style']): TextStyle {
   const w = String(fontWeight ?? '400');
   const fam = fontFamily === 'script' ? SCRIPT : fontFamily === 'display' ? (w === '700' || w === '800' || w === 'bold' ? displayFonts().bold : w === '600' || w === '500' ? displayFonts().semi : displayFonts().regular) : family(fontWeight);
   // the script face is thin, so a hairline shadow in its own colour makes it a little bolder
+  // the script's tails (g, p, y) hang low and get clipped in a short line box, so the line is never shorter than 1.3 times the size (measured: shorter lines clip); the last letter's swash needs room on the right too
+  const roomy = fontFamily === 'script' ? { lineHeight: Math.max(rest.lineHeight ?? 0, Math.round((rest.fontSize ?? 14) * 1.3)), paddingRight: Math.round((rest.fontSize ?? 14) * 0.18) } : null;
   const faux = fontFamily === 'script' && typeof rest.color === 'string' ? { textShadowColor: rest.color, textShadowOffset: { width: 0.9, height: 0.4 }, textShadowRadius: 0.4 } : null;
-  return { ...rest, ...faux, fontFamily: Platform.OS === 'web' ? `${fam}${fontFamily === 'display' || fontFamily === 'script' ? WEB_SERIF : WEB_FALLBACK}` : fam };
+  return { ...rest, ...roomy, ...faux, fontFamily: Platform.OS === 'web' ? `${fam}${fontFamily === 'display' || fontFamily === 'script' ? WEB_SERIF : WEB_FALLBACK}` : fam };
 }
 
 export function Text({ style, ...props }: TextProps) {

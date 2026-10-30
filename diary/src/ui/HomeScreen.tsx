@@ -41,13 +41,15 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
       </Tile>
 
       <Tile style={s.donutTile}>
-        <Donut h={h} />
-        <View style={s.legend}>
-          <Text style={s.legendTitle} numberOfLines={1}>Today by meal</Text>
+        <Text style={s.legendTitle} numberOfLines={1}>Today by meal</Text>
+        <View style={s.donutBox}>
+          <Donut h={h} />
+        </View>
+        <View style={s.chips}>
           {SLOT_ORDER.map((slot) => {
             const kcal = Math.round(h.menu.find((m) => m.slot === slot)?.eaten?.reduce((a, e) => a + (e.kcal ?? 0), 0) ?? 0);
             return (
-              <View key={slot} style={s.legendRow}>
+              <View key={slot} style={[s.legendChip, { backgroundColor: kcal > 0 ? SLOT_COLOR[slot] : '#FFFFFF' }]}>
                 <View style={[s.swatch, { backgroundColor: SLOT_COLOR[slot] }]} />
                 <Text style={s.legendName} numberOfLines={1}>{SLOT_LABEL[slot]}</Text>
                 <Text style={s.legendVal} numberOfLines={1}>{kcal > 0 ? String(kcal) : '-'}</Text>
@@ -140,11 +142,14 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
   );
 }
 
-const SLOT_COLOR: Record<SlotId, string> = { b: TILE.yellow, m: TILE.orange, l: TILE.green, s: TILE.blue, d: TILE.lilac };
+const SLOT_KEY: Record<SlotId, 'yellow' | 'orange' | 'green' | 'blue' | 'lilac'> = { b: 'yellow', m: 'orange', l: 'green', s: 'blue', d: 'lilac' };
+/** read when drawn, so it follows the day and night tile colours */
+const SLOT_COLOR = new Proxy({} as Record<SlotId, string>, { get: (_t, k: string) => TILE[SLOT_KEY[k as SlotId]] });
 
-/** Today's calories as a ring, one chunky outlined slice per meal that was eaten. */
+/** Today's calories as a big sticker ring: one outlined slice per meal eaten, a hard shadow, and a yellow centre. */
 function Donut({ h }: { h: ReturnType<typeof useHome> }) {
-  const R = 40;
+  const R = 78;
+  const W = 46;
   const LEN = 2 * Math.PI * R;
   const goal = Math.max(1, h.target.kcal);
   let used = 0;
@@ -155,20 +160,25 @@ function Donut({ h }: { h: ReturnType<typeof useHome> }) {
     used += Math.max(0, len);
     return seg;
   }).filter((x) => x.len > 0.5);
+  const left = Math.round(h.target.kcal - h.tot.kcal);
+  const C0 = 125;
+  const ring = (dx: number, color: string, width: number, extra?: object) => <Circle cx={C0 + dx} cy={C0 + dx} r={R} fill="none" stroke={color} strokeWidth={width} {...extra} />;
   return (
-    <View style={{ width: 128, height: 128 }}>
-      <Svg width="100%" height="100%" viewBox="0 0 128 128">
-        <Circle cx="64" cy="64" r={R} fill="none" stroke={C.surface} strokeWidth="24" />
-        <Circle cx="64" cy="64" r={R + 12} fill="none" stroke={C.line} strokeWidth="2.5" />
-        <Circle cx="64" cy="64" r={R - 12} fill="none" stroke={C.line} strokeWidth="2.5" />
-        {segs.map((g) => (
-          <Circle key={`i${g.slot}`} cx="64" cy="64" r={R} fill="none" stroke={C.line} strokeWidth="26" strokeDasharray={`${Math.min(LEN, g.len + 3)} ${LEN}`} strokeDashoffset={-g.start + 1.5} transform="rotate(-90 64 64)" />
-        ))}
-        {segs.map((g) => (
-          <Circle key={`c${g.slot}`} cx="64" cy="64" r={R} fill="none" stroke={SLOT_COLOR[g.slot]} strokeWidth="21" strokeDasharray={`${Math.max(0, g.len - 1)} ${LEN}`} strokeDashoffset={-g.start} transform="rotate(-90 64 64)" />
-        ))}
-        <SvgText x="64" y="66" textAnchor="middle" fontSize="15" fontFamily={displayFonts().bold} fill={C.text}>{Math.round(h.tot.kcal).toLocaleString('en-IN')}</SvgText>
-        <SvgText x="64" y="80" textAnchor="middle" fontSize="9" fontFamily="SpaceGrotesk_700Bold" fill={C.muted}>{`of ${h.target.kcal.toLocaleString('en-IN')}`}</SvgText>
+    <View style={{ width: '100%', aspectRatio: 1, maxWidth: 270 }}>
+      <Svg width="100%" height="100%" viewBox="0 0 250 250">
+        {/* hard shadow */}
+        {ring(7, C.shadow, W + 6)}
+        {/* empty track */}
+        {ring(0, C.surface, W)}
+        <Circle cx={C0} cy={C0} r={R + W / 2} fill="none" stroke={C.line} strokeWidth="3.5" />
+        <Circle cx={C0} cy={C0} r={R - W / 2} fill="none" stroke={C.line} strokeWidth="3.5" />
+        {segs.map((g) => ring(0, C.line, W + 3, { key: `i${g.slot}`, strokeDasharray: `${Math.min(LEN, g.len + 4)} ${LEN}`, strokeDashoffset: -g.start + 2, transform: `rotate(-90 ${C0} ${C0})` }))}
+        {segs.map((g) => ring(0, SLOT_COLOR[g.slot], W - 4, { key: `c${g.slot}`, strokeDasharray: `${Math.max(0, g.len - 1)} ${LEN}`, strokeDashoffset: -g.start, transform: `rotate(-90 ${C0} ${C0})` }))}
+        {/* yellow sticker in the middle */}
+        <Circle cx={C0 + 4} cy={C0 + 4} r="47" fill={C.shadow} />
+        <Circle cx={C0} cy={C0} r="47" fill={TILE.yellow} stroke={C.line} strokeWidth="3.5" />
+        <SvgText x={C0} y={C0 + 2} textAnchor="middle" fontSize="27" fontFamily={displayFonts().bold} fill={TILE_INK}>{Math.round(h.tot.kcal).toLocaleString('en-IN')}</SvgText>
+        <SvgText x={C0} y={C0 + 19} textAnchor="middle" fontSize="11" fontFamily="SpaceGrotesk_700Bold" fill={TILE_INK}>{left >= 0 ? `${left.toLocaleString('en-IN')} left` : `${-left} over`}</SvgText>
       </Svg>
     </View>
   );
@@ -178,17 +188,18 @@ const s = themed(() => StyleSheet.create({
   // the right padding is 4 smaller so the tiles' shadows end where the left edge begins
   page: { paddingLeft: 20, paddingRight: 16, paddingTop: 8, paddingBottom: 32, gap: 16 },
   date: { fontSize: 13, fontWeight: '700', color: C.muted, marginBottom: 2 },
-  title: { fontFamily: 'script', fontSize: 44, color: C.text, lineHeight: 50 },
+  title: { fontFamily: 'script', fontSize: 44, color: C.text, lineHeight: 57 },
   col: { flex: 1, minWidth: 0 },
   headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   logBtn: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
-  donutTile: { padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  legend: { flex: 1, minWidth: 0, gap: 6 },
+  donutTile: { padding: 14, gap: 10 },
+  donutBox: { alignItems: 'center', paddingVertical: 4 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  legendChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, minHeight: 36, borderRadius: RADIUS.pill, borderWidth: 2, borderColor: C.line, flexGrow: 1, flexBasis: '45%' },
   legendTitle: { fontFamily: 'script', fontSize: 26, lineHeight: 30, fontWeight: '800', color: C.text, marginBottom: 2 },
-  legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  swatch: { width: 14, height: 14, borderRadius: 4, borderWidth: 2, borderColor: C.line },
-  legendName: { flex: 1, minWidth: 0, fontSize: 12, fontWeight: '700', color: C.text },
-  legendVal: { fontSize: 12, fontWeight: '800', color: C.text },
+  swatch: { width: 14, height: 14, borderRadius: 4, borderWidth: 2, borderColor: TILE_INK },
+  legendName: { flex: 1, minWidth: 0, fontSize: 12, fontWeight: '700', color: TILE_INK },
+  legendVal: { fontSize: 12, fontWeight: '800', color: TILE_INK },
   streakTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   flame: { width: 36, height: 36, borderRadius: 18, backgroundColor: TILE.orange, borderWidth: 2, borderColor: TILE_INK, alignItems: 'center', justifyContent: 'center' },
   bigInk: { fontFamily: 'display', fontSize: 40, fontWeight: '800', color: TILE_INK, letterSpacing: -1.5 },

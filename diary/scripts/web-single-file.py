@@ -40,7 +40,7 @@ boot = ('(async()=>{try{const b=atob("' + packed + '"),u=new Uint8Array(b.length
         'const t=await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("gzip"))).text();'
         'const s=document.createElement("script");s.textContent=t;document.body.appendChild(s)}catch(e){document.body.textContent="This browser is too old to open Khana Diary. Please update it."}})();')
 html = ('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
-        '<title>Khana Diary</title><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#FFF1C1}'
+        '<title>Khana Diary</title><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#F3EFE6}'
         '#root{display:flex;flex-direction:column;width:100%;height:100%;flex:1}</style></head><body><div id="root"></div><script>' + boot + '</script></body></html>')
 open(out, 'w').write(html)
 print(f'{count} fonts inside, {len(html) / 1e6:.2f} MB -> {out}')

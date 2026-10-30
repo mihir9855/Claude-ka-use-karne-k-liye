@@ -91,7 +91,7 @@ export const useStore = create<State>()(
       activeId: FIRST_ID,
       onboarded: false,
       theme: 'system',
-      accent: 'butter',
+      accent: 'paper',
       saveDir: '',
       picks: {},
       lists: defaultLists(),

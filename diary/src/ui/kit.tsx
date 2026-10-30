@@ -33,7 +33,7 @@ export function Tile({
   ];
   return (
     <View style={[{ paddingRight: offset, paddingBottom: offset }, wrap]}>
-      <View pointerEvents="none" style={{ position: 'absolute', left: offset, top: offset, right: 0, bottom: 0, borderRadius: radius, backgroundColor: C.line }} />
+      <View pointerEvents="none" style={{ position: 'absolute', left: offset, top: offset, right: 0, bottom: 0, borderRadius: radius, backgroundColor: C.shadow }} />
       {onPress ? (
         <Pressable accessibilityRole={role} accessibilityLabel={label} accessibilityState={{ selected, disabled }} disabled={disabled} onPress={onPress} onPressIn={() => setDown(true)} onPressOut={() => setDown(false)} style={box}>
           {children}
