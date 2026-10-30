@@ -110,7 +110,7 @@ export function NutritionScreen() {
 
 const s = themed(() => StyleSheet.create({
   page: { padding: 16, gap: 14, paddingBottom: 28 },
-  hero: { fontSize: 34, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
+  hero: { fontFamily: 'display', fontSize: 40, fontWeight: '700', color: C.text, letterSpacing: -0.8 },
   heroSmall: { fontSize: 14, fontWeight: '500', color: C.muted, letterSpacing: 0 },
   left: { fontSize: 14, fontWeight: '600', color: C.text },
   chart: { flexDirection: 'row', alignItems: 'flex-end', height: CHART_H + 26, gap: 8 },

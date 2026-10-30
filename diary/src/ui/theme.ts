@@ -1,5 +1,4 @@
-// "Rasoi at night" by default: a dark kitchen-green page, warm cream text and one marigold accent. A light set is
-// there too. Colours are read through `C` at the moment they are used, so a theme change shows everywhere.
+// "Recipe-book": warm paper and ink with one terracotta accent, and a night-kitchen dark set. Colours are read through `C` at the moment they are used, so a theme change shows everywhere.
 export interface Palette {
   bg: string;
   card: string;
@@ -23,47 +22,47 @@ export interface Palette {
 }
 
 const dark: Palette = {
-  bg: '#101713',
-  card: '#1B261F',
-  surface: '#233128',
-  text: '#F3EFE4',
-  muted: '#9AA79C',
-  line: '#2E3E33',
-  ink: '#F2B138',
-  inkSoft: '#D99A1F',
-  primary: '#F2B138',
-  primarySoft: '#2A2A17',
-  onPrimary: '#1B1405',
-  accent: '#F2B138',
-  accentSoft: '#33290F',
-  good: '#7DD3A8',
-  goodSoft: '#1D3A2C',
-  danger: '#F28B82',
-  dangerSoft: '#3D2220',
-  header: '#101713',
-  headerSoft: '#1B261F',
+  bg: '#1C1713',
+  card: '#26201A',
+  surface: '#30281F',
+  text: '#F2E9DA',
+  muted: '#A8998A',
+  line: '#3A3027',
+  ink: '#E0805F',
+  inkSoft: '#C96E4F',
+  primary: '#E0805F',
+  primarySoft: '#33231B',
+  onPrimary: '#1C1713',
+  accent: '#E0805F',
+  accentSoft: '#33231B',
+  good: '#A9C58C',
+  goodSoft: '#2A3322',
+  danger: '#F09A8C',
+  dangerSoft: '#3E2420',
+  header: '#1C1713',
+  headerSoft: '#26201A',
 };
 
 const light: Palette = {
-  bg: '#F7F4EA',
-  card: '#FFFFFF',
-  surface: '#ECE8DB',
-  text: '#1C241E',
-  muted: '#68726A',
-  line: '#DDD8C8',
-  ink: '#E5A21B',
-  inkSoft: '#C98A0E',
-  primary: '#E5A21B',
-  primarySoft: '#FBEFD2',
-  onPrimary: '#1B1405',
-  accent: '#E5A21B',
-  accentSoft: '#FBEFD2',
-  good: '#1F7A55',
-  goodSoft: '#DDEFE4',
-  danger: '#B3362B',
-  dangerSoft: '#F8E2DF',
-  header: '#F7F4EA',
-  headerSoft: '#FFFFFF',
+  bg: '#F6F0E4',
+  card: '#FFFBF3',
+  surface: '#EFE5D2',
+  text: '#2B2118',
+  muted: '#75675A',
+  line: '#E3D8C3',
+  ink: '#B5472B',
+  inkSoft: '#9C3B22',
+  primary: '#B5472B',
+  primarySoft: '#F6DDD2',
+  onPrimary: '#FFF8EE',
+  accent: '#B5472B',
+  accentSoft: '#F6DDD2',
+  good: '#4F6B3A',
+  goodSoft: '#E1E8D3',
+  danger: '#A32D2D',
+  dangerSoft: '#F5DAD6',
+  header: '#F6F0E4',
+  headerSoft: '#FFFBF3',
 };
 
 export const PALETTES = { dark, light };
@@ -90,7 +89,7 @@ export function themed<T extends object>(make: () => T): T {
 }
 
 export const R = 14;
-export const RADIUS = { sm: 8, md: 12, lg: 16, xl: 20, pill: 999 };
+export const RADIUS = { sm: 8, md: 10, lg: 14, xl: 18, pill: 999 };
 
 /** Font families, one per weight (React Native cannot synthesise weights for custom fonts). */
 export const FONT = {
@@ -100,6 +99,9 @@ export const FONT = {
   bold: 'Manrope_700Bold',
   heavy: 'Manrope_800ExtraBold',
 };
+
+/** Headings and numerals use this serif. Use as `fontFamily: 'display'` in a text style. */
+export const DISPLAY = { regular: 'Fraunces_400Regular', semi: 'Fraunces_600SemiBold', bold: 'Fraunces_700Bold' };
 
 /** Flat look: no shadow, a thin line around cards. */
 export const SHADOW = {

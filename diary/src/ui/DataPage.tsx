@@ -78,7 +78,7 @@ function Line({ tag, value, n }: { tag: string; value: string; n?: number }) {
 const s = themed(() => StyleSheet.create({
   page: { padding: 16, gap: 16, paddingBottom: 32 },
   line: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 42, borderTopWidth: 1, borderTopColor: C.line },
-  tag: { width: 92, fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
+  tag: { width: 92, fontSize: 12, fontWeight: '700', color: C.muted },
   value: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: '600', color: C.text },
   n: { fontSize: 13, color: C.muted },
   day: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 38, borderTopWidth: 1, borderTopColor: C.line },

@@ -110,8 +110,8 @@ const s = themed(() => StyleSheet.create({
   page: { padding: 16, gap: 16, paddingBottom: 32 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   three: { flexDirection: 'row', gap: 10 },
-  kcal: { fontSize: 32, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
+  kcal: { fontFamily: 'display', fontSize: 34, fontWeight: '700', color: C.text, letterSpacing: -0.8 },
   stat: { flexBasis: '22%', flexGrow: 1, minWidth: 0 },
   statV: { fontSize: 17, fontWeight: '800', color: C.text },
-  statL: { fontSize: 11, color: C.muted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
+  statL: { fontSize: 12, color: C.muted, fontWeight: '600' },
 }));

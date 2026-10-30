@@ -22,6 +22,7 @@ export const CHANGELOG: { version: string; items: string[] }[] = [
       'Home dashboard with today\'s menu and the meals coming up by time',
       'Weekly menu, nutrition screen and family profiles',
       'Lists tab: grocery and other lists, filled straight from Chat',
+      'Recipe-book look: serif headings, warm paper and terracotta',
       'Dark and light themes, backup, restore and export',
     ],
   },

@@ -227,22 +227,24 @@ export function ChatScreen() {
             ))}
           </ScrollView>
         )}
+        <View style={s.chipRow}>
+            {cmd ? (
+              <View style={s.slotBtn} accessibilityLabel={`List: ${cmd.list}`}>
+                <Icon name="cart" size={17} color={C.text} width={1.8} />
+                <Text style={s.slotText} numberOfLines={1}>
+                  {cmd.list}
+                </Text>
+              </View>
+            ) : (
+              <Pressable accessibilityRole="button" accessibilityLabel={`Meal: ${slotLabel(shownSlot)}. Tap to change`} onPress={() => setSlot(nextAfter(reading.slot ?? slot))} style={s.slotBtn}>
+                <Icon name={SLOT_ICON_ID[shownSlot]} size={17} color={C.text} width={1.8} />
+                <Text style={s.slotText} numberOfLines={1}>
+                  {slotLabel(shownSlot)}
+                </Text>
+              </Pressable>
+            )}
+        </View>
         <View style={s.inputRow}>
-          {cmd ? (
-            <View style={s.slotBtn} accessibilityLabel={`List: ${cmd.list}`}>
-              <Icon name="cart" size={17} color={C.text} width={1.8} />
-              <Text style={s.slotText} numberOfLines={1}>
-                {cmd.list}
-              </Text>
-            </View>
-          ) : (
-            <Pressable accessibilityRole="button" accessibilityLabel={`Meal: ${slotLabel(shownSlot)}. Tap to change`} onPress={() => setSlot(nextAfter(reading.slot ?? slot))} style={s.slotBtn}>
-              <Icon name={SLOT_ICON_ID[shownSlot]} size={17} color={C.text} width={1.8} />
-              <Text style={s.slotText} numberOfLines={1}>
-                {slotLabel(shownSlot)}
-              </Text>
-            </Pressable>
-          )}
           <TextInput
             style={s.input}
             value={text}
@@ -270,14 +272,14 @@ function Bubble({ side, children }: { side: 'me' | 'app'; children: React.ReactN
 }
 
 const s = themed(() => StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.line },
-  title: { fontSize: 24, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
+  title: { fontFamily: 'display', fontSize: 28, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
   sub: { fontSize: 12, color: C.muted, fontWeight: '500' },
   avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 18, fontWeight: '800', color: C.onPrimary },
   iconBtn: { width: 42, height: 42, borderRadius: RADIUS.md, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.line },
   feed: { padding: 16, gap: 14, paddingBottom: 20 },
-  dayTag: { alignSelf: 'center', fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 1.2 },
+  dayTag: { alignSelf: 'center', fontSize: 12, fontWeight: '700', color: C.muted },
   bubble: { maxWidth: '86%', paddingVertical: 10, paddingHorizontal: 14, borderRadius: RADIUS.xl },
   me: { alignSelf: 'flex-end', backgroundColor: C.accent, borderBottomRightRadius: 6 },
   app: { alignSelf: 'flex-start', backgroundColor: C.card, borderBottomLeftRadius: 6, borderWidth: 1, borderColor: C.line },
@@ -288,11 +290,11 @@ const s = themed(() => StyleSheet.create({
   remove: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10, borderRadius: RADIUS.sm, backgroundColor: C.dangerSoft },
   removeText: { fontSize: 13, fontWeight: '700', color: C.danger },
   menu: { backgroundColor: C.card, borderRadius: RADIUS.xl, padding: 14, gap: 10, borderWidth: 1, borderColor: C.line },
-  menuTitle: { fontSize: 17, fontWeight: '800', color: C.text, letterSpacing: -0.2 },
+  menuTitle: { fontFamily: 'display', fontSize: 20, fontWeight: '600', color: C.text },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
   menuIcon: { width: 40, height: 40, borderRadius: RADIUS.md, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  menuSlot: { fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 1 },
-  menuName: { fontSize: 17, fontWeight: '700', color: C.text },
+  menuSlot: { fontSize: 12, fontWeight: '700', color: C.muted },
+  menuName: { fontFamily: 'display', fontSize: 18, fontWeight: '600', color: C.text },
   menuWhy: { fontSize: 12, color: C.muted },
   ate: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
   hint: { fontSize: 12, color: C.muted },
@@ -300,8 +302,9 @@ const s = themed(() => StyleSheet.create({
   hintChip: { paddingHorizontal: 12, minHeight: 34, borderRadius: RADIUS.md, backgroundColor: C.surface, justifyContent: 'center' },
   hintText: { fontSize: 14, color: C.text, fontWeight: '500' },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 },
-  slotBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 46, paddingHorizontal: 10, borderRadius: RADIUS.md, backgroundColor: C.surface, maxWidth: 112 },
-  slotText: { fontSize: 13, fontWeight: '700', color: C.text, flexShrink: 1 },
+  chipRow: { flexDirection: 'row', paddingHorizontal: 12 },
+  slotBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, paddingHorizontal: 12, borderRadius: RADIUS.pill, backgroundColor: C.surface, maxWidth: '100%' },
+  slotText: { fontSize: 14, fontWeight: '700', color: C.text, flexShrink: 1 },
   input: { flex: 1, minWidth: 0, height: 46, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 14, fontSize: 16, color: C.text },
   send: { width: 46, height: 46, borderRadius: RADIUS.md, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
 }));

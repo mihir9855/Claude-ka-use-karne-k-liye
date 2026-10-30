@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { addDays, entryLabel, streak, todayMenu, totalsFor, upcomingMeals, ymd } from '../core/diary';
+import { SLOT_TIME, addDays, entryLabel, streak, todayMenu, totalsFor, upcomingMeals, ymd } from '../core/diary';
 import { personName, useActive, useStore } from '../state/store';
 import { Icon } from './Icon';
-import { Bar, Button, Card, Label, Pill } from './kit';
-import { Ring } from './Ring';
+import { Bar } from './kit';
 import { SLOT_ICON_ID, slotLabel } from './slots';
 import { Text } from './Text';
-import { C, RADIUS, themed } from './theme';
+import { C, themed } from './theme';
 
 export type Tab = 'home' | 'chat' | 'menu' | 'nutrition' | 'lists' | 'profile';
 
@@ -27,103 +26,94 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
   const picks = useStore((s) => s.picks);
   const upcoming = useMemo(() => upcomingMeals(entries, target, picks, new Date(), person.conditions, 5), [entries, target, picks, person.conditions]);
   const days = streak(entries);
-  const shortProtein = tot.protein < target.protein * 0.7 && logged.length > 0;
   const name = personName(person, persons.indexOf(person));
+  const nextSlot = menu.find((x) => !x.eaten && !x.missed)?.slot;
+  const kcalLine = logged.length === 0 ? 'Nothing logged yet' : left >= 0 ? `${Math.round(left).toLocaleString('en-IN')} kcal left` : `${Math.round(-left).toLocaleString('en-IN')} kcal over`;
 
   return (
     <ScrollView contentContainerStyle={s.page}>
-      <View>
-        <Text style={s.hello} numberOfLines={1}>{`${greeting(now.getHours())}, ${name}`}</Text>
+      <View style={{ gap: 2 }}>
         <Text style={s.date} numberOfLines={1}>{now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+        <Text style={s.hello} numberOfLines={1}>{`${greeting(now.getHours())}, ${name}`}</Text>
       </View>
 
-      <Card>
-        <View style={s.hero}>
-          <Ring value={tot.kcal} max={target.kcal}>
-            <Text style={s.ringBig} numberOfLines={1}>{Math.round(tot.kcal).toLocaleString('en-IN')}</Text>
-            <Text style={s.ringSmall} numberOfLines={1}>{`of ${target.kcal.toLocaleString('en-IN')} kcal`}</Text>
-          </Ring>
-          <View style={{ flex: 1, minWidth: 0, gap: 8 }}>
-            <Text style={s.left} numberOfLines={1}>{logged.length === 0 ? 'Nothing logged yet' : left >= 0 ? `${Math.round(left).toLocaleString('en-IN')} kcal left` : `${Math.round(-left)} kcal over`}</Text>
-            <Label>Protein</Label>
-            <Text style={s.protein} numberOfLines={1}>{`${Math.round(tot.protein)} / ${target.protein} g`}</Text>
-            <Bar value={tot.protein} max={target.protein} />
-            {shortProtein && <Pill warn label="Protein is behind" />}
-          </View>
+      <Pressable accessibilityRole="button" accessibilityLabel="Open nutrition details" onPress={() => go('nutrition')} style={s.sum}>
+        <View style={s.sumTop}>
+          <Text style={s.kcal} numberOfLines={1}>{Math.round(tot.kcal).toLocaleString('en-IN')}</Text>
+          <Text style={s.kcalOf} numberOfLines={1}>{`of ${target.kcal.toLocaleString('en-IN')} kcal · ${kcalLine}`}</Text>
+          <Icon name="right" size={18} color={C.muted} width={2} />
         </View>
-      </Card>
+        <Bar value={tot.kcal} max={target.kcal} />
+        <View style={s.sumRow}>
+          <Text style={s.small} numberOfLines={1}>{`Protein ${Math.round(tot.protein)} of ${target.protein} g`}</Text>
+          <Text style={s.small} numberOfLines={1}>{`${days} day streak`}</Text>
+        </View>
+        <Bar value={tot.protein} max={target.protein} />
+      </Pressable>
 
-      <View style={s.stats}>
-        <Stat big={String(days)} label={days === 1 ? 'day streak' : 'day streak'} icon="flame" />
-        <Stat big={String(logged.length)} label="items today" icon="check" />
-        <Stat big={String(entries.length)} label="meals logged" icon="pen" />
+      <View style={s.head}>
+        <Text style={s.h2} numberOfLines={1}>Today</Text>
+        <Text style={s.small} numberOfLines={1}>Tap a dish for another idea</Text>
       </View>
-
-      <Card>
-        <Label>Today's menu</Label>
+      <View style={s.rule}>
         {menu.map((m) => {
-          const isNext = !m.eaten && !m.missed && menu.find((x) => !x.eaten && !x.missed)?.slot === m.slot;
+          const [h, mi] = SLOT_TIME[m.slot];
+          const time = clock(new Date(2000, 0, 1, h, mi));
           if (m.eaten) {
             return (
-              <Pressable key={m.slot} accessibilityRole="button" accessibilityLabel={`${slotLabel(m.slot)}: ${m.eaten.map(entryLabel).join(', ')}`} onPress={() => go('chat')} style={s.slotRow}>
-                <View style={[s.slotIco, { backgroundColor: C.goodSoft }]}>
-                  <Icon name="check" size={18} color={C.good} width={2.4} />
+              <Pressable key={m.slot} accessibilityRole="button" accessibilityLabel={`${slotLabel(m.slot)}: ${m.eaten.map(entryLabel).join(', ')}`} onPress={() => go('chat')} style={s.row}>
+                <Text style={s.time} numberOfLines={1}>{time}</Text>
+                <View style={s.body}>
+                  <Text style={s.slot} numberOfLines={1}>{`${slotLabel(m.slot)} · eaten`}</Text>
+                  <Text style={s.dish} numberOfLines={1}>{m.eaten.map(entryLabel).join(', ')}</Text>
+                  <Text style={s.meta} numberOfLines={1}>{`${Math.round(m.eaten.reduce((a, e) => a + (e.kcal ?? 0), 0))} kcal`}</Text>
                 </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={s.slotName} numberOfLines={1}>{`${slotLabel(m.slot)} · eaten`}</Text>
-                  <Text style={s.slotWhat} numberOfLines={1}>{m.eaten.map(entryLabel).join(', ')}</Text>
-                  <Text style={s.slotWhy} numberOfLines={1}>{`${Math.round(m.eaten.reduce((a, e) => a + (e.kcal ?? 0), 0))} kcal`}</Text>
+                <View style={s.done}>
+                  <Icon name="check" size={18} color={C.good} width={2.6} />
                 </View>
               </Pressable>
             );
           }
           const o = m.options[(pick[m.slot] ?? 0) % Math.max(1, m.options.length)];
           if (!o) return null;
+          const isNext = m.slot === nextSlot;
           return (
-            <View key={m.slot} style={s.slotRow}>
-              <View style={s.slotIco}>
-                <Icon name={SLOT_ICON_ID[m.slot]} size={18} color={C.text} width={1.8} />
-              </View>
-              <Pressable accessibilityRole="button" accessibilityLabel={`${slotLabel(m.slot)}: ${o.name}. Tap for another option`} onPress={() => setPick({ ...pick, [m.slot]: (pick[m.slot] ?? 0) + 1 })} style={{ flex: 1, minWidth: 0 }}>
-                <Text style={s.slotName} numberOfLines={1}>{m.missed ? `${slotLabel(m.slot)} · not logged` : slotLabel(m.slot)}</Text>
-                <Text style={s.slotWhat} numberOfLines={1}>{o.name}</Text>
-                <Text style={s.slotWhy} numberOfLines={1}>{[o.kcal != null ? `${o.kcal} kcal` : '', o.why[0]?.text].filter(Boolean).join(' · ')}</Text>
+            <View key={m.slot} style={s.row}>
+              <Text style={s.time} numberOfLines={1}>{time}</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel={`${slotLabel(m.slot)}: ${o.name}. Tap for another option`} onPress={() => setPick({ ...pick, [m.slot]: (pick[m.slot] ?? 0) + 1 })} style={s.body}>
+                <Text style={s.slot} numberOfLines={1}>{m.missed ? `${slotLabel(m.slot)} · not logged` : isNext ? `${slotLabel(m.slot)} · next` : slotLabel(m.slot)}</Text>
+                <Text style={s.dish} numberOfLines={1}>{o.name}</Text>
+                <Text style={s.meta} numberOfLines={1}>{[o.kcal != null ? `${o.kcal} kcal` : '', o.why[0]?.text].filter(Boolean).join(' · ')}</Text>
               </Pressable>
-              {isNext && <Pill label="Next" />}
-              <Pressable accessibilityRole="button" accessibilityLabel={`I ate ${o.name}`} onPress={() => add(o.items, m.slot, today)} style={s.tick}>
-                <Icon name="check" size={18} color={C.onPrimary} width={2.6} />
+              <Pressable accessibilityRole="button" accessibilityLabel={`I ate ${o.name}`} onPress={() => add(o.items, m.slot, today)} style={[s.tick, isNext && s.tickOn]}>
+                <Icon name="check" size={18} color={isNext ? C.onPrimary : C.accent} width={2.6} />
               </Pressable>
             </View>
           );
         })}
-        <Text style={s.hint}>This changes when you log a meal in Chat. Tap a dish for another option, tap the tick when you eat it.</Text>
-      </Card>
+      </View>
 
-      <Card>
-        <Label>Upcoming</Label>
-        {upcoming.length === 0 && <Text style={s.hint}>Nothing planned yet.</Text>}
+      <View style={s.head}>
+        <Text style={s.h2} numberOfLines={1}>Coming up</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="See the whole week" onPress={() => go('menu')} hitSlop={10}>
+          <Text style={s.link} numberOfLines={1}>Whole week</Text>
+        </Pressable>
+      </View>
+      <View style={s.rule}>
+        {upcoming.length === 0 && <Text style={[s.meta, { paddingVertical: 14 }]}>Nothing planned yet.</Text>}
         {upcoming.map((u, i) => (
           <View key={`${u.date}${u.slot}`}>
             {(i === 0 || upcoming[i - 1].date !== u.date) && <Text style={s.upDay}>{dayLabel(u.date, today)}</Text>}
-            <Pressable accessibilityRole="button" accessibilityLabel={`${slotLabel(u.slot)} at ${clock(u.at)}: ${u.dish.name}`} onPress={() => go('menu')} style={s.upRow}>
-              <Text style={s.upTime} numberOfLines={1}>{clock(u.at)}</Text>
-              <View style={s.upIco}>
-                <Icon name={SLOT_ICON_ID[u.slot]} size={16} color={C.text} width={1.8} />
+            <Pressable accessibilityRole="button" accessibilityLabel={`${slotLabel(u.slot)} at ${clock(u.at)}: ${u.dish.name}`} onPress={() => go('menu')} style={s.row}>
+              <Text style={s.time} numberOfLines={1}>{clock(u.at)}</Text>
+              <View style={s.body}>
+                <Text style={s.slot} numberOfLines={1}>{slotLabel(u.slot)}</Text>
+                <Text style={s.dish} numberOfLines={1}>{u.dish.name}</Text>
               </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={s.upSlot} numberOfLines={1}>{slotLabel(u.slot)}</Text>
-                <Text style={s.upDish} numberOfLines={1}>{u.dish.name}</Text>
-              </View>
-              {i === 0 ? <Pill label={inText(u.at.getTime() - Date.now())} /> : u.dish.kcal != null ? <Text style={s.upKcal} numberOfLines={1}>{`${u.dish.kcal} kcal`}</Text> : null}
+              {i === 0 ? <Text style={s.soon} numberOfLines={1}>{inText(u.at.getTime() - Date.now())}</Text> : u.dish.kcal != null ? <Text style={s.meta} numberOfLines={1}>{`${u.dish.kcal} kcal`}</Text> : null}
             </Pressable>
           </View>
         ))}
-        <Button kind="soft" icon="calendar" label="See the whole week" onPress={() => go('menu')} />
-      </Card>
-
-      <View style={{ gap: 10 }}>
-        <Button icon="pen" label="Log a meal" onPress={() => go('chat')} />
-        <Button kind="soft" icon="calendar" label="See this week's menu" onPress={() => go('menu')} />
       </View>
     </ScrollView>
   );
@@ -146,56 +136,29 @@ function dayLabel(date: string, today: string): string {
   return new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
 }
 
-function Stat({ big, label, icon }: { big: string; label: string; icon: 'flame' | 'check' | 'pen' }) {
-  return (
-    <View style={s.stat}>
-      <Icon name={icon} size={16} color={C.accent} width={2} />
-      <Text style={s.statBig} numberOfLines={1}>{big}</Text>
-      <Text style={s.statLabel} numberOfLines={1}>{label}</Text>
-    </View>
-  );
-}
-
 const s = themed(() => StyleSheet.create({
-  page: { padding: 16, gap: 14, paddingBottom: 28 },
-  hello: { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.6 },
-  date: { fontSize: 13, color: C.muted, fontWeight: '500', marginTop: 2 },
-  hero: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  ringBig: { fontSize: 28, fontWeight: '800', color: C.text, letterSpacing: -0.5, maxWidth: 92 },
-  ringSmall: { fontSize: 11, color: C.muted, fontWeight: '600', maxWidth: 92 },
-  left: { fontSize: 17, fontWeight: '800', color: C.text },
-  protein: { fontSize: 14, fontWeight: '600', color: C.text },
-  stats: { flexDirection: 'row', gap: 10 },
-  stat: { flex: 1, minWidth: 0, backgroundColor: C.card, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: C.line, padding: 12, gap: 2 },
-  statBig: { fontSize: 24, fontWeight: '800', color: C.text },
-  statLabel: { fontSize: 11, fontWeight: '600', color: C.muted },
-  slotRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
-  slotIco: { width: 38, height: 38, borderRadius: RADIUS.md, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  slotName: { fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 1 },
-  slotWhat: { fontSize: 15, fontWeight: '700', color: C.text },
-  upDay: { fontSize: 13, fontWeight: '800', color: C.text, marginTop: 6, marginBottom: 2 },
-  upRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, borderTopWidth: 1, borderTopColor: C.line },
-  upTime: { width: 62, fontSize: 12, fontWeight: '700', color: C.muted },
-  upIco: { width: 30, height: 30, borderRadius: RADIUS.sm, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  upSlot: { fontSize: 10, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 1 },
-  upDish: { fontSize: 15, fontWeight: '700', color: C.text },
-  upKcal: { fontSize: 12, color: C.muted },
-  slotWhy: { fontSize: 12, color: C.muted },
-  learnRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 38, borderTopWidth: 1, borderTopColor: C.line },
-  learnTag: { width: 84, fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
-  learnVal: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: '700', color: C.text },
-  learnN: { fontSize: 13, color: C.muted },
-  next: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  nextName: { fontSize: 20, fontWeight: '800', color: C.text, letterSpacing: -0.3 },
-  nextWhy: { fontSize: 12, color: C.muted },
-  tick: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
-  hint: { fontSize: 12, color: C.muted },
-  grid: { flexDirection: 'row', gap: 12 },
-  cell: { flex: 1, minWidth: 0, gap: 6 },
-  cellName: { fontSize: 12, fontWeight: '700', color: C.muted },
-  cellVal: { fontSize: 13, fontWeight: '700', color: C.text },
-  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 88 },
-  col: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'flex-end', gap: 6, height: 88 },
-  bar: { width: '70%', borderRadius: 5 },
-  dayL: { fontSize: 11, fontWeight: '600', color: C.muted, height: 14 },
+  page: { padding: 20, gap: 14, paddingBottom: 32 },
+  date: { fontFamily: 'display', fontSize: 30, fontWeight: '700', color: C.text, letterSpacing: -0.5 },
+  hello: { fontSize: 14, color: C.muted, fontWeight: '500' },
+  sum: { gap: 8, paddingVertical: 14, borderTopWidth: 1, borderBottomWidth: 1, borderColor: C.line },
+  sumTop: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  kcal: { fontFamily: 'display', fontSize: 38, fontWeight: '700', color: C.text, letterSpacing: -1 },
+  kcalOf: { flex: 1, minWidth: 0, fontSize: 13, color: C.muted, fontWeight: '500' },
+  sumRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginTop: 4 },
+  small: { fontSize: 12, color: C.muted, fontWeight: '500', flexShrink: 1 },
+  head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginTop: 10 },
+  h2: { fontFamily: 'display', fontSize: 22, fontWeight: '700', color: C.text, flexShrink: 1 },
+  link: { fontSize: 14, fontWeight: '700', color: C.accent },
+  rule: { borderTopWidth: 1, borderTopColor: C.line },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 68, borderBottomWidth: 1, borderBottomColor: C.line },
+  time: { width: 60, fontSize: 12, fontWeight: '600', color: C.muted },
+  body: { flex: 1, minWidth: 0, paddingVertical: 8 },
+  slot: { fontSize: 12, fontWeight: '600', color: C.muted },
+  dish: { fontFamily: 'display', fontSize: 18, fontWeight: '600', color: C.text },
+  meta: { fontSize: 12, color: C.muted },
+  soon: { fontSize: 12, fontWeight: '700', color: C.accent },
+  upDay: { fontFamily: 'display', fontSize: 16, fontWeight: '600', color: C.text, paddingTop: 14, paddingBottom: 4 },
+  tick: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: C.accent, alignItems: 'center', justifyContent: 'center' },
+  tickOn: { backgroundColor: C.accent },
+  done: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
 }));

@@ -181,7 +181,7 @@ const s = themed(() => StyleSheet.create({
   emptyText: { fontSize: 15, fontWeight: '600', color: C.muted },
   group: { borderRadius: RADIUS.lg, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, paddingHorizontal: 14, paddingVertical: 8 },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  head: { fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 1.2, paddingVertical: 8 },
+  head: { fontFamily: 'display', fontSize: 17, fontWeight: '600', color: C.text, paddingVertical: 8 },
   link: { fontSize: 13, fontWeight: '700', color: C.accent },
   item: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, borderTopWidth: 1, borderTopColor: C.line },
   itemMain: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 },

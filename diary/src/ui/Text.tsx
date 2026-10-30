@@ -1,7 +1,8 @@
 import { Platform, StyleSheet, Text as RNText, TextInput as RNTextInput, type TextInputProps, type TextProps, type TextStyle } from 'react-native';
-import { FONT } from './theme';
+import { DISPLAY, FONT } from './theme';
 
 const WEB_FALLBACK = ', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const WEB_SERIF = ', Georgia, "Times New Roman", serif';
 
 function family(weight: TextStyle['fontWeight']): string {
   switch (String(weight ?? '400')) {
@@ -23,9 +24,10 @@ function family(weight: TextStyle['fontWeight']): string {
 /** Turns fontWeight into the matching font file, and adds a system fallback on the web. */
 function resolve(style: TextProps['style']): TextStyle {
   const flat = (StyleSheet.flatten(style) ?? {}) as TextStyle;
-  const { fontWeight, ...rest } = flat;
-  const fam = family(fontWeight);
-  return { ...rest, fontFamily: Platform.OS === 'web' ? `${fam}${WEB_FALLBACK}` : fam };
+  const { fontWeight, fontFamily, ...rest } = flat;
+  const w = String(fontWeight ?? '400');
+  const fam = fontFamily === 'display' ? (w === '700' || w === '800' || w === 'bold' ? DISPLAY.bold : w === '600' || w === '500' ? DISPLAY.semi : DISPLAY.regular) : family(fontWeight);
+  return { ...rest, fontFamily: Platform.OS === 'web' ? `${fam}${fontFamily === 'display' ? WEB_SERIF : WEB_FALLBACK}` : fam };
 }
 
 export function Text({ style, ...props }: TextProps) {
