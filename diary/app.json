@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Khana Diary",
+    "slug": "khana-diary",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FAF9F6",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.khanadiary.app",
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+    },
+    "scheme": "khanadiary",
+    "platforms": ["android", "web"],
+    "web": { "bundler": "metro", "output": "single", "favicon": "./assets/favicon.png" }
+  }
+}
