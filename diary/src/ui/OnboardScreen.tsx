@@ -48,7 +48,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
         </Animated.View>
       </View>
       <Animated.Text style={[s.brand, rise(title)]}>Khana</Animated.Text>
-      <Animated.Text style={[s.tag, rise(sub)]}>Tell me what you ate. I will remember it and plan what you eat next.</Animated.Text>
+      <Animated.Text style={[s.tag, rise(sub)]}>Eat. Type. Repeat.</Animated.Text>
       <Animated.View style={[{ alignSelf: 'stretch' }, rise(btn)]}>
         <Button label="Get started" onPress={onStart} />
       </Animated.View>
@@ -177,7 +177,7 @@ const s = themed(() => StyleSheet.create({
   ring: { position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: BORDER, borderColor: C.line },
   disc: { width: 160, height: 160, borderRadius: 80, backgroundColor: TILE.yellow, borderWidth: BORDER + 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   brand: { fontFamily: SCRIPT, fontSize: 84, lineHeight: 90, color: C.text, letterSpacing: -2 },
-  tag: { fontSize: 16, fontWeight: '600', color: C.muted, textAlign: 'center', lineHeight: 23, maxWidth: 300, marginBottom: 14, fontFamily: FONT.regular },
+  tag: { fontSize: 22, color: C.text, textAlign: 'center', lineHeight: 28, marginBottom: 14, fontFamily: FONT.bold, letterSpacing: 0.5 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 14 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   progress: { flex: 1, flexDirection: 'row', gap: 6 },
