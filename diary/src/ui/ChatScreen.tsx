@@ -277,7 +277,7 @@ function Bubble({ side, children }: { side: 'me' | 'app'; children: React.ReactN
 
 const s = themed(() => StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 20, paddingRight: 20, paddingTop: 12, paddingBottom: 10 },
-  title: { fontFamily: 'display', fontSize: 36, fontWeight: '800', color: C.text, letterSpacing: -1.4 },
+  title: { fontFamily: 'display', fontSize: 30, fontWeight: '800', color: C.text, letterSpacing: -1.4 },
   sub: { fontSize: 12, color: C.muted, fontWeight: '700' },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: TILE.yellow, borderWidth: BORDER, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 18, fontWeight: '800', color: TILE_INK },
@@ -293,11 +293,11 @@ const s = themed(() => StyleSheet.create({
   remove: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10, borderRadius: RADIUS.sm, backgroundColor: C.dangerSoft, borderWidth: 2, borderColor: C.line },
   removeText: { fontSize: 13, fontWeight: '800', color: C.danger },
   menu: { padding: 14, gap: 10 },
-  menuTitle: { fontFamily: 'display', fontSize: 22, fontWeight: '800', color: C.text },
+  menuTitle: { fontFamily: 'display', fontSize: 18, fontWeight: '800', color: C.text },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 10, borderTopWidth: 2, borderTopColor: C.line },
   menuIcon: { width: 42, height: 42, borderRadius: RADIUS.md, backgroundColor: TILE.green, borderWidth: 2, borderColor: TILE_INK, alignItems: 'center', justifyContent: 'center' },
   menuSlot: { fontSize: 12, fontWeight: '700', color: C.muted },
-  menuName: { fontFamily: 'display', fontSize: 18, fontWeight: '800', color: C.text },
+  menuName: { fontFamily: 'display', fontSize: 14, fontWeight: '800', color: C.text },
   menuWhy: { fontSize: 12, color: C.muted, fontWeight: '600' },
   ate: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   hint: { fontSize: 12, color: C.muted, fontWeight: '600' },

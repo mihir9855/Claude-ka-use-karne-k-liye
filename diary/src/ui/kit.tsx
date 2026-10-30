@@ -145,7 +145,7 @@ const s = themed(() => StyleSheet.create({
   choiceSub: { fontSize: 12, color: C.muted, fontWeight: '600' },
   fieldLabel: { fontSize: 12, fontWeight: '700', color: C.text },
   input: { backgroundColor: C.card, borderWidth: BORDER, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: C.text, minHeight: 48 },
-  label: { fontFamily: 'display', fontSize: 20, fontWeight: '800', color: C.text },
+  label: { fontFamily: 'display', fontSize: 16, fontWeight: '800', color: C.text },
   card: { padding: 16, gap: 12 },
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 50, paddingHorizontal: 20 },
   btnText: { fontSize: 15, fontWeight: '800', flexShrink: 1 },

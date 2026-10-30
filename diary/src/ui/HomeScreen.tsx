@@ -157,8 +157,8 @@ function Donut({ h }: { h: ReturnType<typeof useHome> }) {
         {segs.map((g) => (
           <Circle key={`c${g.slot}`} cx="64" cy="64" r={R} fill="none" stroke={SLOT_COLOR[g.slot]} strokeWidth="21" strokeDasharray={`${Math.max(0, g.len - 1)} ${LEN}`} strokeDashoffset={-g.start} transform="rotate(-90 64 64)" />
         ))}
-        <SvgText x="64" y="66" textAnchor="middle" fontSize="20" fontFamily={displayFonts().bold} fill={C.text}>{Math.round(h.tot.kcal).toLocaleString('en-IN')}</SvgText>
-        <SvgText x="64" y="80" textAnchor="middle" fontSize="9" fontFamily="Manrope_700Bold" fill={C.muted}>{`of ${h.target.kcal.toLocaleString('en-IN')}`}</SvgText>
+        <SvgText x="64" y="66" textAnchor="middle" fontSize="15" fontFamily={displayFonts().bold} fill={C.text}>{Math.round(h.tot.kcal).toLocaleString('en-IN')}</SvgText>
+        <SvgText x="64" y="80" textAnchor="middle" fontSize="9" fontFamily="SpaceGrotesk_700Bold" fill={C.muted}>{`of ${h.target.kcal.toLocaleString('en-IN')}`}</SvgText>
       </Svg>
     </View>
   );
@@ -168,26 +168,26 @@ const s = themed(() => StyleSheet.create({
   // the right padding is 4 smaller so the tiles' shadows end where the left edge begins
   page: { paddingLeft: 20, paddingRight: 16, paddingTop: 8, paddingBottom: 32, gap: 16 },
   date: { fontSize: 13, fontWeight: '700', color: C.muted, marginBottom: 2 },
-  title: { fontFamily: 'display', fontSize: 40, fontWeight: '800', color: C.text, letterSpacing: -1.6, lineHeight: 42 },
+  title: { fontFamily: 'display', fontSize: 34, color: C.text, letterSpacing: -1, lineHeight: 40 },
   col: { flex: 1, minWidth: 0 },
   headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   logBtn: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
   donutTile: { padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14 },
   legend: { flex: 1, minWidth: 0, gap: 6 },
-  legendTitle: { fontFamily: 'display', fontSize: 17, fontWeight: '800', color: C.text, marginBottom: 2 },
+  legendTitle: { fontFamily: 'display', fontSize: 15, fontWeight: '800', color: C.text, marginBottom: 2 },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   swatch: { width: 14, height: 14, borderRadius: 4, borderWidth: 2, borderColor: C.line },
   legendName: { flex: 1, minWidth: 0, fontSize: 12, fontWeight: '700', color: C.text },
   legendVal: { fontSize: 12, fontWeight: '800', color: C.text },
   streakTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   flame: { width: 36, height: 36, borderRadius: 18, backgroundColor: TILE.orange, borderWidth: 2, borderColor: TILE_INK, alignItems: 'center', justifyContent: 'center' },
-  bigInk: { fontFamily: 'display', fontSize: 38, fontWeight: '800', color: TILE_INK, letterSpacing: -1.5 },
+  bigInk: { fontFamily: 'display', fontSize: 32, fontWeight: '800', color: TILE_INK, letterSpacing: -1.5 },
   dots: { flexDirection: 'row', gap: 3, marginTop: 6 },
   dot: { flex: 1, aspectRatio: 1, borderRadius: 99, borderWidth: 2, borderColor: TILE_INK, backgroundColor: 'rgba(255,255,255,0.7)', alignItems: 'center', justifyContent: 'center' },
   dotToday: { borderWidth: BORDER + 0.5 },
   dotText: { fontSize: 8, fontWeight: '800', color: TILE_INK },
   next: { padding: 16, gap: 2 },
-  nextDish: { fontFamily: 'display', fontSize: 24, fontWeight: '800', color: TILE_INK, letterSpacing: -0.5 },
+  nextDish: { fontFamily: 'display', fontSize: 21, fontWeight: '800', color: TILE_INK, letterSpacing: -0.5 },
   goWrap: { marginTop: 10 },
   go: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   goText: { color: TILE.yellow, fontSize: 14, fontWeight: '800' },
@@ -196,18 +196,18 @@ const s = themed(() => StyleSheet.create({
   tile: { padding: 12, gap: 2, minHeight: 100, justifyContent: 'center' },
   tag: { fontSize: 11, fontWeight: '800', color: TILE_INK },
   tagSoft: { fontSize: 12, fontWeight: '700', color: TILE_INK, opacity: 0.75 },
-  dish: { fontFamily: 'display', fontSize: 18, fontWeight: '800', color: TILE_INK },
-  big: { fontFamily: 'display', fontSize: 38, fontWeight: '800', color: C.text, letterSpacing: -1.5 },
+  dish: { fontFamily: 'display', fontSize: 15, fontWeight: '800', color: TILE_INK },
+  big: { fontFamily: 'display', fontSize: 32, fontWeight: '800', color: C.text, letterSpacing: -1.5 },
   muted: { fontSize: 12, fontWeight: '700', color: C.muted },
   head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginTop: 4 },
-  h2: { fontFamily: 'display', fontSize: 26, fontWeight: '800', color: C.text, flexShrink: 1 },
+  h2: { fontFamily: 'display', fontSize: 22, fontWeight: '800', color: C.text, flexShrink: 1 },
   link: { fontSize: 14, fontWeight: '800', color: C.text, textDecorationLine: 'underline' },
   list: { paddingHorizontal: 14, paddingVertical: 6 },
-  day: { fontFamily: 'display', fontSize: 16, fontWeight: '800', color: C.text, paddingTop: 10, paddingBottom: 2 },
+  day: { fontFamily: 'display', fontSize: 14, fontWeight: '800', color: C.text, paddingTop: 10, paddingBottom: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 58 },
   rowLine: { borderTopWidth: 2, borderTopColor: C.line },
   time: { width: 66, fontSize: 12, fontWeight: '800', color: C.text },
   rowSlot: { fontSize: 12, fontWeight: '700', color: C.muted },
-  rowDish: { fontFamily: 'display', fontSize: 16, fontWeight: '800', color: C.text },
+  rowDish: { fontFamily: 'display', fontSize: 14, fontWeight: '800', color: C.text },
   soon: { fontSize: 12, fontWeight: '800', color: C.text },
 }));

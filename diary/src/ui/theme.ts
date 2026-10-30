@@ -97,15 +97,15 @@ export const OFFSET = 4;
 
 /** Font families, one per weight (React Native cannot synthesise weights for custom fonts). */
 export const FONT = {
-  regular: 'Manrope_400Regular',
-  medium: 'Manrope_500Medium',
-  semi: 'Manrope_600SemiBold',
-  bold: 'Manrope_700Bold',
-  heavy: 'Manrope_800ExtraBold',
+  regular: 'SpaceGrotesk_400Regular',
+  medium: 'SpaceGrotesk_500Medium',
+  semi: 'SpaceGrotesk_600SemiBold',
+  bold: 'SpaceGrotesk_700Bold',
+  heavy: 'SpaceGrotesk_700Bold',
 };
 
-/** Headings and numerals use this chunky grotesque. Use as `fontFamily: 'display'` in a text style. */
-const GROTESK = { regular: 'BricolageGrotesque_600SemiBold', semi: 'BricolageGrotesque_700Bold', bold: 'BricolageGrotesque_800ExtraBold' };
+/** Headings and numerals use this heavy poster face (Archivo Black); body text is Space Grotesk. Use as `fontFamily: 'display'` in a text style. */
+const GROTESK = { regular: 'ArchivoBlack_400Regular', semi: 'ArchivoBlack_400Regular', bold: 'ArchivoBlack_400Regular' };
 export const displayFonts = () => GROTESK;
 
 /** Outline for anything that needs a plain bordered box. */
