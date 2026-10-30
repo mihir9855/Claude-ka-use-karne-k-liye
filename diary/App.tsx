@@ -107,13 +107,14 @@ function Shell({ dark }: { dark: boolean }) {
 
 export default function App() {
   const pref = useStore((st) => st.theme);
+  const accent = useStore((st) => st.accent);
   const system = useColorScheme();
   const name = pref === 'system' ? (system === 'light' ? 'light' : 'dark') : pref;
   // styles read the palette when they are first used, so set it before the tree renders
-  setThemeName(name);
+  setThemeName(name, accent);
   return (
     <SafeAreaProvider>
-      <Shell key={name} dark={name === 'dark'} />
+      <Shell key={`${name}:${accent}`} dark={name === 'dark'} />
     </SafeAreaProvider>
   );
 }

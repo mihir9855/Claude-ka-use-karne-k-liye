@@ -77,22 +77,44 @@ const light: Palette = {
 
 export const PALETTES = { dark, light };
 export type ThemeName = keyof typeof PALETTES;
+
+/** Colour themes: the loud block colour and the accent, for day and night. Everything else stays the same. */
+export interface Accent {
+  name: string;
+  swatch: string;
+  light: Partial<Palette>;
+  dark: Partial<Palette>;
+}
+const tint = (hero: string, accent: string, soft: string, onPrimary: string): Partial<Palette> => ({ hero, ink: accent, inkSoft: accent, primary: accent, accent, accentSoft: soft, primarySoft: soft, onPrimary });
+export const ACCENTS: Record<string, Accent> = {
+  haldi: { name: 'Haldi', swatch: '#FFB800', light: {}, dark: {} },
+  pudina: { name: 'Pudina', swatch: '#6FD3A0', light: tint('#7FD8A8', '#0F7A4D', '#D3F0E0', '#FFFFFF'), dark: tint('#6FD3A0', '#6FD3A0', '#16301F', '#0F1A14') },
+  jamun: { name: 'Jamun', swatch: '#B79BFF', light: tint('#C4AEFF', '#5B34C9', '#E6DDFF', '#FFFFFF'), dark: tint('#B79BFF', '#B79BFF', '#2A2142', '#17112B') },
+  gulab: { name: 'Gulab', swatch: '#FF8FB3', light: tint('#FF9DBC', '#D6246E', '#FFDCE8', '#FFFFFF'), dark: tint('#FF8FB3', '#FF8FB3', '#3D1D2A', '#2A0F1A') },
+  neela: { name: 'Neela', swatch: '#7CB8FF', light: tint('#8CC3FF', '#1F5FD1', '#D9EAFF', '#FFFFFF'), dark: tint('#7CB8FF', '#7CB8FF', '#15283F', '#0B1829') },
+};
+export const ACCENT_IDS = Object.keys(ACCENTS);
+
 let current: ThemeName = 'dark';
+let accentId = 'haldi';
 
 export const themeName = () => current;
-export function setThemeName(n: ThemeName) {
+export function setThemeName(n: ThemeName, accent: string = accentId) {
   current = n;
+  accentId = ACCENTS[accent] ? accent : 'haldi';
 }
 
 /** The colours of the theme in use. */
-export const C = new Proxy({} as Palette, { get: (_t, k: string) => PALETTES[current][k as keyof Palette] });
+export const C = new Proxy({} as Palette, {
+  get: (_t, k: string) => (ACCENTS[accentId][current] as Record<string, string>)[k] ?? PALETTES[current][k as keyof Palette],
+});
 
 /** Styles that are built once per theme, the first time a screen asks for them. */
 export function themed<T extends object>(make: () => T): T {
-  const cache: Partial<Record<ThemeName, T>> = {};
+  const cache: Record<string, T> = {};
   return new Proxy({} as T, {
     get: (_t, prop) => {
-      const set = (cache[current] ??= make());
+      const set = (cache[`${current}:${accentId}`] ??= make());
       return set[prop as keyof T];
     },
   });

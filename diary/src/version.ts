@@ -9,7 +9,7 @@ export const WHAT_IT_DOES: { icon: 'pen' | 'calendar' | 'chart' | 'users' | 'fla
   { icon: 'users', title: 'Profiles for the family', text: 'Up to six people, each with their own diary, goal and health conditions.' },
   { icon: 'heart', title: 'Health aware', text: 'Menus go easier on heavy dishes for diabetes, cholesterol or BP, and skip dairy or gluten when asked.' },
   { icon: 'cart', title: 'Lists', text: 'Say "add grocery list rice, daal, sugar, oil" in Chat and it lands on your grocery list. Make other lists too, tick items off, share them.' },
-  { icon: 'file', title: 'Backup and export', text: 'Copy or share a backup, restore it on another phone, or export your meals as a spreadsheet file.' },
+  { icon: 'file', title: 'Backup and export', text: 'Save a backup file to your phone with one tap, restore it from the file, or save your meals as a spreadsheet.' },
 ];
 
 export const CHANGELOG: { version: string; items: string[] }[] = [

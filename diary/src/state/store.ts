@@ -42,6 +42,10 @@ interface State {
   activeId: string;
   /** light, dark, or follow the phone */
   theme: 'system' | 'dark' | 'light';
+  /** colour theme id, see ACCENTS */
+  accent: string;
+  /** folder (Android SAF uri) where backups are saved, remembered after the first pick */
+  saveDir: string;
   /** false until the welcome and the first questions are done */
   onboarded: boolean;
   /** dishes swapped into the week menu, keyed "date|slot" */
@@ -58,6 +62,8 @@ interface State {
   setPick: (key: string, name: string | null) => void;
   clearPicks: () => void;
   setTheme: (t: 'system' | 'dark' | 'light') => void;
+  setAccent: (id: string) => void;
+  setSaveDir: (dir: string) => void;
   /** replace everything with a backup that was checked by parseBackup */
   restore: (data: BackupData) => void;
   setOnboarded: (v: boolean) => void;
@@ -85,6 +91,8 @@ export const useStore = create<State>()(
       activeId: FIRST_ID,
       onboarded: false,
       theme: 'system',
+      accent: 'haldi',
+      saveDir: '',
       picks: {},
       lists: defaultLists(),
       add: (names, slot, date) =>
@@ -115,6 +123,8 @@ export const useStore = create<State>()(
         }),
       clearPicks: () => set({ picks: {} }),
       setTheme: (theme) => set({ theme }),
+      setAccent: (accent) => set({ accent }),
+      setSaveDir: (saveDir) => set({ saveDir }),
       restore: (d) => set({ entries: d.entries, persons: d.persons, activeId: d.activeId, picks: d.picks, lists: d.lists ?? defaultLists(), onboarded: true }),
       setOnboarded: (onboarded) => set({ onboarded }),
       setActive: (activeId) => set({ activeId }),
@@ -153,7 +163,7 @@ export const useStore = create<State>()(
     {
       name: 'khana-diary-v1',
       storage: createJSONStorage(() => safeStorage),
-      partialize: ({ entries, persons, activeId, picks, onboarded, theme, lists }) => ({ entries, persons, activeId, picks, onboarded, theme, lists }) as State,
+      partialize: ({ entries, persons, activeId, picks, onboarded, theme, accent, saveDir, lists }) => ({ entries, persons, activeId, picks, onboarded, theme, accent, saveDir, lists }) as State,
     },
   ),
 );
