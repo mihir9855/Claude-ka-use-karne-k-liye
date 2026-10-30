@@ -6,7 +6,7 @@ import { Icon } from './Icon';
 import { Button, Chip, Choice, Field, Muted } from './kit';
 import { Text } from './Text';
 import { Tile } from './kit';
-import { BORDER, C, FONT, RADIUS, TILE, TILE_INK, displayFonts, themed } from './theme';
+import { BORDER, C, FONT, RADIUS, SCRIPT, TILE, TILE_INK, themed } from './theme';
 
 const NATIVE = Platform.OS !== 'web';
 const num = (v: string) => Number(v.replace(/[^0-9]/g, '')) || 0;
@@ -176,14 +176,14 @@ const s = themed(() => StyleSheet.create({
   stage: { width: 220, height: 220, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   ring: { position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: BORDER, borderColor: C.line },
   disc: { width: 160, height: 160, borderRadius: 80, backgroundColor: TILE.yellow, borderWidth: BORDER + 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
-  brand: { fontFamily: displayFonts().bold, fontSize: 46, color: C.text, letterSpacing: -2 },
+  brand: { fontFamily: SCRIPT, fontSize: 84, lineHeight: 90, color: C.text, letterSpacing: -2 },
   tag: { fontSize: 16, fontWeight: '600', color: C.muted, textAlign: 'center', lineHeight: 23, maxWidth: 300, marginBottom: 14, fontFamily: FONT.regular },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 14 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   progress: { flex: 1, flexDirection: 'row', gap: 6 },
   seg: { flex: 1, height: 8, borderRadius: 4, backgroundColor: C.card, borderWidth: 2, borderColor: C.line },
   page: { paddingLeft: 20, paddingRight: 16, paddingTop: 12, gap: 16, paddingBottom: 24 },
-  q: { fontFamily: 'display', fontSize: 28, fontWeight: '800', color: C.text, letterSpacing: -1.2, lineHeight: 38 },
+  q: { fontFamily: 'script', fontSize: 42, lineHeight: 46, color: C.text },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   three: { flexDirection: 'row', gap: 10 },
   foot: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingLeft: 20, paddingRight: 16, borderTopWidth: BORDER, borderTopColor: C.line },

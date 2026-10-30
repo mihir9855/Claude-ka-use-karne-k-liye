@@ -107,6 +107,8 @@ export const FONT = {
 /** Headings and numerals use this heavy poster face (Archivo Black); body text is Space Grotesk. Use as `fontFamily: 'display'` in a text style. */
 const GROTESK = { regular: 'ArchivoBlack_400Regular', semi: 'ArchivoBlack_400Regular', bold: 'ArchivoBlack_400Regular' };
 export const displayFonts = () => GROTESK;
+/** Big screen titles use this handwritten script (Oooh Baby). Use as `fontFamily: 'script'`. */
+export const SCRIPT = 'OoohBaby_400Regular';
 
 /** Outline for anything that needs a plain bordered box. */
 export const SHADOW = {

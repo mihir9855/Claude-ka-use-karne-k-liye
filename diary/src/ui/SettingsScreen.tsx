@@ -206,7 +206,7 @@ function NewsPage() {
 
 const s = themed(() => StyleSheet.create({
   page: { paddingLeft: 20, paddingRight: 16, paddingTop: 8, gap: 16, paddingBottom: 32 },
-  group: { fontFamily: 'display', fontSize: 17, fontWeight: '800', color: C.text, marginTop: 4 },
+  group: { fontFamily: 'script', fontSize: 30, fontWeight: '800', color: C.text, marginTop: 4 },
   swatches: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 14 },
   swatchCell: { width: '25%', minWidth: 0, alignItems: 'center', gap: 6 },
   swatch: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: BORDER, borderColor: C.line },
@@ -219,7 +219,7 @@ const s = themed(() => StyleSheet.create({
   version: { textAlign: 'center', color: C.muted, fontSize: 12, fontWeight: '700', marginTop: 4 },
   bar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 12, paddingRight: 20, paddingVertical: 6 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  barTitle: { flex: 1, minWidth: 0, fontFamily: 'display', fontSize: 22, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
+  barTitle: { flex: 1, minWidth: 0, fontFamily: 'script', fontSize: 36, lineHeight: 42, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
   big: { fontFamily: 'display', fontSize: 18, fontWeight: '800', color: C.text },
   paste: { minHeight: 90, maxHeight: 160, backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, padding: 12, fontSize: 14, color: C.text, textAlignVertical: 'top' },
   err: { color: C.danger, fontWeight: '800', fontSize: 14 },

@@ -168,7 +168,7 @@ const s = themed(() => StyleSheet.create({
   // the right padding is 4 smaller so the tiles' shadows end where the left edge begins
   page: { paddingLeft: 20, paddingRight: 16, paddingTop: 8, paddingBottom: 32, gap: 16 },
   date: { fontSize: 13, fontWeight: '700', color: C.muted, marginBottom: 2 },
-  title: { fontFamily: 'display', fontSize: 34, color: C.text, letterSpacing: -1, lineHeight: 40 },
+  title: { fontFamily: 'script', fontSize: 54, color: C.text, lineHeight: 52 },
   col: { flex: 1, minWidth: 0 },
   headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   logBtn: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
@@ -200,7 +200,7 @@ const s = themed(() => StyleSheet.create({
   big: { fontFamily: 'display', fontSize: 32, fontWeight: '800', color: C.text, letterSpacing: -1.5 },
   muted: { fontSize: 12, fontWeight: '700', color: C.muted },
   head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginTop: 4 },
-  h2: { fontFamily: 'display', fontSize: 22, fontWeight: '800', color: C.text, flexShrink: 1 },
+  h2: { fontFamily: 'script', fontSize: 38, fontWeight: '800', color: C.text, flexShrink: 1 },
   link: { fontSize: 14, fontWeight: '800', color: C.text, textDecorationLine: 'underline' },
   list: { paddingHorizontal: 14, paddingVertical: 6 },
   day: { fontFamily: 'display', fontSize: 14, fontWeight: '800', color: C.text, paddingTop: 10, paddingBottom: 2 },

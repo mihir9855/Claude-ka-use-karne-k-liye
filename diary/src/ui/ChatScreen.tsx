@@ -277,7 +277,7 @@ function Bubble({ side, children }: { side: 'me' | 'app'; children: React.ReactN
 
 const s = themed(() => StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 20, paddingRight: 20, paddingTop: 12, paddingBottom: 10 },
-  title: { fontFamily: 'display', fontSize: 30, fontWeight: '800', color: C.text, letterSpacing: -1.4 },
+  title: { fontFamily: 'script', fontSize: 46, lineHeight: 50, fontWeight: '800', color: C.text, letterSpacing: -1.4 },
   sub: { fontSize: 12, color: C.muted, fontWeight: '700' },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: TILE.yellow, borderWidth: BORDER, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 18, fontWeight: '800', color: TILE_INK },

@@ -1,5 +1,5 @@
 import { Platform, StyleSheet, Text as RNText, TextInput as RNTextInput, type TextInputProps, type TextProps, type TextStyle } from 'react-native';
-import { FONT, displayFonts } from './theme';
+import { FONT, SCRIPT, displayFonts } from './theme';
 
 const WEB_FALLBACK = ', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const WEB_SERIF = ', system-ui, "Segoe UI", Roboto, sans-serif';
@@ -26,8 +26,10 @@ function resolve(style: TextProps['style']): TextStyle {
   const flat = (StyleSheet.flatten(style) ?? {}) as TextStyle;
   const { fontWeight, fontFamily, ...rest } = flat;
   const w = String(fontWeight ?? '400');
-  const fam = fontFamily === 'display' ? (w === '700' || w === '800' || w === 'bold' ? displayFonts().bold : w === '600' || w === '500' ? displayFonts().semi : displayFonts().regular) : family(fontWeight);
-  return { ...rest, fontFamily: Platform.OS === 'web' ? `${fam}${fontFamily === 'display' ? WEB_SERIF : WEB_FALLBACK}` : fam };
+  const fam = fontFamily === 'script' ? SCRIPT : fontFamily === 'display' ? (w === '700' || w === '800' || w === 'bold' ? displayFonts().bold : w === '600' || w === '500' ? displayFonts().semi : displayFonts().regular) : family(fontWeight);
+  // the script face is thin, so a hairline shadow in its own colour makes it a little bolder
+  const faux = fontFamily === 'script' && typeof rest.color === 'string' ? { textShadowColor: rest.color, textShadowOffset: { width: 0.9, height: 0.4 }, textShadowRadius: 0.4 } : null;
+  return { ...rest, ...faux, fontFamily: Platform.OS === 'web' ? `${fam}${fontFamily === 'display' || fontFamily === 'script' ? WEB_SERIF : WEB_FALLBACK}` : fam };
 }
 
 export function Text({ style, ...props }: TextProps) {
