@@ -317,5 +317,13 @@ export function dayMenu(entries: Entry[], target: Target, now: Date = new Date()
   const today = ymd(now);
   const done = new Set(entries.filter((e) => e.date === today).map((e) => e.slot));
   const cur = SLOT_ORDER.indexOf(slotAt(now.getHours()));
-  return SLOT_ORDER.filter((s, i) => i >= cur && !done.has(s)).map((slot) => ({ slot, options: suggest(entries, slot, target, now, 3) }));
+  const used = new Set<string>();
+  return SLOT_ORDER.filter((s, i) => i >= cur && !done.has(s)).map((slot) => {
+    // the same dish is not offered for two meals of one day
+    const all = suggest(entries, slot, target, now, 6);
+    const fresh = all.filter((o) => !used.has(o.name));
+    const options = [...fresh, ...all.filter((o) => used.has(o.name))].slice(0, 3);
+    if (options[0]) used.add(options[0].name);
+    return { slot, options };
+  });
 }

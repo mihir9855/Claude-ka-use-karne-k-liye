@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { LIBRARY } from '../src/data/library';
-import { hints, learned, makeEntry, match, nextSlot, sampleEntries, slotAt, splitNames, suggest, totalsFor, ymd, type Entry } from '../src/core/diary';
+import { dayMenu, hints, learned, makeEntry, match, nextSlot, sampleEntries, slotAt, splitNames, suggest, totalsFor, ymd, type Entry } from '../src/core/diary';
 
 const NOW = new Date(2026, 9, 30, 9, 0, 0); // a Friday morning
 
@@ -89,4 +89,15 @@ test('sample meals teach habits', () => {
   assert.equal(l.days, 14);
   assert.ok(l.top && l.top.n >= 5);
   assert.ok(l.usual.b && l.usual.d);
+});
+
+test('the day menu does not offer one dish for two meals', () => {
+  const m = dayMenu([], { kcal: 2000, protein: 60 }, new Date(2026, 9, 30, 7, 0, 0));
+  assert.equal(m.length, 4);
+  const firsts = m.map((x) => x.options[0].name);
+  assert.equal(new Set(firsts).size, firsts.length, firsts.join(', '));
+  assert.ok(m.every((x) => x.options.length === 3));
+  // meals already logged are left out
+  const done = dayMenu([makeEntry('poha', 'b', '2026-10-30')], { kcal: 2000, protein: 60 }, new Date(2026, 9, 30, 7, 0, 0));
+  assert.deepEqual(done.map((x) => x.slot), ['l', 's', 'd']);
 });
