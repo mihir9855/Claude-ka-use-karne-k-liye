@@ -3,9 +3,12 @@ import { allowed, conditionScore, type Condition, type Target } from './profile'
 
 export type { Target };
 
-export type SlotId = 'b' | 'l' | 's' | 'd';
-export const SLOT_ORDER: SlotId[] = ['b', 'l', 's', 'd'];
-export const SLOT_LABEL: Record<SlotId, string> = { b: 'Breakfast', l: 'Lunch', s: 'Snack', d: 'Dinner' };
+/** b breakfast, m morning snack, l lunch, s evening snack, d dinner */
+export type SlotId = 'b' | 'm' | 'l' | 's' | 'd';
+export const SLOT_ORDER: SlotId[] = ['b', 'm', 'l', 's', 'd'];
+export const SLOT_LABEL: Record<SlotId, string> = { b: 'Breakfast', m: 'Morning snack', l: 'Lunch', s: 'Evening snack', d: 'Dinner' };
+/** When each meal is usually eaten, as an hour and minute, for the timeline of what comes next. */
+export const SLOT_TIME: Record<SlotId, [number, number]> = { b: [8, 30], m: [11, 0], l: [13, 30], s: [17, 0], d: [20, 30] };
 
 export interface Entry {
   id: string;
@@ -47,7 +50,15 @@ export function diffDays(a: string, b: string): number {
   return Math.round((new Date(`${a}T12:00:00`).getTime() - new Date(`${b}T12:00:00`).getTime()) / 864e5);
 }
 export function slotAt(hour: number): SlotId {
-  return hour < 11 ? 'b' : hour < 15 ? 'l' : hour < 18 ? 's' : 'd';
+  return hour < 10 ? 'b' : hour < 12 ? 'm' : hour < 15 ? 'l' : hour < 18 ? 's' : 'd';
+}
+
+/** The moment a meal is usually eaten on a given day. */
+export function slotMoment(date: string, slot: SlotId): Date {
+  const [h, m] = SLOT_TIME[slot];
+  const d = new Date(`${date}T12:00:00`);
+  d.setHours(h, m, 0, 0);
+  return d;
 }
 
 /* ---------- matching typed names to the library ---------- */
@@ -304,6 +315,7 @@ export function suggest(entries: Entry[], slot: SlotId, target: Target, now: Dat
   const stats = statsOf(entries);
   const combos = combosOf(entries);
   const label = SLOT_LABEL[slot].toLowerCase();
+  const libSlot = slot === 'm' ? 's' : slot; // the library has one snack list for both snacks
 
   interface Cand {
     key: string;
@@ -320,7 +332,7 @@ export function suggest(entries: Entry[], slot: SlotId, target: Target, now: Dat
   }
   const pool = new Map<string, Cand>();
   for (const d of LIBRARY) {
-    if (d[4].includes(slot) && (d[3] === 'co' || d[3] === 'ma' || d[3] === 'sn')) {
+    if (d[4].includes(libSlot) && (slot === 'm' ? d[3] === 'sn' : d[3] === 'co' || d[3] === 'ma' || d[3] === 'sn')) {
       const k = norm(d[0]);
       const st = stats.get(k);
       pool.set(k, { key: k, name: d[0], items: [d[0]], kcal: d[1], protein: d[2], carbs: d[5], fat: d[6], inSlot: st?.slotCount[slot] ?? 0, total: st?.total ?? 0, last: st?.last ?? '' });
@@ -428,7 +440,8 @@ export function sampleEntries(now: Date = new Date()): Entry[] {
   const habits: Record<SlotId, string[]> = {
     b: ['Poha', 'Poha', 'Moong dal chilla', 'Upma', 'Masala oats', 'Idli (3)'],
     l: ['Dal tadka', 'Palak paneer', 'Gujarati dal', 'Rajma masala', 'Dal tadka', 'Aloo matar sabji'],
-    s: ['Roasted chana', 'Fruit bowl', 'Haldi doodh', 'Roasted chana', 'Banana protein shake'],
+    m: ['Fruit bowl', 'Banana with peanuts', 'Sprouts chaat', 'Fruit bowl', 'Curd with fruit'],
+    s: ['Roasted chana', 'Haldi doodh', 'Roasted chana', 'Banana protein shake', 'Roasted makhana'],
     d: ['Moong dal khichdi', 'Dal fry', 'Mix veg with paneer', 'Moong dal khichdi', 'Gujarati kadhi'],
   };
   let seed = 7;
@@ -440,9 +453,9 @@ export function sampleEntries(now: Date = new Date()): Entry[] {
   for (let n = 14; n >= 1; n--) {
     const date = daysAgo(n, now);
     for (const s of SLOT_ORDER) {
-      if (s === 's' && rnd() < 0.35) continue;
+      if ((s === 's' || s === 'm') && rnd() < 0.35) continue;
       const list = habits[s];
-      const hour = { b: 8, l: 13, s: 17, d: 20 }[s];
+      const hour = { b: 8, m: 11, l: 13, s: 17, d: 20 }[s];
       out.push(makeEntry(list[Math.floor(rnd() * list.length)], s, date, true, new Date(`${date}T${hour < 10 ? '0' : ''}${hour}:15:00`).getTime()));
     }
   }
@@ -539,10 +552,14 @@ export function weekMenu(entries: Entry[], target: Target, picks: Record<string,
 
 /* ---------- reading a message ---------- */
 
-const SLOT_VOCAB: Record<string, SlotId> = {
+/** 'x' is a plain "snack": the morning one before noon, the evening one after. */
+type Said = SlotId | 'x';
+const SLOT_VOCAB: Record<string, Said> = {
   breakfast: 'b', nashta: 'b', nasta: 'b', naashta: 'b', subah: 'b', morning: 'b', brunch: 'b',
+  msnack: 'm', midmorning: 'm',
   lunch: 'l', dopahar: 'l', dopehar: 'l', afternoon: 'l', tiffin: 'l',
-  snack: 's', snacks: 's', evening: 's', shaam: 's', sham: 's', teatime: 's', chaitime: 's',
+  esnack: 's', evening: 's', shaam: 's', sham: 's', teatime: 's', chaitime: 's',
+  snack: 'x', snacks: 'x',
   dinner: 'd', raat: 'd', night: 'd', supper: 'd', raatri: 'd',
 };
 const SLOT_FUZZY = Object.keys(SLOT_VOCAB).filter((w) => w.length >= 5);
@@ -559,11 +576,17 @@ function quantityOf(w: string): number | null {
 }
 
 /** Splits slot words and filler out of one piece of a message. Slot words may be misspelled or split ("break fast"). */
-function scan(part: string): { slots: SlotId[]; words: string[] } {
-  const raw = part.toLowerCase().replace(/[^a-z0-9. ]+/g, ' ').split(/\s+/).filter(Boolean);
-  const slots: SlotId[] = [];
+function scan(part: string): { slots: Said[]; words: string[] } {
+  const text = part
+    .toLowerCase()
+    .replace(/[^a-z0-9. ]+/g, ' ')
+    .replace(/\bmid ?morning\b/g, ' midmorning ')
+    .replace(/\b(morning|11 ?am)\s+snacks?\b/g, ' msnack ')
+    .replace(/\b(evening|shaam|sham|tea ?time|chai ?time|4 ?pm|5 ?pm)\s+snacks?\b/g, ' esnack ');
+  const raw = text.split(/\s+/).filter(Boolean);
+  const slots: Said[] = [];
   const words: string[] = [];
-  const slotOf = (w: string): SlotId | undefined => SLOT_VOCAB[w] ?? (w.length >= 5 ? SLOT_VOCAB[SLOT_FUZZY.find((v) => sameWord(w, v)) ?? ''] : undefined);
+  const slotOf = (w: string): Said | undefined => SLOT_VOCAB[w] ?? (w.length >= 5 ? SLOT_VOCAB[SLOT_FUZZY.find((v) => sameWord(w, v)) ?? ''] : undefined);
   for (let i = 0; i < raw.length; i++) {
     const w = raw[i];
     const two = i + 1 < raw.length ? w + raw[i + 1] : '';
@@ -667,8 +690,12 @@ export interface Reading {
  * "I ate dal rice in lunch", "chai evening snacks", "5 roti dinner" put each dish in the right meal, with the
  * count when there is one. A dish with no meal named goes to the one meal the message does name, or else to `fallback`.
  */
-export function readMessage(text: string, fallback: SlotId): Reading {
-  const parts = text.split(/,|;|\n|\+|&/).map(scan);
+export function readMessage(text: string, fallback: SlotId, now: Date = new Date()): Reading {
+  const snack: SlotId = now.getHours() < 12 && now.getHours() >= 5 ? 'm' : 's';
+  const parts = text
+    .split(/,|;|\n|\+|&/)
+    .map(scan)
+    .map((p) => ({ ...p, slots: p.slots.map((x): SlotId => (x === 'x' ? snack : x)) }));
   const all = [...new Set(parts.flatMap((p) => p.slots))];
   const only = all.length === 1 ? all[0] : undefined;
   const items: Reading['items'] = [];
@@ -721,4 +748,28 @@ export function todayMenu(entries: Entry[], target: Target, now: Date = new Date
     out.push({ slot, options, missed: SLOT_ORDER.indexOf(slot) < cur });
   }
   return out;
+}
+
+export interface Upcoming {
+  date: string;
+  slot: SlotId;
+  at: Date;
+  dish: Suggestion;
+}
+
+/**
+ * The next meals in the order of the clock, starting from now: after breakfast the morning snack, then lunch,
+ * the evening snack and dinner, and on into tomorrow. Meals already eaten or already past are left out.
+ */
+export function upcomingMeals(entries: Entry[], target: Target, picks: Record<string, string> = {}, now: Date = new Date(), conditions: Condition[] = [], count = 5): Upcoming[] {
+  const out: Upcoming[] = [];
+  for (const day of weekMenu(entries, target, picks, now, conditions)) {
+    for (const sl of day.slots) {
+      if (sl.eaten || !sl.chosen) continue;
+      const at = slotMoment(day.date, sl.slot);
+      if (at.getTime() < now.getTime() - 20 * 60 * 1000) continue;
+      out.push({ date: day.date, slot: sl.slot, at, dish: sl.chosen });
+    }
+  }
+  return out.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, count);
 }

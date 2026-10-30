@@ -5,7 +5,7 @@ import { FIRST_ID, useStore } from '../state/store';
 import { Icon } from './Icon';
 import { Button, Chip, Choice, Field, Muted } from './kit';
 import { Text } from './Text';
-import { C, FONT, RADIUS } from './theme';
+import { C, FONT, RADIUS, themed } from './theme';
 
 const NATIVE = Platform.OS !== 'web';
 const num = (v: string) => Number(v.replace(/[^0-9]/g, '')) || 0;
@@ -146,7 +146,7 @@ export function OnboardScreen() {
                 <Stat label="Fibre" v={`${target.fiber} g`} />
               </View>
             </View>
-            <Muted>Next, tell me what you ate in Chat, like "poha, chai" or "dal rice in lunch". I will start planning your menu from it. You can add family members in Profile.</Muted>
+            <Muted>Next, tell me what you ate in Chat, like "poha, chai" or "dal rice in lunch". I will start planning your menu from it. You can add family members in Settings.</Muted>
           </>
         )}
       </ScrollView>
@@ -170,7 +170,7 @@ function Stat({ label, v }: { label: string; v: string }) {
   );
 }
 
-const s = StyleSheet.create({
+const s = themed(() => StyleSheet.create({
   welcome: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 28 },
   stage: { width: 220, height: 220, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   ring: { position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: 2, borderColor: C.accent },
@@ -192,4 +192,4 @@ const s = StyleSheet.create({
   stat: { flexBasis: '22%', flexGrow: 1, minWidth: 0 },
   statV: { fontSize: 17, fontWeight: '800', color: C.text },
   statL: { fontSize: 11, color: C.muted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
-});
+}));

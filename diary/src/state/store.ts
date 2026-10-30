@@ -3,6 +3,8 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { makeEntry, newBatch, sampleEntries, type Entry, type SlotId } from '../core/diary';
+import type { BackupData } from '../core/backup';
+import { addToList, defaultLists, type ShopList } from '../core/lists';
 import { MAX_PEOPLE, computeTargets, newPerson, type Person, type Target } from '../core/profile';
 
 /** Phone storage, falling back to memory when the browser blocks it, so the app still opens. */
@@ -38,10 +40,14 @@ interface State {
   entries: Entry[];
   persons: Person[];
   activeId: string;
+  /** light, dark, or follow the phone */
+  theme: 'system' | 'dark' | 'light';
   /** false until the welcome and the first questions are done */
   onboarded: boolean;
   /** dishes swapped into the week menu, keyed "date|slot" */
   picks: Record<string, string>;
+  /** grocery and other lists */
+  lists: ShopList[];
 
   /** type the names of what was eaten; each becomes one entry in the active person's diary */
   add: (names: string[], slot: SlotId, date: string) => void;
@@ -51,6 +57,9 @@ interface State {
   removeBatch: (batch: string) => void;
   setPick: (key: string, name: string | null) => void;
   clearPicks: () => void;
+  setTheme: (t: 'system' | 'dark' | 'light') => void;
+  /** replace everything with a backup that was checked by parseBackup */
+  restore: (data: BackupData) => void;
   setOnboarded: (v: boolean) => void;
   setActive: (id: string) => void;
   updatePerson: (id: string, patch: Partial<Person>) => void;
@@ -59,6 +68,13 @@ interface State {
   loadSample: () => void;
   clearSample: () => void;
   clearAll: () => void;
+  /** put items on a list by name (made if new); returns what was really added */
+  addListItems: (name: string, items: string[]) => string[];
+  toggleListItem: (listId: string, itemId: string) => void;
+  removeListItem: (listId: string, itemId: string) => void;
+  clearDoneItems: (listId: string) => void;
+  addList: (name: string) => void;
+  removeList: (listId: string) => void;
 }
 
 export const useStore = create<State>()(
@@ -68,7 +84,9 @@ export const useStore = create<State>()(
       persons: [newPerson(FIRST_ID, '')],
       activeId: FIRST_ID,
       onboarded: false,
+      theme: 'system',
       picks: {},
+      lists: defaultLists(),
       add: (names, slot, date) =>
         set((s) => {
           const batch = newBatch();
@@ -96,6 +114,8 @@ export const useStore = create<State>()(
           return { picks };
         }),
       clearPicks: () => set({ picks: {} }),
+      setTheme: (theme) => set({ theme }),
+      restore: (d) => set({ entries: d.entries, persons: d.persons, activeId: d.activeId, picks: d.picks, lists: d.lists ?? defaultLists(), onboarded: true }),
       setOnboarded: (onboarded) => set({ onboarded }),
       setActive: (activeId) => set({ activeId }),
       updatePerson: (id, patch) => set((s) => ({ persons: s.persons.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
@@ -113,12 +133,27 @@ export const useStore = create<State>()(
         }),
       loadSample: () => set((s) => ({ entries: [...s.entries.filter((e) => !(e.sample && (e.pid ?? FIRST_ID) === s.activeId)), ...sampleEntries().map((e) => ({ ...e, pid: s.activeId }))] })),
       clearSample: () => set((s) => ({ entries: s.entries.filter((e) => !e.sample) })),
-      clearAll: () => set({ entries: [], picks: {}, persons: [newPerson(FIRST_ID, '')], activeId: FIRST_ID, onboarded: false }),
+      clearAll: () => set({ entries: [], picks: {}, lists: defaultLists(), persons: [newPerson(FIRST_ID, '')], activeId: FIRST_ID, onboarded: false }),
+      addListItems: (name, items) => {
+        const r = addToList(get().lists, name, items);
+        set({ lists: r.lists });
+        return r.added;
+      },
+      toggleListItem: (listId, itemId) => set((s) => ({ lists: s.lists.map((l) => (l.id === listId ? { ...l, items: l.items.map((i) => (i.id === itemId ? { ...i, done: !i.done } : i)) } : l)) })),
+      removeListItem: (listId, itemId) => set((s) => ({ lists: s.lists.map((l) => (l.id === listId ? { ...l, items: l.items.filter((i) => i.id !== itemId) } : l)) })),
+      clearDoneItems: (listId) => set((s) => ({ lists: s.lists.map((l) => (l.id === listId ? { ...l, items: l.items.filter((i) => !i.done) } : l)) })),
+      addList: (name) =>
+        set((s) => {
+          const n = name.trim();
+          if (!n || s.lists.some((l) => l.name.toLowerCase() === n.toLowerCase())) return {};
+          return { lists: [...s.lists, { id: uid(), name: n, items: [] }] };
+        }),
+      removeList: (listId) => set((s) => ({ lists: s.lists.filter((l) => l.id !== listId) })),
     }),
     {
       name: 'khana-diary-v1',
       storage: createJSONStorage(() => safeStorage),
-      partialize: ({ entries, persons, activeId, picks, onboarded }) => ({ entries, persons, activeId, picks, onboarded }) as State,
+      partialize: ({ entries, persons, activeId, picks, onboarded, theme, lists }) => ({ entries, persons, activeId, picks, onboarded, theme, lists }) as State,
     },
   ),
 );

@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { SLOT_LABEL, SLOT_ORDER, dayMenu, daysAgo, entryLabel, hints, nextSlot, readMessage, totalsFor, ymd, type Entry, type SlotId } from '../core/diary';
+import { readListCommand } from '../core/lists';
 import { personName, useActive, useStore } from '../state/store';
 import { Icon } from './Icon';
 import { Muted } from './kit';
 import { SLOT_ICON_ID, slotLabel } from './slots';
 import { Text, TextInput } from './Text';
-import { C, RADIUS } from './theme';
+import { C, RADIUS, themed } from './theme';
 
 const SHOWN_DAYS = 3;
 
@@ -45,6 +46,8 @@ export function ChatScreen() {
   const setActive = useStore((s) => s.setActive);
   const add = useStore((s) => s.add);
   const addItems = useStore((s) => s.addItems);
+  const addListItems = useStore((s) => s.addListItems);
+  const [listNote, setListNote] = useState('');
   const removeBatch = useStore((s) => s.removeBatch);
   const [slot, setSlot] = useState<SlotId>(() => nextSlot(entries));
   const [text, setText] = useState('');
@@ -84,8 +87,16 @@ export function ChatScreen() {
   // the meal comes from the words: "rice in lunch", "chai evening snacks". Without any, it is the meal button.
   const reading = useMemo(() => readMessage(text, slot), [text, slot]);
   const shownSlot = reading.slot ?? slot;
+  const cmd = useMemo(() => readListCommand(text), [text]);
   const send = () => {
+    if (cmd) {
+      const added = addListItems(cmd.list, cmd.items);
+      setListNote(added.length ? `Added ${added.join(', ')} to your ${cmd.list} list.` : `Those are already on your ${cmd.list} list.`);
+      setText('');
+      return;
+    }
     if (!reading.items.length) return;
+    setListNote('');
     addItems(reading.items, today);
     setText('');
     const last = reading.items[reading.items.length - 1].slot;
@@ -164,6 +175,12 @@ export function ChatScreen() {
           </View>
         ))}
 
+        {!!listNote && (
+          <Bubble side="app">
+            <Text style={s.appText}>{`${listNote} See it in the Lists tab.`}</Text>
+          </Bubble>
+        )}
+
         {menu.length > 0 && (
           <View style={s.menu}>
             <Text style={s.menuTitle}>{entries.length === 0 ? 'Ideas for today' : 'Your menu for the rest of today'}</Text>
@@ -211,12 +228,21 @@ export function ChatScreen() {
           </ScrollView>
         )}
         <View style={s.inputRow}>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Meal: ${slotLabel(shownSlot)}. Tap to change`} onPress={() => setSlot(nextAfter(reading.slot ?? slot))} style={s.slotBtn}>
-            <Icon name={SLOT_ICON_ID[shownSlot]} size={17} color={C.text} width={1.8} />
-            <Text style={s.slotText} numberOfLines={1}>
-              {slotLabel(shownSlot)}
-            </Text>
-          </Pressable>
+          {cmd ? (
+            <View style={s.slotBtn} accessibilityLabel={`List: ${cmd.list}`}>
+              <Icon name="cart" size={17} color={C.text} width={1.8} />
+              <Text style={s.slotText} numberOfLines={1}>
+                {cmd.list}
+              </Text>
+            </View>
+          ) : (
+            <Pressable accessibilityRole="button" accessibilityLabel={`Meal: ${slotLabel(shownSlot)}. Tap to change`} onPress={() => setSlot(nextAfter(reading.slot ?? slot))} style={s.slotBtn}>
+              <Icon name={SLOT_ICON_ID[shownSlot]} size={17} color={C.text} width={1.8} />
+              <Text style={s.slotText} numberOfLines={1}>
+                {slotLabel(shownSlot)}
+              </Text>
+            </Pressable>
+          )}
           <TextInput
             style={s.input}
             value={text}
@@ -228,7 +254,7 @@ export function ChatScreen() {
             onSubmitEditing={send}
             autoCapitalize="none"
           />
-          <Pressable accessibilityRole="button" accessibilityLabel="Send" onPress={send} style={[s.send, !reading.items.length && { opacity: 0.4 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Send" onPress={send} style={[s.send, !reading.items.length && !cmd && { opacity: 0.4 }]}>
             <Icon name="right" size={20} color={C.onPrimary} width={2.6} />
           </Pressable>
         </View>
@@ -243,7 +269,7 @@ function Bubble({ side, children }: { side: 'me' | 'app'; children: React.ReactN
   return <View style={[s.bubble, side === 'me' ? s.me : s.app]}>{children}</View>;
 }
 
-const s = StyleSheet.create({
+const s = themed(() => StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.line },
   title: { fontSize: 24, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
   sub: { fontSize: 12, color: C.muted, fontWeight: '500' },
@@ -278,4 +304,4 @@ const s = StyleSheet.create({
   slotText: { fontSize: 13, fontWeight: '700', color: C.text, flexShrink: 1 },
   input: { flex: 1, minWidth: 0, height: 46, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 14, fontSize: 16, color: C.text },
   send: { width: 46, height: 46, borderRadius: RADIUS.md, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
-});
+}));

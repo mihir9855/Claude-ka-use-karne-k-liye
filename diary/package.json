@@ -7,6 +7,7 @@
     "@expo/metro-runtime": "~58.0.15",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "expo": "~58.0.19",
+    "expo-clipboard": "~58.0.4",
     "expo-font": "~58.0.10",
     "expo-status-bar": "~58.0.4",
     "react": "19.3.0",
@@ -27,7 +28,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "web": "expo start --web",
-    "test": "tsx --test tests/core.test.ts",
+    "test": "tsx --test tests/core.test.ts tests/backup.test.ts tests/lists.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "private": true

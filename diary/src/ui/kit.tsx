@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, type IconName } from './Icon';
 import { Text, TextInput } from './Text';
-import { C, RADIUS, SHADOW } from './theme';
+import { C, RADIUS, SHADOW, themed } from './theme';
 
 const ONE_LINE = { numberOfLines: 1, ellipsizeMode: 'tail' } as const;
 
@@ -105,7 +105,7 @@ export function Muted({ children }: { children: ReactNode }) {
   return <Text style={s.muted}>{children}</Text>;
 }
 
-const s = StyleSheet.create({
+const s = themed(() => StyleSheet.create({
   choice: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: RADIUS.md, backgroundColor: C.card, borderWidth: 1, borderColor: C.line },
   dot: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   dotIn: { width: 9, height: 9, borderRadius: 5, backgroundColor: C.accent },
@@ -124,4 +124,4 @@ const s = StyleSheet.create({
   barBg: { height: 6, backgroundColor: C.surface, borderRadius: 3, overflow: 'hidden' },
   barFg: { height: 6, borderRadius: 3, backgroundColor: C.ink },
   muted: { fontSize: 14, color: C.muted, lineHeight: 20 },
-});
+}));

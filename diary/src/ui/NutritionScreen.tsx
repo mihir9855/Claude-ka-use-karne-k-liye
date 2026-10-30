@@ -4,7 +4,7 @@ import { addDays, totalsFor, ymd } from '../core/diary';
 import { useActive } from '../state/store';
 import { Bar, Card, Label, Muted, Pill } from './kit';
 import { Text } from './Text';
-import { C, RADIUS } from './theme';
+import { C, RADIUS, themed } from './theme';
 
 const MACROS = [
   { key: 'protein', label: 'Protein' },
@@ -62,7 +62,7 @@ export function NutritionScreen() {
             const d = new Date(`${p.date}T12:00:00`);
             return (
               <Pressable key={p.date} accessibilityRole="button" accessibilityLabel={`${d.toDateString()}, ${Math.round(p.kcal)} kcal`} accessibilityState={{ selected: on }} onPress={() => setDate(p.date)} style={s.col}>
-                <View style={[s.bar, { height: Math.max(3, (p.kcal / maxK) * CHART_H), backgroundColor: on ? C.accent : '#3B5244' }]} />
+                <View style={[s.bar, { height: Math.max(3, (p.kcal / maxK) * CHART_H), backgroundColor: on ? C.accent : C.line }]} />
                 <Text style={[s.dayLetter, on && { color: C.text, fontWeight: '800' }]} numberOfLines={1}>
                   {d.toLocaleDateString('en-IN', { weekday: 'short' }).slice(0, 2)}
                 </Text>
@@ -108,7 +108,7 @@ export function NutritionScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const s = themed(() => StyleSheet.create({
   page: { padding: 16, gap: 14, paddingBottom: 28 },
   hero: { fontSize: 34, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
   heroSmall: { fontSize: 14, fontWeight: '500', color: C.muted, letterSpacing: 0 },
@@ -125,4 +125,4 @@ const s = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 38, borderTopWidth: 1, borderTopColor: C.line },
   topName: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: '600', color: C.text },
   topN: { fontSize: 13, color: C.muted },
-});
+}));

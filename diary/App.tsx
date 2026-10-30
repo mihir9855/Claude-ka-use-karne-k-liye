@@ -6,28 +6,30 @@ import { Manrope_800ExtraBold } from '@expo-google-fonts/manrope/800ExtraBold';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useStore } from './src/state/store';
 import { ChatScreen } from './src/ui/ChatScreen';
 import { HomeScreen, type Tab } from './src/ui/HomeScreen';
 import { Icon, type IconName } from './src/ui/Icon';
+import { ListsScreen } from './src/ui/ListsScreen';
 import { MenuScreen } from './src/ui/MenuScreen';
 import { OnboardScreen } from './src/ui/OnboardScreen';
 import { NutritionScreen } from './src/ui/NutritionScreen';
-import { ProfileScreen } from './src/ui/ProfileScreen';
+import { SettingsScreen } from './src/ui/SettingsScreen';
 import { Text } from './src/ui/Text';
-import { C } from './src/ui/theme';
+import { C, setThemeName, themed } from './src/ui/theme';
 
 const TABS: { key: Tab; label: string; title: string; icon: IconName }[] = [
   { key: 'home', label: 'Home', title: '', icon: 'home' },
   { key: 'chat', label: 'Chat', title: '', icon: 'pen' },
   { key: 'menu', label: 'Menu', title: 'Your menu', icon: 'calendar' },
   { key: 'nutrition', label: 'Nutrition', title: 'Nutrition', icon: 'chart' },
-  { key: 'profile', label: 'Profile', title: 'Profile', icon: 'user' },
+  { key: 'lists', label: 'Lists', title: 'Lists', icon: 'cart' },
+  { key: 'profile', label: 'Settings', title: 'Settings', icon: 'settings' },
 ];
 
-function Shell() {
+function Shell({ dark }: { dark: boolean }) {
   const [tab, setTab] = useState<Tab>('home');
   const [fonts, fontError] = useFonts({ Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold });
   const [hydrated, setHydrated] = useState(useStore.persist.hasHydrated());
@@ -50,7 +52,7 @@ function Shell() {
 
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-      <StatusBar style="light" />
+      <StatusBar style={dark ? 'light' : 'dark'} />
       {ready && !onboarded && <OnboardScreen />}
       {ready && onboarded && (
         <>
@@ -62,7 +64,7 @@ function Shell() {
             </View>
           )}
           <View style={{ flex: 1 }}>
-            {tab === 'home' ? <HomeScreen go={setTab} /> : tab === 'chat' ? <ChatScreen /> : tab === 'menu' ? <MenuScreen /> : tab === 'nutrition' ? <NutritionScreen /> : <ProfileScreen />}
+            {tab === 'home' ? <HomeScreen go={setTab} /> : tab === 'chat' ? <ChatScreen /> : tab === 'menu' ? <MenuScreen /> : tab === 'nutrition' ? <NutritionScreen /> : tab === 'lists' ? <ListsScreen /> : <SettingsScreen />}
           </View>
           <View style={s.nav}>
             {TABS.map((t) => {
@@ -85,14 +87,19 @@ function Shell() {
 }
 
 export default function App() {
+  const pref = useStore((st) => st.theme);
+  const system = useColorScheme();
+  const name = pref === 'system' ? (system === 'light' ? 'light' : 'dark') : pref;
+  // styles read the palette when they are first used, so set it before the tree renders
+  setThemeName(name);
   return (
     <SafeAreaProvider>
-      <Shell />
+      <Shell key={name} dark={name === 'dark'} />
     </SafeAreaProvider>
   );
 }
 
-const s = StyleSheet.create({
+const s = themed(() => StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   header: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: C.line },
   title: { fontSize: 24, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
@@ -100,4 +107,4 @@ const s = StyleSheet.create({
   navItem: { flex: 1, minWidth: 0, alignItems: 'center', gap: 4, paddingBottom: 8 },
   navBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent', marginBottom: 6 },
   navText: { fontSize: 12, fontWeight: '500', color: C.muted, maxWidth: '100%' },
-});
+}));

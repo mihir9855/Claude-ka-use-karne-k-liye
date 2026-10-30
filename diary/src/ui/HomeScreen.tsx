@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { addDays, entryLabel, streak, todayMenu, totalsFor, weekMenu, ymd } from '../core/diary';
+import { addDays, entryLabel, streak, todayMenu, totalsFor, upcomingMeals, ymd } from '../core/diary';
 import { personName, useActive, useStore } from '../state/store';
 import { Icon } from './Icon';
 import { Bar, Button, Card, Label, Pill } from './kit';
 import { Ring } from './Ring';
 import { SLOT_ICON_ID, slotLabel } from './slots';
 import { Text } from './Text';
-import { C, RADIUS } from './theme';
+import { C, RADIUS, themed } from './theme';
 
-export type Tab = 'home' | 'chat' | 'menu' | 'nutrition' | 'profile';
+export type Tab = 'home' | 'chat' | 'menu' | 'nutrition' | 'lists' | 'profile';
 
 const greeting = (h: number) => (h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
 
@@ -25,7 +25,7 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
   const logged = entries.filter((e) => e.date === today);
   const menu = useMemo(() => todayMenu(entries, target, new Date(), person.conditions), [entries, target, person.conditions]);
   const picks = useStore((s) => s.picks);
-  const upcoming = useMemo(() => weekMenu(entries, target, picks, new Date(), person.conditions).slice(1, 4), [entries, target, picks, person.conditions]);
+  const upcoming = useMemo(() => upcomingMeals(entries, target, picks, new Date(), person.conditions, 5), [entries, target, picks, person.conditions]);
   const days = streak(entries);
   const shortProtein = tot.protein < target.protein * 0.7 && logged.length > 0;
   const name = personName(person, persons.indexOf(person));
@@ -101,21 +101,22 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
 
       <Card>
         <Label>Upcoming</Label>
-        {upcoming.map((d) => (
-          <Pressable key={d.date} accessibilityRole="button" accessibilityLabel={`Menu for ${dayLabel(d.date, today)}`} onPress={() => go('menu')} style={s.upDay}>
-            <View style={s.upHead}>
-              <Text style={s.upName} numberOfLines={1}>{dayLabel(d.date, today)}</Text>
-              <Text style={s.upNum} numberOfLines={1}>{`${Math.round(d.kcal).toLocaleString('en-IN')} kcal · ${Math.round(d.protein)} g`}</Text>
-            </View>
-            <View style={s.upGrid}>
-              {d.slots.map((sl) => (
-                <View key={sl.slot} style={s.upCell}>
-                  <Icon name={SLOT_ICON_ID[sl.slot]} size={14} color={C.muted} width={1.8} />
-                  <Text style={s.upDish} numberOfLines={1}>{sl.chosen?.name ?? ''}</Text>
-                </View>
-              ))}
-            </View>
-          </Pressable>
+        {upcoming.length === 0 && <Text style={s.hint}>Nothing planned yet.</Text>}
+        {upcoming.map((u, i) => (
+          <View key={`${u.date}${u.slot}`}>
+            {(i === 0 || upcoming[i - 1].date !== u.date) && <Text style={s.upDay}>{dayLabel(u.date, today)}</Text>}
+            <Pressable accessibilityRole="button" accessibilityLabel={`${slotLabel(u.slot)} at ${clock(u.at)}: ${u.dish.name}`} onPress={() => go('menu')} style={s.upRow}>
+              <Text style={s.upTime} numberOfLines={1}>{clock(u.at)}</Text>
+              <View style={s.upIco}>
+                <Icon name={SLOT_ICON_ID[u.slot]} size={16} color={C.text} width={1.8} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={s.upSlot} numberOfLines={1}>{slotLabel(u.slot)}</Text>
+                <Text style={s.upDish} numberOfLines={1}>{u.dish.name}</Text>
+              </View>
+              {i === 0 ? <Pill label={inText(u.at.getTime() - Date.now())} /> : u.dish.kcal != null ? <Text style={s.upKcal} numberOfLines={1}>{`${u.dish.kcal} kcal`}</Text> : null}
+            </Pressable>
+          </View>
         ))}
         <Button kind="soft" icon="calendar" label="See the whole week" onPress={() => go('menu')} />
       </Card>
@@ -128,7 +129,19 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
   );
 }
 
+const clock = (d: Date) => d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+
+function inText(ms: number): string {
+  const min = Math.round(ms / 60000);
+  if (min <= 5) return 'Now';
+  if (min < 60) return `in ${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m ? `in ${h} h ${m} min` : `in ${h} h`;
+}
+
 function dayLabel(date: string, today: string): string {
+  if (date === today) return 'Today';
   if (date === addDays(today, 1)) return 'Tomorrow';
   return new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
 }
@@ -143,7 +156,7 @@ function Stat({ big, label, icon }: { big: string; label: string; icon: 'flame' 
   );
 }
 
-const s = StyleSheet.create({
+const s = themed(() => StyleSheet.create({
   page: { padding: 16, gap: 14, paddingBottom: 28 },
   hello: { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.6 },
   date: { fontSize: 13, color: C.muted, fontWeight: '500', marginTop: 2 },
@@ -160,13 +173,13 @@ const s = StyleSheet.create({
   slotIco: { width: 38, height: 38, borderRadius: RADIUS.md, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   slotName: { fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 1 },
   slotWhat: { fontSize: 15, fontWeight: '700', color: C.text },
-  upDay: { gap: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line },
-  upHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
-  upName: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: '800', color: C.text },
-  upNum: { fontSize: 12, color: C.muted, fontWeight: '600', maxWidth: '55%' },
-  upGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 6 },
-  upCell: { width: '50%', flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 8 },
-  upDish: { flex: 1, minWidth: 0, fontSize: 13, fontWeight: '600', color: C.text },
+  upDay: { fontSize: 13, fontWeight: '800', color: C.text, marginTop: 6, marginBottom: 2 },
+  upRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 52, borderTopWidth: 1, borderTopColor: C.line },
+  upTime: { width: 62, fontSize: 12, fontWeight: '700', color: C.muted },
+  upIco: { width: 30, height: 30, borderRadius: RADIUS.sm, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  upSlot: { fontSize: 10, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 1 },
+  upDish: { fontSize: 15, fontWeight: '700', color: C.text },
+  upKcal: { fontSize: 12, color: C.muted },
   slotWhy: { fontSize: 12, color: C.muted },
   learnRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 38, borderTopWidth: 1, borderTopColor: C.line },
   learnTag: { width: 84, fontSize: 11, fontWeight: '700', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
@@ -185,4 +198,4 @@ const s = StyleSheet.create({
   col: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'flex-end', gap: 6, height: 88 },
   bar: { width: '70%', borderRadius: 5 },
   dayL: { fontSize: 11, fontWeight: '600', color: C.muted, height: 14 },
-});
+}));

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { LIBRARY } from '../src/data/library';
-import { entryLabel, readMessage, streak, todayMenu } from '../src/core/diary';
+import { entryLabel, readMessage, streak, todayMenu, upcomingMeals } from '../src/core/diary';
 import { allowed, computeTargets, newPerson } from '../src/core/profile';
 import { dayMenu, hints, learned, makeEntry, match, nextSlot, sampleEntries, slotAt, splitNames, suggest, totalsFor, weekMenu, ymd, type Entry } from '../src/core/diary';
 
@@ -52,12 +52,13 @@ test('totals count only matched dishes of that day', () => {
 
 test('slots follow the clock and skip meals already logged', () => {
   assert.equal(slotAt(8), 'b');
+  assert.equal(slotAt(10), 'm');
   assert.equal(slotAt(13), 'l');
   assert.equal(slotAt(16), 's');
   assert.equal(slotAt(21), 'd');
   const today = ymd(NOW);
   assert.equal(nextSlot([], NOW), 'b');
-  assert.equal(nextSlot([makeEntry('poha', 'b', today)], NOW), 'l');
+  assert.equal(nextSlot([makeEntry('poha', 'b', today)], NOW), 'm');
 });
 
 test('suggestions follow habit, and avoid what was just eaten', () => {
@@ -90,19 +91,19 @@ test('sample meals teach habits', () => {
   assert.ok(sample.length > 45 && sample.every((e) => e.sample));
   const l = learned(sample);
   assert.equal(l.days, 14);
-  assert.ok(l.top && l.top.n >= 5);
+  assert.ok(l.top && l.top.n >= 4);
   assert.ok(l.usual.b && l.usual.d);
 });
 
 test('the day menu does not offer one dish for two meals', () => {
   const m = dayMenu([], T, new Date(2026, 9, 30, 7, 0, 0));
-  assert.equal(m.length, 4);
+  assert.equal(m.length, 5);
   const firsts = m.map((x) => x.options[0].name);
   assert.equal(new Set(firsts).size, firsts.length, firsts.join(', '));
   assert.ok(m.every((x) => x.options.length === 3));
   // meals already logged are left out
   const done = dayMenu([makeEntry('poha', 'b', '2026-10-30')], T, new Date(2026, 9, 30, 7, 0, 0));
-  assert.deepEqual(done.map((x) => x.slot), ['l', 's', 'd']);
+  assert.deepEqual(done.map((x) => x.slot), ['m', 'l', 's', 'd']);
 });
 
 test('targets follow the profile and the goal', () => {
@@ -139,7 +140,7 @@ test('the week menu covers seven days with variety', () => {
   // the same lunch dish does not repeat on back-to-back days
   const lunches = week.map((d) => d.slots.find((s) => s.slot === 'l')?.chosen?.name).filter(Boolean);
   for (let i = 1; i < lunches.length; i++) assert.notEqual(lunches[i], lunches[i - 1]);
-  assert.ok(week.slice(1).every((d) => d.slots.length === 4 && d.kcal > 800));
+  assert.ok(week.slice(1).every((d) => d.slots.length === 5 && d.kcal > 800));
 });
 
 test('swapped dishes stay in the week menu, and logged meals show as eaten', () => {
@@ -202,15 +203,15 @@ test('a few logged meals are enough to change the suggestions', () => {
 test("today's menu shows what was eaten and plans the rest, and it changes when you log", () => {
   const noon = new Date(2026, 9, 30, 12, 0, 0);
   const before = todayMenu([], T, noon);
-  assert.equal(before.length, 4);
+  assert.equal(before.length, 5);
   assert.ok(before.every((m) => !m.eaten && m.options.length === 3));
   assert.equal(before[0].missed, true); // breakfast time has passed
-  assert.equal(before[1].missed, false);
+  assert.equal(before[2].missed, false);
   const names = before.map((m) => m.options[0].name);
-  assert.equal(new Set(names).size, 4, names.join(', '));
+  assert.equal(new Set(names).size, 5, names.join(', '));
   const after = todayMenu(logLunch(ymd(noon), 'dal rice in lunch'), T, noon);
-  assert.equal(after[1].eaten?.length, 2);
-  assert.ok(after[1].options.length === 0);
+  assert.equal(after[2].eaten?.length, 2);
+  assert.ok(after[2].options.length === 0);
   // what was eaten is not planned again for the other meals
   const planned = after.filter((m) => !m.eaten).map((m) => m.options[0].name);
   assert.ok(!planned.some((n) => /Dal tadka|Steamed rice/.test(n)), planned.join(', '));
@@ -237,4 +238,17 @@ test('a counted dish keeps its name for learning', () => {
   assert.equal(e.name, 'Roti (2)');
   assert.equal(e.key, makeEntry('roti', 'd', '2026-10-29').key);
   assert.equal(e.kcal, 444);
+});
+
+test('morning snack, evening snack and bare snack are told apart', () => {
+  const slots = (t: string, h: number) => readMessage(t, 'b', new Date(2026, 9, 30, h, 0, 0)).items.map((i) => i.slot);
+  assert.deepEqual(slots('banana morning snack', 15), ['m']);
+  assert.deepEqual(slots('chai evening snack', 9), ['s']);
+  assert.deepEqual(slots('makhana snack', 10), ['m']);
+  assert.deepEqual(slots('makhana snack', 16), ['s']);
+});
+
+test('upcoming meals follow the clock and skip what is eaten', () => {
+  const up = upcomingMeals([makeEntry('poha', 'b', '2026-10-30')], T, {}, new Date(2026, 9, 30, 9, 0, 0));
+  assert.deepEqual(up.slice(0, 4).map((u) => u.slot), ['m', 'l', 's', 'd']);
 });

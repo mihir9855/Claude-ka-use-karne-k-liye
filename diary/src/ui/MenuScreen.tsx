@@ -6,7 +6,7 @@ import { Icon } from './Icon';
 import { Button, Card, Label, Muted, Pill } from './kit';
 import { SLOT_ICON_ID, slotLabel } from './slots';
 import { Text } from './Text';
-import { C, RADIUS } from './theme';
+import { C, RADIUS, themed } from './theme';
 
 function dayName(date: string, today: string): string {
   if (date === today) return 'Today';
@@ -100,7 +100,7 @@ export function MenuScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const s = themed(() => StyleSheet.create({
   page: { padding: 16, gap: 14, paddingBottom: 28 },
   glance: { flexDirection: 'row', gap: 16 },
   big: { fontSize: 24, fontWeight: '800', color: C.text, letterSpacing: -0.4 },
@@ -115,4 +115,4 @@ const s = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '700', color: C.text },
   why: { fontSize: 12, color: C.muted },
   tick: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
-});
+}));
