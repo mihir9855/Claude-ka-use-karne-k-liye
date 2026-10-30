@@ -22,7 +22,9 @@ const ROWS: { page: Page; icon: IconName; title: string; sub: string }[] = [
   { page: 'news', icon: 'flame', title: `What's new`, sub: `Version ${APP_VERSION}` },
 ];
 
-const ROW_COLOR: Record<Page, string> = { profiles: TILE.green, theme: TILE.pink, backup: TILE.yellow, data: TILE.blue, features: TILE.orange, news: TILE.lilac };
+const ROW_KEY: Record<Page, 'green' | 'pink' | 'yellow' | 'blue' | 'orange' | 'lilac'> = { profiles: 'green', theme: 'pink', backup: 'yellow', data: 'blue', features: 'orange', news: 'lilac' };
+/** read when drawn, so it follows the day and night colours */
+const ROW_COLOR = new Proxy({} as Record<Page, string>, { get: (_t, k: string) => TILE[ROW_KEY[k as Page]] });
 
 export function SettingsScreen() {
   const [page, setPage] = useState<Page | null>(null);
