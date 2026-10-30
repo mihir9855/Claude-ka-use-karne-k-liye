@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { LIBRARY } from '../src/data/library';
-import { readMessage, streak } from '../src/core/diary';
+import { readMessage, streak, todayMenu } from '../src/core/diary';
 import { allowed, computeTargets, newPerson } from '../src/core/profile';
 import { dayMenu, hints, learned, makeEntry, match, nextSlot, sampleEntries, slotAt, splitNames, suggest, totalsFor, weekMenu, ymd, type Entry } from '../src/core/diary';
 
@@ -66,7 +66,7 @@ test('suggestions follow habit, and avoid what was just eaten', () => {
   const s = suggest(entries, 'b', T, NOW);
   assert.equal(s.length, 3);
   assert.equal(s[0].name, 'Poha');
-  assert.ok(s[0].why.some((w) => /Often at breakfast/.test(w.text)));
+  assert.ok(s[0].why.some((w) => /often have it at breakfast/i.test(w.text)));
   // after eating Poha today it drops down
   const after = suggest([...entries, makeEntry('Poha', 'b', ymd(NOW))], 'b', T, NOW);
   assert.notEqual(after[0].name, 'Poha');
@@ -179,4 +179,39 @@ test('the streak counts days in a row up to today', () => {
   assert.equal(streak([e(1), e(2)], NOW), 2); // today is not logged yet, the streak is still alive
   assert.equal(streak([e(0), e(2)], NOW), 1);
   assert.equal(streak([e(3)], NOW), 0);
+});
+
+function logLunch(date: string, text: string): Entry[] {
+  const batch = `b-${date}`;
+  return readMessage(text, 'l').items.map((it) => makeEntry(it.name, it.slot, date, false, 0, batch));
+}
+
+test('a few logged meals are enough to change the suggestions', () => {
+  // two lunches of dal and rice, a day apart
+  const entries = [...logLunch('2026-10-27', 'dal and rice in lunch'), ...logLunch('2026-10-28', 'rice dal lunch')];
+  const s = suggest(entries, 'l', T, NOW, 3);
+  assert.equal(s[0].name, 'Dal tadka + Steamed rice', s.map((x) => x.name).join(' | '));
+  assert.deepEqual(s[0].items, ['Dal tadka', 'Steamed rice']);
+  assert.ok(s[0].why.some((w) => /often have it at lunch/i.test(w.text)));
+  assert.equal(learned(entries).usual.l?.name, 'Dal tadka + Steamed rice');
+  // one single dish eaten once still moves up
+  const one = suggest([makeEntry('Palak paneer', 'l', '2026-10-27')], 'l', T, NOW, 3);
+  assert.equal(one[0].name, 'Palak paneer');
+});
+
+test("today's menu shows what was eaten and plans the rest, and it changes when you log", () => {
+  const noon = new Date(2026, 9, 30, 12, 0, 0);
+  const before = todayMenu([], T, noon);
+  assert.equal(before.length, 4);
+  assert.ok(before.every((m) => !m.eaten && m.options.length === 3));
+  assert.equal(before[0].missed, true); // breakfast time has passed
+  assert.equal(before[1].missed, false);
+  const names = before.map((m) => m.options[0].name);
+  assert.equal(new Set(names).size, 4, names.join(', '));
+  const after = todayMenu(logLunch(ymd(noon), 'dal rice in lunch'), T, noon);
+  assert.equal(after[1].eaten?.length, 2);
+  assert.ok(after[1].options.length === 0);
+  // what was eaten is not planned again for the other meals
+  const planned = after.filter((m) => !m.eaten).map((m) => m.options[0].name);
+  assert.ok(!planned.some((n) => /Dal tadka|Steamed rice/.test(n)), planned.join(', '));
 });

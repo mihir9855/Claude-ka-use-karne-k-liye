@@ -85,7 +85,7 @@ export function MenuScreen() {
                     <Text style={s.why} numberOfLines={1}>{[c.kcal != null ? `${c.kcal} kcal` : '', c.protein != null ? `${c.protein} g protein` : ''].filter(Boolean).join(' · ')}</Text>
                   </Pressable>
                   {d.date === today && (
-                    <Pressable accessibilityRole="button" accessibilityLabel={`I ate ${c.name}`} onPress={() => add([c.name], sl.slot, d.date)} style={s.tick}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`I ate ${c.name}`} onPress={() => add(c.items, sl.slot, d.date)} style={s.tick}>
                       <Icon name="check" size={18} color={C.onPrimary} width={2.6} />
                     </Pressable>
                   )}

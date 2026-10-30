@@ -187,6 +187,8 @@ export function nextSlot(entries: Entry[], now: Date = new Date()): SlotId {
 
 export interface Suggestion {
   name: string;
+  /** the dishes to log when this is eaten: one, or a few that you usually eat together */
+  items: string[];
   kcal: number | null;
   protein: number | null;
   score: number;
@@ -225,9 +227,53 @@ function statsOf(entries: Entry[]): Map<string, Stat> {
   return stats;
 }
 
+/** Dishes you log together in one message, like "dal" and "rice" for lunch, are one habit. */
+interface Combo {
+  key: string;
+  names: string[];
+  kcal: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
+  slotCount: Partial<Record<SlotId, number>>;
+  total: number;
+  last: string;
+}
+
+function combosOf(entries: Entry[]): Map<string, Combo> {
+  const batches = new Map<string, Entry[]>();
+  for (const e of entries) if (e.batch && !e.batch.startsWith('plan-')) batches.set(e.batch, [...(batches.get(e.batch) ?? []), e]);
+  const out = new Map<string, Combo>();
+  for (const list of batches.values()) {
+    const uniq = [...new Map(list.map((e) => [e.key, e])).values()];
+    if (uniq.length < 2 || uniq.length > 4) continue;
+    const key = uniq.map((e) => e.key).sort().join('+');
+    const c = out.get(key) ?? {
+      key,
+      names: uniq.map((e) => e.name),
+      kcal: uniq.every((e) => e.kcal != null) ? uniq.reduce((a, e) => a + (e.kcal ?? 0), 0) : null,
+      protein: uniq.every((e) => e.protein != null) ? uniq.reduce((a, e) => a + (e.protein ?? 0), 0) : null,
+      carbs: uniq.every((e) => e.carbs != null) ? uniq.reduce((a, e) => a + (e.carbs ?? 0), 0) : null,
+      fat: uniq.every((e) => e.fat != null) ? uniq.reduce((a, e) => a + (e.fat ?? 0), 0) : null,
+      slotCount: {},
+      total: 0,
+      last: '',
+    };
+    const slot = uniq[0].slot;
+    c.total++;
+    c.slotCount[slot] = (c.slotCount[slot] ?? 0) + 1;
+    const date = uniq[0].date;
+    if (date > c.last) c.last = date;
+    out.set(key, c);
+  }
+  return out;
+}
+
+const HABIT = 2.5; // what one more time at that meal is worth: your own habits outweigh the library
+
 /**
- * Three dishes for one meal. What you eat at that meal often ranks first, what you ate today or yesterday
- * ranks lower, and the day's missing protein and calories pull the right dishes up.
+ * Three dishes for one meal. What you eat at that meal, alone or together, ranks first. What you ate today or
+ * yesterday ranks lower, and the day's missing protein and calories pull the right dishes up.
  */
 export function suggest(entries: Entry[], slot: SlotId, target: Target, now: Date = new Date(), count = 3, conditions: Condition[] = []): Suggestion[] {
   const today = ymd(now);
@@ -235,35 +281,57 @@ export function suggest(entries: Entry[], slot: SlotId, target: Target, now: Dat
   const leftK = target.kcal - tot.kcal;
   const leftP = target.protein - tot.protein;
   const stats = statsOf(entries);
+  const combos = combosOf(entries);
   const label = SLOT_LABEL[slot].toLowerCase();
 
-  const pool = new Map<string, { name: string; kcal: number | null; protein: number | null; carbs?: number | null; fat?: number | null }>();
-  for (const d of LIBRARY) {
-    if (d[4].includes(slot) && (d[3] === 'co' || d[3] === 'ma' || d[3] === 'sn')) pool.set(norm(d[0]), { name: d[0], kcal: d[1], protein: d[2], carbs: d[5], fat: d[6] });
+  interface Cand {
+    key: string;
+    name: string;
+    items: string[];
+    kcal: number | null;
+    protein: number | null;
+    carbs?: number | null;
+    fat?: number | null;
+    inSlot: number;
+    total: number;
+    last: string;
+    combo?: boolean;
   }
-  for (const [k, s] of stats) if (s.slotCount[slot]) pool.set(k, { name: s.name, kcal: s.kcal, protein: s.protein, carbs: s.carbs, fat: s.fat });
+  const pool = new Map<string, Cand>();
+  for (const d of LIBRARY) {
+    if (d[4].includes(slot) && (d[3] === 'co' || d[3] === 'ma' || d[3] === 'sn')) {
+      const k = norm(d[0]);
+      const st = stats.get(k);
+      pool.set(k, { key: k, name: d[0], items: [d[0]], kcal: d[1], protein: d[2], carbs: d[5], fat: d[6], inSlot: st?.slotCount[slot] ?? 0, total: st?.total ?? 0, last: st?.last ?? '' });
+    }
+  }
+  for (const [k, st] of stats) {
+    if (st.slotCount[slot]) pool.set(k, { key: k, name: st.name, items: [st.name], kcal: st.kcal, protein: st.protein, carbs: st.carbs, fat: st.fat, inSlot: st.slotCount[slot] ?? 0, total: st.total, last: st.last });
+  }
+  for (const c of combos.values()) {
+    if (c.slotCount[slot]) pool.set(c.key, { key: c.key, name: c.names.join(' + '), items: c.names, kcal: c.kcal, protein: c.protein, carbs: c.carbs, fat: c.fat, inSlot: c.slotCount[slot] ?? 0, total: c.total, last: c.last, combo: true });
+  }
 
   const out: Suggestion[] = [];
-  for (const [k, c] of pool) {
-    if (!allowed(c.name, conditions)) continue;
-    const s = stats.get(k);
-    const inSlot = s?.slotCount[slot] ?? 0;
-    let score = Math.min(inSlot, 6) + conditionScore(c.carbs, c.fat, c.kcal, conditions);
+  for (const c of pool.values()) {
+    if (!c.items.every((n) => allowed(n, conditions))) continue;
+    const habit = Math.min(c.inSlot, 8) * HABIT;
+    let score = habit + Math.min(c.total, 8) * 0.4 + conditionScore(c.carbs, c.fat, c.kcal, conditions);
+    if (c.combo) score += 0.8; // the whole meal you usually have beats one part of it
     const why: Suggestion['why'] = [];
-    if (s) score += Math.min(s.total, 8) * 0.25;
-    if (inSlot >= 2) why.push({ text: `Often at ${label} · ${inSlot}×` });
-    else if (inSlot === 1) why.push({ text: `You had it for ${label} before` });
-    if (s) {
-      const ago = diffDays(today, s.last);
+    if (c.inSlot >= 2) why.push({ text: `You often have it at ${label} · ${c.inSlot}×` });
+    else if (c.inSlot === 1) why.push({ text: `You had it for ${label} before` });
+    if (c.last) {
+      const ago = diffDays(today, c.last);
       if (ago === 0) {
-        score -= 4;
+        score -= 6 + habit;
         why.push({ text: 'Already eaten today', warn: true });
-      } else if (ago === 1 && inSlot) {
-        score -= 5;
+      } else if (ago === 1 && c.inSlot) {
+        score -= habit * 0.8;
         why.push({ text: 'Had it yesterday', warn: true });
-      } else if (ago === 2 && inSlot) {
-        score -= 1.5;
-      } else if (ago >= 4 && inSlot) {
+      } else if (ago === 2 && c.inSlot) {
+        score -= habit * 0.35;
+      } else if (ago >= 4 && c.inSlot) {
         score += 0.6;
         why.push({ text: `Not for ${ago} days` });
       }
@@ -281,9 +349,9 @@ export function suggest(entries: Entry[], slot: SlotId, target: Target, now: Dat
         why.push({ text: 'Fits your calories' });
       }
     }
-    if (!s) why.push({ text: 'New idea for you' });
-    score += noise(today + k) * 0.5;
-    out.push({ name: c.name, kcal: c.kcal, protein: c.protein, score, why: why.slice(0, 3) });
+    if (!c.total) why.push({ text: 'New idea for you' });
+    score += noise(today + c.key) * 0.5;
+    out.push({ name: c.name, items: c.items, kcal: c.kcal, protein: c.protein, score, why: why.slice(0, 3) });
   }
   return out.sort((a, b) => b.score - a.score).slice(0, count);
 }
@@ -311,11 +379,23 @@ export function learned(entries: Entry[]): Learned {
     x.n++;
     m.set(e.key, x);
   }
+  // a meal you always eat as a set counts as one habit, and wins over its parts when it is as common
+  for (const c of combosOf(entries).values()) {
+    for (const s of SLOT_ORDER) {
+      const n = c.slotCount[s];
+      if (!n) continue;
+      const m = (bySlot[s] ??= new Map());
+      m.set(c.key, { name: c.names.join(' + '), n: n + 0.5 });
+    }
+  }
   const best = (m: Map<string, { name: string; n: number }>) => [...m.values()].sort((a, b) => b.n - a.n)[0];
   const usual: Learned['usual'] = {};
   for (const s of SLOT_ORDER) {
     const m = bySlot[s];
-    if (m) usual[s] = best(m);
+    if (m) {
+      const b = best(m);
+      usual[s] = { name: b.name, n: Math.floor(b.n) };
+    }
   }
   return { days: days.size, meals: entries.length, top: count.size ? best(count) : null, usual };
 }
@@ -427,7 +507,7 @@ export function weekMenu(entries: Entry[], target: Target, picks: Record<string,
       if (!chosen) continue;
       const rest = options.filter((o) => o !== chosen).slice(0, 2);
       slots.push({ slot, options: [chosen, ...rest], chosen });
-      virtual.push(makeEntry(chosen.name, slot, date, false, at.getTime(), `plan-${date}-${slot}`));
+      for (const item of chosen.items) virtual.push(makeEntry(item, slot, date, false, at.getTime(), `plan-${date}-${slot}`));
       kcal += chosen.kcal ?? 0;
       protein += chosen.protein ?? 0;
     }
@@ -515,4 +595,35 @@ export function streak(entries: Entry[], now: Date = new Date()): number {
     d = addDays(d, -1);
   }
   return n;
+}
+
+export interface TodaySlot {
+  slot: SlotId;
+  /** what was eaten, when this meal is already logged */
+  eaten?: Entry[];
+  options: Suggestion[];
+  /** the meal time has gone by without anything logged */
+  missed: boolean;
+}
+
+/**
+ * Today's whole menu: what you ate for the meals already logged, and a dish for each of the others. Logging
+ * something changes the rest, because the day's missing calories and protein and the dishes already used change.
+ */
+export function todayMenu(entries: Entry[], target: Target, now: Date = new Date(), conditions: Condition[] = []): TodaySlot[] {
+  const today = ymd(now);
+  const cur = SLOT_ORDER.indexOf(slotAt(now.getHours()));
+  const virtual: Entry[] = [...entries];
+  const out: TodaySlot[] = [];
+  for (const slot of SLOT_ORDER) {
+    const eaten = entries.filter((e) => e.date === today && e.slot === slot);
+    if (eaten.length) {
+      out.push({ slot, eaten, options: [], missed: false });
+      continue;
+    }
+    const options = suggest(virtual, slot, target, now, 3, conditions);
+    if (options[0]) for (const item of options[0].items) virtual.push(makeEntry(item, slot, today, false, now.getTime(), `plan-${today}-${slot}`));
+    out.push({ slot, options, missed: SLOT_ORDER.indexOf(slot) < cur });
+  }
+  return out;
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type ScrollViewInstance } from 'react-native';
-import { SLOT_ORDER, dayMenu, daysAgo, hints, nextSlot, readMessage, totalsFor, ymd, type Entry, type SlotId } from '../core/diary';
+import { SLOT_LABEL, SLOT_ORDER, dayMenu, daysAgo, hints, nextSlot, readMessage, totalsFor, ymd, type Entry, type SlotId } from '../core/diary';
 import { personName, useActive, useStore } from '../state/store';
 import { Icon } from './Icon';
 import { Muted } from './kit';
@@ -35,6 +35,7 @@ function reply(batch: Batch, dayTotal: { kcal: number; protein: number }): strin
   let out = known.length ? `Noted. That is ${kcal} kcal and ${prot} g protein.` : 'Noted.';
   if (unknown.length) out += ` I do not have numbers for ${unknown.map((e) => e.name).join(', ')}, so I left ${unknown.length === 1 ? 'it' : 'them'} out of the count.`;
   out += ` Today so far: ${Math.round(dayTotal.kcal)} kcal, ${Math.round(dayTotal.protein)} g protein.`;
+  out += ` I will remember ${batch.entries.length > 1 ? 'this meal' : batch.entries[0].name} for ${SLOT_LABEL[batch.slot].toLowerCase()}.`;
   return out;
 }
 
@@ -186,7 +187,7 @@ export function ChatScreen() {
                       {[o.kcal != null ? `${o.kcal} kcal` : '', o.why[0]?.text].filter(Boolean).join(' · ')}
                     </Text>
                   </Pressable>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`I ate ${o.name}`} onPress={() => add([o.name], m.slot, today)} style={s.ate}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`I ate ${o.name}`} onPress={() => add(o.items, m.slot, today)} style={s.ate}>
                     <Icon name="check" size={18} color={C.onPrimary} width={2.6} />
                   </Pressable>
                 </View>
