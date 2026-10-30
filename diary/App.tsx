@@ -13,6 +13,7 @@ import { ChatScreen } from './src/ui/ChatScreen';
 import { HomeScreen, type Tab } from './src/ui/HomeScreen';
 import { Icon, type IconName } from './src/ui/Icon';
 import { MenuScreen } from './src/ui/MenuScreen';
+import { OnboardScreen } from './src/ui/OnboardScreen';
 import { NutritionScreen } from './src/ui/NutritionScreen';
 import { ProfileScreen } from './src/ui/ProfileScreen';
 import { Text } from './src/ui/Text';
@@ -43,13 +44,15 @@ function Shell() {
       clearTimeout(timer);
     };
   }, []);
+  const onboarded = useStore((st) => st.onboarded);
   const ready = hydrated && (fonts || !!fontError || waited);
   const cur = TABS.find((t) => t.key === tab)!;
 
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
       <StatusBar style="light" />
-      {ready && (
+      {ready && !onboarded && <OnboardScreen />}
+      {ready && onboarded && (
         <>
           {cur.title !== '' && (
             <View style={s.header}>

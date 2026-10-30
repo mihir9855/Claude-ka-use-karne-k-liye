@@ -38,17 +38,20 @@ interface State {
   entries: Entry[];
   persons: Person[];
   activeId: string;
+  /** false until the welcome and the first questions are done */
+  onboarded: boolean;
   /** dishes swapped into the week menu, keyed "date|slot" */
   picks: Record<string, string>;
 
   /** type the names of what was eaten; each becomes one entry in the active person's diary */
   add: (names: string[], slot: SlotId, date: string) => void;
   /** dishes that each name their own meal, as read from one chat message; one chat bubble per meal */
-  addItems: (items: { name: string; slot: SlotId }[], date: string) => void;
+  addItems: (items: { name: string; slot: SlotId; qty?: number }[], date: string) => void;
   remove: (id: string) => void;
   removeBatch: (batch: string) => void;
   setPick: (key: string, name: string | null) => void;
   clearPicks: () => void;
+  setOnboarded: (v: boolean) => void;
   setActive: (id: string) => void;
   updatePerson: (id: string, patch: Partial<Person>) => void;
   addPerson: () => void;
@@ -64,6 +67,7 @@ export const useStore = create<State>()(
       entries: [],
       persons: [newPerson(FIRST_ID, '')],
       activeId: FIRST_ID,
+      onboarded: false,
       picks: {},
       add: (names, slot, date) =>
         set((s) => {
@@ -78,7 +82,7 @@ export const useStore = create<State>()(
           const added = items.map((it, i) => {
             const batch = batches.get(it.slot) ?? newBatch();
             batches.set(it.slot, batch);
-            return makeEntry(it.name, it.slot, date, false, at + i, batch, s.activeId);
+            return makeEntry(it.name, it.slot, date, false, at + i, batch, s.activeId, it.qty);
           });
           return { entries: [...s.entries, ...added] };
         }),
@@ -92,6 +96,7 @@ export const useStore = create<State>()(
           return { picks };
         }),
       clearPicks: () => set({ picks: {} }),
+      setOnboarded: (onboarded) => set({ onboarded }),
       setActive: (activeId) => set({ activeId }),
       updatePerson: (id, patch) => set((s) => ({ persons: s.persons.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
       addPerson: () =>
@@ -108,12 +113,12 @@ export const useStore = create<State>()(
         }),
       loadSample: () => set((s) => ({ entries: [...s.entries.filter((e) => !(e.sample && (e.pid ?? FIRST_ID) === s.activeId)), ...sampleEntries().map((e) => ({ ...e, pid: s.activeId }))] })),
       clearSample: () => set((s) => ({ entries: s.entries.filter((e) => !e.sample) })),
-      clearAll: () => set({ entries: [], picks: {}, persons: [newPerson(FIRST_ID, '')], activeId: FIRST_ID }),
+      clearAll: () => set({ entries: [], picks: {}, persons: [newPerson(FIRST_ID, '')], activeId: FIRST_ID, onboarded: false }),
     }),
     {
       name: 'khana-diary-v1',
       storage: createJSONStorage(() => safeStorage),
-      partialize: ({ entries, persons, activeId, picks }) => ({ entries, persons, activeId, picks }) as State,
+      partialize: ({ entries, persons, activeId, picks, onboarded }) => ({ entries, persons, activeId, picks, onboarded }) as State,
     },
   ),
 );

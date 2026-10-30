@@ -2,9 +2,9 @@
 
 Tell it what you ate, like a message: "rice in lunch", "chai evening snacks", "dinner roti sabji". It finds the meal from your words, remembers, adds calories and nutrients for dishes it knows, and plans your menu from your own habits.
 
-Five tabs:
+The first time it opens, a short welcome animation plays, then a few questions (name, age, height, weight, activity, goal, health conditions) build your profile and daily targets. After that, five tabs:
 
-- **Home**: the dashboard. Today's calories as a ring, protein, your streak, each meal of the day, the next dish to eat, nutrients, and the last 7 days.
+- **Home**: the dashboard. Today's calories as a ring, protein, your streak, today's menu (what you ate and what is planned for the rest), and the next three days.
 - **Chat**: type only the names. The meal (breakfast, lunch, snack, dinner) is read from the words; with none, the meal button is used. The app replies with the day's running calories and protein, and a menu for the rest of today sits below. Tap a message to remove it.
 - **Menu**: seven days of meals built from what you eat often and have not eaten lately. Tap a dish to see another option, tap the tick when you eat it.
 - **Nutrition**: calories, protein, carbs, fat and fibre against your goal, a 7-day chart, and your most eaten dishes.

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type ScrollViewInstance } from 'react-native';
-import { SLOT_LABEL, SLOT_ORDER, dayMenu, daysAgo, hints, nextSlot, readMessage, totalsFor, ymd, type Entry, type SlotId } from '../core/diary';
+import { SLOT_LABEL, SLOT_ORDER, dayMenu, daysAgo, entryLabel, hints, nextSlot, readMessage, totalsFor, ymd, type Entry, type SlotId } from '../core/diary';
 import { personName, useActive, useStore } from '../state/store';
 import { Icon } from './Icon';
 import { Muted } from './kit';
@@ -33,7 +33,7 @@ function reply(batch: Batch, dayTotal: { kcal: number; protein: number }): strin
   const kcal = known.reduce((a, e) => a + (e.kcal ?? 0), 0);
   const prot = known.reduce((a, e) => a + (e.protein ?? 0), 0);
   let out = known.length ? `Noted. That is ${kcal} kcal and ${prot} g protein.` : 'Noted.';
-  if (unknown.length) out += ` I do not have numbers for ${unknown.map((e) => e.name).join(', ')}, so I left ${unknown.length === 1 ? 'it' : 'them'} out of the count.`;
+  if (unknown.length) out += ` I do not have numbers for ${unknown.map(entryLabel).join(', ')}, so I left ${unknown.length === 1 ? 'it' : 'them'} out of the count.`;
   out += ` Today so far: ${Math.round(dayTotal.kcal)} kcal, ${Math.round(dayTotal.protein)} g protein.`;
   out += ` I will remember ${batch.entries.length > 1 ? 'this meal' : batch.entries[0].name} for ${SLOT_LABEL[batch.slot].toLowerCase()}.`;
   return out;
@@ -143,7 +143,7 @@ export function ChatScreen() {
                     </View>
                     {b.entries.map((e) => (
                       <Text key={e.id} style={s.meText} numberOfLines={1}>
-                        {e.kcal != null ? `${e.name}  ·  ${e.kcal} kcal` : e.name}
+                        {e.kcal != null ? `${entryLabel(e)}  ·  ${e.kcal} kcal` : entryLabel(e)}
                       </Text>
                     ))}
                   </Pressable>

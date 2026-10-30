@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { LIBRARY } from '../src/data/library';
-import { readMessage, streak, todayMenu } from '../src/core/diary';
+import { entryLabel, readMessage, streak, todayMenu } from '../src/core/diary';
 import { allowed, computeTargets, newPerson } from '../src/core/profile';
 import { dayMenu, hints, learned, makeEntry, match, nextSlot, sampleEntries, slotAt, splitNames, suggest, totalsFor, weekMenu, ymd, type Entry } from '../src/core/diary';
 
@@ -214,4 +214,27 @@ test("today's menu shows what was eaten and plans the rest, and it changes when 
   // what was eaten is not planned again for the other meals
   const planned = after.filter((m) => !m.eaten).map((m) => m.options[0].name);
   assert.ok(!planned.some((n) => /Dal tadka|Steamed rice/.test(n)), planned.join(', '));
+});
+
+test('messy messages: counts, glued words, units and typos', () => {
+  const read = (t: string, f: 'b' | 'l' | 's' | 'd' = 'b') => readMessage(t, f).items.map((i) => {
+    const e = makeEntry(i.name, i.slot, '2026-10-30', false, 0, 'x', undefined, i.qty);
+    return `${i.slot}:${entryLabel(e)}:${e.kcal}`;
+  });
+  assert.deepEqual(read('Dalrice 5 chaati with arvar sabji in lunch'), ['l:Dal tadka:289', 'l:Steamed rice:207', 'l:Roti ×5:555', 'l:Arvar sabji:null']);
+  assert.deepEqual(read('Black coffe one cu in evening snacks'), ['s:Black coffee:5']);
+  assert.deepEqual(read('5 roti dinner'), ['d:Roti ×5:555']);
+  assert.deepEqual(read('paneer sabji roti x3 dinner').slice(1), ['d:Roti ×3:333']);
+  assert.deepEqual(read('dal 1 katori rice 2 plate lunch'), ['l:Dal tadka:289', 'l:Steamed rice ×2:414']);
+  assert.deepEqual(read('two chai and 2 biscuits evening'), ['s:Chai ×2:120', 's:Biscuits ×2:80']);
+  // a misspelt or split meal word still works
+  assert.equal(readMessage('chole break fasrt', 'd').items[0].slot, 'b');
+  assert.equal(readMessage('roti dinnr', 'b').items[0].slot, 'd');
+});
+
+test('a counted dish keeps its name for learning', () => {
+  const e = makeEntry('roti', 'd', '2026-10-30', false, 0, 'x', undefined, 4);
+  assert.equal(e.name, 'Roti (2)');
+  assert.equal(e.key, makeEntry('roti', 'd', '2026-10-29').key);
+  assert.equal(e.kcal, 444);
 });

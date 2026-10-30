@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SLOT_ORDER, addDays, learned, streak, todayMenu, totalsFor, weekMenu, ymd } from '../core/diary';
+import { addDays, entryLabel, streak, todayMenu, totalsFor, weekMenu, ymd } from '../core/diary';
 import { personName, useActive, useStore } from '../state/store';
 import { Icon } from './Icon';
 import { Bar, Button, Card, Label, Pill } from './kit';
@@ -24,11 +24,8 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
   const left = target.kcal - tot.kcal;
   const logged = entries.filter((e) => e.date === today);
   const menu = useMemo(() => todayMenu(entries, target, new Date(), person.conditions), [entries, target, person.conditions]);
-  const info = useMemo(() => learned(entries), [entries]);
   const picks = useStore((s) => s.picks);
   const upcoming = useMemo(() => weekMenu(entries, target, picks, new Date(), person.conditions).slice(1, 4), [entries, target, picks, person.conditions]);
-  const week = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(today, i - 6)).map((d) => ({ d, ...totalsFor(entries, d) })), [entries, today]);
-  const maxK = Math.max(target.kcal * 1.25, ...week.map((w) => w.kcal));
   const days = streak(entries);
   const shortProtein = tot.protein < target.protein * 0.7 && logged.length > 0;
   const name = personName(person, persons.indexOf(person));
@@ -68,13 +65,13 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
           const isNext = !m.eaten && !m.missed && menu.find((x) => !x.eaten && !x.missed)?.slot === m.slot;
           if (m.eaten) {
             return (
-              <Pressable key={m.slot} accessibilityRole="button" accessibilityLabel={`${slotLabel(m.slot)}: ${m.eaten.map((e) => e.name).join(', ')}`} onPress={() => go('chat')} style={s.slotRow}>
+              <Pressable key={m.slot} accessibilityRole="button" accessibilityLabel={`${slotLabel(m.slot)}: ${m.eaten.map(entryLabel).join(', ')}`} onPress={() => go('chat')} style={s.slotRow}>
                 <View style={[s.slotIco, { backgroundColor: C.goodSoft }]}>
                   <Icon name="check" size={18} color={C.good} width={2.4} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={s.slotName} numberOfLines={1}>{`${slotLabel(m.slot)} · eaten`}</Text>
-                  <Text style={s.slotWhat} numberOfLines={1}>{m.eaten.map((e) => e.name).join(', ')}</Text>
+                  <Text style={s.slotWhat} numberOfLines={1}>{m.eaten.map(entryLabel).join(', ')}</Text>
                   <Text style={s.slotWhy} numberOfLines={1}>{`${Math.round(m.eaten.reduce((a, e) => a + (e.kcal ?? 0), 0))} kcal`}</Text>
                 </View>
               </Pressable>
@@ -121,49 +118,6 @@ export function HomeScreen({ go }: { go: (t: Tab) => void }) {
           </Pressable>
         ))}
         <Button kind="soft" icon="calendar" label="See the whole week" onPress={() => go('menu')} />
-      </Card>
-
-      <Card>
-        <Label>Nutrients today</Label>
-        <View style={s.grid}>
-          {([['Carbs', tot.carbs, target.carbs], ['Fat', tot.fat, target.fat], ['Fibre', tot.fiber, target.fiber]] as const).map(([l, v, g]) => (
-            <View key={l} style={s.cell}>
-              <Text style={s.cellName} numberOfLines={1}>{l}</Text>
-              <Text style={s.cellVal} numberOfLines={1}>{`${Math.round(v)} / ${g} g`}</Text>
-              <Bar value={v} max={g} />
-            </View>
-          ))}
-        </View>
-      </Card>
-
-      <Card>
-        <Label>Last 7 days</Label>
-        <View style={s.chart}>
-          {week.map((w) => (
-            <View key={w.d} style={s.col}>
-              <View style={[s.bar, { height: Math.max(3, (w.kcal / maxK) * 64), backgroundColor: w.d === today ? C.accent : '#3B5244' }]} />
-              <Text style={s.dayL} numberOfLines={1}>{new Date(`${w.d}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'short' }).slice(0, 2)}</Text>
-            </View>
-          ))}
-        </View>
-      </Card>
-
-      <Card>
-        <Label>What I have learned</Label>
-        {info.meals === 0 ? (
-          <Text style={s.hint}>Nothing yet. Log what you eat in Chat and I will start planning around it.</Text>
-        ) : (
-          <>
-            <Text style={s.hint}>{`From ${info.meals} items over ${info.days} ${info.days === 1 ? 'day' : 'days'}. Your usual meals:`}</Text>
-            {SLOT_ORDER.map((id) => (info.usual[id] ? (
-              <View key={id} style={s.learnRow}>
-                <Text style={s.learnTag} numberOfLines={1}>{slotLabel(id)}</Text>
-                <Text style={s.learnVal} numberOfLines={1}>{info.usual[id]!.name}</Text>
-                <Text style={s.learnN}>{`${info.usual[id]!.n}×`}</Text>
-              </View>
-            ) : null))}
-          </>
-        )}
       </Card>
 
       <View style={{ gap: 10 }}>

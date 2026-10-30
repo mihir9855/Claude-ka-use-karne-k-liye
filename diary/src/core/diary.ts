@@ -19,6 +19,8 @@ export interface Entry {
   carbs?: number | null;
   fat?: number | null;
   fiber?: number | null;
+  /** how many were eaten, when the message said ("5 roti"); the numbers above already include it */
+  qty?: number;
   /** whose diary this is; older entries have none and belong to the first person */
   pid?: string;
   /** true for the demo meals, so they can be cleared on their own */
@@ -116,20 +118,39 @@ const uid = () => `${Date.now().toString(36)}${(seq++).toString(36)}${Math.rando
 
 export const newBatch = uid;
 
-export function makeEntry(name: string, slot: SlotId, date: string, sample = false, at: number = Date.now(), batch: string = uid(), pid?: string): Entry {
+/** How many pieces the library serving holds: "Roti (2)" is 2, a bowl or plate is none. */
+function piecesOf(name: string): number | null {
+  const m = /\((\d+)\)/.exec(name);
+  return m ? Number(m[1]) : null;
+}
+
+const fmtQty = (q: number) => (Number.isInteger(q) ? String(q) : String(Math.round(q * 10) / 10));
+
+/** What to show for an entry: "Roti ×5", or just the name. */
+export function entryLabel(e: Entry): string {
+  if (!e.qty || e.qty === 1) return e.name;
+  return `${e.name.replace(/\s*\(\d+\)/, '')} ×${fmtQty(e.qty)}`;
+}
+
+export function makeEntry(name: string, slot: SlotId, date: string, sample = false, at: number = Date.now(), batch: string = uid(), pid?: string, qty?: number): Entry {
   const m = match(name);
   const clean = name.trim().replace(/\s+/g, ' ');
+  // "5 roti": the library serving is 2 rotis, so the numbers are scaled to 5; for a bowl or plate, to the count
+  const pieces = m ? piecesOf(m[0]) : null;
+  const f = qty && qty !== 1 ? (pieces ? qty / pieces : qty) : 1;
+  const sc = (v: number) => Math.round(v * f);
   return {
     id: uid(),
     date,
     slot,
     name: m ? m[0] : clean.charAt(0).toUpperCase() + clean.slice(1),
     key: m ? norm(m[0]) : norm(clean),
-    kcal: m ? m[1] : null,
-    protein: m ? m[2] : null,
-    carbs: m ? m[5] : null,
-    fat: m ? m[6] : null,
-    fiber: m ? m[7] : null,
+    kcal: m ? sc(m[1]) : null,
+    protein: m ? sc(m[2]) : null,
+    carbs: m ? sc(m[5]) : null,
+    fat: m ? sc(m[6]) : null,
+    fiber: m ? sc(m[7]) : null,
+    qty: qty && qty !== 1 ? qty : undefined,
     pid,
     sample: sample || undefined,
     at,
@@ -518,68 +539,142 @@ export function weekMenu(entries: Entry[], target: Target, picks: Record<string,
 
 /* ---------- reading a message ---------- */
 
-const SLOT_WORDS: [SlotId, RegExp][] = [
-  ['b', /\b(breakfast|brekfast|nashta|nasta|naashta|naasta|subah|morning)\b/gi],
-  ['l', /\b(lunch|dopahar|dopehar|afternoon|lunchtime)\b/gi],
-  ['s', /\b(snacks?|evening|shaam|sham|tea ?time|chai ?time)\b/gi],
-  ['d', /\b(dinner|raat|night|supper|raatri)\b/gi],
-];
-const FILLER = /\b(i|me|my|we|ate|eat|eaten|eating|had|have|having|took|khaya|khayi|khaye|kha|liya|lia|maine|mene|humne|aaj|today|just|for|in|at|during|the|ko|ka|ki|ke|me|mein|mai|main|pe|ate|is|was|were|then|also|aur|and)\b/gi;
+const SLOT_VOCAB: Record<string, SlotId> = {
+  breakfast: 'b', nashta: 'b', nasta: 'b', naashta: 'b', subah: 'b', morning: 'b', brunch: 'b',
+  lunch: 'l', dopahar: 'l', dopehar: 'l', afternoon: 'l', tiffin: 'l',
+  snack: 's', snacks: 's', evening: 's', shaam: 's', sham: 's', teatime: 's', chaitime: 's',
+  dinner: 'd', raat: 'd', night: 'd', supper: 'd', raatri: 'd',
+};
+const SLOT_FUZZY = Object.keys(SLOT_VOCAB).filter((w) => w.length >= 5);
+const FILLER = new Set(['i', 'me', 'my', 'we', 'ate', 'eat', 'eaten', 'eating', 'had', 'have', 'having', 'took', 'khaya', 'khayi', 'khaye', 'kha', 'liya', 'lia', 'maine', 'mene', 'humne', 'aaj', 'today', 'just', 'for', 'in', 'at', 'during', 'the', 'ko', 'ka', 'ki', 'ke', 'mein', 'mai', 'main', 'pe', 'is', 'was', 'were', 'then', 'also', 'a', 'an', 'of', 'time']);
+const SEP = new Set(['with', 'and', 'aur', 'plus']);
+const UNIT = new Set(['cup', 'cups', 'cu', 'glass', 'glasses', 'plate', 'plates', 'bowl', 'bowls', 'piece', 'pieces', 'pcs', 'pc', 'katori', 'slice', 'slices']);
+const NUMBER_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, ek: 1, do: 2, teen: 3, char: 4, chaar: 4, paanch: 5, panch: 5, chhe: 6, half: 0.5, aadha: 0.5, adha: 0.5 };
+const GENERIC = new Set(['sabji', 'sabzi', 'curry', 'masala', 'fry', 'dal', 'daal', 'rice', 'roti']);
 
-/** "dal rice" with no comma: split into the dishes it is made of, when every part is a known dish. */
-function splitDishes(phrase: string): string[] {
-  if (match(phrase)) return [phrase];
-  const words = phrase.split(' ');
-  if (words.length < 2) return [phrase];
-  const out: string[] = [];
+function quantityOf(w: string): number | null {
+  if (NUMBER_WORDS[w] != null) return NUMBER_WORDS[w];
+  const m = /^x?(\d+(?:\.\d+)?)x?$/.exec(w);
+  return m ? Number(m[1]) : null;
+}
+
+/** Splits slot words and filler out of one piece of a message. Slot words may be misspelled or split ("break fast"). */
+function scan(part: string): { slots: SlotId[]; words: string[] } {
+  const raw = part.toLowerCase().replace(/[^a-z0-9. ]+/g, ' ').split(/\s+/).filter(Boolean);
+  const slots: SlotId[] = [];
+  const words: string[] = [];
+  const slotOf = (w: string): SlotId | undefined => SLOT_VOCAB[w] ?? (w.length >= 5 ? SLOT_VOCAB[SLOT_FUZZY.find((v) => sameWord(w, v)) ?? ''] : undefined);
+  for (let i = 0; i < raw.length; i++) {
+    const w = raw[i];
+    const two = i + 1 < raw.length ? w + raw[i + 1] : '';
+    const s2 = two ? slotOf(two) : undefined;
+    if (s2) {
+      slots.push(s2);
+      i++;
+      continue;
+    }
+    const s1 = slotOf(w);
+    if (s1) {
+      slots.push(s1);
+      continue;
+    }
+    if (FILLER.has(w)) continue;
+    words.push(w);
+  }
+  return { slots, words };
+}
+
+/** "dalrice" typed as one word: two known words stuck together. */
+function splitJoined(w: string): string[] | null {
+  if (w.length < 6) return null;
+  const known = new Set(Object.keys(SAYS));
+  for (let k = 3; k <= w.length - 3; k++) {
+    const a = w.slice(0, k);
+    const b = w.slice(k);
+    if (known.has(a) && (known.has(b) || match(b))) return [a, b];
+  }
+  return null;
+}
+
+function readDishes(words: string[]): { name: string; qty?: number }[] {
+  const out: { name: string; qty?: number }[] = [];
+  const n = words.length;
+  let qty: number | undefined;
+  const startsMatch = (k: number) => {
+    for (let j = Math.min(n, k + 4); j > k; j--) if (match(words.slice(k, j).join(' '))) return true;
+    return false;
+  };
   let i = 0;
-  while (i < words.length) {
+  while (i < n) {
+    const w = words[i];
+    if (SEP.has(w) || UNIT.has(w)) {
+      i++;
+      continue;
+    }
+    const q = quantityOf(w);
+    if (q != null) {
+      // "roti x3" and "dal 2 katori" count the dish before them; "5 roti" counts the one after
+      const last = out[out.length - 1];
+      const withUnit = i + 1 < n && UNIT.has(words[i + 1]);
+      if (last && last.qty == null && qty == null && (/^x\d|\dx$/.test(w) || withUnit)) {
+        last.qty = q;
+        i += withUnit ? 2 : 1;
+        continue;
+      }
+      qty = q;
+      i++;
+      continue;
+    }
     let took = 0;
-    for (let j = words.length; j > i; j--) {
-      if (match(words.slice(i, j).join(' '))) {
-        out.push(words.slice(i, j).join(' '));
+    for (let j = Math.min(n, i + 4); j > i; j--) {
+      const phrase = words.slice(i, j);
+      if (phrase.some((x) => SEP.has(x) || UNIT.has(x) || quantityOf(x) != null)) continue;
+      if (match(phrase.join(' '))) {
+        out.push({ name: phrase.join(' '), qty });
+        qty = undefined;
         took = j - i;
         break;
       }
     }
-    if (!took) return [phrase];
-    i += took;
+    if (took) {
+      i += took;
+      continue;
+    }
+    const joined = splitJoined(w);
+    if (joined) {
+      out.push({ name: joined[0], qty }, { name: joined[1] });
+      qty = undefined;
+      i++;
+      continue;
+    }
+    // a dish the library does not know: keep the words together, with a generic word like "sabji" after it
+    let k = i + 1;
+    if (k < n && GENERIC.has(words[k])) k++;
+    out.push({ name: words.slice(i, k).join(' '), qty });
+    qty = undefined;
+    i = k;
   }
   return out;
 }
 
 export interface Reading {
-  items: { name: string; slot: SlotId }[];
+  items: { name: string; slot: SlotId; qty?: number }[];
   /** the meal the message names, when it names exactly one */
   slot?: SlotId;
 }
 
-function slotsIn(text: string): SlotId[] {
-  const found: SlotId[] = [];
-  for (const [id, re] of SLOT_WORDS) {
-    re.lastIndex = 0;
-    if (re.test(text)) found.push(id);
-    re.lastIndex = 0;
-  }
-  return found;
-}
-
 /**
- * "I ate dal rice in lunch", "chai evening snacks" or "dinner: roti, sabji" put each dish in the right meal.
- * A dish with no meal named goes to the one meal the message does name, or else to `fallback`.
+ * "I ate dal rice in lunch", "chai evening snacks", "5 roti dinner" put each dish in the right meal, with the
+ * count when there is one. A dish with no meal named goes to the one meal the message does name, or else to `fallback`.
  */
 export function readMessage(text: string, fallback: SlotId): Reading {
-  const all = slotsIn(text);
+  const parts = text.split(/,|;|\n|\+|&/).map(scan);
+  const all = [...new Set(parts.flatMap((p) => p.slots))];
   const only = all.length === 1 ? all[0] : undefined;
   const items: Reading['items'] = [];
-  for (const part of text.split(/,|;|\n|\+|&/)) {
-    const mine = slotsIn(part);
-    let clean = part;
-    for (const [, re] of SLOT_WORDS) clean = clean.replace(re, ' ');
-    clean = clean.replace(FILLER, ' ').replace(/[:\-]+/g, ' ').replace(/\s+/g, ' ').trim();
-    if (!clean) continue;
-    const slot = mine[0] ?? only ?? fallback;
-    for (const name of splitDishes(clean)) items.push({ name, slot });
+  for (const p of parts) {
+    const slot = p.slots[0] ?? only ?? fallback;
+    for (const d of readDishes(p.words)) items.push(d.qty != null ? { name: d.name, slot, qty: d.qty } : { name: d.name, slot });
   }
   return { items, slot: only };
 }

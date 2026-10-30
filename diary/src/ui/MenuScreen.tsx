@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SLOT_ORDER, addDays, weekMenu, ymd } from '../core/diary';
+import { SLOT_ORDER, addDays, entryLabel, weekMenu, ymd } from '../core/diary';
 import { useActive, useStore } from '../state/store';
 import { Icon } from './Icon';
 import { Button, Card, Label, Muted, Pill } from './kit';
@@ -63,7 +63,7 @@ export function MenuScreen() {
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={s.slot} numberOfLines={1}>{slotLabel(sl.slot)}</Text>
-                      <Text style={s.name} numberOfLines={1}>{sl.eaten.map((e) => e.name).join(', ')}</Text>
+                      <Text style={s.name} numberOfLines={1}>{sl.eaten.map(entryLabel).join(', ')}</Text>
                     </View>
                     <View style={[s.tick, { backgroundColor: C.goodSoft }]}>
                       <Icon name="check" size={18} color={C.good} width={2.6} />

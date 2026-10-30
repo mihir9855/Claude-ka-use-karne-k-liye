@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { SLOT_LABEL, SLOT_ORDER, learned } from '../core/diary';
+import { SLOT_LABEL, SLOT_ORDER, entryLabel, learned } from '../core/diary';
 import { ACTIVITIES, CONDITIONS, GOALS, MAX_PEOPLE, type Condition } from '../core/profile';
 import { personName, useActive, useStore } from '../state/store';
 import { Button, Card, Chip, Choice, Field, Label, Muted } from './kit';
@@ -23,7 +23,7 @@ export function ProfileScreen() {
   const info = useMemo(() => learned(entries), [entries]);
   const days = useMemo(() => {
     const by = new Map<string, string[]>();
-    for (const e of entries) by.set(e.date, [...(by.get(e.date) ?? []), e.name]);
+    for (const e of entries) by.set(e.date, [...(by.get(e.date) ?? []), entryLabel(e)]);
     return [...by.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 10);
   }, [entries]);
   const idx = persons.indexOf(person);
