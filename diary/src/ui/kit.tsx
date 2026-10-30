@@ -141,11 +141,11 @@ export function Muted({ children }: { children: ReactNode }) {
 const s = themed(() => StyleSheet.create({
   choice: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, minHeight: 56 },
   dot: { width: 22, height: 22, borderRadius: 11, borderWidth: BORDER, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
-  choiceTitle: { fontSize: 15, fontWeight: '800', color: C.text },
+  choiceTitle: { fontFamily: 'script', fontSize: 24, lineHeight: 28, color: C.text },
   choiceSub: { fontSize: 12, color: C.muted, fontWeight: '600' },
   fieldLabel: { fontSize: 12, fontWeight: '700', color: C.text },
   input: { backgroundColor: C.card, borderWidth: BORDER, borderColor: C.line, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: C.text, minHeight: 48 },
-  label: { fontFamily: 'display', fontSize: 16, fontWeight: '800', color: C.text },
+  label: { fontFamily: 'script', fontSize: 28, lineHeight: 32, fontWeight: '800', color: C.text },
   card: { padding: 16, gap: 12 },
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 50, paddingHorizontal: 20 },
   btnText: { fontSize: 15, fontWeight: '800', flexShrink: 1 },
