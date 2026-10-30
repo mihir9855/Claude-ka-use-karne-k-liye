@@ -40,8 +40,13 @@ export function useHome() {
     if (!row || row.options.length === 0) return undefined;
     return row.options[(pick[slot] ?? 0) % row.options.length];
   };
+  // the last seven days, oldest first, with whether anything was logged that day
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(today, i - 6);
+    return { date, letter: new Date(`${date}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'narrow' }), has: entries.some((e) => e.date === date) };
+  });
   return {
-    now, today, target, tot, logged, menu, upcoming, nextRow, optOf,
+    week, now, today, target, tot, logged, menu, upcoming, nextRow, optOf,
     nextOpt: nextRow ? optOf(nextRow.slot) : undefined,
     cycle: (slot: SlotId) => setPick((p) => ({ ...p, [slot]: (p[slot] ?? 0) + 1 })),
     eat: (slot: SlotId) => {
