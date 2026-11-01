@@ -7,3 +7,5 @@ desktop/dist/
 *.log
 .tmp
 assets/
+icon-samples/
+app-icon.png

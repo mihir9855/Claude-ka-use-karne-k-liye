@@ -34,7 +34,7 @@ jobs:
         run: |
           npm install --no-save @capacitor/assets@3.0.5 sharp
           node scripts/make-icon.cjs
-          npx capacitor-assets generate --android --iconBackgroundColor '#1f6f5f' --iconBackgroundColorDark '#1f6f5f'
+          npx capacitor-assets generate --android --iconBackgroundColor '#12181c' --iconBackgroundColorDark '#12181c'
       - run: npx cap sync android
       - name: Build debug APK
         working-directory: android

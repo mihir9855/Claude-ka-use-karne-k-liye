@@ -15,7 +15,7 @@
     "productName": "Mileage Log",
     "directories": { "output": "dist" },
     "files": ["main.js", "app/**/*"],
-    "win": { "target": ["portable", "nsis"], "icon": "build/icon.ico" },
+    "win": { "target": ["portable", "nsis"], "icon": "build/icon.png" },
     "portable": { "artifactName": "Mileage-Log-Portable-${version}.${ext}" },
     "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "artifactName": "Mileage-Log-Setup-${version}.${ext}" }
   }
