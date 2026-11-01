@@ -316,7 +316,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 84 · 1 Nov 2026';
+const APP_VER='version 1.4 · build 85 · 1 Nov 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -1622,7 +1622,7 @@ const upList=()=>S.upcoming.slice().sort((a,b)=>a.due.localeCompare(b.due));
 function upcomingHtml(){
   const L=upList();
   const mk=todayISO().slice(0,7),due30=L.filter(u=>upDays(u.due)<=30),thisM=L.filter(u=>u.due.slice(0,7)<=mk).reduce((a,u)=>a+u.amt,0);
-  const head=`<div class="ctitle"><b>Upcoming</b><span class="small mute">${L.length?L.length+' item'+(L.length>1?'s':''):''}</span></div>`;
+  const head=`<div class="ctitle"><b>Upcoming</b></div>`;
   if(!L.length)return `<div class="card" style="margin-top:12px;cursor:pointer" data-a="upadd">${head}<div class="small mute">Add rent, bills, fees or any spend coming up. You get a reminder here and one tap marks it paid.</div><span class="pill" style="display:inline-block;margin-top:8px">+ Add upcoming</span></div>`;
   const show=(due30.length?due30:L).slice(0,4);
   return `<div class="card" style="margin-top:12px">${head}${upTotals(L)}${show.map(upRow).join('')}
@@ -1630,10 +1630,8 @@ function upcomingHtml(){
 }
 /* totals strip: overdue · this month · next 30 days · everything listed */
 function upTotals(L){
-  const sum=f=>L.filter(f).reduce((a,u)=>a+u.amt,0),mk=todayISO().slice(0,7);
-  const od=sum(u=>upDays(u.due)<0),tm=sum(u=>u.due.slice(0,7)<=mk),n30=sum(u=>upDays(u.due)<=30),all=sum(()=>true);
-  const box=(l,v,c)=>`<div class="mini" style="padding:8px 10px;min-width:0"><span class="small mute" style="white-space:nowrap">${l}</span><b class="num ${c||''}" style="font-size:15px;white-space:nowrap">${inrH(v)}</b></div>`;
-  return `<div style="display:grid;grid-template-columns:repeat(${od?2:3},1fr);gap:6px;margin:4px 0 8px">${od?box('Overdue',od,'debit'):''}${box('This month',tm)}${box('Next 30 days',n30)}${box('Total',all)}</div>`;
+  const all=L.reduce((a,u)=>a+u.amt,0);
+  return `<div class="mini row sp" style="padding:10px 12px;margin:4px 0 8px;flex-direction:row;align-items:center"><span class="small mute">Total of ${L.length} upcoming</span><b class="num" style="font-size:17px">${inr(all)}</b></div>`;
 }
 function upRow(u){
   const d=upDays(u.due),late=d<0,soon=d>=0&&d<=3,a=acc(u.acc);
@@ -1644,7 +1642,7 @@ function upRow(u){
 function upAll(){
   const L=upList(),tot=L.filter(u=>upDays(u.due)<=30).reduce((a,u)=>a+u.amt,0);
   openSheet(`<div class="row sp"><h1>Upcoming</h1><button class="icon-btn" data-a="close">✕</button></div>
-  ${upTotals(L)}<div class="small mute" style="margin:0 0 10px">Tap <b>Paid</b> to add it as an expense; repeating ones move to their next date. Total counts each item once (its next date).</div>
+  ${upTotals(L)}<div class="small mute" style="margin:0 0 10px">Tap <b>Paid</b> to add it as an expense; repeating ones move to their next date. </div>
   <div class="card" style="padding:2px 14px">${L.map(upRow).join('')||'<div class="empty">Nothing coming up</div>'}</div>
   <button class="btn" data-a="upadd">+ Add upcoming</button>`);
 }
