@@ -15,6 +15,7 @@ export function AddSheet({ db, v, onClose }: { db: DB; v: VehicleId; onClose: ()
   const lastOdo = lastOdoOf(db, v)
   const [odo, setOdo] = useState('')
   const [qty, setQty] = useState('')
+  const [amount, setAmount] = useState('')
   const [price, setPrice] = useState(String(rs.length ? rs[rs.length - 1].price : ''))
   const [date, setDate] = useState(today())
   const [full, setFull] = useState(true)
@@ -25,6 +26,25 @@ export function AddSheet({ db, v, onClose }: { db: DB; v: VehicleId; onClose: ()
     window.addEventListener('keydown', k)
     return () => window.removeEventListener('keydown', k)
   }, [onClose])
+
+  // Amount, price and quantity are linked: quantity = amount / price. Editing any one updates the others.
+  const r2 = (n: number) => String(Math.round(n * 100) / 100)
+  const onAmount = (x: string) => {
+    setAmount(x)
+    setErr(null)
+    setQty(+x > 0 && +price > 0 ? r2(+x / +price) : '')
+  }
+  const onPrice = (x: string) => {
+    setPrice(x)
+    setErr(null)
+    if (+amount > 0 && +x > 0) setQty(r2(+amount / +x))
+    else if (+qty > 0 && +x > 0) setAmount(r2(+qty * +x))
+  }
+  const onQty = (x: string) => {
+    setQty(x)
+    setErr(null)
+    setAmount(+x > 0 && +price > 0 ? r2(+x * +price) : '')
+  }
 
   const draft = { v, date, odo: +odo, qty: +qty, price: +price || 0, full }
   const avg = previewAvg(db, draft)
@@ -58,14 +78,18 @@ export function AddSheet({ db, v, onClose }: { db: DB; v: VehicleId; onClose: ()
             <input id="f-odo" className={input} type="number" inputMode="numeric" autoFocus placeholder={String(lastOdo + 300)} value={odo} onChange={(e) => { setOdo(e.target.value); setErr(null) }} />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className={label}>{veh.fuel} filled ({veh.unit})</span>
-            <input id="f-qty" className={input} type="number" inputMode="decimal" step="0.01" value={qty} onChange={(e) => { setQty(e.target.value); setErr(null) }} />
+            <span className={label}>Amount paid (₹)</span>
+            <input id="f-amount" className={input} type="number" inputMode="decimal" step="0.01" placeholder="e.g. 500" value={amount} onChange={(e) => onAmount(e.target.value)} />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={label}>Price per {veh.unit} (₹)</span>
-            <input id="f-price" className={input} type="number" inputMode="decimal" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
+            <input id="f-price" className={input} type="number" inputMode="decimal" step="0.01" value={price} onChange={(e) => onPrice(e.target.value)} />
           </label>
-          <label className="col-span-2 flex flex-col gap-1.5">
+          <label className="flex flex-col gap-1.5">
+            <span className={label}>{veh.fuel} filled ({veh.unit})</span>
+            <input id="f-qty" className={input} type="number" inputMode="decimal" step="0.01" placeholder="auto" value={qty} onChange={(e) => onQty(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1.5">
             <span className={label}>Date</span>
             <input id="f-date" className={input} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </label>

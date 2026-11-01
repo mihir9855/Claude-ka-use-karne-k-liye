@@ -108,7 +108,7 @@ export function FillRow({ r, unit, onDelete, confirming }: { r: Row; unit: strin
           {fmtDate(r.date)}
           {!r.full && <span className="rounded-full bg-soft px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-muted">Partial</span>}
         </div>
-        <div className="truncate text-[12.5px] text-muted tnum">{r.km} km · {r.qty.toFixed(1)} {unit} @ ₹{r.price}</div>
+        <div className="truncate text-[12.5px] text-muted tnum">{r.km} km · {r.qty.toFixed(1)} {unit} @ ₹{r.price}/{unit}</div>
       </div>
       <div className="text-right">
         <div className="font-display text-2xl font-semibold leading-none text-accent tnum">{r.avg !== null ? r.avg.toFixed(1) : '–'}</div>
