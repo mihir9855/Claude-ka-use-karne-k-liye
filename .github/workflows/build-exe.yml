@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [web/**, desktop/**, assets/**, .github/workflows/build-exe.yml]
+    paths: [web/**, desktop/**, .github/workflows/build-exe.yml]
 
 jobs:
   exe:

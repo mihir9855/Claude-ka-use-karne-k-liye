@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [web/**, assets/**, android-native/**, capacitor.config.json, package.json, .github/workflows/build-apk.yml]
+    paths: [web/**, scripts/**, android-native/**, capacitor.config.json, package.json, .github/workflows/build-apk.yml]
 
 jobs:
   apk:
@@ -32,7 +32,8 @@ jobs:
           cp android-native/FileTools.java android-native/MainActivity.java $D/
       - name: Make app icons
         run: |
-          npm install --no-save @capacitor/assets@3.0.5
+          npm install --no-save @capacitor/assets@3.0.5 sharp
+          node scripts/make-icon.cjs
           npx capacitor-assets generate --android --iconBackgroundColor '#1f6f5f' --iconBackgroundColorDark '#1f6f5f'
       - run: npx cap sync android
       - name: Build debug APK

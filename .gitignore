@@ -6,3 +6,4 @@ desktop/app/
 desktop/dist/
 *.log
 .tmp
+assets/
