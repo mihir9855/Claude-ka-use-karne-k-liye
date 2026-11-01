@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { addFill, deleteFill, defaultVehicles, parseBackup, seed, updateVehicle } from './engine'
+import { addFill, addVehicle, deleteFill, defaultVehicles, parseBackup, removeVehicle, seed, updateVehicle } from './engine'
 import type { DB, Draft, Vehicle, VehicleId } from './engine'
 
 const KEY = 'mileage-log-v1'
@@ -45,6 +45,12 @@ export const actions = {
   add: (d: Draft) => commit({ ...addFill(db, d), sample: false }),
   remove: (id: string) => commit(deleteFill(db, id)),
   vehicle: (id: VehicleId, patch: Partial<Vehicle>) => commit(updateVehicle(db, id, patch)),
+  addVehicle: (name: string, fuel: string, startOdo: number) => {
+    const r = addVehicle(db, name, fuel, startOdo)
+    commit(r.db)
+    return r.id
+  },
+  removeVehicle: (id: VehicleId) => commit(removeVehicle(db, id)),
   clearSample: () => commit({ version: 1, sample: false, vehicles: db.vehicles, fills: [] }),
   restore: (text: string) => {
     const d = parseBackup(text)

@@ -1,9 +1,10 @@
 // All mileage logic lives here. Screens only call these functions.
-export type VehicleId = 'car' | 'bike'
+export type VehicleId = string
 
 export interface Vehicle {
   id: VehicleId
   name: string
+  hue: number // 0-5, picks the vehicle's colour
   fuel: string
   unit: string
   avgUnit: string
@@ -52,8 +53,8 @@ export interface Summary {
 }
 
 export const defaultVehicles = (): Vehicle[] => [
-  { id: 'car', name: 'My Car', fuel: 'CNG', unit: 'kg', avgUnit: 'km/kg', startOdo: 41200, lo: 8, hi: 50 },
-  { id: 'bike', name: 'Royal Enfield', fuel: 'Petrol', unit: 'L', avgUnit: 'km/L', startOdo: 18400, lo: 10, hi: 70 },
+  { id: 'car', name: 'My Car', hue: 0, fuel: 'CNG', unit: 'kg', avgUnit: 'km/kg', startOdo: 41200, lo: 8, hi: 50 },
+  { id: 'bike', name: 'Royal Enfield', hue: 1, fuel: 'Petrol', unit: 'L', avgUnit: 'km/L', startOdo: 18400, lo: 10, hi: 70 },
 ]
 
 export const newId = () =>
@@ -153,6 +154,25 @@ export const updateVehicle = (db: DB, id: VehicleId, patch: Partial<Vehicle>): D
   vehicles: db.vehicles.map((v) => (v.id === id ? { ...v, ...patch } : v)),
 })
 
+/** Fuel types you can pick when adding a vehicle. lo/hi are the believable average range. */
+export const FUELS: Record<string, { unit: string; avgUnit: string; lo: number; hi: number }> = {
+  Petrol: { unit: 'L', avgUnit: 'km/L', lo: 8, hi: 70 },
+  Diesel: { unit: 'L', avgUnit: 'km/L', lo: 6, hi: 45 },
+  CNG: { unit: 'kg', avgUnit: 'km/kg', lo: 8, hi: 50 },
+  Electric: { unit: 'kWh', avgUnit: 'km/kWh', lo: 2, hi: 20 },
+}
+
+export function addVehicle(db: DB, name: string, fuel: string, startOdo: number): { db: DB; id: VehicleId } {
+  const f = FUELS[fuel] ?? FUELS.Petrol
+  const used = db.vehicles.map((v) => v.hue)
+  const hue = [0, 1, 2, 3, 4, 5].find((h) => !used.includes(h)) ?? db.vehicles.length % 6
+  const id = 'v-' + newId().slice(0, 8)
+  return { id, db: { ...db, vehicles: [...db.vehicles, { id, name: name.trim() || 'My Vehicle', hue, fuel, startOdo, ...f }] } }
+}
+
+export const removeVehicle = (db: DB, id: VehicleId): DB =>
+  db.vehicles.length < 2 ? db : { ...db, vehicles: db.vehicles.filter((v) => v.id !== id), fills: db.fills.filter((f) => f.v !== id) }
+
 export function monthlySpend(rs: Row[]) {
   const m = new Map<string, number>()
   rs.forEach((r) => m.set(r.date.slice(0, 7), (m.get(r.date.slice(0, 7)) ?? 0) + r.cost))
@@ -177,7 +197,10 @@ export function seed(): DB {
 export function parseBackup(text: string): DB | null {
   try {
     const d = JSON.parse(text)
-    if (d && d.version === 1 && Array.isArray(d.vehicles) && Array.isArray(d.fills)) return { ...d, sample: !!d.sample }
+    if (d && d.version === 1 && Array.isArray(d.vehicles) && Array.isArray(d.fills)) {
+      const vehicles = (d.vehicles as Vehicle[]).map((v, i) => ({ ...v, hue: typeof v.hue === 'number' ? v.hue : i % 6 }))
+      return { ...d, vehicles, sample: !!d.sample }
+    }
   } catch {
     /* fall through */
   }

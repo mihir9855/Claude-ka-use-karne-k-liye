@@ -62,7 +62,6 @@ export function AddSheet({ db, v, onClose }: { db: DB; v: VehicleId; onClose: ()
   return (
     <motion.div className="fixed inset-0 z-40 flex items-end justify-center bg-black/45 desk:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <motion.form
-        data-v={v}
         onSubmit={save}
         aria-label="Add fill-up"
         className="flex max-h-dvh w-full max-w-[460px] flex-col gap-4 overflow-y-auto rounded-t-[28px] bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] desk:rounded-[28px]"

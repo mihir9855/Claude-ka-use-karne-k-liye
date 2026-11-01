@@ -24,17 +24,18 @@ export function Count({ value, digits = 1 }: { value: number; digits?: number })
 
 export function VehicleSwitch({ vehicles, v, onChange }: { vehicles: Vehicle[]; v: VehicleId; onChange: (v: VehicleId) => void }) {
   return (
-    <div className="grid grid-cols-2 gap-1 rounded-2xl bg-soft p-1" role="group" aria-label="Choose vehicle">
+    <div className="flex gap-1 overflow-x-auto rounded-2xl bg-soft p-1 [scrollbar-width:none]" role="group" aria-label="Choose vehicle">
       {vehicles.map((x) => (
         <button
           key={x.id}
           type="button"
+          data-c={x.hue}
           aria-pressed={v === x.id}
           onClick={() => onChange(x.id)}
-          className="relative min-w-0 rounded-xl px-3 py-2.5 text-left"
+          className={cn('relative min-w-0 flex-1 rounded-xl px-3 py-2.5 text-left', vehicles.length > 2 && 'min-w-[140px]')}
         >
           {v === x.id && <motion.span layoutId="veh-pill" className="absolute inset-0 rounded-xl bg-card shadow-sm" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
-          <span className="relative block truncate font-display text-[15px] font-semibold" style={{ color: v === x.id ? `var(--${x.id})` : undefined }}>{x.name}</span>
+          <span className={cn('relative block truncate font-display text-[15px] font-semibold', v === x.id && 'text-accent')}>{x.name}</span>
           <span className="relative block truncate text-[11.5px] text-muted">{x.fuel} · {x.avgUnit}</span>
         </button>
       ))}

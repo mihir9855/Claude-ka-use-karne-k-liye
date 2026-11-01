@@ -16,8 +16,21 @@
   --car: #34cdb1; --car-soft: #12352f; --bike: #f09550; --bike-soft: #3d2616;
   --good: #4cc47f; --bad: #ef7676;
 }
-[data-v="car"] { --accent: var(--car); --accent-soft: var(--car-soft); --hero: linear-gradient(145deg, #14a58d, #0a6154); }
-[data-v="bike"] { --accent: var(--bike); --accent-soft: var(--bike-soft); --hero: linear-gradient(145deg, #cb6a28, #8a3b0f); }
+/* Six vehicle colours. data-c on a vehicle's screen (or switch button) picks one. */
+:root {
+  --a0: #0f8f7a; --s0: #d9efe9; --a1: #b5561a; --s1: #f5e1d1; --a2: #4f46e5; --s2: #e3e1fb;
+  --a3: #c2385a; --s3: #f8dde4; --a4: #5a8a1f; --s4: #e4efd2; --a5: #2f7fb8; --s5: #d8e9f5;
+}
+.dark {
+  --a0: #34cdb1; --s0: #12352f; --a1: #f09550; --s1: #3d2616; --a2: #8b84ff; --s2: #26234d;
+  --a3: #f0708f; --s3: #44202b; --a4: #9fd04f; --s4: #2a3a14; --a5: #5fb4ec; --s5: #14344b;
+}
+[data-c="0"] { --accent: var(--a0); --accent-soft: var(--s0); --hero: linear-gradient(145deg, #14a58d, #0a6154); }
+[data-c="1"] { --accent: var(--a1); --accent-soft: var(--s1); --hero: linear-gradient(145deg, #cb6a28, #8a3b0f); }
+[data-c="2"] { --accent: var(--a2); --accent-soft: var(--s2); --hero: linear-gradient(145deg, #6359f0, #37309e); }
+[data-c="3"] { --accent: var(--a3); --accent-soft: var(--s3); --hero: linear-gradient(145deg, #d9486b, #8a2140); }
+[data-c="4"] { --accent: var(--a4); --accent-soft: var(--s4); --hero: linear-gradient(145deg, #6ea327, #3d5f12); }
+[data-c="5"] { --accent: var(--a5); --accent-soft: var(--s5); --hero: linear-gradient(145deg, #3b94d2, #1d557c); }
 
 @theme inline {
   --font-display: "Outfit Variable", ui-sans-serif, system-ui, sans-serif;
