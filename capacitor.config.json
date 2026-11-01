@@ -1,0 +1,5 @@
+{
+  "appId": "com.mihir.mileagelog",
+  "appName": "Mileage Log",
+  "webDir": "web/dist-single"
+}

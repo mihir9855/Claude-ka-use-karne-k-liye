@@ -1,0 +1,22 @@
+{
+  "name": "mileage-log",
+  "version": "1.0.0",
+  "description": "Bike and car mileage tracker",
+  "author": "Mihir",
+  "main": "main.js",
+  "private": true,
+  "scripts": { "start": "electron ." },
+  "devDependencies": {
+    "electron": "31.7.7",
+    "electron-builder": "24.13.3"
+  },
+  "build": {
+    "appId": "com.mihir.mileagelog",
+    "productName": "Mileage Log",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "app/**/*"],
+    "win": { "target": ["portable", "nsis"], "icon": "build/icon.ico" },
+    "portable": { "artifactName": "Mileage-Log-Portable-${version}.${ext}" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "artifactName": "Mileage-Log-Setup-${version}.${ext}" }
+  }
+}
