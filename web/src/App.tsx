@@ -6,6 +6,7 @@ import type { Fill, VehicleId } from './engine/engine'
 import { useDB } from './engine/store'
 import { VehicleSwitch } from './components/parts'
 import { AddSheet } from './components/AddSheet'
+import { Splash } from './components/Splash'
 import { History, Home, Settings, Stats } from './pages'
 import { cn } from './lib/utils'
 
@@ -24,6 +25,7 @@ export default function App() {
   const v = cur.id
   const [tab, setTab] = useState<Tab>('home')
   const [sheet, setSheet] = useState<{ edit?: Fill } | null>(null)
+  const [splash, setSplash] = useState(() => !matchMedia('(prefers-reduced-motion: reduce)').matches)
 
   const nav = (cls: string, item: string) =>
     tabs.map(({ id, label, Icon }) => (
@@ -70,6 +72,7 @@ export default function App() {
 
       <AnimatePresence>{sheet && <AddSheet db={db} v={v} edit={sheet.edit} onClose={() => setSheet(null)} />}</AnimatePresence>
       <Toaster position="top-center" offset={16} />
+      <AnimatePresence>{splash && <Splash onDone={() => setSplash(false)} />}</AnimatePresence>
     </div>
   )
 }
