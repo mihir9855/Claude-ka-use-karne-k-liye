@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { addFill, addVehicle, deleteFill, defaultVehicles, parseBackup, removeVehicle, seed, updateVehicle } from './engine'
 import type { DB, Draft, Vehicle, VehicleId } from './engine'
 
-const KEY = 'mileage-log-v1'
+const KEY = 'mileage-log-v2' // v2: starts empty, no sample data
 const subs = new Set<() => void>()
 
 function load(): DB {

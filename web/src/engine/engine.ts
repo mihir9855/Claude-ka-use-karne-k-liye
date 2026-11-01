@@ -53,8 +53,8 @@ export interface Summary {
 }
 
 export const defaultVehicles = (): Vehicle[] => [
-  { id: 'car', name: 'My Car', hue: 0, fuel: 'CNG', unit: 'kg', avgUnit: 'km/kg', startOdo: 41200, lo: 8, hi: 50 },
-  { id: 'bike', name: 'Royal Enfield', hue: 1, fuel: 'Petrol', unit: 'L', avgUnit: 'km/L', startOdo: 18400, lo: 10, hi: 70 },
+  { id: 'car', name: 'My Car', hue: 0, fuel: 'CNG', unit: 'kg', avgUnit: 'km/kg', startOdo: 0, lo: 8, hi: 50 },
+  { id: 'bike', name: 'Royal Enfield', hue: 1, fuel: 'Petrol', unit: 'L', avgUnit: 'km/L', startOdo: 0, lo: 10, hi: 70 },
 ]
 
 export const newId = () =>
@@ -65,8 +65,10 @@ export const vehicleOf = (db: DB, id: VehicleId) => db.vehicles.find((v) => v.id
 export function rows(db: DB, id: VehicleId, extra?: Fill): Row[] {
   const veh = vehicleOf(db, id)
   const list = db.fills.filter((f) => f.v === id).concat(extra ? [extra] : []).sort((a, b) => a.odo - b.odo)
-  let prevOdo = veh.startOdo
-  let fullOdo = veh.startOdo
+  // Starting km 0 means "not set yet": the first fill-up becomes the starting point and has no average.
+  const base = veh.startOdo === 0 && list.length ? list[0].odo : veh.startOdo
+  let prevOdo = base
+  let fullOdo = base
   let accQ = 0
   let accC = 0
   return list.map((f) => {
@@ -77,7 +79,7 @@ export function rows(db: DB, id: VehicleId, extra?: Fill): Row[] {
     prevOdo = f.odo
     if (!f.full) return { ...f, km, cost, avg: null, spanKm: 0, spanQty: 0, spanCost: 0 }
     const spanKm = f.odo - fullOdo
-    const row: Row = { ...f, km, cost, avg: accQ > 0 ? spanKm / accQ : null, spanKm, spanQty: accQ, spanCost: accC }
+    const row: Row = { ...f, km, cost, avg: accQ > 0 && spanKm > 0 ? spanKm / accQ : null, spanKm, spanQty: accQ, spanCost: accC }
     fullOdo = f.odo
     accQ = 0
     accC = 0
@@ -99,7 +101,7 @@ export function summary(rs: Row[], veh: Vehicle): Summary {
     best: avgs.length ? Math.max(...avgs) : null,
     worst: avgs.length ? Math.min(...avgs) : null,
     costPerKm: sk > 0 ? sc / sk : null,
-    totalKm: lastOdo - veh.startOdo,
+    totalKm: lastOdo - (veh.startOdo === 0 && rs.length ? rs[0].odo : veh.startOdo),
     spent: rs.reduce((a, r) => a + r.cost, 0),
     fillCount: rs.length,
   }
@@ -180,17 +182,7 @@ export function monthlySpend(rs: Row[]) {
 }
 
 export function seed(): DB {
-  const mk = (v: VehicleId, list: [string, number, number, number][]): Fill[] =>
-    list.map(([date, odo, qty, price], i) => ({ id: `s-${v}-${i}`, ts: i, v, date, odo, qty, price, full: true }))
-  return {
-    version: 1,
-    sample: true,
-    vehicles: defaultVehicles(),
-    fills: [
-      ...mk('car', [['2026-08-19', 41560, 14.8, 79], ['2026-09-04', 41925, 15.2, 80], ['2026-09-20', 42270, 14.1, 80], ['2026-10-08', 42650, 16.0, 81], ['2026-10-25', 43010, 14.6, 81]]),
-      ...mk('bike', [['2026-08-16', 18640, 7.0, 104], ['2026-08-30', 18915, 8.1, 104], ['2026-09-14', 19160, 7.2, 103], ['2026-09-29', 19470, 9.0, 103], ['2026-10-12', 19690, 6.6, 102], ['2026-10-27', 19990, 8.6, 102]]),
-    ],
-  }
+  return { version: 1, sample: false, vehicles: defaultVehicles(), fills: [] }
 }
 
 /** Accepts only data that looks like a backup of this app. */

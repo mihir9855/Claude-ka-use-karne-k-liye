@@ -47,7 +47,7 @@ export function Home({ db, v, go }: { db: DB; v: VehicleId; go: () => void }) {
         <Chip label="Driven" value={String(s.totalKm)} sub="km in total" />
       </div>
       <Card title="Recent fill-ups" hint={`${veh.avgUnit} · cost`}>
-        {rs.length ? [...rs].reverse().slice(0, 5).map((r) => <FillRow key={r.id} r={r} unit={veh.unit} />) : <p className="py-4 text-center text-sm text-muted">No fill-ups yet. Tap + to add the first one.</p>}
+        {rs.length ? [...rs].reverse().slice(0, 5).map((r) => <FillRow key={r.id} r={r} unit={veh.unit} />) : <p className="py-4 text-center text-sm text-muted">Tap + and add your first fill-up. Fill the tank to full and enter the odometer and the fuel. The average shows from the second fill-up.</p>}
         {rs.length > 5 && <button type="button" onClick={go} className="mt-1 w-full py-2 text-sm font-semibold text-accent">See all</button>}
       </Card>
     </div>
@@ -144,7 +144,7 @@ export function Settings({ db, onAdded }: { db: DB; onAdded: (id: VehicleId) => 
               )}
             </div>
           ))}
-          <p className="text-xs text-muted">Starting km is the odometer reading when you first filled a full tank.</p>
+          <p className="text-xs text-muted">Starting km 0 means not set: your first fill-up becomes the starting point.</p>
           {adding ? (
             <div className="flex flex-col gap-3 rounded-2xl bg-soft p-3">
               <input id="nv-name" className={field} placeholder="Vehicle name, e.g. Activa" value={nName} onChange={(e) => setNName(e.target.value)} />
