@@ -230,7 +230,7 @@ export function SpendDonut({ db }: { db: DB }) {
   )
 }
 
-export function FillRow({ r, unit, onDelete, confirming }: { r: Row; unit: string; onDelete?: () => void; confirming?: boolean }) {
+export function FillRow({ r, unit, onEdit, onDelete }: { r: Row; unit: string; onEdit?: () => void; onDelete?: () => void }) {
   return (
     <div className="grid grid-cols-[1fr_auto] gap-x-3 border-t border-line py-3 first:border-t-0">
       <div className="min-w-0">
@@ -238,16 +238,18 @@ export function FillRow({ r, unit, onDelete, confirming }: { r: Row; unit: strin
           {fmtDate(r.date)}
           {!r.full && <span className="rounded-full bg-soft px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-muted">Partial</span>}
         </div>
-        <div className="truncate text-[12.5px] text-muted tnum">{r.km} km · {r.qty.toFixed(1)} {unit} @ ₹{r.price}/{unit}</div>
+        <div className="text-[13px] tnum">Odometer {r.odo.toLocaleString('en-IN')} km</div>
+        <div className="truncate text-[12.5px] text-muted tnum">{r.km > 0 ? `+${r.km} km · ` : 'Starting point · '}{r.qty.toFixed(1)} {unit} @ ₹{r.price}/{unit}</div>
       </div>
       <div className="text-right">
         <div className="font-display text-2xl font-semibold leading-none text-accent tnum">{r.avg !== null ? r.avg.toFixed(1) : '–'}</div>
         <div className="text-[12.5px] text-muted tnum">{inr(r.cost)}</div>
       </div>
-      {onDelete && (
-        <button type="button" onClick={onDelete} className={cn('col-span-2 mt-1 justify-self-end text-xs', confirming ? 'font-semibold text-bad' : 'text-muted')}>
-          {confirming ? 'Tap again to delete' : 'Delete'}
-        </button>
+      {(onEdit || onDelete) && (
+        <div className="col-span-2 mt-1 flex justify-end gap-4 text-[13px] font-semibold">
+          {onEdit && <button type="button" onClick={onEdit} className="py-1 text-accent">Edit</button>}
+          {onDelete && <button type="button" onClick={onDelete} className="py-1 text-bad">Delete</button>}
+        </div>
       )}
     </div>
   )

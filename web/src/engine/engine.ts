@@ -123,22 +123,38 @@ export interface Draft {
 
 const toFill = (d: Draft): Fill => ({ id: 'preview', ts: 0, ...d })
 
+/** The row this draft would become. Pass editId when changing an existing fill-up. */
+export function previewRow(db: DB, d: Draft, editId?: string): Row | null {
+  const base = editId ? { ...db, fills: db.fills.filter((f) => f.id !== editId) } : db
+  if (!(d.odo > 0) || (!editId && !(d.odo > lastOdoOf(base, d.v)))) return null
+  return rows(base, d.v, toFill(d)).find((x) => x.id === 'preview') ?? null
+}
+
 /** Average this draft would give, or null when it is a partial fill or the numbers are not usable yet. */
-export function previewAvg(db: DB, d: Draft): number | null {
-  if (!(d.odo > lastOdoOf(db, d.v)) || !(d.qty > 0) || !d.full) return null
-  const rs = rows(db, d.v, toFill(d))
-  const r = rs.find((x) => x.id === 'preview')
-  return r?.avg ?? null
+export function previewAvg(db: DB, d: Draft, editId?: string): number | null {
+  if (!(d.qty > 0) || !d.full) return null
+  return previewRow(db, d, editId)?.avg ?? null
 }
 
 /** Returns a message when the draft should not be saved. */
-export function validate(db: DB, d: Draft): string | null {
+export function validate(db: DB, d: Draft, editId?: string): string | null {
   const veh = vehicleOf(db, d.v)
-  const last = lastOdoOf(db, d.v)
-  if (!(d.odo > last)) return `Odometer must be higher than ${last} km`
+  if (editId) {
+    // An edited fill-up must stay between its neighbours.
+    const list = db.fills.filter((f) => f.v === d.v).sort((a, b) => a.odo - b.odo)
+    const i = list.findIndex((f) => f.id === editId)
+    const prev = i > 0 ? list[i - 1].odo : veh.startOdo > 0 ? veh.startOdo : null
+    const next = i >= 0 && i < list.length - 1 ? list[i + 1].odo : null
+    if (prev !== null && !(d.odo > prev)) return `Odometer must be higher than ${prev} km`
+    if (next !== null && !(d.odo < next)) return `Odometer must be lower than ${next} km`
+    if (!(d.odo > 0)) return 'Enter the odometer reading'
+  } else {
+    const last = lastOdoOf(db, d.v)
+    if (!(d.odo > last)) return `Odometer must be higher than ${last} km`
+  }
   if (!(d.qty > 0)) return `Enter how many ${veh.unit} you filled`
   if (d.price < 0) return 'Price cannot be negative'
-  const a = previewAvg(db, d)
+  const a = previewAvg(db, d, editId)
   if (a !== null && (a < veh.lo || a > veh.hi)) {
     return `${a.toFixed(1)} ${veh.avgUnit} does not look right. Check the odometer and the ${veh.unit}.`
   }
@@ -149,7 +165,9 @@ export function addFill(db: DB, d: Draft): DB {
   return { ...db, fills: [...db.fills, { id: newId(), ts: Date.now(), ...d }] }
 }
 
-export const deleteFill = (db: DB, id: string): DB => ({ ...db, fills: db.fills.filter((f) => f.id !== id) })
+export const updateFill = (db: DB, id: string, d: Draft): DB => ({ ...db, fills: db.fills.map((f) => (f.id === id ? { ...f, ...d } : f)) })
+
+export const deleteFill =(db: DB, id: string): DB => ({ ...db, fills: db.fills.filter((f) => f.id !== id) })
 
 export const updateVehicle = (db: DB, id: VehicleId, patch: Partial<Vehicle>): DB => ({
   ...db,

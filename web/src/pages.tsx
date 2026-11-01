@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Moon, Sun } from 'lucide-react'
 import { rows, summary, vehicleOf } from './engine/engine'
-import type { DB, VehicleId } from './engine/engine'
+import type { DB, Fill, VehicleId } from './engine/engine'
 import { actions } from './engine/store'
 import { Card, Count, FillRow, Gauge, KmMonthly, PriceTrend, Spark, Spend, SpendDonut, Trend } from './components/parts'
 import { cn, getTheme, inr, saveTextFile, setTheme } from './lib/utils'
@@ -83,15 +83,15 @@ export function Stats({ db, v }: { db: DB; v: VehicleId }) {
   )
 }
 
-export function History({ db, v }: { db: DB; v: VehicleId }) {
+export function History({ db, v, onEdit }: { db: DB; v: VehicleId; onEdit: (f: Fill) => void }) {
   const veh = vehicleOf(db, v)
   const rs = [...rows(db, v)].reverse()
-  const [ask, setAsk] = useState<string | null>(null)
   return (
     <Card title="All fill-ups" hint={veh.name}>
       {rs.length ? rs.map((r) => (
-        <FillRow key={r.id} r={r} unit={veh.unit} confirming={ask === r.id} onDelete={() => {
-          if (ask === r.id) { actions.remove(r.id); setAsk(null); toast.success('Fill-up deleted') } else setAsk(r.id)
+        <FillRow key={r.id} r={r} unit={veh.unit} onEdit={() => onEdit(db.fills.find((f) => f.id === r.id) as Fill)} onDelete={() => {
+          const gone = actions.remove(r.id)
+          if (gone) toast('Fill-up deleted', { duration: 8000, action: { label: 'Undo', onClick: () => actions.restoreFill(gone) } })
         }} />
       )) : <p className="py-6 text-center text-sm text-muted">No fill-ups yet.</p>}
     </Card>
@@ -137,7 +137,11 @@ export function Settings({ db, onAdded }: { db: DB; onAdded: (id: VehicleId) => 
               </label>
               {db.vehicles.length > 1 && (
                 <button type="button" className={cn('col-span-2 justify-self-end text-xs', delId === x.id ? 'font-semibold text-bad' : 'text-muted')} onClick={() => {
-                  if (delId === x.id) { actions.removeVehicle(x.id); setDelId(null); toast.success(`${x.name} removed`) } else setDelId(x.id)
+                  if (delId === x.id) {
+                    const snap = actions.removeVehicle(x.id)
+                    setDelId(null)
+                    toast(`${x.name} removed`, { duration: 8000, action: { label: 'Undo', onClick: () => actions.restoreVehicle(snap) } })
+                  } else setDelId(x.id)
                 }}>
                   {delId === x.id ? 'Tap again to remove with all its fill-ups' : 'Remove vehicle'}
                 </button>

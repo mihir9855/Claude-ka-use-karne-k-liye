@@ -1,24 +1,27 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
 import { toast } from 'sonner'
-import { lastOdoOf, previewAvg, rows, validate, vehicleOf } from '../engine/engine'
-import type { DB, VehicleId } from '../engine/engine'
+import { lastOdoOf, previewAvg, previewRow, rows, validate, vehicleOf } from '../engine/engine'
+import type { DB, Fill, VehicleId } from '../engine/engine'
 import { actions } from '../engine/store'
 import { cn, inr, today } from '../lib/utils'
 
 const input = 'w-full rounded-xl border border-line bg-bg px-3 py-3 text-base outline-none focus:border-accent'
 const label = 'text-[11px] font-semibold uppercase tracking-[.09em] text-muted'
 
-export function AddSheet({ db, v, onClose }: { db: DB; v: VehicleId; onClose: () => void }) {
+const r2 = (n: number) => String(Math.round(n * 100) / 100)
+
+/** Add a fill-up, or edit one when `edit` is given. */
+export function AddSheet({ db, v, edit, onClose }: { db: DB; v: VehicleId; edit?: Fill; onClose: () => void }) {
   const veh = vehicleOf(db, v)
   const rs = rows(db, v)
   const lastOdo = lastOdoOf(db, v)
-  const [odo, setOdo] = useState('')
-  const [qty, setQty] = useState('')
-  const [amount, setAmount] = useState('')
-  const [price, setPrice] = useState(String(rs.length ? rs[rs.length - 1].price : ''))
-  const [date, setDate] = useState(today())
-  const [full, setFull] = useState(true)
+  const [odo, setOdo] = useState(edit ? String(edit.odo) : '')
+  const [qty, setQty] = useState(edit ? String(edit.qty) : '')
+  const [amount, setAmount] = useState(edit ? r2(edit.qty * edit.price) : '')
+  const [price, setPrice] = useState(edit ? String(edit.price) : String(rs.length ? rs[rs.length - 1].price : ''))
+  const [date, setDate] = useState(edit ? edit.date : today())
+  const [full, setFull] = useState(edit ? edit.full : true)
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
@@ -28,7 +31,6 @@ export function AddSheet({ db, v, onClose }: { db: DB; v: VehicleId; onClose: ()
   }, [onClose])
 
   // Amount, price and quantity are linked: quantity = amount / price. Editing any one updates the others.
-  const r2 = (n: number) => String(Math.round(n * 100) / 100)
   const onAmount = (x: string) => {
     setAmount(x)
     setErr(null)
@@ -47,16 +49,17 @@ export function AddSheet({ db, v, onClose }: { db: DB; v: VehicleId; onClose: ()
   }
 
   const draft = { v, date, odo: +odo, qty: +qty, price: +price || 0, full }
-  const avg = previewAvg(db, draft)
-  const km = +odo > lastOdo ? +odo - lastOdo : 0
-  const first = veh.startOdo === 0 && rs.length === 0
+  const avg = previewAvg(db, draft, edit?.id)
+  const km = previewRow(db, draft, edit?.id)?.km ?? 0
+  const first = veh.startOdo === 0 && rs.filter((f) => f.id !== edit?.id).length === 0
 
   const save = (e: React.FormEvent) => {
     e.preventDefault()
-    const m = validate(db, draft)
+    const m = validate(db, draft, edit?.id)
     if (m) return setErr(m)
-    actions.add(draft)
-    toast.success('Fill-up saved')
+    if (edit) actions.edit(edit.id, draft)
+    else actions.add(draft)
+    toast.success(edit ? 'Fill-up updated' : 'Fill-up saved')
     onClose()
   }
 
@@ -64,14 +67,14 @@ export function AddSheet({ db, v, onClose }: { db: DB; v: VehicleId; onClose: ()
     <motion.div className="fixed inset-0 z-40 flex items-end justify-center bg-black/45 desk:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <motion.form
         onSubmit={save}
-        aria-label="Add fill-up"
+        aria-label={edit ? 'Edit fill-up' : 'Add fill-up'}
         className="flex max-h-dvh w-full max-w-[460px] flex-col gap-4 overflow-y-auto rounded-t-[28px] bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] desk:rounded-[28px]"
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 80, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 380, damping: 34 }}
       >
-        <h3 className="font-display text-2xl font-semibold">Add fill-up <span className="text-accent">· {veh.name}</span></h3>
+        <h3 className="font-display text-2xl font-semibold">{edit ? 'Edit fill-up' : 'Add fill-up'} <span className="text-accent">· {veh.name}</span></h3>
         <div className="grid grid-cols-2 gap-3">
           <label className="col-span-2 flex flex-col gap-1.5">
             <span className={label}>Odometer (km)</span>
@@ -117,7 +120,7 @@ export function AddSheet({ db, v, onClose }: { db: DB; v: VehicleId; onClose: ()
 
         <div className="grid grid-cols-[1fr_2fr] gap-3">
           <button type="button" onClick={onClose} className="rounded-2xl border border-line py-3.5 font-semibold">Cancel</button>
-          <button type="submit" className="rounded-2xl bg-accent py-3.5 font-semibold text-white">Save fill-up</button>
+          <button type="submit" className="rounded-2xl bg-accent py-3.5 font-semibold text-white">{edit ? 'Update fill-up' : 'Save fill-up'}</button>
         </div>
       </motion.form>
     </motion.div>
