@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { animate, motion } from 'motion/react'
+import { ChevronRight } from 'lucide-react'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { DB, Row, Vehicle, VehicleId } from '../engine/engine'
 import { monthlySpend, rows as rowsOf } from '../engine/engine'
@@ -230,9 +231,15 @@ export function SpendDonut({ db }: { db: DB }) {
   )
 }
 
-export function FillRow({ r, unit, onEdit, onDelete }: { r: Row; unit: string; onEdit?: () => void; onDelete?: () => void }) {
+export function FillRow({ r, unit, onOpen }: { r: Row; unit: string; onOpen?: () => void }) {
   return (
-    <div className="grid grid-cols-[1fr_auto] gap-x-3 border-t border-line py-3 first:border-t-0">
+    <div
+      role={onOpen ? 'button' : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      onClick={onOpen}
+      onKeyDown={(e) => onOpen && (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onOpen())}
+      className={cn('grid grid-cols-[1fr_auto_auto] gap-x-3 border-t border-line py-3 first:border-t-0', onOpen && 'cursor-pointer rounded-xl transition-colors active:bg-soft')}
+    >
       <div className="min-w-0">
         <div className="flex items-center gap-2 font-semibold">
           {fmtDate(r.date)}
@@ -240,17 +247,13 @@ export function FillRow({ r, unit, onEdit, onDelete }: { r: Row; unit: string; o
         </div>
         <div className="text-[13px] tnum">Odometer {r.odo.toLocaleString('en-IN')} km</div>
         <div className="truncate text-[12.5px] text-muted tnum">{r.km > 0 ? `+${r.km} km · ` : 'Starting point · '}{r.qty.toFixed(1)} {unit} @ ₹{r.price}/{unit}</div>
+        {r.note && <div className="truncate text-[12.5px] italic text-muted">{r.note}</div>}
       </div>
       <div className="text-right">
         <div className="font-display text-2xl font-semibold leading-none text-accent tnum">{r.avg !== null ? r.avg.toFixed(1) : '–'}</div>
         <div className="text-[12.5px] text-muted tnum">{inr(r.cost)}</div>
       </div>
-      {(onEdit || onDelete) && (
-        <div className="col-span-2 mt-1 flex justify-end gap-4 text-[13px] font-semibold">
-          {onEdit && <button type="button" onClick={onEdit} className="py-1 text-accent">Edit</button>}
-          {onDelete && <button type="button" onClick={onDelete} className="py-1 text-bad">Delete</button>}
-        </div>
-      )}
+      {onOpen && <ChevronRight size={18} className="self-center text-muted" aria-hidden />}
     </div>
   )
 }

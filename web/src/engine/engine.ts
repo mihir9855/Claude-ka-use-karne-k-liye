@@ -22,6 +22,7 @@ export interface Fill {
   price: number
   full: boolean // tank filled to the top
   ts: number
+  note?: string // pump, route, anything worth remembering
 }
 
 export interface DB {
@@ -119,6 +120,7 @@ export interface Draft {
   qty: number
   price: number
   full: boolean
+  note?: string
 }
 
 const toFill = (d: Draft): Fill => ({ id: 'preview', ts: 0, ...d })

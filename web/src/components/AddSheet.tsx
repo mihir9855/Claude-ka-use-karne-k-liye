@@ -22,6 +22,7 @@ export function AddSheet({ db, v, edit, onClose }: { db: DB; v: VehicleId; edit?
   const [price, setPrice] = useState(edit ? String(edit.price) : String(rs.length ? rs[rs.length - 1].price : ''))
   const [date, setDate] = useState(edit ? edit.date : today())
   const [full, setFull] = useState(edit ? edit.full : true)
+  const [note, setNote] = useState(edit?.note ?? '')
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export function AddSheet({ db, v, edit, onClose }: { db: DB; v: VehicleId; edit?
     setAmount(+x > 0 && +price > 0 ? r2(+x * +price) : '')
   }
 
-  const draft = { v, date, odo: +odo, qty: +qty, price: +price || 0, full }
+  const draft = { v, date, odo: +odo, qty: +qty, price: +price || 0, full, note: note.trim() || undefined }
   const avg = previewAvg(db, draft, edit?.id)
   const km = previewRow(db, draft, edit?.id)?.km ?? 0
   const first = veh.startOdo === 0 && rs.filter((f) => f.id !== edit?.id).length === 0
@@ -95,6 +96,10 @@ export function AddSheet({ db, v, edit, onClose }: { db: DB; v: VehicleId; edit?
           <label className="flex flex-col gap-1.5">
             <span className={label}>Date</span>
             <input id="f-date" className={input} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </label>
+          <label className="col-span-2 flex flex-col gap-1.5">
+            <span className={label}>Note (optional)</span>
+            <input id="f-note" className={input} type="text" maxLength={120} placeholder="Pump name, route, anything to remember" value={note} onChange={(e) => setNote(e.target.value)} />
           </label>
         </div>
 

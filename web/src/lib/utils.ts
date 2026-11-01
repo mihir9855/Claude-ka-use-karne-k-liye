@@ -9,6 +9,10 @@ export const fmtDate = (s: string) => {
   const d = new Date(s + 'T00:00:00')
   return `${d.getDate()} ${MON[d.getMonth()]}`
 }
+export const fmtDateLong = (s: string) => {
+  const d = new Date(s + 'T00:00:00')
+  return `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`
+}
 export const fmtMonth = (k: string) => `${MON[+k.slice(5, 7) - 1]} ${k.slice(2, 4)}`
 export const inr = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN')
 export const today = () => {

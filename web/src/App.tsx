@@ -7,6 +7,7 @@ import { useDB } from './engine/store'
 import { VehicleSwitch } from './components/parts'
 import { AddSheet } from './components/AddSheet'
 import { Splash } from './components/Splash'
+import { FillDetail } from './components/FillDetail'
 import { History, Home, Settings, Stats } from './pages'
 import { cn } from './lib/utils'
 
@@ -25,6 +26,7 @@ export default function App() {
   const v = cur.id
   const [tab, setTab] = useState<Tab>('home')
   const [sheet, setSheet] = useState<{ edit?: Fill } | null>(null)
+  const [detail, setDetail] = useState<string | null>(null)
   const [splash, setSplash] = useState(() => !matchMedia('(prefers-reduced-motion: reduce)').matches)
 
   const nav = (cls: string, item: string) =>
@@ -51,8 +53,8 @@ export default function App() {
           {tab !== 'settings' && <VehicleSwitch vehicles={db.vehicles} v={v} onChange={setV} />}
           <AnimatePresence mode="wait">
             <motion.div key={tab + (tab === 'settings' ? '' : v)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>
-              {tab === 'home' && <Home db={db} v={v} go={() => setTab('log')} />}
-              {tab === 'log' && <History db={db} v={v} onEdit={(f) => setSheet({ edit: f })} />}
+              {tab === 'home' && <Home db={db} v={v} go={() => setTab('log')} onOpen={setDetail} />}
+              {tab === 'log' && <History db={db} v={v} onOpen={setDetail} />}
               {tab === 'stats' && <Stats db={db} v={v} />}
               {tab === 'settings' && <Settings db={db} onAdded={setV} />}
             </motion.div>
@@ -70,7 +72,8 @@ export default function App() {
         </div>
       </nav>
 
-      <AnimatePresence>{sheet && <AddSheet db={db} v={v} edit={sheet.edit} onClose={() => setSheet(null)} />}</AnimatePresence>
+      <AnimatePresence>{detail && <FillDetail db={db} v={v} id={detail} onSelect={setDetail} onEdit={(f) => setSheet({ edit: f })} onClose={() => setDetail(null)} />}</AnimatePresence>
+      <AnimatePresence>{sheet &&<AddSheet db={db} v={v} edit={sheet.edit} onClose={() => setSheet(null)} />}</AnimatePresence>
       <Toaster position="top-center" offset={16} />
       <AnimatePresence>{splash && <Splash onDone={() => setSplash(false)} />}</AnimatePresence>
     </div>

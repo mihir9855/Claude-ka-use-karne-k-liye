@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Moon, Sun } from 'lucide-react'
 import { rows, summary, vehicleOf } from './engine/engine'
-import type { DB, Fill, VehicleId } from './engine/engine'
+import type { DB, VehicleId } from './engine/engine'
 import { actions } from './engine/store'
 import { Card, Count, FillRow, Gauge, KmMonthly, PriceTrend, Spark, Spend, SpendDonut, Trend } from './components/parts'
 import { cn, getTheme, inr, saveTextFile, setTheme } from './lib/utils'
@@ -15,7 +15,7 @@ const Chip = ({ label, value, sub }: { label: string; value: string; sub: string
   </div>
 )
 
-export function Home({ db, v, go }: { db: DB; v: VehicleId; go: () => void }) {
+export function Home({ db, v, go, onOpen }: { db: DB; v: VehicleId; go: () => void; onOpen: (id: string) => void }) {
   const veh = vehicleOf(db, v)
   const rs = rows(db, v)
   const s = summary(rs, veh)
@@ -47,7 +47,7 @@ export function Home({ db, v, go }: { db: DB; v: VehicleId; go: () => void }) {
         <Chip label="Driven" value={String(s.totalKm)} sub="km in total" />
       </div>
       <Card title="Recent fill-ups" hint={`${veh.avgUnit} · cost`}>
-        {rs.length ? [...rs].reverse().slice(0, 5).map((r) => <FillRow key={r.id} r={r} unit={veh.unit} />) : <p className="py-4 text-center text-sm text-muted">Tap + and add your first fill-up. Fill the tank to full and enter the odometer and the fuel. The average shows from the second fill-up.</p>}
+        {rs.length ? [...rs].reverse().slice(0, 5).map((r) => <FillRow key={r.id} r={r} unit={veh.unit} onOpen={() => onOpen(r.id)} />) : <p className="py-4 text-center text-sm text-muted">Tap + and add your first fill-up. Fill the tank to full and enter the odometer and the fuel. The average shows from the second fill-up.</p>}
         {rs.length > 5 && <button type="button" onClick={go} className="mt-1 w-full py-2 text-sm font-semibold text-accent">See all</button>}
       </Card>
     </div>
@@ -83,16 +83,13 @@ export function Stats({ db, v }: { db: DB; v: VehicleId }) {
   )
 }
 
-export function History({ db, v, onEdit }: { db: DB; v: VehicleId; onEdit: (f: Fill) => void }) {
+export function History({ db, v, onOpen }: { db: DB; v: VehicleId; onOpen: (id: string) => void }) {
   const veh = vehicleOf(db, v)
   const rs = [...rows(db, v)].reverse()
   return (
-    <Card title="All fill-ups" hint={veh.name}>
+    <Card title="All fill-ups" hint="tap one to open">
       {rs.length ? rs.map((r) => (
-        <FillRow key={r.id} r={r} unit={veh.unit} onEdit={() => onEdit(db.fills.find((f) => f.id === r.id) as Fill)} onDelete={() => {
-          const gone = actions.remove(r.id)
-          if (gone) toast('Fill-up deleted', { duration: 8000, action: { label: 'Undo', onClick: () => actions.restoreFill(gone) } })
-        }} />
+        <FillRow key={r.id} r={r} unit={veh.unit} onOpen={() => onOpen(r.id)} />
       )) : <p className="py-6 text-center text-sm text-muted">No fill-ups yet.</p>}
     </Card>
   )
