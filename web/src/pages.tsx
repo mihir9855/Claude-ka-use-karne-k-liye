@@ -4,13 +4,13 @@ import { Moon, Sun } from 'lucide-react'
 import { rows, summary, vehicleOf } from './engine/engine'
 import type { DB, VehicleId } from './engine/engine'
 import { actions } from './engine/store'
-import { Card, Count, FillRow, Spend, Trend } from './components/parts'
+import { Card, Count, FillRow, Gauge, KmMonthly, PriceTrend, Spark, Spend, SpendDonut, Trend } from './components/parts'
 import { cn, getTheme, inr, saveTextFile, setTheme } from './lib/utils'
 
 const Chip = ({ label, value, sub }: { label: string; value: string; sub: string }) => (
   <div className="flex min-w-0 flex-col gap-1 rounded-2xl border border-line bg-card p-3">
     <span className="text-[11px] font-semibold uppercase tracking-[.09em] text-muted">{label}</span>
-    <span className="truncate font-display text-[26px] font-semibold leading-none tnum">{value}</span>
+    <span className={cn('truncate font-display font-semibold leading-none tnum', value.length > 5 ? 'text-[20px]' : 'text-[26px]')}>{value}</span>
     <span className="truncate text-[11.5px] text-muted">{sub}</span>
   </div>
 )
@@ -39,6 +39,7 @@ export function Home({ db, v, go }: { db: DB; v: VehicleId; go: () => void }) {
           {delta !== null && ` · ${delta >= 0 ? 'up' : 'down'} ${Math.abs(delta).toFixed(1)}`}
         </span>
         <span className="text-[13px] opacity-80">{veh.name} · {veh.fuel} · {s.fillCount} fill-ups</span>
+        <Spark rs={rs} />
       </section>
       <div className="grid grid-cols-3 gap-2">
         <Chip label="Best" value={s.best !== null ? s.best.toFixed(1) : '–'} sub={veh.avgUnit} />
@@ -60,6 +61,9 @@ export function Stats({ db, v }: { db: DB; v: VehicleId }) {
   const fuel = rs.reduce((a, r) => a + r.qty, 0)
   return (
     <div className="flex flex-col gap-4">
+      <Card title="Average meter" hint={`best ${s.best !== null ? s.best.toFixed(1) : '–'} ${veh.avgUnit}`}>
+        <Gauge value={s.overall} best={s.best} unit={veh.avgUnit} />
+      </Card>
       <div className="grid grid-cols-3 gap-2">
         <Chip label="Best" value={s.best !== null ? s.best.toFixed(1) : '–'} sub={veh.avgUnit} />
         <Chip label="Lowest" value={s.worst !== null ? s.worst.toFixed(1) : '–'} sub={veh.avgUnit} />
@@ -71,7 +75,10 @@ export function Stats({ db, v }: { db: DB; v: VehicleId }) {
       <div className="grid gap-4 desk:grid-cols-2">
         <Card title="Average per fill-up" hint="dashed = overall"><Trend rs={rs} mean={s.overall} unit={veh.avgUnit} /></Card>
         <Card title="Spent per month"><Spend rs={rs} /></Card>
+        <Card title="Driven per month" hint="km"><KmMonthly rs={rs} /></Card>
+        <Card title={`${veh.fuel} price`} hint={`₹ per ${veh.unit}`}><PriceTrend rs={rs} unit={veh.unit} /></Card>
       </div>
+      <Card title="Where the money went" hint="all vehicles"><SpendDonut db={db} /></Card>
     </div>
   )
 }
