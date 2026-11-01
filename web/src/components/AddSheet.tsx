@@ -49,6 +49,7 @@ export function AddSheet({ db, v, onClose }: { db: DB; v: VehicleId; onClose: ()
   const draft = { v, date, odo: +odo, qty: +qty, price: +price || 0, full }
   const avg = previewAvg(db, draft)
   const km = +odo > lastOdo ? +odo - lastOdo : 0
+  const first = veh.startOdo === 0 && rs.length === 0
 
   const save = (e: React.FormEvent) => {
     e.preventDefault()
@@ -108,7 +109,7 @@ export function AddSheet({ db, v, onClose }: { db: DB; v: VehicleId; onClose: ()
           <div className="min-w-0">
             <div className={label}>This fill-up</div>
             <div className={cn('text-[13px]', err ? 'font-semibold text-bad' : 'text-muted')} role="status">
-              {err ?? (km && +qty > 0 ? `${km} km · ${inr(+qty * (+price || 0))}` : 'Enter odometer and quantity')}
+              {err ?? (first && +odo > 0 ? `First fill-up: ${odo} km becomes your starting point` : km && +qty > 0 ? `${km} km · ${inr(+qty * (+price || 0))}` : 'Enter odometer and quantity')}
             </div>
           </div>
           <div className="whitespace-nowrap font-display text-3xl font-bold text-accent tnum">{avg !== null ? `${avg.toFixed(1)} ${veh.avgUnit}` : '–'}</div>
