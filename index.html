@@ -316,7 +316,7 @@ circle.sg{animation:sweep .9s ease-out both;transition:opacity .2s}
 const bookKey=b=>b==='business'?'arthaly.biz.v1':'arthaly.v1';   // Personal and Business are two separate books
 let BOOK='personal';try{localStorage.setItem('arthaly.book','personal')}catch(e){}   // Business book is switched off for now (its data is kept)
 let KEY=bookKey(BOOK);
-const APP_VER='version 1.4 · build 85 · 1 Nov 2026';
+const APP_VER='version 1.4 · build 86 · 5 Nov 2026';
 const SMS_ON=false;   // bank-SMS capture is switched off: entries are added by hand
 const COLORS=['#4d8479','#7a82b5','#c08a4a','#b0678a','#5b86a6','#8f7bb5'];
 const ICONS={
@@ -1190,7 +1190,7 @@ function accountStatement(aid,per,src){   // src: an income-source id instead of
   let bal=a.open+mine.filter(t=>from&&t.date<from).reduce((s,t)=>s+eff(t),0);
   const open=bal,rows=mine.filter(t=>(!from||t.date>=from)&&(!to||t.date<=to)).map(t=>{const e=eff(t);bal+=e;
     const other=t.to===aid&&t.acc!==aid?'Transfer from '+(acc(t.acc)?acc(t.acc).name:'account'):t.kind==='transfer'?'Transfer to '+(acc(t.to)?acc(t.to).name:'account'):t.kind==='pass'&&person(t.party)?person(t.party).name:t.kind==='expense'?cname(t.cat):t.kind==='other'?srcName(t.source||''):t.cat&&t.cat!=='Other'?t.cat:t.type==='credit'?'Income':'';
-    return {t,bal,debit:e<0?-e:0,credit:e>0?e:0,txt:t.note||other||'Entry',head:t.note?other:''}});
+    return {t,bal,debit:e<0?-e:0,credit:e>0?e:0,txt:t.note||'—',head:other}});
   const dr=rows.reduce((x,r)=>x+r.debit,0),cr=rows.reduce((x,r)=>x+r.credit,0),close=open+cr-dr;
   const fd=iso=>new Date(iso+'T00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const period=from?fd(from)+' to '+fd(to):'All time';
