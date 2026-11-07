@@ -14,8 +14,8 @@ body{position:relative;background:radial-gradient(760px 640px at 50% 32%,#FFF1D9
 .abs{position:absolute}
 /* faint line work */
 .wheel{background:#B98A3E;-webkit-mask:url("{{WHEELURI}}") center/contain no-repeat;mask:url("{{WHEELURI}}") center/contain no-repeat}
-.bgw{width:560px;height:560px;opacity:.3}
-.mantra{left:50%;top:44px;width:230px;transform:translateX(-50%);aspect-ratio:623/110;background:var(--foil);
+
+.mantra{left:50%;top:44px;width:230px;transform:translateX(-50%);aspect-ratio:623/110;background:#754437;
   -webkit-mask:url("{{IMG:mantra}}") center/100% 100% no-repeat;mask:url("{{IMG:mantra}}") center/100% 100% no-repeat}
 /* aura behind the heads */
 .aura{left:295px;top:200px;width:490px;height:490px;border-radius:50%;background:radial-gradient(circle at 50% 42%,#FFE6B8,#F6C27A 58%,#E5A055);
@@ -30,20 +30,25 @@ h1{left:0;right:0;top:872px;margin:0;text-align:center;font:600 62px/1 Cinzel,se
 .sub{left:0;right:0;top:944px;margin:0;text-align:center;font:italic 500 33px/1 "Cormorant Garamond",serif;color:var(--gold)}
 .msg{left:200px;right:200px;top:986px;margin:0;text-align:center;font:italic 500 27px/1.3 "Cormorant Garamond",serif;color:#6A3B2A;text-wrap:balance}
 .diyas{left:0;top:1078px;width:1080px;height:110px;overflow:visible}
-.foot{left:60px;right:60px;bottom:44px;display:grid;grid-template-columns:120px auto 1px auto;gap:20px;align-items:center;justify-content:center;padding-top:22px}
+.foot{left:46px;right:46px;bottom:40px;display:grid;grid-template-columns:175px auto 1px auto;gap:18px;align-items:center;justify-content:center;padding-top:22px}
 .foot::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold2) 12%,var(--gold2) 88%,transparent)}
-.logo{width:120px;aspect-ratio:720/466;background:url("{{IMG:contact_bg}}") center/contain no-repeat}
+.logo{width:175px;aspect-ratio:720/466;background:url("{{IMG:contact_bg}}") center/contain no-repeat}
 .name{font:700 23px/1.12 Cinzel,serif;letter-spacing:.03em;color:var(--maroon)}
 .tag{margin-top:6px;font:italic 600 18px/1 "Cormorant Garamond",serif;color:var(--gold)}
 .bar{align-self:stretch;background:rgba(201,154,69,.55)}
-.grid{display:grid;grid-template-columns:auto auto;gap:10px 18px}
-.ic{display:flex;align-items:center;gap:8px;font:600 16px/1.2 Inter,sans-serif;white-space:nowrap}
+.grid{display:grid;grid-template-columns:auto auto;gap:10px 14px}
+.ic{display:flex;align-items:center;gap:8px;font:600 15.5px/1.2 Inter,sans-serif;white-space:nowrap}
 .ic svg{flex:none;width:26px;height:26px;padding:5px;border-radius:50%;background:var(--gold);color:#fff}
 </style>
 </head>
 <body>
-<div class="abs wheel bgw" style="left:-230px;top:-170px"></div><div class="abs wheel bgw" style="right:-230px;top:-170px"></div>
-<div class="abs wheel bgw" style="left:-280px;top:620px"></div><div class="abs wheel bgw" style="right:-280px;top:620px"></div>
+<div class="abs wheel" style="left:-170px;top:-120px;width:400px;height:400px;opacity:.26;transform:rotate(14deg)"></div>
+<div class="abs wheel" style="left:880px;top:-60px;width:240px;height:240px;opacity:.22;transform:rotate(-22deg)"></div>
+<div class="abs wheel" style="left:905px;top:330px;width:330px;height:330px;opacity:.24;transform:rotate(31deg)"></div>
+<div class="abs wheel" style="left:-110px;top:560px;width:270px;height:270px;opacity:.22;transform:rotate(-8deg)"></div>
+<div class="abs wheel" style="left:60px;top:330px;width:120px;height:120px;opacity:.2;transform:rotate(18deg)"></div>
+<div class="abs wheel" style="left:940px;top:820px;width:190px;height:190px;opacity:.22;transform:rotate(-35deg)"></div>
+<div class="abs wheel" style="left:-60px;top:950px;width:160px;height:160px;opacity:.2;transform:rotate(25deg)"></div>
 <svg class="abs" id="lines" style="left:0;top:0;width:1080px;height:1350px" viewBox="0 0 1080 1350"></svg>
 <div class="abs mantra" role="img" aria-label="Shree Ganeshaya Namah"></div>
 <div class="abs dots" style="left:225px;top:425px"><i></i><i></i><i></i></div><div class="abs dots" style="right:225px;top:425px"><i></i><i></i><i></i></div>
