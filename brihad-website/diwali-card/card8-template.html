@@ -14,7 +14,7 @@ body{position:relative;background:radial-gradient(760px 640px at 50% 32%,#FFF1D9
 .abs{position:absolute}
 /* faint line work */
 .wheel{background:#B98A3E;-webkit-mask:url("{{WHEELURI}}") center/contain no-repeat;mask:url("{{WHEELURI}}") center/contain no-repeat}
-.bgw{width:560px;height:560px;opacity:.08}
+.bgw{width:560px;height:560px;opacity:.3}
 .mantra{left:50%;top:44px;width:230px;transform:translateX(-50%);aspect-ratio:623/110;background:var(--foil);
   -webkit-mask:url("{{IMG:mantra}}") center/100% 100% no-repeat;mask:url("{{IMG:mantra}}") center/100% 100% no-repeat}
 /* aura behind the heads */
@@ -23,7 +23,7 @@ body{position:relative;background:radial-gradient(760px 640px at 50% 32%,#FFF1D9
 .aura::after{content:"";position:absolute;inset:22px;border-radius:50%;border:1px dashed rgba(255,255,255,.7)}
 .auraw{left:320px;top:225px;width:440px;height:440px;opacity:.16;background:#FFF6E0}
 .dots{display:grid;gap:14px}.dots i{width:7px;height:7px;border-radius:50%;background:var(--gold2)}
-.g{left:212px;bottom:calc(1350px - 858px);width:373px}
+.g{left:257px;bottom:calc(1350px - 858px);width:328px}
 .l{left:509px;bottom:calc(1350px - 858px);width:383px}
 .shadow{left:250px;top:838px;width:580px;height:30px;border-radius:50%;background:radial-gradient(closest-side,rgba(120,60,20,.25),transparent)}
 h1{left:0;right:0;top:872px;margin:0;text-align:center;font:600 62px/1 Cinzel,serif;letter-spacing:.14em;color:var(--maroon)}
@@ -32,7 +32,7 @@ h1{left:0;right:0;top:872px;margin:0;text-align:center;font:600 62px/1 Cinzel,se
 .diyas{left:0;top:1078px;width:1080px;height:110px;overflow:visible}
 .foot{left:60px;right:60px;bottom:44px;display:grid;grid-template-columns:120px auto 1px auto;gap:20px;align-items:center;justify-content:center;padding-top:22px}
 .foot::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold2) 12%,var(--gold2) 88%,transparent)}
-.logo{width:120px;aspect-ratio:720/466;background:var(--foil);-webkit-mask:url("{{IMG:contact_bg}}") center/contain no-repeat;mask:url("{{IMG:contact_bg}}") center/contain no-repeat}
+.logo{width:120px;aspect-ratio:720/466;background:url("{{IMG:contact_bg}}") center/contain no-repeat}
 .name{font:700 23px/1.12 Cinzel,serif;letter-spacing:.03em;color:var(--maroon)}
 .tag{margin-top:6px;font:italic 600 18px/1 "Cormorant Garamond",serif;color:var(--gold)}
 .bar{align-self:stretch;background:rgba(201,154,69,.55)}
@@ -68,7 +68,7 @@ const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.set
 const L=document.getElementById('lines');const d0=el('defs',{},L);
 const pat=el('pattern',{id:'jl',width:46,height:46,patternUnits:'userSpaceOnUse'},d0);
 el('path',{d:'M23 0 L46 23 L23 46 L0 23Z',fill:'none',stroke:'#B98A3E','stroke-width':.8},pat);el('circle',{cx:23,cy:23,r:3.5,fill:'none',stroke:'#B98A3E','stroke-width':.8},pat);
-el('rect',{width:1080,height:1350,fill:'url(#jl)',opacity:.07},L);
+
 el('rect',{x:22,y:22,width:1036,height:1306,rx:22,fill:'none',stroke:'#C99A45','stroke-width':1.5,opacity:.55},L);
 el('rect',{x:32,y:32,width:1016,height:1286,rx:16,fill:'none',stroke:'#C99A45','stroke-width':.8,'stroke-dasharray':'2 6',opacity:.5},L);
 /* five ornate gold diyas */
