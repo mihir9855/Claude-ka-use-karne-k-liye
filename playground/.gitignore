@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.registry/
+.registry-deps.txt
+video/**/renders/
+video/**/output/
+video/manim/media/
