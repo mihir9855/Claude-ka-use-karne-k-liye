@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FDF3EC;--ink:#2B2320;--muted:#7A6A62;--line:#EED9CB;--acc:#B0603A}
+*{box-sizing:border-box}body{margin:0;font:400 16px/1.7 Inter,sans-serif;color:var(--ink);background:var(--bg);overflow-x:hidden}
+.top{display:flex;justify-content:space-between;align-items:center;padding:22px 5vw;font-size:14px;font-weight:500}.top nav{display:flex;gap:28px}.top a{padding:10px 18px;border:1.5px solid var(--ink);border-radius:999px;font-weight:600}
+.word{position:relative;margin:10px 0 0;padding:0 3vw;font:500 clamp(90px,22vw,340px)/.85 "Bodoni Moda",serif;letter-spacing:-.03em;text-align:center}
+.inset{position:absolute;left:50%;top:50%;width:clamp(120px,15vw,230px);aspect-ratio:3/4;transform:translate(-50%,-46%) rotate(-3deg);border-radius:18px;overflow:hidden;border:6px solid var(--bg);box-shadow:0 30px 60px -30px rgba(43,35,32,.6)}.inset img{width:100%;height:100%;object-fit:cover}
+.under{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3vw;padding:34px 5vw 0;align-items:start}
+.under h1{margin:0;grid-column:span 2;font:400 clamp(30px,3.4vw,52px)/1.1 "Bodoni Moda",serif}.under h1 i{color:var(--acc)}
+.under p{margin:0;color:var(--muted)}.cta{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}.cta a{padding:13px 20px;border-radius:999px;font-weight:600;background:var(--ink);color:#fff}.cta a+a{background:#fff;color:var(--ink)}
+.strip{display:flex;gap:40px;margin-top:60px;padding:20px 0;border-block:1px solid var(--line);white-space:nowrap;overflow:hidden;font:italic 400 26px "Bodoni Moda",serif}
+.strip span::after{content:"✦";margin-left:40px;color:var(--acc);font-style:normal;font-size:16px}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:40px 5vw}.row img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:16px}.row b{display:block;margin-top:10px;font:400 20px "Bodoni Moda",serif}
+@media(max-width:860px){.top nav{display:none}.under{grid-template-columns:1fr}.under h1{grid-column:auto}.row{grid-template-columns:1fr 1fr}.inset{width:110px}}
+</style></head><body>
+<header class="top"><span>Since 1999</span><nav><span>Projects</span><span>Services</span><span>Studio</span><span>ગુજરાતી</span></nav><a>Call us</a></header>
+<div class="word">BRIHAD<div class="inset"><img src="a/pj_bevta-dhanera.jpg"></div></div>
+<section class="under"><h1>Temples in pure stone, <i>carved by hand,</i> from sculpture to structure.</h1><div><p>We design temples, carve them by hand and build them on site. Our family has done this work for generations.</p><div class="cta"><a>See our temples</a><a>WhatsApp</a></div></div></section>
+<div class="strip"><span>Dhrangadhra Sandstone</span><span>Ambaji Marble</span><span>Bansi Paharpur Pink Sandstone</span><span>Roopkaam</span><span>Nakshikaam</span><span>Ghaatkaam</span></div>
+<section class="row"><div><img src="a/pj_champapuri.jpg"><b>Champapuri Prabha Tirth</b></div><div><img src="a/pj_ulhasnagar.jpg"><b>Rath Mandir</b></div><div><img src="a/pj_ramji-wadhwan.jpg"><b>Ramji Mandir Chora</b></div><div><img src="a/pj_gauridad.jpg"><b>Shikharbandhi, Gauridad</b></div></section>
+</body></html>

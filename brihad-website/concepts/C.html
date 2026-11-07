@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#20232B;--muted:#5F6470;--mint:#D3EEDF;--sky:#D6E8F8;--lav:#E6E0FA;--peach:#FCE0CF;--lemon:#F6EDBE}
+*{box-sizing:border-box}body{margin:0;font:400 16px/1.6 Outfit,sans-serif;color:var(--ink);background:#F7F7F5;overflow-x:hidden}
+.wrap{padding:16px}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-radius:22px;background:#fff;margin-bottom:12px}
+.nav b{font-weight:700;font-size:22px}.nav nav{display:flex;gap:22px;font-weight:500;color:var(--muted)}.nav a{padding:10px 18px;border-radius:14px;background:var(--ink);color:#fff;font-weight:600}
+.bento{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,minmax(170px,auto));gap:12px}
+.c{border-radius:26px;padding:26px;overflow:hidden;position:relative}
+.t{grid-column:span 2;grid-row:span 2;background:var(--sky);display:flex;flex-direction:column;justify-content:space-between}
+.t small{font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:12.5px}
+.t h1{margin:0;font-weight:700;font-size:clamp(40px,4.8vw,78px);line-height:1;letter-spacing:-.035em}
+.t p{margin:16px 0 0;max-width:440px;color:var(--muted)}.t .cta{display:flex;gap:10px;margin-top:22px}.t .cta a{padding:14px 22px;border-radius:16px;background:var(--ink);color:#fff;font-weight:600}.t .cta a+a{background:#fff;color:var(--ink)}
+.ph{padding:0}.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph span{position:absolute;left:14px;bottom:14px;padding:7px 14px;border-radius:12px;background:#fff;font-weight:600;font-size:14px}
+.p1{grid-row:span 2}.s{background:var(--peach)}.s b{display:block;font-size:56px;font-weight:700;line-height:1;letter-spacing:-.04em}.s span{color:var(--muted)}
+.m{background:var(--lav)}.l{background:var(--mint)}.y{background:var(--lemon)}
+.c h3{margin:0 0 6px;font-size:22px}.c.m p,.c.l p,.c.y p{margin:0;color:var(--muted);font-size:15px}
+.svc{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}.svc .c{min-height:240px}.svc img{position:absolute;right:-10px;bottom:-14px;width:120px}
+@media(max-width:860px){.nav nav{display:none}.bento{grid-template-columns:1fr 1fr;grid-template-rows:none}.t{grid-column:span 2;grid-row:auto}.p1{grid-row:span 1;min-height:220px}.svc{grid-template-columns:1fr 1fr}}
+</style></head><body><div class="wrap">
+<div class="nav"><b>Brihad</b><nav><span>Projects</span><span>Services</span><span>Studio</span><span>ગુજરાતી</span></nav><a>Call us</a></div>
+<div class="bento">
+ <div class="c t"><small>Since 1999 · Sculpture to Structure</small><div><h1>Temples in pure stone, carved by hand.</h1><p>We design temples, carve them by hand and build them on site, from the first drawing to the last carved detail.</p><div class="cta"><a>See our temples</a><a>WhatsApp</a></div></div></div>
+ <div class="c ph p1"><img src="a/pj_champapuri.jpg"><span>Champapuri Prabha Tirth</span></div>
+ <div class="c s"><b>50+</b><span>Shikharbandhi temples across India</span></div>
+ <div class="c ph"><img src="a/pj_ulhasnagar.jpg"><span>Rath Mandir</span></div>
+ <div class="c m"><h3>Stone alone</h3><p>We never use metal anywhere in a temple.</p></div>
+ <div class="c ph"><img src="a/pj_bevta-dhanera.jpg"><span>Bevta Shiv Mandir</span></div>
+ <div class="c l"><h3>100+ home temples</h3><p>Carved to fit your room, for daily puja.</p></div>
+ <div class="c ph"><img src="a/pj_ramji-wadhwan.jpg"><span>Ramji Mandir Chora</span></div>
+</div>
+<div class="svc"><div class="c y"><h3>Temple Architecture</h3><img src="a/svc1.png"></div><div class="c m"><h3>Jain Derasar</h3><img src="a/svc2.png"></div><div class="c l"><h3>Stone &amp; CNC Craft</h3><img src="a/svc3.png"></div><div class="c s"><h3>Murti &amp; Sculpture</h3><img src="a/svc4.png"></div></div>
+</div></body></html>

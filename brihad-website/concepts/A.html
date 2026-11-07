@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--peach:#FBD9C4;--sky:#CFE6F7;--lav:#E3DDF8;--ink:#1B2230;--muted:#5D6678}
+*{box-sizing:border-box}body{margin:0;font:400 17px/1.6 "Plus Jakarta Sans",sans-serif;color:var(--ink);background:#FBFAF8;overflow-x:hidden}
+.hd{position:absolute;inset:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:22px 5vw;z-index:5}
+.hd b{font-weight:800;font-size:22px}.hd nav{display:flex;gap:6px;padding:6px;border-radius:999px;background:rgba(255,255,255,.7);backdrop-filter:blur(10px)}
+.hd nav a{padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px}.hd nav a.on{background:var(--ink);color:#fff}
+.hero{position:relative;min-height:100vh;display:grid;place-items:center;text-align:center;overflow:hidden;background:radial-gradient(60% 60% at 20% 20%,var(--peach),transparent 70%),radial-gradient(60% 60% at 85% 30%,var(--sky),transparent 70%),radial-gradient(60% 60% at 50% 100%,var(--lav),transparent 70%),#FBFAF8}
+.copy{position:relative;z-index:3;max-width:760px;padding:0 20px}
+.tag{display:inline-flex;gap:8px;align-items:center;padding:8px 16px;border-radius:999px;background:#fff;font-weight:600;font-size:13.5px;box-shadow:0 8px 24px -12px rgba(27,34,48,.25)}
+h1{margin:22px 0 0;font-weight:800;font-size:clamp(44px,6.4vw,92px);line-height:1;letter-spacing:-.04em}
+h1 span{background:linear-gradient(90deg,#E58A5C,#7C8CE0);-webkit-background-clip:text;background-clip:text;color:transparent}
+p{max-width:540px;margin:22px auto 0;color:var(--muted)}
+.cta{display:flex;gap:12px;justify-content:center;margin-top:30px;flex-wrap:wrap}
+.btn{padding:16px 26px;border-radius:999px;font-weight:700;background:var(--ink);color:#fff}.btn.l{background:#fff;color:var(--ink)}
+.f{position:absolute;z-index:2;width:clamp(120px,14vw,210px);aspect-ratio:3/4;border-radius:24px;overflow:hidden;box-shadow:0 30px 60px -28px rgba(27,34,48,.5);border:6px solid #fff}
+.f img{width:100%;height:100%;object-fit:cover}
+.f1{left:4vw;top:18vh;transform:rotate(-8deg)}.f2{left:13vw;bottom:8vh;transform:rotate(6deg)}.f3{right:5vw;top:16vh;transform:rotate(7deg)}.f4{right:14vw;bottom:7vh;transform:rotate(-5deg)}
+.stats{position:relative;z-index:3;display:flex;gap:14px;justify-content:center;margin-top:44px;flex-wrap:wrap}
+.stats div{padding:14px 20px;border-radius:18px;background:rgba(255,255,255,.75);backdrop-filter:blur(10px)}.stats b{display:block;font-size:26px;font-weight:800}.stats span{font-size:13px;color:var(--muted)}
+.sec{padding:90px 5vw}.sec h2{margin:0 0 30px;font-weight:800;font-size:clamp(34px,4vw,56px);letter-spacing:-.03em;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.card{border-radius:26px;overflow:hidden;background:#fff;box-shadow:0 20px 40px -30px rgba(27,34,48,.4)}.card img{width:100%;aspect-ratio:1;object-fit:cover}.card div{padding:16px 18px 20px}.card b{display:block}.card span{font-size:14px;color:var(--muted)}
+.card:nth-child(4n+1) div{background:var(--peach)}.card:nth-child(4n+2) div{background:var(--sky)}.card:nth-child(4n+3) div{background:var(--lav)}.card:nth-child(4n) div{background:#D8EFE2}
+@media(max-width:800px){.hd nav{display:none}.f{width:100px}.f1{top:10vh;left:-10px}.f3{top:9vh;right:-10px}.f2,.f4{display:none}.grid{grid-template-columns:1fr 1fr}.hero{padding:120px 0 60px}}
+</style></head><body>
+<header class="hd"><b>Brihad</b><nav><a class="on">Home</a><a>Projects</a><a>Services</a><a>Studio</a><a>Contact</a></nav><a class="btn" style="padding:12px 20px">Call us</a></header>
+<section class="hero"><div class="f f1"><img src="a/pj_champapuri.jpg"></div><div class="f f2"><img src="a/pj_ulhasnagar.jpg"></div><div class="f f3"><img src="a/pj_bevta-dhanera.jpg"></div><div class="f f4"><img src="a/pj_ramji-wadhwan.jpg"></div>
+<div class="copy"><span class="tag">🛕 Since 1999 · Sculpture to Structure</span><h1>Temples in pure stone, <span>carved by hand.</span></h1><p>We design temples, carve them by hand and build them on site, from the first drawing to the last carved detail.</p><div class="cta"><a class="btn">See our temples</a><a class="btn l">Talk on WhatsApp</a></div>
+<div class="stats"><div><b>50+</b><span>Shikharbandhi temples</span></div><div><b>100+</b><span>Home temples</span></div><div><b>27</b><span>Years of craft</span></div></div></div></section>
+<section class="sec"><h2>Our temples</h2><div class="grid"><div class="card"><img src="a/pj_champapuri.jpg"><div><b>Shree Champapuri Prabha Tirth</b><span>Ankleshvar, Gujarat</span></div></div><div class="card"><img src="a/pj_ulhasnagar.jpg"><div><b>Rath Mandir</b><span>Ulhasnagar</span></div></div><div class="card"><img src="a/pj_ramji-wadhwan.jpg"><div><b>Ramji Mandir Chora</b><span>Wadhwan City</span></div></div><div class="card"><img src="a/pj_bevta-dhanera.jpg"><div><b>Bevta Shiv Mandir</b><span>Dhanera</span></div></div></div></section>
+</body></html>
