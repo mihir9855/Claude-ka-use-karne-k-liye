@@ -14,7 +14,9 @@ CONTACT_BLOCK = ('<div class="name">BRIHAD TEMPLE CONSTRUCTION CO.</div><div cla
                  '<div class="rows"><div class="row">{{ICON:phone}}{{PHONE1}}</div><div class="row">{{ICON:phone}}{{PHONE2}}</div>'
                  '<div class="row">{{ICON:mail}}{{EMAIL}}</div><div class="row">{{ICON:web}}{{WEBSITE}}</div></div>')
 tpl = tpl.replace('{{CONTACT_BLOCK}}', CONTACT_BLOCK)
-rep = {'{{IMG:ganesh}}': 'data:image/png;base64,' + base64.b64encode(open('diwali-card/ganesh-cutout.png', 'rb').read()).decode(),
+_wsvg = open('diwali-card/konark-wheel-traced.svg', encoding='utf-8').read().replace('currentColor', '#000')
+rep = {'{{WHEELURI}}': 'data:image/svg+xml;base64,' + base64.b64encode(_wsvg.encode()).decode(),
+       '{{IMG:ganesh}}': 'data:image/png;base64,' + base64.b64encode(open('diwali-card/ganesh-cutout.png', 'rb').read()).decode(),
        '{{IMG:lakshmi}}': 'data:image/png;base64,' + base64.b64encode(open('diwali-card/lakshmi-cutout.png', 'rb').read()).decode(),
        '{{WHEEL}}': open('diwali-card/konark-wheel-traced.svg', encoding='utf-8').read(),
        '{{PHONE1}}': c['phone'], '{{PHONE2}}': c['phone2'], '{{EMAIL}}': c['email'], '{{WEBSITE}}': 'www.brihadtemple.com',

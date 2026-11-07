@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080">
+<title>Happy Diwali | Brihad Temple Construction Co.</title>
+<link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Inter:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* concepts: ?c=1 chakra halo · ?c=2 editorial · ?c=3 jharokha — all on white, gold-foil accents */
+:root{--foil:linear-gradient(115deg,#8A5A16 0%,#C9932F 22%,#F6DE9A 40%,#C08A2A 58%,#F2D58A 76%,#9A6A1E 100%);--ink:#3A2418;--maroon:#7A1426;--gold:#B07D2A}
+*{box-sizing:border-box}
+html,body{margin:0;width:1080px;height:1350px;overflow:hidden}
+body{position:relative;background:#FFFFFF;font-family:Inter,sans-serif;color:var(--ink)}
+.abs{position:absolute}
+.foil{background:var(--foil);-webkit-background-clip:text;background-clip:text;color:transparent}
+.foilfill{background:var(--foil)}
+.mantra{aspect-ratio:623/110;background:var(--foil);-webkit-mask:url("{{IMG:mantra}}") center/100% 100% no-repeat;mask:url("{{IMG:mantra}}") center/100% 100% no-repeat}
+.wheel{background:var(--foil);-webkit-mask:url("{{WHEELURI}}") center/contain no-repeat;mask:url("{{WHEELURI}}") center/contain no-repeat}
+.logo{aspect-ratio:720/466;background:var(--foil);-webkit-mask:url("{{IMG:contact_bg}}") center/contain no-repeat;mask:url("{{IMG:contact_bg}}") center/contain no-repeat}
+.name{font:600 25px/1.1 Cinzel,serif;letter-spacing:.06em;color:var(--maroon)}
+.tag{font:italic 500 20px/1 "Cormorant Garamond",serif;color:var(--gold)}
+.ic{display:flex;align-items:center;gap:10px;font:500 18px/1.2 Inter,sans-serif;white-space:nowrap;color:var(--ink)}
+.ic svg{flex:none;width:18px;height:18px;color:var(--gold)}
+section{display:none}
+html[data-c="1"] #C1,html[data-c="2"] #C2,html[data-c="3"] #C3{display:block}
+.hang{width:2px}.hang i{position:absolute;left:-1px;width:4px;height:9px;border-radius:2px;border:1.5px solid #C9932F}
+
+/* ===== C1 chakra halo ===== */
+#C1 .mantra{left:50%;top:58px;width:230px;transform:translateX(-50%)}
+#C1 .halo{left:175px;top:105px;width:730px;height:730px;opacity:.55;animation:spin 120s linear infinite}
+#C1 .glow{left:240px;top:260px;width:600px;height:520px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,214,140,.55),rgba(255,214,140,0))}
+#C1 .g{left:250px;bottom:calc(1350px - 780px);width:290px}
+#C1 .l{left:505px;bottom:calc(1350px - 780px);width:300px}
+#C1 .happy{left:0;right:0;top:812px;margin:0;text-align:center;font:600 30px/1 Cinzel,serif;letter-spacing:.7em;padding-left:.7em}
+#C1 h1{left:0;right:0;top:822px;margin:0;text-align:center;font:400 190px/1.1 "Pinyon Script",cursive}
+#C1 .msg{left:200px;right:200px;top:985px;margin:0;text-align:center;font:italic 500 28px/1.35 "Cormorant Garamond",serif;color:#6A4A38;text-wrap:balance}
+#C1 .foot{left:70px;right:70px;bottom:46px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:28px;padding-top:22px}
+#C1 .foot::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:var(--foil)}
+#C1 .foot .logo{width:140px}
+#C1 .side{display:grid;gap:8px}#C1 .side.l2{justify-items:end;text-align:right}#C1 .side.l2 .ic{flex-direction:row-reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== C2 editorial ===== */
+#C2 .word{left:40px;top:60px;writing-mode:vertical-rl;transform:rotate(180deg);font:700 250px/1 Cinzel,serif;letter-spacing:.04em;color:transparent;-webkit-text-stroke:2px #C9932F;opacity:.9}
+#C2 .mantra{left:330px;top:70px;width:220px}
+#C2 .halo{left:360px;top:150px;width:680px;height:680px;opacity:.28}
+#C2 .g{left:380px;bottom:calc(1350px - 760px);width:300px}
+#C2 .l{left:640px;bottom:calc(1350px - 760px);width:310px}
+#C2 .happy{left:330px;top:800px;margin:0;font:600 26px/1 Cinzel,serif;letter-spacing:.5em}
+#C2 h1{left:322px;top:826px;margin:0;font:400 150px/1.1 "Pinyon Script",cursive}
+#C2 .msg{left:330px;right:70px;top:990px;margin:0;font:italic 500 28px/1.35 "Cormorant Garamond",serif;color:#6A4A38}
+#C2 .foot{left:330px;right:60px;bottom:48px;display:grid;grid-template-columns:110px 1fr;gap:22px;align-items:center;padding-top:20px}
+#C2 .foot::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:var(--foil)}
+#C2 .foot .logo{width:110px}
+#C2 .grid{display:grid;grid-template-columns:auto auto;gap:7px 20px;margin-top:10px}#C2 .ic{font-size:16.5px}
+
+/* ===== C3 jharokha ===== */
+#C3 svg.frame{left:0;top:0;width:1080px;height:1350px}
+#C3 .mantra{left:50%;top:44px;width:210px;transform:translateX(-50%)}
+#C3 .cw{width:300px;height:300px;opacity:.35}
+#C3 .g{left:250px;bottom:calc(1350px - 790px);width:290px}
+#C3 .l{left:505px;bottom:calc(1350px - 790px);width:300px}
+#C3 .glow{left:270px;top:330px;width:540px;height:460px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,214,140,.5),rgba(255,214,140,0))}
+#C3 h1{left:0;right:0;top:800px;margin:0;text-align:center;font:400 140px/1.1 "Pinyon Script",cursive}
+#C3 .happy{left:0;right:0;top:812px;margin:0;text-align:center;font:600 24px/1 Cinzel,serif;letter-spacing:.6em;padding-left:.6em}
+#C3 .msg{left:240px;right:240px;top:950px;margin:0;text-align:center;font:italic 500 27px/1.35 "Cormorant Garamond",serif;color:#6A4A38;text-wrap:balance}
+#C3 .foot{left:250px;right:250px;top:1118px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+#C3 .foot .logo{width:90px}#C3 .row{display:flex;gap:16px;margin-top:6px}#C3 .ic{font-size:16.5px}
+</style>
+</head>
+<body>
+<!-- ============ C1 ============ -->
+<section id="C1">
+ <div class="abs mantra"></div>
+ <div class="abs wheel halo"></div>
+ <div class="abs glow"></div>
+ <div class="abs hang" id="h1L"></div><div class="abs hang" id="h1R"></div>
+ <img class="abs g" src="{{IMG:ganesh}}" alt="Shree Ganesh ji"><img class="abs l" src="{{IMG:lakshmi}}" alt="Shree Lakshmi ji">
+ <p class="abs happy foil">HAPPY</p>
+ <h1 class="abs foil">Diwali</h1>
+ <p class="abs msg">May Ganesh ji remove every obstacle and Lakshmi ji bless your home with abundance.</p>
+ <div class="abs foot">
+  <div class="side l2"><div class="name">BRIHAD TEMPLE</div><div class="name">CONSTRUCTION CO.</div><div class="tag">Sculpture to Structure · Since 1999</div></div>
+  <div class="logo"></div>
+  <div class="side"><div class="ic">{{ICON:phone}}{{PHONE1}}</div><div class="ic">{{ICON:phone}}{{PHONE2}}</div><div class="ic">{{ICON:mail}}{{EMAIL}}</div><div class="ic">{{ICON:web}}{{WEBSITE}}</div></div>
+ </div>
+</section>
+
+<!-- ============ C2 ============ -->
+<section id="C2">
+ <div class="abs word">DIWALI</div>
+ <div class="abs mantra"></div>
+ <div class="abs wheel halo"></div>
+ <img class="abs g" src="{{IMG:ganesh}}" alt="Shree Ganesh ji"><img class="abs l" src="{{IMG:lakshmi}}" alt="Shree Lakshmi ji">
+ <p class="abs happy foil">HAPPY</p>
+ <h1 class="abs foil">Diwali</h1>
+ <p class="abs msg">May the light of every diya fill your home with peace, joy and prosperity.</p>
+ <div class="abs foot"><div class="logo"></div><div><div class="name">BRIHAD TEMPLE CONSTRUCTION CO.</div><div class="tag">Sculpture to Structure · Since 1999</div>
+  <div class="grid"><div class="ic">{{ICON:phone}}{{PHONE1}}</div><div class="ic">{{ICON:mail}}{{EMAIL}}</div><div class="ic">{{ICON:phone}}{{PHONE2}}</div><div class="ic">{{ICON:web}}{{WEBSITE}}</div></div></div></div>
+</section>
+
+<!-- ============ C3 ============ -->
+<section id="C3">
+ <svg class="abs frame" id="frame3" viewBox="0 0 1080 1350"></svg>
+ <div class="abs wheel cw" style="left:-150px;top:-150px"></div><div class="abs wheel cw" style="right:-150px;top:-150px"></div>
+ <div class="abs wheel cw" style="left:-150px;bottom:-150px"></div><div class="abs wheel cw" style="right:-150px;bottom:-150px"></div>
+ <div class="abs mantra"></div>
+ <div class="abs glow"></div>
+ <img class="abs g" src="{{IMG:ganesh}}" alt="Shree Ganesh ji"><img class="abs l" src="{{IMG:lakshmi}}" alt="Shree Lakshmi ji">
+ <p class="abs happy foil">HAPPY</p>
+ <h1 class="abs foil" style="top:830px">Diwali</h1>
+ <p class="abs msg">Wishing you and your family a Diwali as timeless as stone and as bright as a thousand diyas.</p>
+ <div class="abs foot"><div class="logo"></div><div class="name">BRIHAD TEMPLE CONSTRUCTION CO.</div><div class="tag">Sculpture to Structure · Since 1999</div>
+  <div class="row"><div class="ic">{{ICON:phone}}{{PHONE1}}</div><div class="ic">{{ICON:phone}}{{PHONE2}}</div></div>
+  <div class="row" style="margin-top:0"><div class="ic">{{ICON:mail}}{{EMAIL}}</div><div class="ic">{{ICON:web}}{{WEBSITE}}</div></div></div>
+</section>
+
+<script>
+const c=new URLSearchParams(location.search).get('c')||'1';document.documentElement.dataset.c=c;
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+/* a hanging diya on a gold chain, as its own small svg */
+function hanging(x,len){const s=document.createElementNS(NS,'svg');s.setAttribute('class','abs');s.setAttribute('viewBox',`-60 0 120 ${len+70}`);
+ Object.assign(s.style,{left:(x-60)+'px',top:'0px',width:'120px',height:(len+70)+'px',overflow:'visible'});
+ const d=el('defs',{},s);d.innerHTML='<linearGradient id="fo" x1="0" x2="1"><stop offset="0" stop-color="#9A6A1E"/><stop offset=".5" stop-color="#F6DE9A"/><stop offset="1" stop-color="#B07D2A"/></linearGradient><radialGradient id="gl"><stop offset="0" stop-color="rgba(255,200,90,.85)"/><stop offset="1" stop-color="rgba(255,160,50,0)"/></radialGradient><radialGradient id="fl" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="#FFFBE0"/><stop offset=".45" stop-color="#FFD15A"/><stop offset="1" stop-color="#FF7A1A"/></radialGradient>';
+ for(let y=0;y<len;y+=12)el('ellipse',{cx:0,cy:y+6,rx:2.6,ry:5,fill:'none',stroke:'url(#fo)','stroke-width':1.6},s);
+ el('path',{d:`M-26 ${len} L0 ${len-14} L26 ${len}`,fill:'none',stroke:'url(#fo)','stroke-width':1.6},s);
+ el('circle',{cx:0,cy:len+4,r:44,fill:'url(#gl)'},s);
+ el('path',{d:`M0 ${len-24} C 9 ${len-10} 9 ${len-2} 0 ${len+3} C -9 ${len-2} -9 ${len-10} 0 ${len-24}Z`,fill:'url(#fl)'},s);
+ el('path',{d:`M-34 ${len+4} Q 0 ${len-2} 34 ${len+4} Q 28 ${len+30} 0 ${len+32} Q -28 ${len+30} -34 ${len+4}Z`,fill:'url(#fo)'},s);
+ el('path',{d:`M-26 ${len+14} Q 0 ${len+22} 26 ${len+14}`,fill:'none',stroke:'#8A5A16','stroke-width':1.5,'stroke-dasharray':'1 5','stroke-linecap':'round'},s);
+ document.getElementById('C'+c).appendChild(s)}
+/* exactly five standing diyas in a row */
+function fiveDiyas(cx,y,gap,scale){const s=document.createElementNS(NS,'svg');s.setAttribute('class','abs');s.setAttribute('viewBox','0 0 1080 120');
+ Object.assign(s.style,{left:'0px',top:(y-80)+'px',width:'1080px',height:'120px',overflow:'visible'});
+ const d=el('defs',{},s);d.innerHTML='<linearGradient id="fo5" x1="0" x2="1"><stop offset="0" stop-color="#9A6A1E"/><stop offset=".5" stop-color="#F6DE9A"/><stop offset="1" stop-color="#B07D2A"/></linearGradient><radialGradient id="gl5"><stop offset="0" stop-color="rgba(255,200,90,.8)"/><stop offset="1" stop-color="rgba(255,160,50,0)"/></radialGradient><radialGradient id="fl5" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="#FFFBE0"/><stop offset=".45" stop-color="#FFD15A"/><stop offset="1" stop-color="#FF7A1A"/></radialGradient>';
+ for(let i=0;i<5;i++){const x=cx+(i-2)*gap,k=i===2?1.15:(i%2?1:.9);const g=el('g',{transform:`translate(${x} 80) scale(${scale*k})`},s);
+  el('circle',{cx:0,cy:-24,r:42,fill:'url(#gl5)'},g);
+  el('path',{d:'M0 -52 C 11 -36 11 -24 0 -16 C -11 -24 -11 -36 0 -52Z',fill:'url(#fl5)'},g);
+  el('path',{d:'M-40 -12 Q 0 -20 40 -12 Q 34 16 0 18 Q -34 16 -40 -12Z',fill:'url(#fo5)'},g);
+  el('path',{d:'M-30 0 Q 0 8 30 0',fill:'none',stroke:'#8A5A16','stroke-width':1.5,'stroke-dasharray':'1 5','stroke-linecap':'round'},g)}
+ document.getElementById('C'+c).appendChild(s)}
+if(c==='1')fiveDiyas(540,1142,120,.8);
+if(c==='2')fiveDiyas(680,1112,110,.8);
+if(c==='3')fiveDiyas(540,1090,100,.7);
+if(c==='3'){
+ const F=document.getElementById('frame3');const d=el('defs',{},F);d.innerHTML='<linearGradient id="fo3" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#9A6A1E"/><stop offset=".45" stop-color="#F6DE9A"/><stop offset="1" stop-color="#B07D2A"/></linearGradient>';
+ // pointed cusped jharokha in thin gold lines
+ const x0=170,x1=910,yb=1310,ys=430,cx=540,ay=110,n=6;
+ const bez=(t,p0,p1,p2,p3)=>[0,1].map(k=>(1-t)**3*p0[k]+3*(1-t)**2*t*p1[k]+3*(1-t)*t*t*p2[k]+t**3*p3[k]);
+ const Lp=[];for(let i=0;i<=n;i++)Lp.push(bez(i/n,[x0,ys],[x0,ys-200],[cx-140,ay+150],[cx,ay]));const Rp=Lp.map(([x,y])=>[2*cx-x,y]).reverse();
+ const lobe=(a,b)=>{const r=Math.hypot(b[0]-a[0],b[1]-a[1])/2*1.25;return `A${r} ${r} 0 0 1 ${b[0]} ${b[1]}`};
+ let p=`M${x0} ${yb} L${x0} ${ys}`;for(let i=0;i<n-1;i++)p+=' '+lobe(Lp[i],Lp[i+1]);p+=` Q${cx-18} ${ay+30} ${cx} ${ay-16} Q${cx+18} ${ay+30} ${Rp[1][0]} ${Rp[1][1]}`;for(let i=1;i<n;i++)p+=' '+lobe(Rp[i],Rp[i+1]);p+=` L${x1} ${yb}`;
+ el('path',{d:p,fill:'none',stroke:'url(#fo3)','stroke-width':3},F);
+ el('path',{d:p,fill:'none',stroke:'#C9932F','stroke-width':1,'stroke-dasharray':'2 7',transform:`translate(${cx} ${yb}) scale(1.05 1.03) translate(${-cx} ${-yb})`},F);
+ el('line',{x1:x0-30,y1:yb,x2:x1+30,y2:yb,stroke:'url(#fo3)','stroke-width':3},F);
+ el('circle',{cx,cy:ay-34,r:8,fill:'url(#fo3)'},F);
+ // diya rangoli dots at the base of each pillar
+ [[x0,yb],[x1,yb]].forEach(([x,y])=>{for(let k=0;k<12;k++){const a=k*Math.PI/6;el('circle',{cx:x+Math.cos(a)*26,cy:y-40+Math.sin(a)*26,r:4,fill:'#C9932F'},F)}el('circle',{cx:x,cy:y-40,r:9,fill:'url(#fo3)'},F)});
+}
+</script>
+</body>
+</html>
