@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080">
+<title>Happy Diwali | Brihad Temple Construction Co.</title>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Inter:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* three looks: ?v=1 royal maroon · ?v=2 marigold (light) · ?v=3 night lights */
+:root{--bg:radial-gradient(800px 640px at 50% 34%,#8E2335,transparent 72%),linear-gradient(180deg,#5A0F1F,#2E0710);
+  --gold:#F3C86E;--gold2:#FFE6A8;--title:#FFE6A8;--text:#FFF3E2;--muted:rgba(255,243,226,.82);--panel:rgba(0,0,0,.22);--line:rgba(243,200,110,.6);--glow:rgba(255,200,90,.55)}
+.v2{--bg:radial-gradient(760px 600px at 50% 36%,#FFE7C2,transparent 72%),linear-gradient(180deg,#FFF8EC,#FDEBD3);
+  --gold:#B97A1F;--gold2:#8F1D2C;--title:#8F1D2C;--text:#4A2416;--muted:rgba(74,36,22,.8);--panel:rgba(255,255,255,.7);--line:rgba(185,122,31,.55);--glow:rgba(255,190,90,.5)}
+.v3{--bg:radial-gradient(780px 620px at 50% 36%,#3A2367,transparent 72%),linear-gradient(180deg,#1A1440,#0B0A1F);
+  --gold:#F3C86E;--gold2:#FFE6A8;--title:#FFE6A8;--text:#FFF3E2;--muted:rgba(255,243,226,.8);--panel:rgba(255,255,255,.07);--line:rgba(243,200,110,.55);--glow:rgba(255,205,110,.5)}
+*{box-sizing:border-box}
+html,body{margin:0;width:1080px;height:1350px;overflow:hidden}
+body{position:relative;background:var(--bg);color:var(--text);font-family:Inter,sans-serif}
+.frame{position:absolute;inset:24px;border:2px solid var(--line);border-radius:30px;pointer-events:none;z-index:5}
+.frame::after{content:"";position:absolute;inset:9px;border:1px solid var(--line);border-radius:22px;opacity:.6}
+.corner{position:absolute;z-index:5;width:70px;height:70px;border:3px solid var(--gold);opacity:.8}
+.c1{left:44px;top:44px;border-right:0;border-bottom:0;border-radius:18px 0 0 0}.c2{right:44px;top:44px;border-left:0;border-bottom:0;border-radius:0 18px 0 0}
+.c3{left:44px;bottom:44px;border-right:0;border-top:0;border-radius:0 0 0 18px}.c4{right:44px;bottom:44px;border-left:0;border-top:0;border-radius:0 0 18px 0}
+.deco{position:absolute;inset:0;width:1080px;height:1350px}
+.mantra{position:absolute;z-index:3;left:50%;top:92px;}
+.v2 .mantra{top:118px}.v2 .orn{top:176px}
+.mantra{transform:translateX(-50%);width:250px;aspect-ratio:623/110;background:var(--gold);
+  -webkit-mask:url("{{IMG:mantra}}") center/100% 100% no-repeat;mask:url("{{IMG:mantra}}") center/100% 100% no-repeat}
+.orn{position:absolute;z-index:3;left:50%;top:152px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;width:360px}
+.orn i{flex:1;height:1.5px;background:linear-gradient(90deg,transparent,var(--gold))}.orn i:last-child{transform:scaleX(-1)}
+.orn b{width:10px;height:10px;border:2px solid var(--gold);transform:rotate(45deg)}
+.gods{position:absolute;z-index:2;left:50%;top:180px;width:820px;transform:translateX(-50%)}
+.gods::before{content:"";position:absolute;left:50%;top:44%;width:760px;height:560px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,var(--glow),transparent)}
+.gods img{position:relative;width:100%;display:block}
+.title{position:absolute;z-index:3;left:0;right:0;top:760px;text-align:center}
+.title h1{margin:0;font:400 132px/1 "Great Vibes",cursive;color:var(--title);text-shadow:0 0 24px rgba(255,200,90,.35)}
+.v2 .title h1{text-shadow:none}
+.title p{margin:14px auto 0;max-width:760px;text-wrap:balance;font:italic 500 33px/1.35 "Cormorant Garamond",serif;color:var(--muted)}
+.diya{position:absolute;z-index:3;width:96px;height:96px}
+.panel{position:absolute;z-index:4;left:64px;right:64px;bottom:64px;display:grid;grid-template-columns:230px 1px 1fr;gap:30px;align-items:center;padding:26px 34px;border-radius:24px;background:var(--panel);border:1.5px solid var(--line)}
+.logo{width:230px;aspect-ratio:720/466;background:url("{{IMG:contact_bg}}") center/contain no-repeat}
+.v2 .logo{filter:saturate(1.1) brightness(.92)}
+.sep{align-self:stretch;background:var(--line)}
+.name{font:700 33px/1.1 Cinzel,serif;letter-spacing:.03em;color:var(--gold2)}
+.tag{margin-top:6px;font:italic 600 24px/1 "Cormorant Garamond",serif;color:var(--gold)}
+.rows{display:grid;gap:9px;margin-top:16px}
+.rows div{display:flex;align-items:center;gap:12px;font:600 21px/1.2 Inter,sans-serif;color:var(--text)}
+.rows svg{flex:none;width:30px;height:30px;padding:6px;border-radius:50%;background:var(--gold);color:#fff}
+</style>
+</head>
+<body>
+<svg class="deco" id="deco" viewBox="0 0 1080 1350"></svg>
+<div class="frame"></div><i class="corner c1"></i><i class="corner c2"></i><i class="corner c3"></i><i class="corner c4"></i>
+<div class="mantra" role="img" aria-label="Shree Ganeshaya Namah"></div>
+<div class="orn"><i></i><b></b><i></i></div>
+<div class="gods"><img src="{{IMG:gods}}" alt="Shree Ganesh ji and Lakshmi ji seated on lotuses"></div>
+<div class="title"><h1>Happy Diwali</h1><p>May the light of every diya fill your home with peace, joy and prosperity.</p></div>
+<div class="panel">
+ <div class="logo" role="img" aria-label="Brihad Temple Construction Co. logo"></div><i class="sep"></i>
+ <div>
+  <div class="name">BRIHAD TEMPLE CONSTRUCTION CO.</div>
+  <div class="tag">Sculpture to Structure · Since 1999</div>
+  <div class="rows">
+   <div>{{ICON:phone}}{{PHONE1}} &nbsp;|&nbsp; {{PHONE2}}</div>
+   <div>{{ICON:mail}}{{EMAIL}}</div>
+   <div>{{ICON:web}}{{WEBSITE}}</div>
+  </div>
+ </div>
+</div>
+<script>
+const v=new URLSearchParams(location.search).get('v')||'1';document.documentElement.className='v'+v;
+const NS='http://www.w3.org/2000/svg',D=document.getElementById('deco');
+const el=(t,a,p=D)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+/* a clay diya with a flame, drawn at x,y with scale s */
+function diya(x,y,s){const g=el('g',{transform:`translate(${x} ${y}) scale(${s})`});
+ el('circle',{cx:0,cy:-30,r:46,fill:'url(#dglow)'},g);
+ el('path',{d:'M0 -64 C 14 -42 14 -28 0 -20 C -14 -28 -14 -42 0 -64Z',fill:'url(#flame)'},g);
+ el('path',{d:'M0 -44 C 6 -34 5 -27 0 -23 C -5 -27 -6 -34 0 -44Z',fill:'#FFFDF0'},g);
+ el('path',{d:'M-52 -14 Q 0 -24 52 -14 Q 46 22 0 24 Q -46 22 -52 -14Z',fill:'url(#clay)'},g);
+ el('path',{d:'M-52 -14 Q 0 -24 52 -14 Q 0 -4 -52 -14Z',fill:'#5A220E'},g);
+ el('path',{d:'M-42 0 Q 0 12 42 0',fill:'none',stroke:'#F2C66D','stroke-width':4,'stroke-dasharray':'1 8','stroke-linecap':'round'},g);return g}
+const defs=el('defs',{});
+defs.innerHTML='<radialGradient id="dglow"><stop offset="0" stop-color="rgba(255,200,90,.85)"/><stop offset=".5" stop-color="rgba(255,150,40,.2)"/><stop offset="1" stop-color="rgba(255,150,40,0)"/></radialGradient>'+
+ '<radialGradient id="flame" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="#FFFBE0"/><stop offset=".45" stop-color="#FFD15A"/><stop offset="1" stop-color="#FF7A1A"/></radialGradient>'+
+ '<linearGradient id="clay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9733A"/><stop offset="1" stop-color="#7E3216"/></linearGradient>';
+/* soft gold mandala ring behind the gods */
+function mandala(cx,cy,r,op){const g=el('g',{transform:`translate(${cx} ${cy})`,opacity:op});
+ [r,r-26].forEach((rr,k)=>{for(let i=0;i<48;i++){const a=i*7.5+(k?3.75:0);el('path',{d:`M0 ${-rr} q 7 -14 0 -26 q -7 12 0 26Z`,fill:'none',stroke:getComputedStyle(document.documentElement).getPropertyValue('--gold'),'stroke-width':1.5,transform:`rotate(${a})`},g)}});
+ el('circle',{r:r-40,fill:'none',stroke:getComputedStyle(document.documentElement).getPropertyValue('--gold'),'stroke-width':1.2,'stroke-dasharray':'2 7'},g)}
+if(v==='1'){
+ mandala(540,470,380,.35);
+ diya(104,960,.8);diya(976,960,.8);
+ for(let i=0;i<40;i++){const x=60+rnd()*960,y=200+rnd()*600;if(x>170&&x<910)continue;el('circle',{cx:x,cy:y,r:1.5+rnd()*2.5,fill:'#FFE6A8',opacity:.4+rnd()*.5})}
+}
+if(v==='2'){
+ /* marigold toran across the top with mango leaves */
+ const swag=(x1,x2,y,sag)=>{const n=15;for(let i=0;i<=n;i++){const t=i/n,x=x1+(x2-x1)*t,yy=y+Math.sin(Math.PI*t)*sag;
+   el('circle',{cx:x,cy:yy,r:15,fill:i%2?'#F6A21E':'#F7C531',stroke:'#D9761A','stroke-width':2});
+   el('circle',{cx:x,cy:yy,r:6,fill:i%2?'#E07B12':'#EBA51E'})}};
+ [[30,300,30,36],[300,540,30,30],[540,780,30,30],[780,1050,30,36]].forEach(a=>swag(...a));
+ [60,1020].forEach(x=>{for(let k=0;k<3;k++){el('circle',{cx:x,cy:56+k*24,r:12,fill:k%2?'#F7C531':'#F6A21E',stroke:'#D9761A','stroke-width':2})}});
+ for(let i=0;i<9;i++){const x=110+i*107;el('path',{d:`M${x} ${44+Math.sin(Math.PI*((x-30)%240)/240)*30} q 12 18 0 40 q -12 -22 0 -40Z`,fill:'#3F8F4F',opacity:.9})}
+ mandala(540,470,370,.28);
+ diya(104,960,.8);diya(976,960,.8);
+}
+if(v==='3'){
+ /* string lights and firework bursts */
+ [[30,110],[14,70]].forEach(([y1,sag],w)=>{const d=`M-10 ${y1} Q 265 ${y1+sag} 540 ${y1} Q 815 ${y1+sag} 1090 ${y1}`;const p=el('path',{d,fill:'none',stroke:'rgba(255,230,180,.35)','stroke-width':2});
+   const L=p.getTotalLength(),cols=['#F3C86E','#E86A8A','#8FD3FF','#B58CFF'];for(let i=1;i<22;i++){const pt=p.getPointAtLength(L*i/22),c=cols[(i+w)%4];el('circle',{cx:pt.x,cy:pt.y+10,r:9,fill:c,style:`filter:drop-shadow(0 0 8px ${c})`})}});
+ const burst=(cx,cy,r,c)=>{for(let i=0;i<24;i++){const a=i*15*Math.PI/180;el('line',{x1:cx+Math.cos(a)*r*.35,y1:cy+Math.sin(a)*r*.35,x2:cx+Math.cos(a)*r,y2:cy+Math.sin(a)*r,stroke:c,'stroke-width':2.5,'stroke-linecap':'round',opacity:.85});el('circle',{cx:cx+Math.cos(a)*(r+8),cy:cy+Math.sin(a)*(r+8),r:2.6,fill:c})}};
+ burst(150,300,70,'#F3C86E');burst(940,280,60,'#E86A8A');burst(110,620,44,'#8FD3FF');burst(980,600,50,'#B58CFF');
+ mandala(540,470,380,.25);
+ diya(104,960,.8);diya(976,960,.8);
+}
+</script>
+</body>
+</html>
