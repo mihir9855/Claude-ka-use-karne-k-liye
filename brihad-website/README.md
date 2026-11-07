@@ -4,6 +4,7 @@
 | --- | --- |
 | `v1-refreshed/index.html` | **Website 1.** Your current site, same layout and features, with a refreshed look |
 | `v2-redesign/index.html` | **Website 2.** A full redesign: new layout, new sections, built mobile-first |
+| `v3-new-design/index.html` | **Website 3.** A completely new design, not based on the old look: saffron, black and stone grey, big bold type, moving photo columns, a sideways-scrolling project gallery |
 | `original/index.html` | Your current site, as uploaded (the source both versions are built from) |
 | `previews/` | Screenshots of both versions (desktop, phone, Gujarati) |
 
@@ -39,6 +40,17 @@ Contact details are at the top of each file in `window.BRIHAD_CONTACT`, the same
 - Gujarati switch, using your existing Gujarati lines. Translations for the new lines are in `GU_NEW`; please have a
   Gujarati speaker check them
 
+**Website 3 (completely new design)**
+- New colours (temple-flag saffron, black, stone grey), a new font (Bricolage Grotesque with Instrument Serif accents) and straight-edged photos instead of arches
+- Hero: big bold headline beside three columns of temple photos that keep moving (rows on phones)
+- A black "who we are" statement whose words light up as you scroll, with large saffron numbers
+- Projects: a gallery that scrolls sideways as you scroll down on computers, and swipes on phones
+- Services as big list rows, the story as chapters beside a fixed photo, Home Temples on a saffron band
+- A full-screen saffron menu, contact as big tap-to-call rows with the map, and a large "Brihad." in the footer
+- Same content, photos, contact details, photo viewer and Gujarati switch
+
+Light copies for phone previews: `brihad-website-1-preview.html`, `-2-preview.html`, `-3-new-design-preview.html`.
+
 ## Rebuilding
 
 Both pages are generated from `original/index.html`:
@@ -46,6 +58,7 @@ Both pages are generated from `original/index.html`:
 ```bash
 python3 build_v1.py   # writes v1-refreshed/index.html
 python3 build_v2.py   # writes v2-redesign/index.html (layout and styles live in v2-template.html)
+python3 build_v3.py   # writes v3-new-design/index.html (layout and styles live in v3-template.html)
 ```
 
 If you change the original site (new project, new photos, new Gujarati lines), replace `original/index.html` and run
