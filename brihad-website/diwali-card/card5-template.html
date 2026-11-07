@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080">
+<title>Happy Diwali | Brihad Temple Construction Co.</title>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Inter:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* the whole card is a carved door: ?t=stone (default) or ?t=maroon */
+:root{--frame1:#B9905F;--frame2:#8E643B;--carve:#F3DCA6;--carve2:#6B4524;--door1:#FFF7E8;--door2:#F2DDB6;--edge:#5E3D20;--gold:#E9C27A;
+  --title:#7A1426;--text:#5A3420;--pill:#7A1426;--pillText:#FFF1DC;--mantra:#FFF1C9}
+.maroon{--frame1:#7E1628;--frame2:#4E0A17;--carve:#F3C86E;--carve2:#2E0610;--door1:#FFF7E8;--door2:#F6DDB0;--edge:#3A0710;--gold:#F3C86E;--mantra:#FFE3A1}
+*{box-sizing:border-box}
+html,body{margin:0;width:1080px;height:1350px;overflow:hidden}
+body{position:relative;background:linear-gradient(180deg,var(--frame1),var(--frame2));font-family:Inter,sans-serif}
+svg.layer{position:absolute;inset:0;width:1080px;height:1350px}
+.wheel{position:absolute;color:var(--carve);pointer-events:none}
+.wheel svg{width:100%;height:100%;display:block}
+.mantra{position:absolute;z-index:5;left:50%;top:44px;width:240px;transform:translateX(-50%);aspect-ratio:623/110;background:var(--mantra);filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));
+  -webkit-mask:url("{{IMG:mantra}}") center/100% 100% no-repeat;mask:url("{{IMG:mantra}}") center/100% 100% no-repeat}
+.inside{position:absolute;inset:0;z-index:4}
+.gods{position:absolute;left:200px;top:270px;width:680px}
+h1{position:absolute;left:0;right:0;top:752px;margin:0;text-align:center;font:400 118px/1 "Great Vibes",cursive;color:var(--title)}
+.msg{position:absolute;left:220px;right:220px;top:884px;margin:0;text-align:center;font:italic 500 30px/1.32 "Cormorant Garamond",serif;color:var(--text);text-wrap:balance}
+.brand{position:absolute;left:0;right:0;top:1010px;display:flex;justify-content:center;align-items:center;gap:18px}
+.logo{width:120px;aspect-ratio:720/466;background:url("{{IMG:contact_bg}}") center/contain no-repeat;filter:brightness(.6) saturate(1.4)}
+.name{font:700 27px/1.1 Cinzel,serif;color:var(--title);letter-spacing:.02em}
+.tag{margin-top:4px;font:italic 600 20px/1 "Cormorant Garamond",serif;color:#8A5A2B}
+.pills{position:absolute;left:0;right:0;top:1118px;display:grid;grid-template-columns:auto auto;justify-content:center;gap:10px 12px}
+.pills span{display:flex;align-items:center;gap:10px;padding:7px 18px 7px 7px;border-radius:999px;background:var(--pill);color:var(--pillText);font:700 18.5px/1.2 Inter,sans-serif;white-space:nowrap}
+.pills svg{flex:none;width:28px;height:28px;padding:5px;border-radius:50%;background:var(--gold);color:var(--pill)}
+</style>
+</head>
+<body>
+<svg class="layer" id="frame" viewBox="0 0 1080 1350"></svg>
+<div class="wheel" id="wTL"></div><div class="wheel" id="wTR"></div><div class="wheel" id="wIn"></div>
+<svg class="layer" id="door" viewBox="0 0 1080 1350" style="z-index:3"></svg>
+<div class="mantra" role="img" aria-label="Shree Ganeshaya Namah"></div>
+<div class="inside"><div style="position:absolute;left:240px;top:240px;width:600px;height:460px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,205,120,.55),rgba(255,205,120,0))"></div>
+ <img class="gods" src="{{IMG:gods}}" alt="Ganesh ji and Lakshmi ji">
+ <h1>Happy Diwali</h1>
+ <p class="msg">May the light of every diya fill your home with peace, joy and prosperity.</p>
+ <div class="brand"><div class="logo" role="img" aria-label="Brihad logo"></div><div><div class="name">BRIHAD TEMPLE CONSTRUCTION CO.</div><div class="tag">Sculpture to Structure · Since 1999</div></div></div>
+ <div class="pills"><span>{{ICON:phone}}{{PHONE1}}</span><span>{{ICON:phone}}{{PHONE2}}</span><span>{{ICON:mail}}{{EMAIL}}</span><span>{{ICON:web}}{{WEBSITE}}</span></div>
+</div>
+<template id="wheelSvg">{{WHEEL}}</template>
+<script>
+const t=new URLSearchParams(location.search).get('t')||'stone';if(t==='maroon')document.documentElement.classList.add('maroon');
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+const F=document.getElementById('frame'),DR=document.getElementById('door');
+const CARVE=css('--carve'),CARVE2=css('--carve2'),EDGE=css('--edge'),GOLD=css('--gold');
+
+/* ---- frame: jali texture, side bands of rosettes, outer border ---- */
+const defs=el('defs',{},F);
+const pat=el('pattern',{id:'jali',width:40,height:40,patternUnits:'userSpaceOnUse'},defs);
+el('path',{d:'M20 0 L40 20 L20 40 L0 20Z',fill:'none',stroke:CARVE,'stroke-width':1},pat);el('circle',{cx:20,cy:20,r:3.5,fill:'none',stroke:CARVE,'stroke-width':1},pat);
+el('rect',{width:1080,height:1350,fill:'url(#jali)',opacity:.13},F);
+el('rect',{x:14,y:14,width:1052,height:1322,fill:'none',stroke:CARVE,'stroke-width':3,opacity:.8},F);
+el('rect',{x:26,y:26,width:1028,height:1298,fill:'none',stroke:CARVE,'stroke-width':1,'stroke-dasharray':'2 6',opacity:.7},F);
+const ros=(x,y,r,col,p)=>{const g=el('g',{transform:`translate(${x} ${y})`,fill:'none',stroke:col},p);el('circle',{r,'stroke-width':2},g);el('circle',{r:r*.3,'stroke-width':1.6},g);el('circle',{r:r*.12,fill:col,stroke:'none'},g);
+ for(let i=0;i<10;i++)el('ellipse',{cx:0,cy:-r*.62,rx:r*.14,ry:r*.28,transform:`rotate(${i*36})`,'stroke-width':1.4},g)};
+for(let y=560;y<1150;y+=58){ros(70,y,22,CARVE,F);ros(1010,y,22,CARVE,F)}
+[[70,535],[1010,535],[70,1172],[1010,1172]].forEach(([x,y])=>el('line',{x1:x-36,y1:y,x2:x+36,y2:y,stroke:CARVE,'stroke-width':2},F));
+
+/* ---- traced Konark wheels: two in the upper corners (on the stone), one faint inside the door ---- */
+const W=document.getElementById('wheelSvg').innerHTML;
+const place=(id,x,y,s,op,col)=>{const d=document.getElementById(id);d.innerHTML=W;Object.assign(d.style,{left:(x-s/2)+'px',top:(y-s/2)+'px',width:s+'px',height:s+'px',opacity:op,color:col})};
+place('wTL',70,150,520,.55,CARVE);place('wTR',1010,150,520,.55,CARVE);
+
+/* ---- the door: pointed, scalloped arch from just below the mantra down to the bottom of the card ---- */
+const x0=150,x1=930,yb=1350,ys=470,cx=540,ay=120,n=7;
+const bez=(tt,p0,p1,p2,p3)=>[0,1].map(k=>(1-tt)**3*p0[k]+3*(1-tt)**2*tt*p1[k]+3*(1-tt)*tt*tt*p2[k]+tt**3*p3[k]);
+const Lp=[];for(let i=0;i<=n;i++)Lp.push(bez(i/n,[x0,ys],[x0,ys-210],[cx-150,ay+160],[cx,ay]));
+const Rp=Lp.map(([x,y])=>[2*cx-x,y]).reverse();
+const lobe=(a,b)=>{const r=Math.hypot(b[0]-a[0],b[1]-a[1])/2*1.25;return `A${r.toFixed(1)} ${r.toFixed(1)} 0 0 1 ${b[0].toFixed(1)} ${b[1].toFixed(1)}`};
+let d=`M${x0} ${yb} L${x0} ${ys}`;for(let i=0;i<n-1;i++)d+=' '+lobe(Lp[i],Lp[i+1]);
+d+=` Q${cx-20} ${ay+34} ${cx} ${ay-18} Q${cx+20} ${ay+34} ${Rp[1][0].toFixed(1)} ${Rp[1][1].toFixed(1)}`;for(let i=1;i<n;i++)d+=' '+lobe(Rp[i],Rp[i+1]);d+=` L${x1} ${yb} Z`;
+const dd=el('defs',{},DR);dd.innerHTML=`<linearGradient id="doorFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${css('--door1')}"/><stop offset="1" stop-color="${css('--door2')}"/></linearGradient><clipPath id="doorClip"><path d="${d}"/></clipPath>`;
+el('path',{d,fill:'none',stroke:EDGE,'stroke-width':30,'stroke-linejoin':'round',opacity:.85},DR);
+el('path',{d,fill:'none',stroke:GOLD,'stroke-width':12,'stroke-linejoin':'round'},DR);
+el('path',{d,fill:'url(#doorFill)',stroke:EDGE,'stroke-width':3},DR);
+const inner=el('path',{d,fill:'none',stroke:'#B58A52','stroke-width':2,'stroke-dasharray':'2 8',transform:`translate(${cx} ${yb}) scale(.955 .975) translate(${-cx} ${-yb})`},DR);
+/* bead chain on the gold molding */
+const probe=el('path',{d,fill:'none'},DR),PL=probe.getTotalLength();
+for(let s=0;s<PL;s+=26){const p=probe.getPointAtLength(s);if(p.y>1330)continue;el('circle',{cx:p.x,cy:p.y,r:3.2,fill:EDGE},DR)}
+/* finial above the tip */
+el('circle',{cx,cy:ay-34,r:9,fill:GOLD,stroke:EDGE,'stroke-width':2},DR);
+/* faint wheel inside the door, behind the gods, clipped to the door */
+const wi=document.getElementById('wIn');wi.innerHTML=W;Object.assign(wi.style,{left:'190px',top:'130px',width:'700px',height:'700px',opacity:.2,color:'#A0703C',zIndex:4});
+/* a step at the door's threshold */
+el('rect',{x:x0,y:1300,width:x1-x0,height:50,fill:EDGE,opacity:.18},DR);
+el('line',{x1:x0,y1:1300,x2:x1,y2:1300,stroke:'#B58A52','stroke-width':2},DR);
+/* diyas on the stone, at the foot of each side */
+const dg=el('defs',{},F);dg.innerHTML='<radialGradient id="dglow"><stop offset="0" stop-color="rgba(255,200,90,.9)"/><stop offset="1" stop-color="rgba(255,150,40,0)"/></radialGradient><radialGradient id="flame" cx=".5" cy=".7" r=".6"><stop offset="0" stop-color="#FFFBE0"/><stop offset=".45" stop-color="#FFD15A"/><stop offset="1" stop-color="#FF7A1A"/></radialGradient><linearGradient id="clay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9733A"/><stop offset="1" stop-color="#7E3216"/></linearGradient>';
+[[78,1262],[1002,1262]].forEach(([x,y])=>{const g=el('g',{transform:`translate(${x} ${y}) scale(.75)`},DR);
+ el('circle',{cx:0,cy:-30,r:50,fill:'url(#dglow)'},g);el('path',{d:'M0 -64 C 14 -42 14 -28 0 -20 C -14 -28 -14 -42 0 -64Z',fill:'url(#flame)'},g);
+ el('path',{d:'M-52 -14 Q 0 -24 52 -14 Q 46 22 0 24 Q -46 22 -52 -14Z',fill:'url(#clay)'},g);el('path',{d:'M-52 -14 Q 0 -24 52 -14 Q 0 -4 -52 -14Z',fill:'#5A220E'},g)});
+</script>
+</body>
+</html>
