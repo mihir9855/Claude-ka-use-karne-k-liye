@@ -1,12 +1,12 @@
-# Brihad Temple website: two new versions
+# Brihad Temple website: three new versions
 
 | Folder | What it is |
 | --- | --- |
 | `v1-refreshed/index.html` | **Website 1.** Your current site, same layout and features, with a refreshed look |
 | `v2-redesign/index.html` | **Website 2.** A full redesign: new layout, new sections, built mobile-first |
 | `v3-new-design/index.html` | **Website 3.** A completely new design, not based on the old look: saffron, black and stone grey, big bold type, moving photo columns, a sideways-scrolling project gallery |
-| `original/index.html` | Your current site, as uploaded (the source both versions are built from) |
-| `previews/` | Screenshots of both versions (desktop, phone, Gujarati) |
+| `original/index.html` | Your current site, as uploaded (the source all versions are built from) |
+| `previews/` | Screenshots of the versions (desktop, phone, Gujarati) |
 
 ## How to put one live
 
@@ -53,7 +53,7 @@ Light copies for phone previews: `brihad-website-1-preview.html`, `-2-preview.ht
 
 ## Rebuilding
 
-Both pages are generated from `original/index.html`:
+All pages are generated from `original/index.html`:
 
 ```bash
 python3 build_v1.py   # writes v1-refreshed/index.html
@@ -62,4 +62,4 @@ python3 build_v3.py   # writes v3-new-design/index.html (layout and styles live 
 ```
 
 If you change the original site (new project, new photos, new Gujarati lines), replace `original/index.html` and run
-both scripts again.
+all three scripts again.
