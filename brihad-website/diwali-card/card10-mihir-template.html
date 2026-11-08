@@ -113,6 +113,35 @@ html[data-from][data-tf] .msg{top:868px!important}
 .orn2{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:6px}
 .orn2 i{width:120px;height:1px;background:linear-gradient(90deg,transparent,#C9932F)}.orn2 i:last-child{transform:scaleX(-1)}
 .orn2 em{width:9px;height:9px;border:1.5px solid #C9932F;transform:rotate(45deg)}
+
+/* diya replaces the deities at the top */
+html[data-from][data-tf] .deities{display:none!important}
+.bigdiya{left:110px!important;top:200px!important;width:860px!important}
+.diyaglow{left:190px;top:110px;width:700px;height:520px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,200,110,.55),rgba(255,200,110,0))}
+html[data-from][data-tf] h1.both{top:700px!important}
+html[data-from][data-tf] .msg{top:878px!important}
+.fromname{top:1040px!important}
+
+/* even spacing */
+.bigdiya{top:215px!important}
+.diyaglow{top:130px!important}
+html[data-from][data-tf] h1.both{top:735px!important}
+html[data-from][data-tf] .msg{top:920px!important}
+.fromname{top:1095px!important}
+/* colour themes: ?c=1 royal maroon · ?c=2 midnight blue · ?c=3 soft rose */
+html[data-c] .wheel{opacity:1}
+html[data-c="1"] body{background:radial-gradient(640px 520px at 50% 32%,#8E2236,transparent 72%),linear-gradient(180deg,#5A0D1F,#2E0611)!important}
+html[data-c="2"] body{background:radial-gradient(640px 520px at 50% 32%,#2D3F7A,transparent 72%),linear-gradient(180deg,#16204A,#0A0F26)!important}
+html[data-c="3"] body{background:radial-gradient(640px 520px at 50% 32%,#FFE1D6,transparent 72%),linear-gradient(180deg,#FDECEA,#F6D7DA)!important}
+html[data-c="1"] .wheel,html[data-c="2"] .wheel{background:#F3C86E!important}
+html[data-c="1"] .mantra,html[data-c="2"] .mantra{background:#F3C86E!important}
+html[data-c="1"] h1.both,html[data-c="2"] h1.both{color:#FFE3A1!important}
+html[data-c="1"] .msg,html[data-c="2"] .msg{color:rgba(255,240,220,.88)!important}
+html[data-c="1"] .fromname small,html[data-c="2"] .fromname small{color:#E9C27A}
+html[data-c="1"] .fromname b,html[data-c="2"] .fromname b{color:#FFE3A1}
+html[data-c="1"] .diyaglow,html[data-c="2"] .diyaglow{background:radial-gradient(closest-side,rgba(255,190,90,.45),rgba(255,190,90,0))}
+html[data-c="3"] .mantra{background:#9B2B48!important}html[data-c="3"] h1.both{color:#8E1F3F!important}
+html[data-c="3"] .fromname b{color:#8E1F3F}html[data-c="3"] .msg{color:#6B2A3A!important}
 </style>
 </head>
 <body>
@@ -131,6 +160,7 @@ html[data-from][data-tf] .msg{top:868px!important}
 <p class="abs sub">Wishing you light, joy &amp; prosperity</p>
 <p class="abs msg">May the light of every diya fill your home with peace, joy and prosperity.</p>
 <p class="abs family">Warm wishes from the Brihad family</p>
+<div class="abs diyaglow"></div>
 <img class="abs bigdiya" src="{{IMG:bigdiya}}" alt="">
 <div class="abs fromname"><small>With warm wishes from</small><b>Mihir M. Sompura &amp; Family</b><div class="orn2"><i></i><em></em><i></i></div></div>
 <svg class="abs diyas" id="diyas" viewBox="0 0 1080 110"></svg>
@@ -178,6 +208,7 @@ dd.innerHTML='<linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1"><stop offset
  if(f==='manoj'){const h=document.querySelector('h1');h.innerHTML='<span>Happy Diwali</span><i>&amp;</i><span>Happy Prosperous New Year</span>';h.classList.add('both');document.querySelector('.sub').style.display='none';
   document.documentElement.dataset.tf=new URLSearchParams(location.search).get('tf')||'a'}
  if(new URLSearchParams(location.search).get('noname'))el.style.visibility='hidden';
+ {const c=new URLSearchParams(location.search).get('c');if(c)document.documentElement.dataset.c=c}
  if(new URLSearchParams(location.search).get('qr'))document.documentElement.dataset.qr='1';})();
 </script>
 </body>
