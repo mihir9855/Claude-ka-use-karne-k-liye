@@ -60,6 +60,20 @@ h1.both i{font-style:normal;color:#B8862F}
 html[data-tf="a"] h1.both{top:794px;font:400 58px/1.25 "Great Vibes",cursive;letter-spacing:0;color:#7A1426}
 html[data-tf="b"] h1.both{top:812px;font:700 40px/1.2 "Cinzel Decorative",serif;letter-spacing:.02em;color:#7A1426}
 html[data-tf="c"] h1.both{top:806px;font:italic 600 50px/1.2 "Playfair Display",serif;letter-spacing:0;color:#7A1426}
+
+/* stacked three-line greeting for the Manoj card */
+h1.both{display:flex;flex-direction:column;align-items:center;white-space:nowrap}
+h1.both i{display:block;margin:2px 0}
+html[data-from="manoj"] .deities{left:200px!important;top:138px!important;width:680px!important}
+html[data-from="manoj"] .msg{top:930px!important}
+html[data-from="manoj"] .family{top:1000px!important}
+html[data-from="manoj"] .diyas{top:1032px!important}
+html[data-tf="a"] h1.both{top:748px!important;font:400 60px/1.02 "Great Vibes",cursive!important}
+html[data-tf="a"] h1.both i{font:400 46px/1 "Great Vibes",cursive}
+html[data-tf="b"] h1.both{top:760px!important;font:700 42px/1.15 "Cinzel Decorative",serif!important}
+html[data-tf="b"] h1.both i{font:700 34px/1 "Cinzel Decorative",serif}
+html[data-tf="c"] h1.both{top:754px!important;font:italic 600 48px/1.1 "Playfair Display",serif!important}
+html[data-tf="c"] h1.both i{font:italic 600 36px/1 "Playfair Display",serif}
 </style>
 </head>
 <body>
@@ -119,7 +133,7 @@ dd.innerHTML='<linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1"><stop offset
 
 (function(){const f=new URLSearchParams(location.search).get('from');const el=document.querySelector('.family');if(!el)return;
  const T={manoj:"<span>With warm wishes,</span> <b>Manoj V. Sompura &amp; Family</b>",mihir:"<span>With warm wishes,</span> <b>Mihir M. Sompura</b>"};if(f&&T[f]){el.innerHTML=T[f];document.documentElement.dataset.from=f}else el.style.display='none';
- if(f==='manoj'){const h=document.querySelector('h1');h.innerHTML='Happy Diwali <i>&amp;</i> Happy New Year';h.classList.add('both');
+ if(f==='manoj'){const h=document.querySelector('h1');h.innerHTML='<span>Happy Diwali</span><i>&amp;</i><span>Happy Prosperous New Year</span>';h.classList.add('both');document.querySelector('.sub').style.display='none';
   document.documentElement.dataset.tf=new URLSearchParams(location.search).get('tf')||'a'}})();
 </script>
 </body>
