@@ -74,6 +74,16 @@ html[data-tf="b"] h1.both{top:760px!important;font:700 42px/1.15 "Cinzel Decorat
 html[data-tf="b"] h1.both i{font:700 34px/1 "Cinzel Decorative",serif}
 html[data-tf="c"] h1.both{top:754px!important;font:italic 600 48px/1.1 "Playfair Display",serif!important}
 html[data-tf="c"] h1.both i{font:italic 600 36px/1 "Playfair Display",serif}
+
+/* bigger contact text, phone numbers the largest */
+.foot .ic{font-size:18px!important}
+.foot .ic.ph{font-size:22px!important;font-weight:700!important;letter-spacing:.01em}
+.foot .ic svg{width:28px!important;height:28px!important;padding:5px!important}
+.foot .grid{gap:12px 22px!important}
+.foot{grid-template-columns:135px auto 1px auto!important;gap:18px!important;left:44px!important;right:44px!important}
+.foot .logo{width:135px!important}
+.foot .name{white-space:nowrap;font-size:22px!important}
+.foot .ic{font-size:17px!important}
 </style>
 </head>
 <body>
@@ -97,7 +107,7 @@ html[data-tf="c"] h1.both i{font:italic 600 36px/1 "Playfair Display",serif}
  <div class="logo" role="img" aria-label="Brihad logo"></div>
  <div><div class="name">BRIHAD TEMPLE<br>CONSTRUCTION CO.</div><div class="tag">Sculpture to Structure · Since 1999</div></div>
  <i class="bar"></i>
- <div class="grid"><div class="ic">{{ICON:phone}}{{PHONE1}}</div><div class="ic">{{ICON:phone}}{{PHONE2}}</div><div class="ic">{{ICON:mail}}{{EMAIL}}</div><div class="ic">{{ICON:web}}{{WEBSITE}}</div></div>
+ <div class="grid"><div class="ic ph">{{ICON:phone}}{{PHONE1}}</div><div class="ic ph">{{ICON:phone}}{{PHONE2}}</div><div class="ic">{{ICON:mail}}{{EMAIL}}</div><div class="ic">{{ICON:web}}{{WEBSITE}}</div></div>
 </div>
 <script>
 const NS='http://www.w3.org/2000/svg';
