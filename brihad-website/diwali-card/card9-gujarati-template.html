@@ -65,6 +65,10 @@ html[data-s="3"] .temple{display:block;left:300px;top:168px;width:480px;height:6
   box-shadow:0 0 0 8px #FFFAF1,0 0 0 10px #C99A45,0 30px 60px -30px rgba(90,40,10,.55)}
 .temple img{width:100%;height:100%;object-fit:cover}
 .temple span{position:absolute;left:0;right:0;bottom:0;padding:40px 16px 14px;text-align:center;font:600 19px/1.2 "Hind Vadodara",sans-serif;color:#fff;background:linear-gradient(transparent,rgba(40,15,5,.75))}
+.family b{font:700 23px/1 "Noto Serif Gujarati",serif;color:#7A1426}
+html[data-from]:not([data-s]) .deities{left:190px!important;top:170px!important;width:700px!important}
+html[data-from]:not([data-s]) h1{top:808px!important}html[data-from]:not([data-s]) .sub{top:890px!important}html[data-from]:not([data-s]) .msg{top:936px!important}
+html[data-from]:not([data-s]) .family{top:990px}html[data-from]:not([data-s]) .diyas{top:1024px!important}
 </style>
 </head>
 <body>
@@ -144,6 +148,9 @@ dd.innerHTML='<linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1"><stop offset
   ros(0,0,200,['#E0457B','#F2A900','#2E9CCA','#8E5BD8']);ros(1080,0,200,['#2E9CCA','#E0457B','#F2A900','#3BA272']);
  }
 })();
+
+(function(){const f=new URLSearchParams(location.search).get('from');const el=document.querySelector('.family');if(!el)return;
+ const T={manoj:"<b>મનોજ વી. સોમપુરા અને પરિવાર</b> <span>તરફથી હાર્દિક શુભેચ્છાઓ</span>",mihir:"<b>મિહિર એમ. સોમપુરા</b> <span>તરફથી હાર્દિક શુભેચ્છાઓ</span>"};if(f&&T[f]){el.innerHTML=T[f];document.documentElement.dataset.from=f}else el.style.display='none'})();
 </script>
 </body>
 </html>
