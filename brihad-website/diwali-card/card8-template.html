@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=1080">
 <title>Happy Diwali | Brihad Temple Construction Co.</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital,wght@0,600;1,500;1,600&family=Inter:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Great+Vibes&family=Cinzel+Decorative:wght@700&family=Playfair+Display:ital,wght@1,600&family=Cormorant+Garamond:ital,wght@0,600;1,500;1,600&family=Inter:wght@500;600&display=swap" rel="stylesheet">
 <style>
 :root{--ivory:#FFFAF1;--maroon:#7A1426;--gold:#A8741E;--gold2:#C99A45;--text:#4A2416;
   --foil:linear-gradient(115deg,#8A5A16 0%,#C9932F 22%,#F6DE9A 42%,#C08A2A 60%,#F2D58A 78%,#9A6A1E 100%)}
@@ -54,6 +54,12 @@ h1{left:0;right:0;top:806px;margin:0;text-align:center;font:600 62px/1 Cinzel,se
 .qr small{font:600 12.5px/1 Inter,sans-serif;color:#1E8E50;letter-spacing:.02em;white-space:nowrap}
 .family b{font:600 25px/1 "Cormorant Garamond",serif;font-style:normal;color:#7A1426;letter-spacing:.01em}
 .sub.ny{top:866px!important;font:italic 600 35px/1 "Cormorant Garamond",serif;color:#A8741E;letter-spacing:.01em}
+
+h1.both{white-space:nowrap}
+h1.both i{font-style:normal;color:#B8862F}
+html[data-tf="a"] h1.both{top:794px;font:400 58px/1.25 "Great Vibes",cursive;letter-spacing:0;color:#7A1426}
+html[data-tf="b"] h1.both{top:812px;font:700 40px/1.2 "Cinzel Decorative",serif;letter-spacing:.02em;color:#7A1426}
+html[data-tf="c"] h1.both{top:806px;font:italic 600 50px/1.2 "Playfair Display",serif;letter-spacing:0;color:#7A1426}
 </style>
 </head>
 <body>
@@ -113,7 +119,8 @@ dd.innerHTML='<linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1"><stop offset
 
 (function(){const f=new URLSearchParams(location.search).get('from');const el=document.querySelector('.family');if(!el)return;
  const T={manoj:"<span>With warm wishes,</span> <b>Manoj V. Sompura &amp; Family</b>",mihir:"<span>With warm wishes,</span> <b>Mihir M. Sompura</b>"};if(f&&T[f]){el.innerHTML=T[f];document.documentElement.dataset.from=f}else el.style.display='none';
- const SUB={manoj:'&amp; Happy New Year'};if(SUB[f]){const sb=document.querySelector('.sub');sb.innerHTML=SUB[f];sb.classList.add('ny')}})();
+ if(f==='manoj'){const h=document.querySelector('h1');h.innerHTML='Happy Diwali <i>&amp;</i> Happy New Year';h.classList.add('both');
+  document.documentElement.dataset.tf=new URLSearchParams(location.search).get('tf')||'a'}})();
 </script>
 </body>
 </html>
