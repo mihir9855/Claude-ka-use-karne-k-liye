@@ -50,6 +50,21 @@ h1{font:700 64px/1.2 "Noto Serif Gujarati",serif!important;letter-spacing:0!impo
 .sl{top:470px;display:flex;flex-direction:column;align-items:center;gap:8px}
 .sl svg{width:44px;height:44px}.sl b{font:700 34px/1 "Noto Serif Gujarati",serif;color:#8A1F1F}
 .sl.l1{left:72px}.sl.r1{right:72px}
+
+/* ---- sample variants ---- */
+.family{left:0;right:0;top:1004px;margin:0;text-align:center;font:600 22px/1 "Hind Vadodara",sans-serif;color:#A8741E}
+.family::before,.family::after{content:"";display:inline-block;width:40px;height:1px;background:#C99A45;vertical-align:middle;margin:0 14px}
+.deco{left:0;top:0;width:1080px;height:1350px;pointer-events:none}
+.temple{display:none}
+html[data-s] .deities{left:190px!important;top:170px!important;width:700px!important}
+html[data-s] h1{top:808px!important}html[data-s] .sub{top:890px!important}html[data-s] .msg{top:936px!important}
+html[data-s] .family{top:990px}html[data-s] .diyas{top:1024px!important}
+html[data-s="1"] .mantra,html[data-s="3"] .mantra{top:104px}
+html[data-s="3"] .deities{display:none}
+html[data-s="3"] .temple{display:block;left:300px;top:168px;width:480px;height:600px;border-radius:240px 240px 22px 22px;overflow:hidden;
+  box-shadow:0 0 0 8px #FFFAF1,0 0 0 10px #C99A45,0 30px 60px -30px rgba(90,40,10,.55)}
+.temple img{width:100%;height:100%;object-fit:cover}
+.temple span{position:absolute;left:0;right:0;bottom:0;padding:40px 16px 14px;text-align:center;font:600 19px/1.2 "Hind Vadodara",sans-serif;color:#fff;background:linear-gradient(transparent,rgba(40,15,5,.75))}
 </style>
 </head>
 <body>
@@ -67,6 +82,9 @@ h1{font:700 64px/1.2 "Noto Serif Gujarati",serif!important;letter-spacing:0!impo
 <h1 class="abs">નૂતન વર્ષાભિનંદન</h1>
 <p class="abs sub">સાલ મુબારક</p>
 <p class="abs msg">નવું વર્ષ આપના ઘર-પરિવારમાં સુખ, શાંતિ અને સમૃદ્ધિ લાવે.</p>
+<p class="abs family">બૃહદ પરિવાર તરફથી હાર્દિક શુભેચ્છાઓ</p>
+<div class="abs temple"><img src="{{IMG:pj_champapuri}}" alt="Shree Champapuri Prabha Tirth, built by Brihad"><span>શ્રી ચંપાપુરી પ્રભા તીર્થ, અંકલેશ્વર</span></div>
+<svg class="abs deco" id="deco" viewBox="0 0 1080 1350"></svg>
 <svg class="abs diyas" id="diyas" viewBox="0 0 1080 110"></svg>
 <div class="abs foot">
  <div class="logo" role="img" aria-label="Brihad logo"></div>
@@ -76,6 +94,7 @@ h1{font:700 64px/1.2 "Noto Serif Gujarati",serif!important;letter-spacing:0!impo
 </div>
 <script>
 const NS='http://www.w3.org/2000/svg';
+const SV=new URLSearchParams(location.search).get('s');if(SV)document.documentElement.dataset.s=SV;
 const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
 /* faint jali lattice and double border */
 const L=document.getElementById('lines');const d0=el('defs',{},L);
@@ -105,6 +124,26 @@ dd.innerHTML='<linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1"><stop offset
  el('path',{d:'M-30 -4 Q 0 6 30 -4',fill:'none',stroke:'#8A5A16','stroke-width':1.2,'stroke-dasharray':'1 4','stroke-linecap':'round'},g);
  el('path',{d:'M-14 8 L -18 16 L 18 16 L 14 8 Z',fill:'url(#bowl)'},g);
  el('ellipse',{cx:0,cy:16,rx:20,ry:3,fill:'#8A5A16'},g)});
+
+(function(){if(!SV)return;const G=document.getElementById('deco');
+ const mk=(t,a,p=G)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+ if(SV==='1'||SV==='3'){ /* marigold toran with mango leaves */
+  const swag=(x1,x2,y,sag)=>{const n=14;for(let i=0;i<=n;i++){const t=i/n,x=x1+(x2-x1)*t,yy=y+Math.sin(Math.PI*t)*sag;
+    mk('circle',{cx:x,cy:yy,r:13,fill:i%2?'#F6A21E':'#F7C531',stroke:'#D9761A','stroke-width':1.6});mk('circle',{cx:x,cy:yy,r:5,fill:i%2?'#E07B12':'#EBA51E'})}};
+  [[24,290,26,42],[290,540,26,34],[540,790,26,34],[790,1056,26,42]].forEach(a=>swag(...a));
+  [290,540,790].forEach(x=>{mk('path',{d:`M${x} 28 l -14 34 q 14 10 28 0 Z`,fill:'#3F8F4F'});mk('circle',{cx:x,cy:26,r:14,fill:'#E2574C',stroke:'#B23A2E','stroke-width':1.6})});
+  for(let i=0;i<10;i++){const x=80+i*102;const y=26+Math.sin(Math.PI*(((x-24)%266)/266))*38;
+   mk('path',{d:`M${x} ${y} q 11 16 0 38 q -11 -20 0 -38Z`,fill:i%2?'#3F8F4F':'#4FA060'})}
+ }
+ if(SV==='2'){ /* rangoli in the two top corners */
+  const ros=(cx,cy,R,cols)=>{const g=mk('g',{transform:`translate(${cx} ${cy})`});
+   [[R,24,cols[0],R*.2],[R*.8,18,cols[1],R*.18],[R*.6,14,cols[2],R*.17],[R*.4,10,cols[3],R*.15],[R*.22,8,cols[0],R*.12]].forEach(([r,n,c,len],k)=>{
+    for(let i=0;i<n;i++){const a=i*360/n+(k%2?180/n:0);const p=mk('g',{transform:`rotate(${a}) translate(0 ${-r+len/2})`},g);
+     mk('path',{d:`M0 ${-len/2} C ${len*.45} ${-len/6}, ${len*.45} ${len/6}, 0 ${len/2} C ${-len*.45} ${len/6}, ${-len*.45} ${-len/6}, 0 ${-len/2}Z`,fill:c},p);
+     mk('circle',{cy:-len/2-5,r:3,fill:'#fff'},p)}});mk('circle',{r:R*.1,fill:cols[1]},g)};
+  ros(0,0,200,['#E0457B','#F2A900','#2E9CCA','#8E5BD8']);ros(1080,0,200,['#2E9CCA','#E0457B','#F2A900','#3BA272']);
+ }
+})();
 </script>
 </body>
 </html>

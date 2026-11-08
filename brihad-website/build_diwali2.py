@@ -15,7 +15,8 @@ CONTACT_BLOCK = ('<div class="name">BRIHAD TEMPLE CONSTRUCTION CO.</div><div cla
                  '<div class="row">{{ICON:mail}}{{EMAIL}}</div><div class="row">{{ICON:web}}{{WEBSITE}}</div></div>')
 tpl = tpl.replace('{{CONTACT_BLOCK}}', CONTACT_BLOCK)
 _wsvg = open('diwali-card/konark-wheel-traced.svg', encoding='utf-8').read().replace('currentColor', '#000')
-rep = {'{{QR}}': open('diwali-card/whatsapp-qr.svg', encoding='utf-8').read(),
+rep = {'{{IMG:pj_champapuri}}': IMG['pj_champapuri'],
+       '{{QR}}': open('diwali-card/whatsapp-qr.svg', encoding='utf-8').read(),
        '{{IMG:deities}}': 'data:image/png;base64,' + base64.b64encode(open('diwali-card/ganesh-lakshmi-new.png', 'rb').read()).decode(),
        '{{WHEELURI}}': 'data:image/svg+xml;base64,' + base64.b64encode(_wsvg.encode()).decode(),
        '{{IMG:ganesh}}': 'data:image/png;base64,' + base64.b64encode(open('diwali-card/ganesh-cutout.png', 'rb').read()).decode(),
