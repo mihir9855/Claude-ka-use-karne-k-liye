@@ -84,6 +84,17 @@ html[data-tf="c"] h1.both i{font:italic 600 36px/1 "Playfair Display",serif}
 .foot .logo{width:135px!important}
 .foot .name{white-space:nowrap;font-size:22px!important}
 .foot .ic{font-size:17px!important}
+
+.wqr{display:none}
+html[data-qr] .foot{grid-template-columns:130px auto 1px auto auto!important;gap:16px!important;left:40px!important;right:40px!important}
+html[data-qr] .foot .logo{width:130px!important}
+html[data-qr] .foot .grid{grid-template-columns:auto!important;gap:4px!important}
+html[data-qr] .foot .ic{font-size:16px!important}html[data-qr] .foot .ic.ph{font-size:20px!important}
+html[data-qr] .foot .ic svg{width:24px!important;height:24px!important;padding:4px!important}
+html[data-qr] .wqr{display:flex;flex-direction:column;align-items:center;gap:5px;padding-left:16px;border-left:1px solid rgba(201,154,69,.55)}
+.wqr .code{width:104px;height:104px;padding:6px;background:#fff;border:1.5px solid #C99A45;border-radius:10px}
+.wqr .code svg{width:100%;height:100%;display:block}
+.wqr small{font:600 12.5px/1 Inter,sans-serif;color:#7A1426;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -108,6 +119,7 @@ html[data-tf="c"] h1.both i{font:italic 600 36px/1 "Playfair Display",serif}
  <div><div class="name">BRIHAD TEMPLE<br>CONSTRUCTION CO.</div><div class="tag">Sculpture to Structure · Since 1999</div></div>
  <i class="bar"></i>
  <div class="grid"><div class="ic ph">{{ICON:phone}}{{PHONE1}}</div><div class="ic ph">{{ICON:phone}}{{PHONE2}}</div><div class="ic">{{ICON:mail}}{{EMAIL}}</div><div class="ic">{{ICON:web}}{{WEBSITE}}</div></div>
+ <div class="wqr"><div class="code">{{WQR}}</div><small>Scan to visit</small></div>
 </div>
 <script>
 const NS='http://www.w3.org/2000/svg';
@@ -145,7 +157,8 @@ dd.innerHTML='<linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1"><stop offset
  const T={manoj:"<span>With warm wishes,</span> <b>Manoj V. Sompura &amp; Family</b>",mihir:"<span>With warm wishes,</span> <b>Mihir M. Sompura</b>"};if(f&&T[f]){el.innerHTML=T[f];document.documentElement.dataset.from=f}else el.style.display='none';
  if(f==='manoj'){const h=document.querySelector('h1');h.innerHTML='<span>Happy Diwali</span><i>&amp;</i><span>Happy Prosperous New Year</span>';h.classList.add('both');document.querySelector('.sub').style.display='none';
   document.documentElement.dataset.tf=new URLSearchParams(location.search).get('tf')||'a'}
- if(new URLSearchParams(location.search).get('noname'))el.style.visibility='hidden';})();
+ if(new URLSearchParams(location.search).get('noname'))el.style.visibility='hidden';
+ if(new URLSearchParams(location.search).get('qr'))document.documentElement.dataset.qr='1';})();
 </script>
 </body>
 </html>
