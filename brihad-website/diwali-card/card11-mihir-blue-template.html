@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1080">
+<title>Happy Diwali | Brihad Temple Construction Co.</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Great+Vibes&family=Cinzel+Decorative:wght@700&family=Playfair+Display:ital,wght@1,600&family=Cormorant+Garamond:ital,wght@0,600;1,500;1,600&family=Inter:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ivory:#FFFAF1;--maroon:#7A1426;--gold:#A8741E;--gold2:#C99A45;--text:#4A2416;
+  --foil:linear-gradient(115deg,#8A5A16 0%,#C9932F 22%,#F6DE9A 42%,#C08A2A 60%,#F2D58A 78%,#9A6A1E 100%)}
+*{box-sizing:border-box}
+html,body{margin:0;width:1080px;height:1350px;overflow:hidden}
+body{position:relative;background:radial-gradient(760px 640px at 50% 32%,#FFF1D9,transparent 70%),var(--ivory);font-family:Inter,sans-serif;color:var(--text)}
+.abs{position:absolute}
+/* faint line work */
+.wheel{background:#B98A3E;-webkit-mask:url("{{WHEELURI}}") center/contain no-repeat;mask:url("{{WHEELURI}}") center/contain no-repeat}
+
+.mantra{left:50%;top:44px;width:230px;transform:translateX(-50%);aspect-ratio:623/110;background:#754437;
+  -webkit-mask:url("{{IMG:mantra}}") center/100% 100% no-repeat;mask:url("{{IMG:mantra}}") center/100% 100% no-repeat}
+/* aura behind the heads */
+.aura{left:295px;top:200px;width:490px;height:490px;border-radius:50%;background:radial-gradient(circle at 50% 42%,#FFE6B8,#F6C27A 58%,#E5A055);
+  box-shadow:0 0 0 9px var(--ivory),0 0 0 12px var(--gold2),0 0 0 20px var(--ivory),0 0 0 22px rgba(201,154,69,.55),0 30px 70px -30px rgba(150,80,20,.5)}
+.aura::after{content:"";position:absolute;inset:22px;border-radius:50%;border:1px dashed rgba(255,255,255,.7)}
+.auraw{left:320px;top:225px;width:440px;height:440px;opacity:.16;background:#FFF6E0}
+.dots{display:grid;gap:14px}.dots i{width:7px;height:7px;border-radius:50%;background:var(--gold2)}
+.g{left:257px;bottom:calc(1350px - 858px);width:328px}
+.l{left:509px;bottom:calc(1350px - 858px);width:383px}
+.shadow{left:250px;top:838px;width:580px;height:30px;border-radius:50%;background:radial-gradient(closest-side,rgba(120,60,20,.25),transparent)}
+h1{left:0;right:0;top:806px;margin:0;text-align:center;font:600 62px/1 Cinzel,serif;letter-spacing:.14em;color:var(--maroon)}
+.sub{left:0;right:0;top:876px;margin:0;text-align:center;font:italic 500 33px/1 "Cormorant Garamond",serif;color:var(--gold)}
+.msg{left:200px;right:200px;top:914px;margin:0;text-align:center;font:italic 500 27px/1.3 "Cormorant Garamond",serif;color:#6A3B2A;text-wrap:balance}
+.diyas{left:0;top:1026px;width:1080px;height:110px;overflow:visible}
+.foot{left:46px;right:46px;bottom:40px;display:grid;grid-template-columns:175px auto 1px auto;gap:18px;align-items:center;justify-content:center;padding-top:22px}
+.foot::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold2) 12%,var(--gold2) 88%,transparent)}
+.logo{width:175px;aspect-ratio:720/466;background:url("{{IMG:contact_bg}}") center/contain no-repeat}
+.name{font:700 23px/1.12 Cinzel,serif;letter-spacing:.03em;color:var(--maroon)}
+.tag{margin-top:6px;font:italic 600 18px/1 "Cormorant Garamond",serif;color:var(--gold)}
+.bar{align-self:stretch;background:rgba(201,154,69,.55)}
+.grid{display:grid;grid-template-columns:auto auto;gap:10px 14px}
+.ic{display:flex;align-items:center;gap:8px;font:600 15.5px/1.2 Inter,sans-serif;white-space:nowrap}
+.ic svg{flex:none;width:26px;height:26px;padding:5px;border-radius:50%;background:var(--gold);color:#fff}
+.deities{left:175px;top:140px;width:730px}
+
+.family{left:0;right:0;top:990px;margin:0;text-align:center;font:italic 600 24px/1 "Cormorant Garamond",serif;color:#A8741E}
+.family::before,.family::after{content:"";display:inline-block;width:46px;height:1px;background:#C99A45;vertical-align:middle;margin:0 14px}
+.foot{grid-template-columns:150px auto 1px auto!important;gap:22px!important;left:40px!important;right:40px!important}
+.foot .logo{width:150px!important}
+.foot .grid{grid-template-columns:auto auto!important;gap:12px 22px!important}
+.foot{bottom:46px!important}
+.foot .ic{font-size:16.5px!important}.foot .ic svg{width:24px!important;height:24px!important;padding:4px!important}
+.qr{display:flex;flex-direction:column;align-items:center;gap:6px;padding-left:22px;border-left:1px solid rgba(201,154,69,.55)}
+.qr .code{width:104px;height:104px;padding:6px;background:#fff;border:1.5px solid #C99A45;border-radius:10px}
+.qr .code svg{width:100%;height:100%;display:block}
+.qr small{font:600 12.5px/1 Inter,sans-serif;color:#1E8E50;letter-spacing:.02em;white-space:nowrap}
+.family b{font:600 25px/1 "Cormorant Garamond",serif;font-style:normal;color:#7A1426;letter-spacing:.01em}
+.sub.ny{top:866px!important;font:italic 600 35px/1 "Cormorant Garamond",serif;color:#A8741E;letter-spacing:.01em}
+
+h1.both{white-space:nowrap}
+h1.both i{font-style:normal;color:#B8862F}
+html[data-tf="a"] h1.both{top:794px;font:400 58px/1.25 "Great Vibes",cursive;letter-spacing:0;color:#7A1426}
+html[data-tf="b"] h1.both{top:812px;font:700 40px/1.2 "Cinzel Decorative",serif;letter-spacing:.02em;color:#7A1426}
+html[data-tf="c"] h1.both{top:806px;font:italic 600 50px/1.2 "Playfair Display",serif;letter-spacing:0;color:#7A1426}
+
+/* stacked three-line greeting for the Manoj card */
+h1.both{display:flex;flex-direction:column;align-items:center;white-space:nowrap}
+h1.both i{display:block;margin:2px 0}
+html[data-from="manoj"] .deities{left:200px!important;top:138px!important;width:680px!important}
+html[data-from="manoj"] .msg{top:930px!important}
+html[data-from="manoj"] .family{top:1000px!important}
+html[data-from="manoj"] .diyas{top:1032px!important}
+html[data-tf="a"] h1.both{top:748px!important;font:400 60px/1.02 "Great Vibes",cursive!important}
+html[data-tf="a"] h1.both i{font:400 46px/1 "Great Vibes",cursive}
+html[data-tf="b"] h1.both{top:760px!important;font:700 42px/1.15 "Cinzel Decorative",serif!important}
+html[data-tf="b"] h1.both i{font:700 34px/1 "Cinzel Decorative",serif}
+html[data-tf="c"] h1.both{top:754px!important;font:italic 600 48px/1.1 "Playfair Display",serif!important}
+html[data-tf="c"] h1.both i{font:italic 600 36px/1 "Playfair Display",serif}
+
+/* bigger contact text, phone numbers the largest */
+.foot .ic{font-size:18px!important}
+.foot .ic.ph{font-size:22px!important;font-weight:700!important;letter-spacing:.01em}
+.foot .ic svg{width:28px!important;height:28px!important;padding:5px!important}
+.foot .grid{gap:12px 22px!important}
+.foot{grid-template-columns:135px auto 1px auto!important;gap:18px!important;left:44px!important;right:44px!important}
+.foot .logo{width:135px!important}
+.foot .name{white-space:nowrap;font-size:22px!important}
+.foot .ic{font-size:17px!important}
+
+.wqr{display:none}
+html[data-qr] .foot{grid-template-columns:130px auto 1px auto auto!important;gap:16px!important;left:40px!important;right:40px!important}
+html[data-qr] .foot .logo{width:130px!important}
+html[data-qr] .foot .grid{grid-template-columns:auto!important;gap:4px!important}
+html[data-qr] .foot .ic{font-size:16px!important}html[data-qr] .foot .ic.ph{font-size:20px!important}
+html[data-qr] .foot .ic svg{width:24px!important;height:24px!important;padding:4px!important}
+html[data-qr] .wqr{display:flex;flex-direction:column;align-items:center;gap:5px;padding-left:16px;border-left:1px solid rgba(201,154,69,.55)}
+.wqr .code{width:104px;height:104px;padding:6px;background:#fff;border:1.5px solid #C99A45;border-radius:10px}
+.wqr .code svg{width:100%;height:100%;display:block}
+.wqr small{font:600 12.5px/1 Inter,sans-serif;color:#7A1426;white-space:nowrap}
+
+/* ===== Mihir M. Sompura & Family: warm palette, big diya, no company footer ===== */
+body{background:radial-gradient(620px 520px at 50% 30%,#FFE2A8,rgba(255,226,168,0) 70%),radial-gradient(700px 500px at 50% 82%,#FFE9C4,rgba(255,233,196,0) 70%),linear-gradient(180deg,#FFF6E6,#FCEBD0)!important}
+.mantra{background:#8B1A1A!important}
+.foot,#diyas,.family,.sub{display:none!important}
+.deities{left:215px!important;top:122px!important;width:650px!important}
+h1.both{top:700px!important;color:#8B1A1A!important}
+.msg{top:880px!important;color:#6B2A1A!important}
+html[data-from][data-tf] .deities{left:220px!important;top:118px!important;width:640px!important}
+html[data-from][data-tf] h1.both{top:690px!important}
+html[data-from][data-tf] .msg{top:868px!important}
+.bigdiya{left:340px;top:948px;width:400px}
+.fromname{left:0;right:0;top:1180px;text-align:center}
+.fromname small{display:block;font:italic 600 24px/1 "Cormorant Garamond",serif;color:#B07A2A}
+.fromname b{display:block;margin-top:10px;font:400 64px/1.1 "Great Vibes",cursive;color:#8B1A1A}
+.orn2{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:6px}
+.orn2 i{width:120px;height:1px;background:linear-gradient(90deg,transparent,#C9932F)}.orn2 i:last-child{transform:scaleX(-1)}
+.orn2 em{width:9px;height:9px;border:1.5px solid #C9932F;transform:rotate(45deg)}
+
+/* diya replaces the deities at the top */
+html[data-from][data-tf] .deities{display:none!important}
+.bigdiya{left:110px!important;top:200px!important;width:860px!important}
+.diyaglow{left:190px;top:110px;width:700px;height:520px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,200,110,.55),rgba(255,200,110,0))}
+html[data-from][data-tf] h1.both{top:700px!important}
+html[data-from][data-tf] .msg{top:878px!important}
+.fromname{top:1040px!important}
+
+/* even spacing */
+.bigdiya{top:215px!important}
+.diyaglow{top:130px!important}
+html[data-from][data-tf] h1.both{top:735px!important}
+html[data-from][data-tf] .msg{top:920px!important}
+.fromname{top:1095px!important}
+/* colour themes: ?c=1 royal maroon · ?c=2 midnight blue · ?c=3 soft rose */
+html[data-c] .wheel{opacity:1}
+html[data-c="1"] body{background:radial-gradient(640px 520px at 50% 32%,#8E2236,transparent 72%),linear-gradient(180deg,#5A0D1F,#2E0611)!important}
+html[data-c="2"] body{background:radial-gradient(640px 520px at 50% 32%,#2D3F7A,transparent 72%),linear-gradient(180deg,#16204A,#0A0F26)!important}
+html[data-c="3"] body{background:radial-gradient(640px 520px at 50% 32%,#FFE1D6,transparent 72%),linear-gradient(180deg,#FDECEA,#F6D7DA)!important}
+html[data-c="1"] .wheel,html[data-c="2"] .wheel{background:#F3C86E!important}
+html[data-c="1"] .mantra,html[data-c="2"] .mantra{background:#F3C86E!important}
+html[data-c="1"] h1.both,html[data-c="2"] h1.both{color:#FFE3A1!important}
+html[data-c="1"] .msg,html[data-c="2"] .msg{color:rgba(255,240,220,.88)!important}
+html[data-c="1"] .fromname small,html[data-c="2"] .fromname small{color:#E9C27A}
+html[data-c="1"] .fromname b,html[data-c="2"] .fromname b{color:#FFE3A1}
+html[data-c="1"] .diyaglow,html[data-c="2"] .diyaglow{background:radial-gradient(closest-side,rgba(255,190,90,.45),rgba(255,190,90,0))}
+html[data-c="3"] .mantra{background:#9B2B48!important}html[data-c="3"] h1.both{color:#8E1F3F!important}
+html[data-c="3"] .fromname b{color:#8E1F3F}html[data-c="3"] .msg{color:#6B2A3A!important}
+
+/* ===== blue card: long English wish + Brihad footer ===== */
+html[data-c] .foot{display:grid!important}
+.bigdiya{left:200px!important;top:128px!important;width:680px!important}
+.diyaglow{left:250px!important;top:90px!important;width:580px!important;height:420px!important}
+html[data-from][data-tf] h1.both{top:500px!important}
+html[data-from][data-tf] .msg{top:696px!important;left:150px!important;right:150px!important;font:italic 500 27px/1.5 "Cormorant Garamond",serif!important}
+.fromname{top:930px!important}
+html[data-c] .foot{top:auto!important;bottom:48px!important}
+html[data-c] .foot .name{color:#FFE3A1!important}
+html[data-c] .foot .tag{color:#E9C27A!important}
+html[data-c] .foot .ic{color:#FFF1DC!important}
+html[data-c] .foot .ic svg{background:#E9C27A!important;color:#16204A!important}
+html[data-c] .foot .bar{background:rgba(233,194,122,.5)!important}
+html[data-c] .foot::before{background:linear-gradient(90deg,transparent,#E9C27A 12%,#E9C27A 88%,transparent)!important}
+</style>
+</head>
+<body>
+<div class="abs wheel" style="left:-170px;top:-120px;width:400px;height:400px;opacity:.26;transform:rotate(14deg)"></div>
+<div class="abs wheel" style="left:880px;top:-60px;width:240px;height:240px;opacity:.22;transform:rotate(-22deg)"></div>
+<div class="abs wheel" style="left:905px;top:330px;width:330px;height:330px;opacity:.24;transform:rotate(31deg)"></div>
+<div class="abs wheel" style="left:-110px;top:560px;width:270px;height:270px;opacity:.22;transform:rotate(-8deg)"></div>
+<div class="abs wheel" style="left:60px;top:330px;width:120px;height:120px;opacity:.2;transform:rotate(18deg)"></div>
+<div class="abs wheel" style="left:940px;top:820px;width:190px;height:190px;opacity:.22;transform:rotate(-35deg)"></div>
+<div class="abs wheel" style="left:-60px;top:950px;width:160px;height:160px;opacity:.2;transform:rotate(25deg)"></div>
+<svg class="abs" id="lines" style="left:0;top:0;width:1080px;height:1350px" viewBox="0 0 1080 1350"></svg>
+<div class="abs mantra" role="img" aria-label="Shree Ganeshaya Namah"></div>
+<div class="abs shadow"></div>
+<img class="abs deities" src="{{IMG:deities}}" alt="Shree Ganesh ji and Shree Lakshmi ji">
+<h1 class="abs">HAPPY DIWALI</h1>
+<p class="abs sub">Wishing you light, joy &amp; prosperity</p>
+<p class="abs msg">May the New Year bring happiness, peace, prosperity and joy into your life. We pray to God that you and your entire family are blessed with good health, success and progress. May every day of your life be filled with happiness, and may all your dreams come true.</p>
+<p class="abs family">Warm wishes from the Brihad family</p>
+<div class="abs diyaglow"></div>
+<img class="abs bigdiya" src="{{IMG:bigdiya}}" alt="">
+<div class="abs fromname"><small>With warm wishes from</small><b>Mihir M. Sompura &amp; Family</b><div class="orn2"><i></i><em></em><i></i></div></div>
+<svg class="abs diyas" id="diyas" viewBox="0 0 1080 110"></svg>
+<div class="abs foot">
+ <div class="logo" role="img" aria-label="Brihad logo"></div>
+ <div><div class="name">BRIHAD TEMPLE<br>CONSTRUCTION CO.</div><div class="tag">Sculpture to Structure · Since 1999</div></div>
+ <i class="bar"></i>
+ <div class="grid"><div class="ic ph">{{ICON:phone}}{{PHONE1}}</div><div class="ic ph">{{ICON:phone}}{{PHONE2}}</div><div class="ic">{{ICON:mail}}{{EMAIL}}</div><div class="ic">{{ICON:web}}{{WEBSITE}}</div></div>
+ <div class="wqr"><div class="code">{{WQR}}</div><small>Scan to visit</small></div>
+</div>
+<script>
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
+/* faint jali lattice and double border */
+const L=document.getElementById('lines');const d0=el('defs',{},L);
+const pat=el('pattern',{id:'jl',width:46,height:46,patternUnits:'userSpaceOnUse'},d0);
+el('path',{d:'M23 0 L46 23 L23 46 L0 23Z',fill:'none',stroke:'#B98A3E','stroke-width':.8},pat);el('circle',{cx:23,cy:23,r:3.5,fill:'none',stroke:'#B98A3E','stroke-width':.8},pat);
+
+el('rect',{x:22,y:22,width:1036,height:1306,rx:22,fill:'none',stroke:'#C99A45','stroke-width':1.5,opacity:.55},L);
+el('rect',{x:32,y:32,width:1016,height:1286,rx:16,fill:'none',stroke:'#C99A45','stroke-width':.8,'stroke-dasharray':'2 6',opacity:.5},L);
+/* five ornate gold diyas */
+const D=document.getElementById('diyas');const dd=el('defs',{},D);
+dd.innerHTML='<linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7DE9E"/><stop offset=".45" stop-color="#D3A043"/><stop offset="1" stop-color="#8A5A16"/></linearGradient>'+
+ '<linearGradient id="rim" x1="0" x2="1"><stop offset="0" stop-color="#9A6A1E"/><stop offset=".5" stop-color="#FFF0C4"/><stop offset="1" stop-color="#A8741E"/></linearGradient>'+
+ '<radialGradient id="glow"><stop offset="0" stop-color="rgba(255,196,90,.75)"/><stop offset=".55" stop-color="rgba(255,170,60,.18)"/><stop offset="1" stop-color="rgba(255,170,60,0)"/></radialGradient>'+
+ '<radialGradient id="flame" cx=".5" cy=".75" r=".65"><stop offset="0" stop-color="#FFFDF0"/><stop offset=".35" stop-color="#FFE27A"/><stop offset=".7" stop-color="#FFA53A"/><stop offset="1" stop-color="#F06A12"/></radialGradient>';
+[[310,.72],[425,.8],[540,.92],[655,.8],[770,.72]].forEach(([x,s])=>{const g=el('g',{transform:`translate(${x} 92) scale(${s})`},D);
+ el('ellipse',{cx:0,cy:-40,rx:62,ry:62,fill:'url(#glow)'},g);
+ // flame with inner core and wick
+ el('path',{d:'M0 -78 C 14 -58 15 -42 0 -30 C -15 -42 -14 -58 0 -78Z',fill:'url(#flame)'},g);
+ el('path',{d:'M0 -56 C 6 -47 6 -40 0 -34 C -6 -40 -6 -47 0 -56Z',fill:'#FFFFF4'},g);
+ el('line',{x1:0,y1:-32,x2:0,y2:-24,stroke:'#5A3A12','stroke-width':2},g);
+ // bowl: leaf-shaped with spout, scalloped lip, petal band and a small foot
+ el('path',{d:'M-46 -22 Q -40 2 0 8 Q 40 2 46 -22 Q 58 -26 64 -32 Q 52 -18 46 -22 Z',fill:'url(#bowl)'},g);
+ el('path',{d:'M-46 -22 Q 0 -32 46 -22 Q 0 -14 -46 -22Z',fill:'#6B4412'},g);
+ let lip='M-46 -22';for(let i=0;i<8;i++){const x0=-46+i*11.5;lip+=` Q ${x0+5.75} -30 ${x0+11.5} -22`}
+ el('path',{d:lip,fill:'none',stroke:'url(#rim)','stroke-width':2.4},g);
+ for(let i=-3;i<=3;i++)el('path',{d:`M${i*11} -10 q 4 -7 0 -12 q -4 5 0 12Z`,fill:'#FFF0C4',opacity:.85},g);
+ el('path',{d:'M-30 -4 Q 0 6 30 -4',fill:'none',stroke:'#8A5A16','stroke-width':1.2,'stroke-dasharray':'1 4','stroke-linecap':'round'},g);
+ el('path',{d:'M-14 8 L -18 16 L 18 16 L 14 8 Z',fill:'url(#bowl)'},g);
+ el('ellipse',{cx:0,cy:16,rx:20,ry:3,fill:'#8A5A16'},g)});
+
+(function(){const f=new URLSearchParams(location.search).get('from');const el=document.querySelector('.family');if(!el)return;
+ const T={manoj:"<span>With warm wishes,</span> <b>Manoj V. Sompura &amp; Family</b>",mihir:"<span>With warm wishes,</span> <b>Mihir M. Sompura</b>"};if(f&&T[f]){el.innerHTML=T[f];document.documentElement.dataset.from=f}else el.style.display='none';
+ if(f==='manoj'){const h=document.querySelector('h1');h.innerHTML='<span>Happy Diwali</span><i>&amp;</i><span>Happy Prosperous New Year</span>';h.classList.add('both');document.querySelector('.sub').style.display='none';
+  document.documentElement.dataset.tf=new URLSearchParams(location.search).get('tf')||'a'}
+ if(new URLSearchParams(location.search).get('noname'))el.style.visibility='hidden';
+ {const c=new URLSearchParams(location.search).get('c');if(c)document.documentElement.dataset.c=c}
+ if(new URLSearchParams(location.search).get('qr'))document.documentElement.dataset.qr='1';})();
+</script>
+</body>
+</html>
