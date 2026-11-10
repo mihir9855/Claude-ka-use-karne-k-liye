@@ -134,7 +134,7 @@ export function letterPlain(t){var lg=curLang(),L=LANG[lg],v=voucherInfo(t);retu
 export function letterPaper(t,lg){
   lg=lg||curLang();var v=voucherInfo(t),L=LANG[lg],bw=DB.biz.lhBW;
   return '<div class="vfit"><div class="vin" data-w="700" style="width:700px"><div class="paper" style="padding:0;overflow:hidden;border:1px solid #D8D6CE;border-radius:0;font-family:'+L.font+';min-height:990px;display:flex;flex-direction:column;color:#1F2230">'+hdrImgHtml(bw,lg,700,'width:100%;display:block')
-  +'<div style="padding:0 6%;flex:1;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;letter-spacing:'+(lg==='en'?'.12em':'.02em')+';font-weight:700;margin-top:2px"><span>'+L.date+': <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+fmtL(t.date,lg)+'</span></span><span>'+L.rno+': <span style="border-bottom:1px solid #1F2230;padding:0 8px;letter-spacing:0">'+esc(String(rnoOf(t)))+'</span></span></div>'
+  +'<div style="padding:0 6%;flex:1;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;letter-spacing:'+(lg==='en'?'.12em':'.02em')+';font-weight:700;margin-top:2px"><span>'+L.date+': <span style="padding:0 6px;letter-spacing:0">'+fmtL(t.date,lg)+'</span></span><span>'+L.rno+': <span style="padding:0 6px;letter-spacing:0">'+esc(String(rnoOf(t)))+'</span></span></div>'
   +'<div style="text-align:center;font-size:16px;letter-spacing:'+(lg==='en'?'.3em':'.12em')+';font-weight:700;margin:30px 0 22px;text-decoration:underline;text-underline-offset:6px">'+L.title+'</div>'
     +'<p style="font-size:15.5px;line-height:2;margin:6px 0 10px;text-align:justify">'+letterBody(t,lg,true)+'</p>'
   +'<div style="margin:18px 0 4px;display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #E4E2DB;font-size:14px"><span style="color:#62668A">'+L.amt+'</span><b class="tn">'+INR(t.amount)+'/-</b></div>'
@@ -143,8 +143,8 @@ export function letterPaper(t,lg){
 export function pdfLetterNative(t){
   var C=pdfLib();if(!C)return;var v=voucherInfo(t),D=derive(),p=D.byId[t.projId],bw=DB.biz.lhBW,d=new C({unit:'mm',format:'a4'}),L=14,R=196,y;
   try{d.addImage(bw?LH.b:LH.c,'PNG',0,4,210,210*285/1500);hdrTagPdf(d,210,4);d.addImage(LH.f,'PNG',0,297-210*185/1500-2,210,210*185/1500)}catch(e){}
-  y=52;d.setTextColor(31,34,48);d.setFont('times','bold');d.setFontSize(9);d.text('DATE:',L,y);d.setFont('times','normal');d.setFontSize(10);d.text(fmt(t.date),L+13,y);d.line(L+12,y+1.2,L+48,y+1.2);
-  d.setFont('times','bold');d.setFontSize(9);d.text('RECEIPT NO.:',82,y);d.setFont('times','normal');d.setFontSize(10);d.text(String(rnoOf(t)),82+27,y);d.line(82+26,y+1.2,82+50,y+1.2);
+  y=52;d.setTextColor(31,34,48);d.setFont('times','bold');d.setFontSize(9);d.text('DATE:',L,y);d.setFont('times','normal');d.setFontSize(10);d.text(fmt(t.date),L+13,y);
+  d.setFont('times','bold');d.setFontSize(9);d.text('RECEIPT NO.:',82,y);d.setFont('times','normal');d.setFontSize(10);d.text(String(rnoOf(t)),82+27,y);
   y=72;d.setFont('times','bold');d.setFontSize(14);d.text('R E C E I P T',105,y,{align:'center'});d.line(88,y+1.5,122,y+1.5);
   y=92;d.setFont('times','normal');
   var body=letterBody(t,'en',false).replace(/₹/g,'Rs. ');
