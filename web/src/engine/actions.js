@@ -1,6 +1,6 @@
 import {
   DB, KEY, TYPES, DEF_STAGES, ITEMS, uid, num, pad, today, save, toast, notify, setDB, blank, findTxn,
-  derive, curLang, presetNotes, stripGod, stripShri, godDisp, findProp, setPdfMode, pdfVoucher, pdfLetter, pdfReport, pdfStatement,
+  derive, curLang, presetNotes, stripGod, stripShri, godDisp, nextRno, findProp, setPdfMode, pdfVoucher, pdfLetter, pdfReport, pdfStatement,
   pdfProposal, attGet, attPut, voucherText, stmtText, shareText, printVoucher, printProposal, proposalText,
 } from './engine.js'
 import { loadPdfLibs } from './pdfLibs.js'
@@ -72,15 +72,16 @@ export function saveEntry(f) {
   if (f.editId) {
     const ex = findTxn(f.editId)
     if (ex) {
+      const moved = ex.kind === 'in' && ex.projId !== f.projId
       Object.assign(ex, { projId: f.projId, stageId: inn ? f.stageId : '', section: inn ? '' : f.section, partyId: inn ? '' : f.partyId || '', who, amount, mode: f.mode, ref: refOf(f), date: f.date, note: String(f.note || '').trim() })
+      if (moved) ex.rno = nextRno(f.projId)
       save()
       toast('Entry updated')
       return { id: ex.id, edited: true }
     }
   }
   DB.vseq = (DB.vseq || 0) + 1
-  if (inn) DB.rseq = (DB.rseq || 0) + 1
-  const t = { id: uid(), kind: f.kind, projId: f.projId, stageId: inn ? f.stageId : '', section: inn ? '' : f.section, partyId: inn ? '' : f.partyId || '', who, amount, mode: f.mode, ref: refOf(f), date: f.date, note: String(f.note || '').trim(), vno: 'BTC-' + pad(DB.vseq, 4), ...(inn ? { rno: DB.rseq } : {}) }
+  const t = { id: uid(), kind: f.kind, projId: f.projId, stageId: inn ? f.stageId : '', section: inn ? '' : f.section, partyId: inn ? '' : f.partyId || '', who, amount, mode: f.mode, ref: refOf(f), date: f.date, note: String(f.note || '').trim(), vno: 'BTC-' + pad(DB.vseq, 4), ...(inn ? { rno: nextRno(f.projId) } : {}) }
   DB.txns.push(t)
   save()
   return { id: t.id }

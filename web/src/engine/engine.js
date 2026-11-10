@@ -8,8 +8,15 @@ export function setSaveHook(f){_saveHook=f}
 export function setToastHandler(f){_toast=f}
 export function setCopyHandler(f){_copy=f}
 export function toast(msg,undo){_toast(msg,undo)}
-/* receipt number of a client payment; any payment that has none yet (restored or synced from an older copy) gets the next numbers in order */
-export function rnoOf(t){if(!t.rno&&t.kind==='in'){DB.rseq=DB.rseq||0;DB.txns.forEach(function(x){if(x.kind==='in'&&!x.rno)x.rno=++DB.rseq});try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}return t.rno||t.vno}
+/* receipt numbers start at 1 for every project. First time: number the existing receipts of each project in date order. Later: only fill in a missing number. */
+function rnoFix(d){
+  var by={};d.txns.forEach(function(t){if(t.kind==='in'){(by[t.projId||'']=by[t.projId||'']||[]).push(t)}});
+  Object.keys(by).forEach(function(k){var a=by[k];
+    if(!d.rpj){a.sort(function(x,y){return String(x.date).localeCompare(String(y.date))||String(x.vno).localeCompare(String(y.vno))});a.forEach(function(t,i){t.rno=i+1})}
+    else{var m=0;a.forEach(function(t){if(t.rno>m)m=t.rno});a.forEach(function(t){if(!t.rno)t.rno=++m})}});
+  d.rpj=1}
+export function nextRno(projId){var m=0;DB.txns.forEach(function(t){if(t.kind==='in'&&(t.projId||'')===(projId||'')&&t.rno>m)m=t.rno});return m+1}
+export function rnoOf(t){if(!t.rno&&t.kind==='in'){rnoFix(DB);try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}return t.rno||t.vno}
 export function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}notify();if(_saveHook)_saveHook()}
 export function persistQuiet(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
 export function setDB(d){DB=d}
@@ -35,7 +42,7 @@ export function words(n){var a=['','One','Two','Three','Four','Five','Six','Seve
  var r=[],cr=Math.floor(n/10000000);n=n%10000000;var lk=Math.floor(n/100000);n=n%100000;var th=Math.floor(n/1000);n=n%1000;
  if(cr)r.push(two(cr)+' Crore');if(lk)r.push(two(lk)+' Lakh');if(th)r.push(two(th)+' Thousand');if(n)r.push(three(n));return 'Rupees '+(r.join(' ')||'Zero')+' only'}
 export function blank(){return {biz:{name:'Brihad Temple Construction Co.',phone:'+91 77789 52024, +91 98986 30320',addr:'Email: brihadtemple.co@gmail.com',lhBW:false},projects:[],parties:[],txns:[],seq:0,vseq:0,proposals:[],pseq:0,terms:{},rseq:0}}
-export var DB=(function(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.projects&&d.parties&&d.txns){d.biz=d.biz||blank().biz;if(!d.biz.phone)d.biz.phone=blank().biz.phone;if(!d.biz.addr)d.biz.addr=blank().biz.addr;d.seq=d.seq||0;d.vseq=d.vseq||0;d.proposals=d.proposals||[];d.pseq=d.pseq||0;d.terms=d.terms||{};d.rseq=d.rseq||0;d.txns.forEach(function(t){if(t.kind==='in'&&!t.rno)t.rno=++d.rseq});return d}}catch(e){}return blank()})();
+export var DB=(function(){try{var d=JSON.parse(localStorage.getItem(KEY));if(d&&d.projects&&d.parties&&d.txns){d.biz=d.biz||blank().biz;if(!d.biz.phone)d.biz.phone=blank().biz.phone;if(!d.biz.addr)d.biz.addr=blank().biz.addr;d.seq=d.seq||0;d.vseq=d.vseq||0;d.proposals=d.proposals||[];d.pseq=d.pseq||0;d.terms=d.terms||{};rnoFix(d);return d}}catch(e){}return blank()})();
 export function uid(){DB.seq=(DB.seq||0)+1;return 'i'+Date.now().toString(36)+DB.seq}
 export function derive(){
   var D={projects:[],byId:{},parties:[],pById:{},months:[],heat:{},looseIn:0,looseOut:0,looseSec:{}};SECTIONS.forEach(function(s){D.looseSec[s]=0});
