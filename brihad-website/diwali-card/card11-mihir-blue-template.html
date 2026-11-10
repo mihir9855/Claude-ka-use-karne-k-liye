@@ -157,6 +157,14 @@ html[data-c] .foot .ic{color:#FFF1DC!important}
 html[data-c] .foot .ic svg{background:#E9C27A!important;color:#16204A!important}
 html[data-c] .foot .bar{background:rgba(233,194,122,.5)!important}
 html[data-c] .foot::before{background:linear-gradient(90deg,transparent,#E9C27A 12%,#E9C27A 88%,transparent)!important}
+
+/* v2: deities back, Saal Mubarak, bigger message, clear capitals in the name */
+.bigdiya,.diyaglow{display:none!important}
+html[data-from][data-tf] .deities{display:block!important;left:215px!important;top:110px!important;width:650px!important}
+html[data-from][data-tf] h1.both{top:690px!important;font:400 92px/1.1 "Great Vibes",cursive!important}
+html[data-from][data-tf] .msg{top:808px!important;left:120px!important;right:120px!important;font:italic 500 31px/1.45 "Cormorant Garamond",serif!important}
+.fromname{top:1010px!important}
+.fromname b{font:italic 600 46px/1.15 "Playfair Display",serif!important;margin-top:8px!important}
 </style>
 </head>
 <body>
@@ -220,7 +228,7 @@ dd.innerHTML='<linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1"><stop offset
 
 (function(){const f=new URLSearchParams(location.search).get('from');const el=document.querySelector('.family');if(!el)return;
  const T={manoj:"<span>With warm wishes,</span> <b>Manoj V. Sompura &amp; Family</b>",mihir:"<span>With warm wishes,</span> <b>Mihir M. Sompura</b>"};if(f&&T[f]){el.innerHTML=T[f];document.documentElement.dataset.from=f}else el.style.display='none';
- if(f==='manoj'){const h=document.querySelector('h1');h.innerHTML='<span>Happy Diwali</span><i>&amp;</i><span>Happy Prosperous New Year</span>';h.classList.add('both');document.querySelector('.sub').style.display='none';
+ if(f==='manoj'){const h=document.querySelector('h1');h.innerHTML='<span>Saal Mubarak</span>';h.classList.add('both');document.querySelector('.sub').style.display='none';
   document.documentElement.dataset.tf=new URLSearchParams(location.search).get('tf')||'a'}
  if(new URLSearchParams(location.search).get('noname'))el.style.visibility='hidden';
  {const c=new URLSearchParams(location.search).get('c');if(c)document.documentElement.dataset.c=c}
