@@ -6,6 +6,9 @@ on:
     branches: [claude/project-finance-app-pzfrcs]
     paths: [web/**, assets/**, android-native/**, capacitor.config.json, package.json, .github/workflows/build-apk.yml]
 
+permissions:
+  contents: write
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -42,3 +45,12 @@ jobs:
         with:
           name: Brihad-Temple-Finance-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Copy APK with a clean name
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk Brihad-Finance.apk
+      - name: Publish a direct download link
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-latest
+          name: Brihad Finance - latest APK and EXE
+          body: Always the newest build. Download Brihad-Finance.apk for the phone, and the Setup or Portable exe for Windows.
+          files: Brihad-Finance.apk

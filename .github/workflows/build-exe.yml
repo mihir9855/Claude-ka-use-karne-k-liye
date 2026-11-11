@@ -6,6 +6,9 @@ on:
     branches: [claude/project-finance-app-pzfrcs]
     paths: [web/**, desktop/**, assets/**, .github/workflows/build-exe.yml]
 
+permissions:
+  contents: write
+
 jobs:
   exe:
     runs-on: windows-latest
@@ -37,3 +40,10 @@ jobs:
         with:
           name: Brihad-Temple-Finance-exe
           path: desktop/dist/*.exe
+      - name: Publish a direct download link
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-latest
+          name: Brihad Finance - latest APK and EXE
+          body: Always the newest build. Download Brihad-Finance.apk for the phone, and the Setup or Portable exe for Windows.
+          files: desktop/dist/*.exe
