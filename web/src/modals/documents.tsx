@@ -190,9 +190,6 @@ export function ProposalModal({ form }: { form: any }) {
           {attErr ? <p className="text-xs font-semibold text-expense">{attErr}</p> : null}
         </div>
       </Field>
-      <Field label="Where the notes go" hint="Under the rates: the notes follow the rates on the same page when there is room. Separate last page: the notes and the signature always start on their own last page.">
-        <Chips options={[{ value: 'flow', label: 'Under the rates' }, { value: 'page', label: 'Separate last page' }]} value={f.np === true ? 'page' : 'flow'} onChange={(v) => set('np', v === 'page')} />
-      </Field>
       <Field label="Notes and terms (ready-made, you can edit)">
         <div className="grid gap-2">
           {f.notes.map((x: string, i: number) => (

@@ -465,12 +465,7 @@ export function proposalPages(pr,lg){
     blocks.forEach(function(b,bi){
       var brk=b.charAt(0)==='\u0001';if(brk)b=b.slice(1);
       var pg=pages[pages.length-1],pc=pg.querySelector('.pc');
-      if(brk&&pc.children.length&&pr.np===true){pg=newPage(false);pc=pg.querySelector('.pc')}
-      else if(brk&&pc.children.length){
-        /* the notes and the signature stay together: if they do not fit under the rates, they all move to a fresh page */
-        var grp=document.createElement('div');grp.innerHTML=blocks.slice(bi).map(function(x){return x.replace('\u0001','')}).join('');pc.appendChild(grp);
-        var over=grp.getBoundingClientRect().bottom-pg.getBoundingClientRect().top>LIMIT;pc.removeChild(grp);
-        if(over){pg=newPage(false);pc=pg.querySelector('.pc')}}
+      /* everything flows on from one page to the next; only attached pictures start on their own page */
       var el=document.createElement('div');el.innerHTML=b;pc.appendChild(el);
       if(el.getBoundingClientRect().bottom-pg.getBoundingClientRect().top>LIMIT&&pc.children.length>1){pc.removeChild(el);var np=newPage(false);np.querySelector('.pc').appendChild(el)}});
     var lastOnly=pages.length>1&&pages[pages.length-1].querySelector('.pc').children.length===1;
