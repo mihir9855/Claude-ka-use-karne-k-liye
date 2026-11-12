@@ -39,7 +39,7 @@ function Fab() {
     <DropdownMenuItem onSelect={fn} className="gap-3 rounded-xl py-2.5 text-[15px] font-semibold">{icon}{label}</DropdownMenuItem>
   )
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button aria-label="Add" className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-30 grid size-14 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/30 transition hover:scale-105 active:scale-95 lg:bottom-8 lg:right-8">
           <Plus className="size-7" />

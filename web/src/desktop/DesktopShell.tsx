@@ -28,7 +28,7 @@ function NewMenu() {
     <DropdownMenuItem onSelect={fn} className="gap-3 rounded-xl py-2.5 text-[14px] font-semibold">{icon}<span className="flex-1">{label}</span><span className="text-xs font-normal text-muted-foreground">{hint}</span></DropdownMenuItem>
   )
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button className="h-10 rounded-xl px-4 font-bold"><PlusIcon /> New <ChevronDown className="size-4 opacity-80" /></Button>
       </DropdownMenuTrigger>
