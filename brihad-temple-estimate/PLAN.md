@@ -167,3 +167,9 @@ koli 6′-9″, mandap 22′-7″ × 22′-7″ (12 stambh, ashtakon ghummat), j
 
 ⚠ Ambaji: prasad ≈ 27′ par book (mandovar rit 2) ≈ 17′-3″ aape, pan CAD ma 11′-1″ — owner ni mandovar unchai book karta ochhi.
 Mandovar ni kul unchai owner kevi rite nakki kare chhe te puchhvanu baaki.
+
+## 13. Thar ni jadai (W) — owner no jawab
+
+Input ma navo option: **Deewal no prakar**
+- **Brick backing sathe:** pathar no thar deewal na andar sudhi **nathi** jato → W = pathar ni facing jadai + nikalo. (Facing jadai ketli — puchhvanu baaki.)
+- **Puro pathar (brick nahi):** pathar no thar deewal na andar sudhi jaay → W = aakhi deewal ni jadai + nikalo.
