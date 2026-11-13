@@ -38,6 +38,31 @@
   --color-bg: var(--bg); --color-card: var(--card); --color-fg: var(--fg); --color-muted: var(--muted);
   --color-line: var(--line); --color-soft: var(--soft); --color-accent: var(--accent); --color-accent-soft: var(--accent-soft);
   --color-good: var(--good); --color-bad: var(--bad);
+
+  /* Magic UI animations */
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+  @keyframes shimmer-slide { to { transform: translate(calc(100cqw - 100%), 0); } }
+  @keyframes spin-around {
+    0% { transform: translateZ(0) rotate(0); }
+    15%, 35% { transform: translateZ(0) rotate(90deg); }
+    65%, 85% { transform: translateZ(0) rotate(270deg); }
+    100% { transform: translateZ(0) rotate(360deg); }
+  }
+}
+
+/* shadcn/ui tokens, mapped onto the app's own colours so its components follow the theme and dark mode.
+   Note: the app already uses card / muted / accent with its own meaning (muted = grey text colour). */
+@theme inline {
+  --color-background: var(--bg); --color-foreground: var(--fg);
+  --color-card-foreground: var(--fg);
+  --color-popover: var(--card); --color-popover-foreground: var(--fg);
+  --color-primary: var(--accent, var(--car)); --color-primary-foreground: #ffffff;
+  --color-secondary: var(--soft); --color-secondary-foreground: var(--fg);
+  --color-muted-foreground: var(--muted);
+  --color-accent-foreground: #ffffff;
+  --color-destructive: var(--bad);
+  --color-border: var(--line); --color-input: var(--line); --color-ring: var(--accent, var(--car));
 }
 
 html, body { background: var(--bg); color: var(--fg); font-family: var(--font-sans); -webkit-tap-highlight-color: transparent; }

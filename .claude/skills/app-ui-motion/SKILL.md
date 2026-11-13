@@ -29,6 +29,17 @@ Rules of thumb:
 - Animate `transform` and `opacity` only; avoid animating layout properties in loops. Keep UI transitions 150–300 ms.
 - For Capacitor/mobile builds, keep heavy effects (WebGL backgrounds, particles) off low-end screens or behind a toggle.
 
+## Already installed in this repo
+
+- `web/components.json` — shadcn config (run all `npx shadcn@latest add …` from `web/`) with registries `@magicui`, `@motion-primitives`, `@react-bits`, e.g. `npx shadcn@latest add @magicui/marquee`.
+- shadcn/ui tokens (`bg-primary`, `border-border`, `ring`…) are mapped onto the app's own colours in `web/src/index.css`. The app's existing `card` / `muted` / `accent` keep their own meaning (`text-muted` is a grey text colour; shadcn's `bg-muted` will not look like stock shadcn).
+- Components in `web/src/components/ui/`: shadcn `button card dialog sheet input label skeleton tabs`; Magic UI `number-ticker shimmer-button blur-fade animated-list`; Motion Primitives `text-effect animated-number transition-panel in-view`. React Bits: `web/src/components/SplitText.tsx`, `CountUp.tsx` (use `gsap`).
+- npm: `motion` (v14), `animejs` (v4), `radix-ui`, `class-variance-authority`, `gsap`, `@gsap/react`.
+- After `shadcn add`: newer CLIs import `cn` from the `cn` package — change it to `@/lib/utils` and `npm uninstall cn`; check `motion` was not downgraded; fix type-only imports (`verbatimModuleSyntax` is on); run `npx tsc -b`.
+- HyperFrames skills in `.claude/skills/` (`hyperframes`, `hyperframes-cli`, `hyperframes-registry`, `media-use`, `reverse-any-video`, `style-sampling`); restore list in `skills-lock.json`.
+- 21st MCP in `.mcp.json`, key read from the `API_KEY_21ST` environment variable.
+- Manim sample in `video/manim/` (see its README).
+
 ## 2. Setup (only when needed)
 
 All the component libraries (Magic UI, React Bits, Motion Primitives) are copy-in

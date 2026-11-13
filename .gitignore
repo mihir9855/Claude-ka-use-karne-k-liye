@@ -9,3 +9,6 @@ desktop/dist/
 assets/
 icon-samples/
 app-icon.png
+media/
+.venv/
+__pycache__/
