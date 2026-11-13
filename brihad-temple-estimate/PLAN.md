@@ -140,3 +140,30 @@ Kharch = CFT × Rate
 - [ ] Deewal jadai ⅕ ke ⅙ — kai vaparo chho.
 - [ ] Thar ni W (jadai) kevi rite gano chho — fakt nikalo ke deewal ma pravesh sathe.
 - [ ] Navi app maate navo GitHub repo (naam suggest: `brihad-temple-estimate`).
+
+## 12. Owner ni CAD parthi (Draft — confirm karvanu)
+
+**Owner no mandovar style = Dhuliya (Shree Mahavir Swami Jain Mandir) ane Ambaji (Chotulal) jevo.**
+CAD PDF 1:50 scale na vector maap parthi (±1″), Dhuliya mandovar kul **11′-9″ = 141″**, neeche thi upar:
+
+| # | Thar (andaaj naam) | Unchai |
+|---|---|---|
+| 1 | Paya na thar (khuro / jadyakumbh / karnika) | 15″ |
+| 2 | Kumbho (trikon ghat-pallav sathe) | 15″ |
+| 3 | Kalash | 6″ |
+| 4 | Antarpatra + Kevad | 10″ |
+| 5 | Manchi | 9″ |
+| 6 | Jangha (gokhla, stambhika sathe) | 32″ |
+| 7 | Udgam | 14″ |
+| 8 | Bharni | 13″ |
+| 9 | Chhajja | 16″ |
+| 10 | Chhajja upar no pattiyo (shikhar ni bethak) | 10″ |
+
+Book na 144 bhaag sathe sarkhamani: jangha (≈32″) ane udgam (≈14″) male chhe; kumbho thodo nano; shiravati alag nathi.
+
+**Ambaji (Chotulal)** — elevation: jagati 12′-6″, pith 1′, mandovar 11′-1″, chhajja zone 11″, shikhar 19′-11″, kul 45′-5″.
+Plan: garbhagruh andar 22′-7″ × 9′-1″ (lambu — ghana murti), prasad bahar ≈ 27′-1″ (2′-5″ + 6′-3″ + 1′-10½″ + 3′ + 3′ + 1′-10½″ + 6′-3″ + 2′-5″),
+koli 6′-9″, mandap 22′-7″ × 22′-7″ (12 stambh, ashtakon ghummat), jagati 54′-4″ × 36′-3″, kul lambai 81′.
+
+⚠ Ambaji: prasad ≈ 27′ par book (mandovar rit 2) ≈ 17′-3″ aape, pan CAD ma 11′-1″ — owner ni mandovar unchai book karta ochhi.
+Mandovar ni kul unchai owner kevi rite nakki kare chhe te puchhvanu baaki.
