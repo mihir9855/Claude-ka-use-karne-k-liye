@@ -21,7 +21,12 @@ Garbhagruh nu maap nakho → option ma thi bhaag select karo → te bhaag na bad
 | Lambai jevi vastu (thar, pattika, chhajju, kathedo) | **Running feet (RFT)** |
 | Sapati (farsh, chhat, vitan, mandap) | **Sq. ft** |
 | Stone | **Cubic feet (CFT)** |
-| Rounding | Inch ma ⅛″ sudhi |
+| Rounding | **Fakt aakha inch, hamesha upar.** Koi pan fraction (⅛″ pan) hoy to aakho 1″ umero: 11⅛″ → 12″, 11½″ → 12″, 12″ → 12″. Kyay ½″, ¼″, ⅛″ nahi dekhay. |
+
+Rounding kevi rite lagu thay:
+- Andar ni ganatari chokkas (exact) thay; **fakt batavti vakhate** darek maap upar na aakha inch ma.
+- **Stone CFT rounded maap thi j** gana (L × W × H × Nang, aakha inch) — pathar e j maap thi kapay chhe.
+- Ek bhaag na thar (dakhla mandovar 144 bhaag) darek upar round thay, etle temno sarvalo kul unchai karta 1–2″ vadhi shake; app tyaa nondh batave.
 
 **App ma kyay gaj ke angul nahi dekhay — fakt inch ane feet.** Input, output, chitra, PDF, Excel badhe inch/feet.
 Chopadi na niyam gaj-angul ma chhe, etle app **andar thi** te inch ma badli nakhe (1 gaj = 18″, 1 angul = ¾″ — fakt code ma, user ne nahi dekhay).
