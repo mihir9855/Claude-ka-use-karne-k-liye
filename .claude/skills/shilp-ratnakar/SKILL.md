@@ -43,3 +43,10 @@ Find a topic quickly: `grep -n "<Gujarati term>" .claude/skills/shilp-ratnakar/r
 - If an app/calculator is being built from these rules, encode each rule as a data table
   (breakpoints + increment per gaj) with its source reference, and unit-test it against the
   worked examples in the notes (e.g. 25-gaj example in Ratna 2, l.~143).
+
+## Active project
+
+The owner is building a new app, **Brihad Temple Estimate** (temple part measurements + stone
+CFT and cost from the garbhagruh size). Plan: `brihad-temple-estimate/PLAN.md` — read it first
+when working on that app. Owner works in inches / feet-inch; stone = L × W × H × Nang ÷ 1728 CFT,
+cost = CFT × rate, no wastage. Default rules will come from the owner's CAD drawings.
