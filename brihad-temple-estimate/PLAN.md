@@ -1,5 +1,7 @@
 # Brihad Temple Estimate — App Plan (Draft 1)
 
+> **Moved:** the up-to-date plan now lives in the `mihir9855/brihad-temple-estimate` repo (`docs/PLAN.md`). This copy is no longer updated.
+
 > Status: **plan only, no code yet.** Base: "Shilp Ratnakar" notes (`.claude/skills/shilp-ratnakar/reference.md`).
 > Default rules will be fixed after the owner shares his CAD drawings. Until then the app uses the
 > temporary defaults in section 8 and every number is to be refined later.
