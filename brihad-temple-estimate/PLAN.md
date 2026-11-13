@@ -18,13 +18,14 @@ Garbhagruh nu maap nakho → option ma thi bhaag select karo → te bhaag na bad
 | Vastu | Kevi rite batavvu |
 |---|---|
 | Darek maap | **Inch mukhya**, saathe feet-inch (dakhla: `162″ = 13′-6″`) |
-| Angul (andar ni ganatari) | Nano akshar ma, chopadi sathe sarkhavva |
 | Lambai jevi vastu (thar, pattika, chhajju, kathedo) | **Running feet (RFT)** |
 | Sapati (farsh, chhat, vitan, mandap) | **Sq. ft** |
 | Stone | **Cubic feet (CFT)** |
 | Rounding | Inch ma ⅛″ sudhi |
 
-Gaj: default **1 gaj = 24 angul = 18″ (1 angul = ¾″)**. Setting ma badli shakay (dakhla 2 ft).
+**App ma kyay gaj ke angul nahi dekhay — fakt inch ane feet.** Input, output, chitra, PDF, Excel badhe inch/feet.
+Chopadi na niyam gaj-angul ma chhe, etle app **andar thi** te inch ma badli nakhe (1 gaj = 18″, 1 angul = ¾″ — fakt code ma, user ne nahi dekhay).
+Niyam pan feet ma lakhaay: dakhla "prasad 15′ sudhi darek 1′-6″ e +1½″".
 
 ## 3. Input (ek screen)
 
@@ -40,7 +41,7 @@ Garbhagruh parthi prasad ni bahar ni pahodai (karna thi karna, kumbha na mul par
 - Deewal jadai = prasad pahodai na **⅕ / 1⁄5½ / ⅙** (pathar, Tritiya ratna shlok 108–109).
 - Garbhagruh = P − 2 × deewal → **P = Garbhagruh × 5⁄3** (⅕ deewal) athva **× 3⁄2** (⅙ deewal).
 - App banne batavshe; owner ni CAD parthi default nakki thashe.
-- P ne gaj ma = G. Aakhi app G parthi chale chhe.
+- Aakhi app prasad ni pahodai P (inch) parthi chale chhe.
 
 ## 4. Vaparvani rit (selection)
 
@@ -88,13 +89,13 @@ Kharch = CFT × Rate
 2. **Input** — section 3.
 3. **Bhaag** — tree + Maap/Stone tab.
 4. **Summary** — CFT, ₹, RFT, sq.ft; PDF ane Excel export.
-5. **Setting** — gaj, default rit (section 8), rounding.
+5. **Setting** — default rit (section 8), rounding.
 6. **Rit sarkhamani** — ek bhaag ni badhi rit sathe (dakhla mandovar rit 1–4).
 
 ## 7. Niyamo kevi rite rakhvaa (code vakhte)
 
-- Darek niyam ek **table** tarike: "1 gaj = X angul; N gaj sudhi +Y per gaj…", saathe source (ratna, pu., shlok).
-- Chopadi na udaharan thi **test** (dakhla Dwitiya ratna nu 25 gaj nu udaharan; Tritiya ratna na feet koshtak).
+- Darek niyam ek **table** tarike, chopadi ni jem (andar gaj-angul), pan app tene inch ma badline j batave; saathe source (ratna, pu., shlok).
+- Chopadi na udaharan thi **test** (dakhla Dwitiya ratna nu 37′-6″ prasad nu udaharan; Tritiya ratna na feet koshtak).
 - Jyaa chopadi ma shanka ke khutatu hoy tyaa app ⚠ chetavani batave.
 
 ## 8. Kamchalau default rit (CAD aavya pachhi badlashe)
@@ -107,7 +108,7 @@ Kharch = CFT × Rate
 | Mandovar unchai | Rit 2 (shl. 5–6) | Rit 1, 3, 4 |
 | Mandovar bhaag | 144 bhaag | 198, 108, 27, 57, samanya |
 | Dwar unchai | Nagaradi rit 1 (shl. 128–130) | Rit 2, Bhumij, Dravid |
-| Mandap maap | Prasad pramane (5–10 gaj ×1½, 10–50 ×1¼) | ×1 … ×2 |
+| Mandap maap | Prasad pramane (7′-6″–15′ ×1½, 15′–75′ ×1¼) | ×1 … ×2 |
 | Stambh pahodai | Rit 2 (shl. 61–63) | Rit 1 (P÷10…÷14) |
 | Stambh unchai | Rit 1, 8 bhaag | Rit 2, 9 bhaag |
 | Shikhar rekha unchai | Madhyam ×1⅓ | ×1¼, ×1½ |
@@ -116,7 +117,7 @@ Kharch = CFT × Rate
 
 - Dwitiya pu. 65–68 (jagati, shl. 125–147) nathi → "Jain Shilp Vidhan-3" ni paddhati.
 - Int ni kurmashila jadai W÷6 ke W÷2 — khatri karvi.
-- Mandovar rit 3: 35→40 gaj kood (chhapya mujab).
+- Mandovar rit 3: 52′-6″ thi 60′ prasad vachche kood (chhapya mujab).
 - Pratima/sinhasan koshtak lakhan thi ulatu.
 - Chaturth pu. 117–119, 137; Shashth pu. 222, 225–228 nathi; Ashtam ratna nathi.
 - Saptam ratna: Som, Vijay, Trailokya tilak na fakt naam.

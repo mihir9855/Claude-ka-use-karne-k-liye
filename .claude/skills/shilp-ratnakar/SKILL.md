@@ -48,5 +48,5 @@ Find a topic quickly: `grep -n "<Gujarati term>" .claude/skills/shilp-ratnakar/r
 
 The owner is building a new app, **Brihad Temple Estimate** (temple part measurements + stone
 CFT and cost from the garbhagruh size). Plan: `brihad-temple-estimate/PLAN.md` — read it first
-when working on that app. Owner works in inches / feet-inch; stone = L × W × H × Nang ÷ 1728 CFT,
+when working on that app. The app must never show gaj or angul — only inches and feet (convert internally, 1 gaj = 18″); owner works in inches / feet-inch; stone = L × W × H × Nang ÷ 1728 CFT,
 cost = CFT × rate, no wastage. Default rules will come from the owner's CAD drawings.
