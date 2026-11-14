@@ -52,7 +52,7 @@ export function AddSheet({ db, v, edit, onClose }: { db: DB; v: VehicleId; edit?
   const draft = { v, date, odo: +odo, qty: +qty, price: +price || 0, full, note: note.trim() || undefined }
   const avg = previewAvg(db, draft, edit?.id)
   const km = previewRow(db, draft, edit?.id)?.km ?? 0
-  const first = veh.startOdo === 0 && rs.filter((f) => f.id !== edit?.id).length === 0
+  const first = rs.filter((f) => f.id !== edit?.id).length === 0 && (veh.startOdo === 0 || +odo === veh.startOdo)
 
   const save = (e: React.FormEvent) => {
     e.preventDefault()

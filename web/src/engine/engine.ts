@@ -128,7 +128,10 @@ const toFill = (d: Draft): Fill => ({ id: 'preview', ts: 0, ...d })
 /** The row this draft would become. Pass editId when changing an existing fill-up. */
 export function previewRow(db: DB, d: Draft, editId?: string): Row | null {
   const base = editId ? { ...db, fills: db.fills.filter((f) => f.id !== editId) } : db
-  if (!(d.odo > 0) || (!editId && !(d.odo > lastOdoOf(base, d.v)))) return null
+  // A vehicle's first fill-up may sit exactly on its starting km (you add the vehicle and fill up the same day).
+  const none = !base.fills.some((f) => f.v === d.v)
+  const last = lastOdoOf(base, d.v)
+  if (!(d.odo > 0) || (!editId && (none ? d.odo < last : !(d.odo > last)))) return null
   return rows(base, d.v, toFill(d)).find((x) => x.id === 'preview') ?? null
 }
 
@@ -147,12 +150,13 @@ export function validate(db: DB, d: Draft, editId?: string): string | null {
     const i = list.findIndex((f) => f.id === editId)
     const prev = i > 0 ? list[i - 1].odo : veh.startOdo > 0 ? veh.startOdo : null
     const next = i >= 0 && i < list.length - 1 ? list[i + 1].odo : null
-    if (prev !== null && !(d.odo > prev)) return `Odometer must be higher than ${prev} km`
+    if (prev !== null && (i > 0 ? !(d.odo > prev) : d.odo < prev)) return `Odometer must be higher than ${prev} km`
     if (next !== null && !(d.odo < next)) return `Odometer must be lower than ${next} km`
     if (!(d.odo > 0)) return 'Enter the odometer reading'
   } else {
     const last = lastOdoOf(db, d.v)
-    if (!(d.odo > last)) return `Odometer must be higher than ${last} km`
+    const none = !db.fills.some((f) => f.v === d.v)
+    if (none ? d.odo < last : !(d.odo > last)) return none ? `Odometer cannot be lower than the starting ${last} km` : `Odometer must be higher than ${last} km`
   }
   if (!(d.qty > 0)) return `Enter how many ${veh.unit} you filled`
   if (d.price < 0) return 'Price cannot be negative'
