@@ -4,10 +4,20 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 
-// Builds one self-contained dist/index.html (used by the APK and the browser).
-export default defineConfig({
-  base: './',
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
-  plugins: [react(), tailwindcss(), viteSingleFile()],
-  build: { outDir: 'dist', chunkSizeWarningLimit: 4000 },
+// `npm run build`      -> dist/index.html: one self-contained file (the downloadable HTML, voices inside).
+// `npm run build:apk`  -> dist/ with the voice clips as separate files (smaller, faster start in the APK).
+export default defineConfig(({ mode }) => {
+  const apk = mode === 'apk'
+  return {
+    base: './',
+    define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+    plugins: [react(), tailwindcss(), ...(apk ? [] : [viteSingleFile()])],
+    build: {
+      outDir: 'dist',
+      // Also run on older phones (Chrome / Android WebView 80+).
+      target: ['es2019', 'chrome80'],
+      assetsInlineLimit: apk ? 0 : undefined,
+      chunkSizeWarningLimit: 8000,
+    },
+  }
 })

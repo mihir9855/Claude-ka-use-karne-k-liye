@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "vite --host",
     "build": "tsc -b && vite build",
-    "sync": "npm run build && npx cap sync android",
+    "sync": "npm run build:apk && npx cap sync android",
     "android": "npm run sync && npx cap open android",
-    "voice-list": "tsx scripts/voice-list.ts"
+    "voice-list": "tsx scripts/voice-list.ts",
+    "build:apk": "tsc -b && vite build --mode apk"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "^7.0.1",
