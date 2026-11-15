@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths: [web/**, scripts/**, android-native/**, capacitor.config.json, package.json, .github/workflows/build-apk.yml]
 
+permissions:
+  contents: write
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -43,3 +46,16 @@ jobs:
         with:
           name: Mileage-Log-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Read app version
+        id: ver
+        run: echo "v=$(node -p "require('./web/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Name the APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk Mileage-Log.apk
+      - name: Publish as GitHub Release (public download link)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.v }}
+          name: Mileage Log v${{ steps.ver.outputs.v }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          files: Mileage-Log.apk
