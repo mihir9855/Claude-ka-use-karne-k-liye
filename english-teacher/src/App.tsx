@@ -23,7 +23,7 @@ export default function App() {
   const { settings } = useProgress()
 
   useEffect(() => { document.documentElement.classList.toggle('dark', settings.dark) }, [settings.dark])
-  useEffect(() => { configureSpeech(settings.accent, settings.speed, settings.natural) }, [settings.accent, settings.speed, settings.natural])
+  useEffect(() => { configureSpeech(settings.accent, settings.speed, settings.natural, settings.gender) }, [settings.accent, settings.speed, settings.natural, settings.gender])
 
   const nav: Nav = {
     push: r => setStack(s => [...s, r]),
@@ -57,6 +57,6 @@ export default function App() {
   }
 }
 
-const { accent, speed, natural } = getProgress().settings
-configureSpeech(accent, speed, natural)
+const { accent, speed, natural, gender } = getProgress().settings
+configureSpeech(accent, speed, natural, gender)
 document.documentElement.classList.toggle('dark', getProgress().settings.dark)

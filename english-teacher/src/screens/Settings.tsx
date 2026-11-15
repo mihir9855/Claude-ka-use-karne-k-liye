@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { resetProgress, updateSettings, useProgress, type Settings } from '../lib/progress'
-import { hasNaturalVoice, speak, type Accent } from '../lib/speech'
+import { hasNaturalVoice, speak, voiceName, type Accent, type Gender } from '../lib/speech'
 import { MIC_TEST, VOICE_PREVIEW } from '../lib/speech-texts'
 import type { Nav } from '../App'
 import { Btn, cx, Header, MicCheck } from '../ui'
@@ -12,12 +12,17 @@ export function SettingsScreen({ nav }: { nav: Nav }) {
   const [confirm, setConfirm] = useState(false)
   const [micTest, setMicTest] = useState(false)
   const set = (patch: Partial<Settings>) => updateSettings(patch)
+  const [voice, setVoice] = useState<string | null | undefined>(undefined)
+  useEffect(() => { setVoice(undefined); const t = setTimeout(() => voiceName(s.accent).then(n => setVoice(n ?? null))); return () => clearTimeout(t) }, [s.accent, s.gender])
 
   return (
     <div className="pb-10">
       <Header title="Settings" sub="સેટિંગ્સ" onBack={nav.back} />
       <div className="space-y-4 px-4">
         <Group title="Voice · અવાજ">
+          <Choice<Gender> label="Voice" gu="સ્ત્રી કે પુરુષ અવાજ" value={s.gender} cols={2}
+            options={[['female', '👩 Female'], ['male', '👨 Male']]}
+            onChange={gender => { set({ gender }); setTimeout(() => speak(VOICE_PREVIEW), 50) }} />
           {hasNaturalVoice() && (
             <Toggle label="Natural voice (recommended)" gu="માણસ જેવો કુદરતી અવાજ. બંધ કરો તો ફોનનો અવાજ વપરાશે." on={s.natural}
               onChange={natural => { set({ natural }); setTimeout(() => speak(VOICE_PREVIEW), 50) }} />
@@ -27,8 +32,15 @@ export function SettingsScreen({ nav }: { nav: Nav }) {
               options={[['en-US', 'American'], ['en-GB', 'British'], ['en-IN', 'Indian']]}
               onChange={accent => { set({ accent }); setTimeout(() => speak(VOICE_PREVIEW), 50) }} />
           )}
+          {!(hasNaturalVoice() && s.natural) && voice !== undefined && (
+            <p className={cx('px-4 pb-3 text-sm', voice ? 'text-muted' : 'text-bad')}>
+              {voice
+                ? <>🔈 Voice: {voice}</>
+                : <>આ ઉચ્ચારનો અવાજ ફોનમાં નથી. Phone Settings → Text-to-speech → Google → Install voice data માંથી English (UK / India) ડાઉનલોડ કરો.</>}
+            </p>
+          )}
           <Choice<number> label="Speed" gu="ઝડપ" value={s.speed}
-            options={[[0.8, 'Slow'], [1, 'Normal'], [1.2, 'Fast']]}
+            options={[[0.7, 'Slow'], [1, 'Normal'], [1.3, 'Fast']]}
             onChange={speed => { set({ speed }); setTimeout(() => speak(VOICE_PREVIEW), 50) }} />
           <Toggle label="Play phrases automatically" gu="વાક્ય આપમેળે બોલાય" on={s.autoPlay} onChange={autoPlay => set({ autoPlay })} />
         </Group>
@@ -94,14 +106,14 @@ function Toggle({ label, gu, on, onChange }: { label: string; gu: string; on: bo
   )
 }
 
-function Choice<T extends string | number>({ label, gu, value, options, onChange }: {
-  label: string; gu: string; value: T; options: [T, string][]; onChange: (v: T) => void
+function Choice<T extends string | number>({ label, gu, value, options, onChange, cols = 3 }: {
+  label: string; gu: string; value: T; options: [T, string][]; onChange: (v: T) => void; cols?: number
 }) {
   return (
     <div className="p-4">
       <p className="font-bold leading-tight">{label}</p>
       <p className="mb-2 text-sm text-muted">{gu}</p>
-      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-soft p-1">
+      <div className={cx('grid gap-1 rounded-2xl bg-soft p-1', cols === 2 ? 'grid-cols-2' : 'grid-cols-3')}>
         {options.map(([v, name]) => (
           <button key={String(v)} onClick={() => onChange(v)}
             className={cx('rounded-xl py-2 text-sm font-bold', v === value ? 'bg-card shadow-sm' : 'text-muted')}>{name}</button>

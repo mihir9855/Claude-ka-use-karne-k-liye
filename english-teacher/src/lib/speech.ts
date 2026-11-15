@@ -6,22 +6,23 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech'
 import { voiceKey } from './voicekey'
 
 export type Accent = 'en-US' | 'en-GB' | 'en-IN'
+export type Gender = 'female' | 'male'
 
 const native = Capacitor.isNativePlatform()
-const opts = { accent: 'en-US' as Accent, speed: 1, natural: true }
+const opts = { accent: 'en-US' as Accent, speed: 1, natural: true, gender: 'female' as Gender }
 
-export function configureSpeech(accent: Accent, speed: number, natural: boolean) {
-  opts.accent = accent
-  opts.speed = speed
-  opts.natural = natural
+export function configureSpeech(accent: Accent, speed: number, natural: boolean, gender: Gender) {
+  Object.assign(opts, { accent, speed, natural, gender })
 }
 
 // Natural voice: clips recorded with a neural voice by the GitHub build (scripts/make-voices.py),
 // built into the app. Sentences without a clip use the phone's own voice.
+// voice/<voice name>/<sentence id>.ogg -> "<voice name>/<sentence id>"
 const CLIPS: Record<string, string> = Object.fromEntries(
-  Object.entries(import.meta.glob('../../voice/af_heart/*.ogg', { eager: true, query: '?url', import: 'default' }) as Record<string, string>)
-    .map(([path, url]) => [path.split('/').pop()!.replace('.ogg', ''), url]),
+  Object.entries(import.meta.glob('../../voice/*/*.ogg', { eager: true, query: '?url', import: 'default' }) as Record<string, string>)
+    .map(([path, url]) => [path.split('/').slice(-2).join('/').replace('.ogg', ''), url]),
 )
+const NATURAL: Record<Gender, string> = { female: 'af_heart', male: 'am_michael' }
 export const hasNaturalVoice = () => Object.keys(CLIPS).length > 0
 let clip: HTMLAudioElement | undefined
 
@@ -49,18 +50,60 @@ type WebSR = {
 const WebRecognition: (new () => WebSR) | undefined =
   typeof window !== 'undefined' ? ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) : undefined
 
-let webVoice: SpeechSynthesisVoice | undefined
-function pickWebVoice() {
-  if (typeof speechSynthesis === 'undefined') return undefined
-  const voices = speechSynthesis.getVoices()
-  const want = opts.accent.toLowerCase()
-  webVoice =
-    voices.find(v => v.lang.toLowerCase().replace('_', '-') === want && /google/i.test(v.name)) ||
-    voices.find(v => v.lang.toLowerCase().replace('_', '-') === want) ||
-    voices.find(v => v.lang.toLowerCase().startsWith('en'))
-  return webVoice
+// ---------- Choosing a real voice for the accent ----------
+// The accent only changes the sound if we pick a voice made for that accent; the phone's default voice ignores it.
+
+type VoiceInfo = { name: string; lang: string; localService?: boolean }
+const normLang = (l: string) => l.toLowerCase().replace('_', '-')
+
+// Android's Google voices are named like "en-gb-x-gbb-local"; the 3-letter code tells male from female.
+const MALE_CODES = ['iol', 'iom', 'tpd', 'gbb', 'gbd', 'rjs', 'end', 'ene']
+const FEMALE_CODES = ['sfg', 'iob', 'iog', 'tpc', 'tpf', 'gba', 'gbc', 'gbg', 'ahp', 'cxx']
+function genderOf(name: string): Gender | undefined {
+  const n = name.toLowerCase()
+  if (/\bfemale\b|woman|samantha|zira|susan|hazel|heera|veena|karen|serena/.test(n)) return 'female'
+  if (/\bmale\b|\bman\b|david|mark|george|ravi|rishi|daniel|alex/.test(n)) return 'male'
+  const code = n.match(/-x-([a-z]{3})-/)?.[1]
+  if (code && MALE_CODES.includes(code)) return 'male'
+  if (code && FEMALE_CODES.includes(code)) return 'female'
 }
-if (typeof speechSynthesis !== 'undefined') speechSynthesis.onvoiceschanged = () => { webVoice = undefined }
+
+function score(v: VoiceInfo, want: string): number {
+  const lang = normLang(v.lang)
+  if (lang !== want) return -1
+  let s = 10
+  const g = genderOf(v.name)
+  if (g === opts.gender) s += 8
+  else if (g) s -= 2
+  if (/google/i.test(v.name)) s += 3
+  if (/natural|neural|enhanced|premium|wavenet/i.test(v.name)) s += 4
+  if (v.localService !== false) s += 1 // works without internet
+  return s
+}
+
+function bestIndex(voices: VoiceInfo[], accent: Accent): number {
+  let best = -1, bestScore = -1
+  voices.forEach((v, i) => { const sc = score(v, accent.toLowerCase()); if (sc > bestScore) { best = i; bestScore = sc } })
+  return best
+}
+
+let nativeVoices: Promise<VoiceInfo[]> | undefined
+const getNativeVoices = () => (nativeVoices ??= TextToSpeech.getSupportedVoices().then(r => r.voices).catch(() => []))
+const webVoices = () => (typeof speechSynthesis === 'undefined' ? [] : speechSynthesis.getVoices())
+
+/** The voice used for the current accent, or undefined if the phone has none for it. */
+async function voiceFor(accent: Accent): Promise<{ index: number; info: VoiceInfo } | undefined> {
+  const list = native ? await getNativeVoices() : webVoices()
+  const index = bestIndex(list, accent)
+  return index >= 0 ? { index, info: list[index] } : undefined
+}
+
+/** For Settings: which voice the phone will use for this accent. */
+export async function voiceName(accent: Accent): Promise<string | undefined> {
+  if (!native && typeof speechSynthesis !== 'undefined' && !speechSynthesis.getVoices().length)
+    await new Promise(r => { speechSynthesis.onvoiceschanged = r; setTimeout(r, 1500) })
+  return (await voiceFor(accent))?.info.name
+}
 
 let speakToken = 0
 
@@ -68,7 +111,8 @@ let speakToken = 0
 export async function speak(text: string, slow = false): Promise<void> {
   const token = ++speakToken
   clip?.pause()
-  const url = opts.natural ? CLIPS[voiceKey(text)] : undefined
+  const key = voiceKey(text)
+  const url = opts.natural ? CLIPS[`${NATURAL[opts.gender]}/${key}`] : undefined
   if (url) {
     if (!native && typeof speechSynthesis !== 'undefined') speechSynthesis.cancel()
     if (native) await TextToSpeech.stop().catch(() => {})
@@ -79,7 +123,9 @@ export async function speak(text: string, slow = false): Promise<void> {
     try {
       await TextToSpeech.stop()
       if (token !== speakToken) return
-      await TextToSpeech.speak({ text, lang: opts.accent, rate, pitch: 1, volume: 1, category: 'playback' })
+      const v = await voiceFor(opts.accent)
+      if (token !== speakToken) return
+      await TextToSpeech.speak({ text, lang: opts.accent, rate, pitch: 1, volume: 1, category: 'playback', ...(v ? { voice: v.index } : {}) })
     } catch (e) {
       console.warn('TTS failed', e)
     }
@@ -89,8 +135,9 @@ export async function speak(text: string, slow = false): Promise<void> {
   speechSynthesis.cancel()
   await new Promise<void>(resolve => {
     const u = new SpeechSynthesisUtterance(text)
-    const voice = webVoice || pickWebVoice()
-    if (voice) u.voice = voice
+    const list = webVoices()
+    const i = bestIndex(list, opts.accent)
+    try { if (i >= 0) u.voice = list[i] } catch { /* keep the default voice */ }
     u.lang = opts.accent
     u.rate = rate
     // Some browsers never fire onend; don't hang forever.

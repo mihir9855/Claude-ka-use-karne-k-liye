@@ -8,7 +8,7 @@ and clips for sentences that no longer exist are deleted.
 import json, subprocess, sys, tempfile
 from pathlib import Path
 
-VOICES = {'af_heart': 'a'}  # voice name -> Kokoro language ('a' = American English)
+VOICES = {'af_heart': 'a', 'am_michael': 'a'}  # female, male -> Kokoro language ('a' = American English)
 ROOT = Path(__file__).resolve().parent.parent / 'voice'
 items = json.loads((ROOT / 'list.json').read_text())
 
