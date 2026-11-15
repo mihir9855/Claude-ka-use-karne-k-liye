@@ -16,6 +16,11 @@ GitHub builds the APK by itself every time the code changes:
 2. Tap **English-Teacher.apk** to download it, then open it and allow "Install unknown apps" if Android asks.
 3. On first use of the mic, tap **Allow**.
 
+## Use it as one HTML file
+The same release also has **English-Teacher.html**: the whole app in one file. Open it in Chrome on a phone or computer.
+Listening works everywhere; for speaking practice, the APK works best (Chrome needs internet for speech recognition).
+To make it yourself: `npm run build` creates `dist/index.html`.
+
 ## Run from Android Studio
 Needs Node.js 22 and Android Studio (JDK 21).
 ```bash
