@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# One build at a time per branch: a build may commit new voice clips, and the next one must see them.
+concurrency:
+  group: english-teacher-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -16,6 +21,10 @@ jobs:
         working-directory: english-teacher
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get voice clips recorded by an earlier build
+        run: git pull --rebase origin "$GITHUB_REF_NAME"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
