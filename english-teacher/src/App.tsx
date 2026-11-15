@@ -22,7 +22,7 @@ export default function App() {
   stackRef.current = stack
   const { settings } = useProgress()
 
-  useEffect(() => { configureSpeech(settings.accent, settings.speed) }, [settings.accent, settings.speed])
+  useEffect(() => { configureSpeech(settings.accent, settings.speed, settings.natural) }, [settings.accent, settings.speed, settings.natural])
 
   const nav: Nav = {
     push: r => setStack(s => [...s, r]),
@@ -56,4 +56,5 @@ export default function App() {
   }
 }
 
-configureSpeech(getProgress().settings.accent, getProgress().settings.speed)
+const { accent, speed, natural } = getProgress().settings
+configureSpeech(accent, speed, natural)

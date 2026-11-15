@@ -3,15 +3,38 @@
 import { Capacitor } from '@capacitor/core'
 import { SpeechRecognition } from '@capacitor-community/speech-recognition'
 import { TextToSpeech } from '@capacitor-community/text-to-speech'
+import { voiceKey } from './voicekey'
 
 export type Accent = 'en-US' | 'en-GB' | 'en-IN'
 
 const native = Capacitor.isNativePlatform()
-const opts = { accent: 'en-US' as Accent, speed: 1 }
+const opts = { accent: 'en-US' as Accent, speed: 1, natural: true }
 
-export function configureSpeech(accent: Accent, speed: number) {
+export function configureSpeech(accent: Accent, speed: number, natural: boolean) {
   opts.accent = accent
   opts.speed = speed
+  opts.natural = natural
+}
+
+// Natural voice: clips recorded with a neural voice by the GitHub build (scripts/make-voices.py),
+// built into the app. Sentences without a clip use the phone's own voice.
+const CLIPS: Record<string, string> = Object.fromEntries(
+  Object.entries(import.meta.glob('../../voice/af_heart/*.ogg', { eager: true, query: '?url', import: 'default' }) as Record<string, string>)
+    .map(([path, url]) => [path.split('/').pop()!.replace('.ogg', ''), url]),
+)
+export const hasNaturalVoice = () => Object.keys(CLIPS).length > 0
+let clip: HTMLAudioElement | undefined
+
+function playClip(url: string, rate: number, token: number): Promise<void> {
+  return new Promise(resolve => {
+    const a = new Audio(url)
+    clip = a
+    a.playbackRate = rate
+    a.preservesPitch = true
+    a.onended = a.onerror = a.onpause = () => resolve()
+    a.play().catch(() => resolve())
+    if (token !== speakToken) a.pause()
+  })
 }
 
 // ---------- Listening ----------
@@ -44,7 +67,14 @@ let speakToken = 0
 /** Reads `text` aloud. Resolves when it finishes (or is stopped). */
 export async function speak(text: string, slow = false): Promise<void> {
   const token = ++speakToken
-  const rate = (slow ? 0.6 : 0.9) * opts.speed
+  clip?.pause()
+  const url = opts.natural ? CLIPS[voiceKey(text)] : undefined
+  if (url) {
+    if (!native && typeof speechSynthesis !== 'undefined') speechSynthesis.cancel()
+    if (native) await TextToSpeech.stop().catch(() => {})
+    return playClip(url, (slow ? 0.75 : 1) * opts.speed, token)
+  }
+  const rate = (slow ? 0.65 : 1) * opts.speed
   if (native) {
     try {
       await TextToSpeech.stop()
@@ -72,6 +102,7 @@ export async function speak(text: string, slow = false): Promise<void> {
 
 export function stopSpeaking() {
   speakToken++
+  clip?.pause()
   if (native) TextToSpeech.stop().catch(() => {})
   else if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel()
 }

@@ -7,7 +7,8 @@
     "dev": "vite --host",
     "build": "tsc -b && vite build",
     "sync": "npm run build && npx cap sync android",
-    "android": "npm run sync && npx cap open android"
+    "android": "npm run sync && npx cap open android",
+    "voice-list": "tsx scripts/voice-list.ts"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "^7.0.1",
@@ -28,6 +29,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
     "tailwindcss": "^4.3.5",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "vite": "^8.3.8",
     "vite-plugin-singlefile": "^2.3.4"

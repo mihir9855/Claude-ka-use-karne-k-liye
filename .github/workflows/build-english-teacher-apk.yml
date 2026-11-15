@@ -23,9 +23,32 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install app dependencies
+        run: npm ci
+      # Natural voice: record any sentence that has no clip yet with the Kokoro neural voice,
+      # and save the clips in the repo so the next builds (and Android Studio) reuse them.
+      - name: Record natural voice for new sentences
+        run: |
+          npm run voice-list
+          MISSING=$(python scripts/make-voices.py --count)
+          echo "Clips to record: $MISSING"
+          if [ "$MISSING" != "0" ]; then
+            sudo apt-get update -q && sudo apt-get install -y -q espeak-ng
+            pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+            pip install -q "kokoro==0.9.4" soundfile
+            python scripts/make-voices.py
+            git config user.name "github-actions[bot]"
+            git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+            git add voice
+            git commit -m "English Teacher: record natural voice clips"
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
       - name: Build the app
         run: |
-          npm ci
           npm run build
           npx cap sync android
       - name: Build debug APK

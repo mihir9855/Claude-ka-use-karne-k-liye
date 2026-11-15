@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { resetProgress, updateSettings, useProgress, type Settings } from '../lib/progress'
-import { speak, type Accent } from '../lib/speech'
+import { hasNaturalVoice, speak, type Accent } from '../lib/speech'
+import { MIC_TEST, VOICE_PREVIEW } from '../lib/speech-texts'
 import type { Nav } from '../App'
 import { Btn, cx, Header, MicCheck } from '../ui'
 
@@ -17,12 +18,18 @@ export function SettingsScreen({ nav }: { nav: Nav }) {
       <Header title="Settings" sub="સેટિંગ્સ" onBack={nav.back} />
       <div className="space-y-4 px-4">
         <Group title="Voice · અવાજ">
-          <Choice<Accent> label="Accent" gu="ઉચ્ચાર" value={s.accent}
-            options={[['en-US', 'American'], ['en-GB', 'British'], ['en-IN', 'Indian']]}
-            onChange={accent => { set({ accent }); setTimeout(() => speak('Hello! How are you?'), 50) }} />
+          {hasNaturalVoice() && (
+            <Toggle label="Natural voice (recommended)" gu="માણસ જેવો કુદરતી અવાજ. બંધ કરો તો ફોનનો અવાજ વપરાશે." on={s.natural}
+              onChange={natural => { set({ natural }); setTimeout(() => speak(VOICE_PREVIEW), 50) }} />
+          )}
+          {!(hasNaturalVoice() && s.natural) && (
+            <Choice<Accent> label="Phone voice accent" gu="ફોનના અવાજનો ઉચ્ચાર" value={s.accent}
+              options={[['en-US', 'American'], ['en-GB', 'British'], ['en-IN', 'Indian']]}
+              onChange={accent => { set({ accent }); setTimeout(() => speak(VOICE_PREVIEW), 50) }} />
+          )}
           <Choice<number> label="Speed" gu="ઝડપ" value={s.speed}
             options={[[0.8, 'Slow'], [1, 'Normal'], [1.2, 'Fast']]}
-            onChange={speed => { set({ speed }); setTimeout(() => speak('Hello! How are you?'), 50) }} />
+            onChange={speed => { set({ speed }); setTimeout(() => speak(VOICE_PREVIEW), 50) }} />
           <Toggle label="Play phrases automatically" gu="વાક્ય આપમેળે બોલાય" on={s.autoPlay} onChange={autoPlay => set({ autoPlay })} />
         </Group>
 
@@ -39,7 +46,7 @@ export function SettingsScreen({ nav }: { nav: Nav }) {
 
         <Group title="Microphone test · માઇક તપાસો">
           {micTest
-            ? <div className="p-4"><p className="mb-3 text-center text-lg font-bold">Say: “Good morning, how are you?”</p><MicCheck target="Good morning, how are you?" /></div>
+            ? <div className="p-4"><p className="mb-3 text-center text-lg font-bold">Say: “{MIC_TEST}”</p><MicCheck target={MIC_TEST} /></div>
             : <div className="p-3"><Btn kind="soft" className="w-full" onClick={() => setMicTest(true)}>🎤 Test my microphone</Btn></div>}
         </Group>
 

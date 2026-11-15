@@ -5,7 +5,7 @@ import type { Accent } from './speech'
 
 export type Part = 'learn' | 'tip' | 'talk'
 export type LessonProgress = { learn?: boolean; tip?: boolean; talk?: boolean; best?: number; stars?: number; done?: boolean }
-export type Settings = { accent: Accent; speed: number; showSay: boolean; showGu: boolean; autoPlay: boolean; unlockAll: boolean; dailyGoal: number }
+export type Settings = { natural: boolean; accent: Accent; speed: number; showSay: boolean; showGu: boolean; autoPlay: boolean; unlockAll: boolean; dailyGoal: number }
 export type Progress = {
   lessons: Record<string, LessonProgress>
   xp: number
@@ -16,7 +16,7 @@ export type Progress = {
 }
 
 const KEY = 'english-teacher.v1'
-const DEFAULT_SETTINGS: Settings = { accent: 'en-US', speed: 1, showSay: true, showGu: true, autoPlay: true, unlockAll: false, dailyGoal: 50 }
+const DEFAULT_SETTINGS: Settings = { natural: true, accent: 'en-US', speed: 1, showSay: true, showGu: true, autoPlay: true, unlockAll: false, dailyGoal: 50 }
 const fresh = (): Progress => ({ lessons: {}, xp: 0, streak: 0, days: {}, settings: { ...DEFAULT_SETTINGS } })
 
 function load(): Progress {
