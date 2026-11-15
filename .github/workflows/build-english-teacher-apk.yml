@@ -36,7 +36,7 @@ jobs:
           MISSING=$(python scripts/make-voices.py --count)
           echo "Clips to record: $MISSING"
           if [ "$MISSING" != "0" ]; then
-            sudo apt-get update -q && sudo apt-get install -y -q espeak-ng
+            sudo apt-get update -q && sudo apt-get install -y -q espeak-ng ffmpeg
             pip install -q torch --index-url https://download.pytorch.org/whl/cpu
             pip install -q "kokoro==0.9.4" soundfile
             python scripts/make-voices.py

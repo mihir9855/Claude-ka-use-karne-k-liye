@@ -7,11 +7,11 @@ import { speak, stopSpeaking } from '../lib/speech'
 import type { Nav } from '../App'
 import { Bar, Btn, cx, Header, ListenButtons, MicCheck, Stars } from '../ui'
 
-const STEPS: { key: Part | 'practice'; title: string; gu: string; icon: string }[] = [
-  { key: 'learn', title: 'Learn phrases', gu: 'વાક્યો શીખો, સાંભળો અને બોલો', icon: '📖' },
-  { key: 'tip', title: 'Grammar tip', gu: 'નાની વ્યાકરણ ટિપ ગુજરાતીમાં', icon: '💡' },
-  { key: 'talk', title: 'Conversation', gu: 'સાચી વાતચીત સાંભળો અને બોલો', icon: '💬' },
-  { key: 'practice', title: 'Practice', gu: 'સાંભળવું, બોલવું અને લખવું', icon: '🎯' },
+const STEPS: { key: Part | 'practice'; title: string; gu: string; icon: string; tone: string }[] = [
+  { key: 'learn', title: 'Learn phrases', gu: 'વાક્યો શીખો, સાંભળો અને બોલો', icon: '📖', tone: 'bg-sky-soft' },
+  { key: 'tip', title: 'Grammar tip', gu: 'નાની વ્યાકરણ ટિપ ગુજરાતીમાં', icon: '💡', tone: 'bg-sun-soft' },
+  { key: 'talk', title: 'Conversation', gu: 'સાચી વાતચીત સાંભળો અને બોલો', icon: '💬', tone: 'bg-pink-soft' },
+  { key: 'practice', title: 'Practice', gu: 'સાંભળવું, બોલવું અને લખવું', icon: '🎯', tone: 'bg-grape-soft' },
 ]
 
 export function LessonScreen({ nav, id }: { nav: Nav; id: string }) {
@@ -26,7 +26,7 @@ export function LessonScreen({ nav, id }: { nav: Nav; id: string }) {
       <Header title={`${level.name} · Lesson ${index + 1}`} onBack={nav.back} />
       <div className="px-4">
         <div className="flex flex-col items-center py-4 text-center">
-          <div className="grid size-24 place-items-center rounded-[2rem] bg-accent-soft text-6xl">{lesson.emoji}</div>
+          <div className="grid size-28 place-items-center rounded-[2.2rem] text-6xl shadow-[0_12px_30px_-12px_color-mix(in_srgb,var(--accent)_80%,transparent)]" style={{ background: 'var(--hero)' }}>{lesson.emoji}</div>
           <h2 className="mt-3 text-2xl font-extrabold leading-tight">{lesson.title}</h2>
           <p className="text-lg text-muted">{lesson.gu}</p>
           {lp.done && <div className="mt-1"><Stars n={lp.stars ?? 0} size="text-xl" /></div>}
@@ -38,7 +38,7 @@ export function LessonScreen({ nav, id }: { nav: Nav; id: string }) {
               <li key={s.key}>
                 <button onClick={() => go(s.key)}
                   className={cx('flex w-full items-center gap-3 rounded-3xl bg-card p-3 text-left shadow-sm transition active:scale-[.99]', s === next && !lp.done && 'ring-2 ring-accent')}>
-                  <div className={cx('grid size-12 shrink-0 place-items-center rounded-2xl text-2xl', done ? 'bg-accent text-accent-ink' : 'bg-soft')}>
+                  <div className={cx('grid size-12 shrink-0 place-items-center rounded-2xl text-2xl', done ? 'bg-good text-white' : s.tone)}>
                     {done ? <Check className="size-7" strokeWidth={3} /> : s.icon}
                   </div>
                   <div className="min-w-0 flex-1">

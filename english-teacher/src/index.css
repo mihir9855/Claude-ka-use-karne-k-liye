@@ -2,26 +2,28 @@
 @import "@fontsource-variable/baloo-bhai-2";
 
 :root {
-  --bg: #f6f5f1; --card: #ffffff; --fg: #1b1f1d; --muted: #66706b; --line: #e4e2da; --soft: #eeede7;
-  --good: #16a34a; --good-soft: #dcf5e4; --bad: #dc2626; --bad-soft: #fde4e4; --warn: #d97706;
-  --accent: #16a34a; --accent-soft: #dcf5e4; --accent-ink: #ffffff;
+  --bg: #fff8ec; --card: #ffffff; --fg: #1d1b2e; --muted: #6b6880; --line: #ece4d6; --soft: #fbf1e1;
+  --good: #16a34a; --good-soft: #d9f7e3; --bad: #e11d48; --bad-soft: #ffe1e8; --warn: #f59e0b;
+  --accent: #10b981; --accent-soft: #d5f7ea; --accent-ink: #ffffff;
+  /* Bright tile colours */
+  --sky: #0ea5e9; --sky-soft: #dff3fe; --sun: #f59e0b; --sun-soft: #fff1cf; --pink: #ec4899; --pink-soft: #fde2f1;
+  --mint: #10b981; --mint-soft: #d5f7ea; --grape: #8b5cf6; --grape-soft: #ece5ff; --fire: #f97316; --fire-soft: #ffe6d3;
+  --page: radial-gradient(1200px 500px at 100% -10%, #ffe3f1 0%, transparent 60%), radial-gradient(900px 500px at -10% 0%, #dff3fe 0%, transparent 55%), #fff8ec;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #101413; --card: #181e1c; --fg: #eef2f0; --muted: #93a09a; --line: #28302d; --soft: #212826;
-    --good: #4ade80; --good-soft: #143322; --bad: #f87171; --bad-soft: #3a1919; --warn: #fbbf24;
-    --accent: #4ade80; --accent-soft: #143322; --accent-ink: #0b1a10;
-  }
+html.dark {
+  --bg: #12111c; --card: #1d1b2b; --fg: #f3f1ff; --muted: #a29fbb; --line: #2e2b42; --soft: #26233a;
+  --good: #4ade80; --good-soft: #143322; --bad: #fb7185; --bad-soft: #3d1724; --warn: #fbbf24;
+  --accent: #34d399; --accent-soft: #11392c; --accent-ink: #062016;
+  --sky-soft: #0f2d40; --sun-soft: #3a2a0b; --pink-soft: #3d1630; --mint-soft: #11392c; --grape-soft: #2a2050; --fire-soft: #3d220f;
+  --page: #12111c;
 }
-/* One colour per level. */
-[data-level="beginner"] { --accent: #16a34a; --accent-soft: #dcf5e4; --hero: linear-gradient(140deg, #22c55e, #15803d); }
-[data-level="intermediate"] { --accent: #2563eb; --accent-soft: #dfe8fd; --hero: linear-gradient(140deg, #3b82f6, #1d4ed8); }
-[data-level="advanced"] { --accent: #7c3aed; --accent-soft: #ebe1fd; --hero: linear-gradient(140deg, #8b5cf6, #6d28d9); }
-@media (prefers-color-scheme: dark) {
-  [data-level="beginner"] { --accent: #4ade80; --accent-soft: #143322; --accent-ink: #0b1a10; }
-  [data-level="intermediate"] { --accent: #7aa7ff; --accent-soft: #172a52; --accent-ink: #0b1430; }
-  [data-level="advanced"] { --accent: #b49bff; --accent-soft: #2c1f52; --accent-ink: #160b30; }
-}
+/* One bright colour per level. */
+[data-level="beginner"] { --accent: #10b981; --accent-soft: #d5f7ea; --hero: linear-gradient(135deg, #34d399 0%, #10b981 45%, #0ea5e9 100%); }
+[data-level="intermediate"] { --accent: #3b82f6; --accent-soft: #dde9ff; --hero: linear-gradient(135deg, #38bdf8 0%, #3b82f6 50%, #6366f1 100%); }
+[data-level="advanced"] { --accent: #a855f7; --accent-soft: #f1e3ff; --hero: linear-gradient(135deg, #f472b6 0%, #a855f7 55%, #6366f1 100%); }
+html.dark [data-level="beginner"] { --accent: #34d399; --accent-soft: #11392c; --accent-ink: #062016; }
+html.dark [data-level="intermediate"] { --accent: #7aa7ff; --accent-soft: #172a52; --accent-ink: #0b1430; }
+html.dark [data-level="advanced"] { --accent: #c084fc; --accent-soft: #33194d; --accent-ink: #1d0b30; }
 
 @theme inline {
   --font-sans: "Baloo Bhai 2 Variable", "Noto Sans Gujarati", ui-sans-serif, system-ui, sans-serif;
@@ -30,10 +32,15 @@
   --color-accent-ink: var(--accent-ink);
   --color-good: var(--good); --color-good-soft: var(--good-soft); --color-bad: var(--bad); --color-bad-soft: var(--bad-soft);
   --color-warn: var(--warn);
+  --color-sky: var(--sky); --color-sky-soft: var(--sky-soft); --color-sun: var(--sun); --color-sun-soft: var(--sun-soft);
+  --color-pink: var(--pink); --color-pink-soft: var(--pink-soft); --color-mint: var(--mint); --color-mint-soft: var(--mint-soft);
+  --color-grape: var(--grape); --color-grape-soft: var(--grape-soft); --color-fire: var(--fire); --color-fire-soft: var(--fire-soft);
 }
 
 @layer base {
-  html, body { background: var(--bg); color: var(--fg); font-family: var(--font-sans); -webkit-tap-highlight-color: transparent; }
+  html { background: var(--bg); }
+  body { background: var(--page); background-attachment: fixed; color: var(--fg); font-family: var(--font-sans); -webkit-tap-highlight-color: transparent; }
+  html { color: var(--fg); }
   body { margin: 0; overscroll-behavior-y: none; }
   button { cursor: pointer; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

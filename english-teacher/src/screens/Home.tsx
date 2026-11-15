@@ -17,12 +17,12 @@ export function Home({ nav }: { nav: Nav }) {
     <div className="pb-8">
       <header className="safe-top">
         <div className="flex items-center gap-3 px-4 pt-4 pb-2">
-          <div className="grid size-11 place-items-center rounded-2xl bg-[linear-gradient(140deg,#22c55e,#15803d)] text-2xl text-white">🗣️</div>
+          <div className="grid size-12 place-items-center rounded-2xl bg-[linear-gradient(135deg,#f472b6,#f59e0b_55%,#10b981)] text-2xl shadow-md">🗣️</div>
           <div className="flex-1">
             <h1 className="text-xl font-extrabold leading-tight">English Teacher</h1>
             <p className="text-sm leading-tight text-muted">ગુજરાતીમાંથી અંગ્રેજી શીખો</p>
           </div>
-          <div className="flex items-center gap-1 rounded-full bg-card px-3 py-1.5 font-bold shadow-sm" title="Days in a row">
+          <div className="flex items-center gap-1 rounded-full bg-fire-soft px-3 py-1.5 font-extrabold text-fire shadow-sm" title="Days in a row">
             <span className={cx(streak === 0 && 'grayscale')}>🔥</span>{streak}
           </div>
           <button onClick={() => nav.push({ name: 'settings' })} aria-label="Settings" className="grid size-10 place-items-center rounded-full hover:bg-soft">
@@ -32,7 +32,9 @@ export function Home({ nav }: { nav: Nav }) {
       </header>
 
       <div className="space-y-4 px-4">
-        <section data-level={next?.level.id ?? 'advanced'} className="rounded-3xl p-5 text-white shadow-md" style={{ background: 'var(--hero)' }}>
+        <section data-level={next?.level.id ?? 'advanced'} className="relative overflow-hidden rounded-[2rem] p-5 text-white shadow-[0_12px_30px_-10px_color-mix(in_srgb,var(--accent)_70%,transparent)]" style={{ background: 'var(--hero)' }}>
+          <div className="pointer-events-none absolute -top-10 -right-8 size-40 rounded-full bg-white/15" />
+          <div className="pointer-events-none absolute -bottom-14 right-16 size-28 rounded-full bg-white/10" />
           <div className="flex items-center justify-between text-sm font-semibold opacity-90">
             <span>Today · આજનો ધ્યેય</span>
             <span>{Math.min(today, goal)} / {goal} XP</span>
@@ -46,7 +48,7 @@ export function Home({ nav }: { nav: Nav }) {
               <p className="text-2xl font-extrabold leading-tight">{next.lesson.emoji} {next.lesson.title}</p>
               <p className="opacity-90">{next.lesson.gu}</p>
               <button onClick={() => nav.push({ name: 'lesson', id: next.lesson.id })}
-                className="mt-4 flex h-12 w-full items-center justify-center gap-1 rounded-2xl bg-white text-lg font-extrabold text-[#14532d] shadow active:translate-y-px">
+                className="relative mt-4 flex h-13 w-full items-center justify-center gap-1 rounded-2xl bg-white text-lg font-extrabold text-accent shadow-[0_4px_0_rgba(0,0,0,.12)] active:translate-y-px">
                 {p.lessons[next.lesson.id] ? 'Continue · ચાલુ રાખો' : 'Start · શરૂ કરો'} <ChevronRight className="size-5" />
               </button>
             </>
@@ -56,9 +58,9 @@ export function Home({ nav }: { nav: Nav }) {
         </section>
 
         <div className="grid grid-cols-3 gap-3">
-          <Stat value={p.xp} label="Total XP" />
-          <Stat value={learned} label="Phrases" />
-          <Stat value={streak} label="Day streak" />
+          <Stat value={p.xp} label="Total XP" icon="⚡" tone="bg-sun-soft text-sun" />
+          <Stat value={learned} label="Phrases" icon="💬" tone="bg-sky-soft text-sky" />
+          <Stat value={streak} label="Day streak" icon="🔥" tone="bg-fire-soft text-fire" />
         </div>
 
         <h2 className="px-1 pt-2 text-lg font-extrabold">Levels · લેવલ</h2>
@@ -68,7 +70,7 @@ export function Home({ nav }: { nav: Nav }) {
           return (
             <button key={lv.id} data-level={lv.id} disabled={!open}
               onClick={() => nav.push({ name: 'level', id: lv.id })}
-              className="flex w-full items-center gap-4 rounded-3xl bg-card p-4 text-left shadow-sm transition active:scale-[.99] disabled:opacity-60">
+              className="flex w-full items-center gap-4 rounded-3xl border-2 border-accent-soft bg-card p-4 text-left shadow-sm transition active:scale-[.99] disabled:opacity-60">
               <div className="grid size-14 shrink-0 place-items-center rounded-2xl text-2xl font-extrabold text-white" style={{ background: 'var(--hero)' }}>
                 {open ? li + 1 : <Lock className="size-6" />}
               </div>
@@ -91,14 +93,17 @@ export function Home({ nav }: { nav: Nav }) {
   )
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
+function Stat({ value, label, icon, tone }: { value: number; label: string; icon: string; tone: string }) {
   return (
-    <div className="rounded-2xl bg-card p-3 text-center shadow-sm">
+    <div className={cx('rounded-3xl p-3 text-center', tone)}>
+      <div className="text-lg leading-none">{icon}</div>
       <div className="text-2xl font-extrabold leading-tight">{value}</div>
-      <div className="text-xs font-semibold text-muted">{label}</div>
+      <div className="text-xs font-bold opacity-80">{label}</div>
     </div>
   )
 }
+
+const TILES = ['bg-sky-soft', 'bg-sun-soft', 'bg-pink-soft', 'bg-mint-soft', 'bg-grape-soft', 'bg-fire-soft']
 
 export function LevelScreen({ nav, id }: { nav: Nav; id: string }) {
   const p = useProgress()
@@ -106,14 +111,15 @@ export function LevelScreen({ nav, id }: { nav: Nav; id: string }) {
   const lv = LEVELS[li]
   return (
     <div data-level={lv.id} className="pb-8">
-      <div className="safe-top text-white" style={{ background: 'var(--hero)' }}>
-        <div className="px-4 pt-3 pb-6">
+      <div className="safe-top relative overflow-hidden rounded-b-[2rem] text-white" style={{ background: 'var(--hero)' }}>
+        <div className="pointer-events-none absolute -top-12 -right-10 size-44 rounded-full bg-white/15" />
+        <div className="relative px-4 pt-3 pb-8">
           <button onClick={nav.back} className="-ml-1 mb-2 rounded-full px-2 py-1 text-sm font-bold opacity-90 hover:bg-white/15">← Back</button>
           <h1 className="text-3xl font-extrabold">{lv.name} <span className="font-semibold opacity-85">· {lv.gu}</span></h1>
           <p className="opacity-90">{lv.about}</p>
         </div>
       </div>
-      <ol className="relative mx-4 -mt-3 space-y-3">
+      <ol className="relative mx-4 -mt-4 space-y-3">
         {lv.lessons.map((ls, i) => {
           const open = lessonUnlocked(p, li, i)
           const lp = p.lessons[ls.id]
@@ -121,8 +127,9 @@ export function LevelScreen({ nav, id }: { nav: Nav; id: string }) {
             <li key={ls.id}>
               <button disabled={!open} onClick={() => nav.push({ name: 'lesson', id: ls.id })}
                 className={cx('flex w-full items-center gap-3 rounded-3xl bg-card p-3 text-left shadow-sm transition active:scale-[.99]', !open && 'opacity-55')}>
-                <div className={cx('grid size-14 shrink-0 place-items-center rounded-2xl text-3xl', lp?.done ? 'bg-accent-soft' : 'bg-soft')}>
+                <div className={cx('relative grid size-14 shrink-0 place-items-center rounded-2xl text-3xl', TILES[i % TILES.length])}>
                   {open ? ls.emoji : <Lock className="size-6 text-muted" />}
+                  {lp?.done && <span className="absolute -right-1 -bottom-1 grid size-6 place-items-center rounded-full bg-good text-xs font-black text-white ring-2 ring-card">✓</span>}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-muted">LESSON {i + 1}</p>

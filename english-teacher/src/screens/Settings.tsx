@@ -33,6 +33,10 @@ export function SettingsScreen({ nav }: { nav: Nav }) {
           <Toggle label="Play phrases automatically" gu="વાક્ય આપમેળે બોલાય" on={s.autoPlay} onChange={autoPlay => set({ autoPlay })} />
         </Group>
 
+        <Group title="Look · દેખાવ">
+          <Toggle label="Dark theme" gu="ઘાટા રંગો (રાત્રે આંખ માટે આરામદાયક)" on={s.dark} onChange={dark => set({ dark })} />
+        </Group>
+
         <Group title="Help · મદદ">
           <Toggle label="Pronunciation in Gujarati" gu="ઉચ્ચાર ગુજરાતી લિપિમાં બતાવો (Beginner)" on={s.showSay} onChange={showSay => set({ showSay })} />
           <Toggle label="Gujarati in conversations" gu="વાતચીતમાં ગુજરાતી અર્થ બતાવો" on={s.showGu} onChange={showGu => set({ showGu })} />
