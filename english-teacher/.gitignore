@@ -1,0 +1,7 @@
+# The repo root ignores every android/ and assets/ folder (for the Mileage Log app).
+# English Teacher keeps its Android project in git so it opens in Android Studio.
+!android/
+node_modules/
+dist/
+assets/
+*.tsbuildinfo

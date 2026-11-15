@@ -1,0 +1,6 @@
+{
+  "appId": "com.mihir.englishteacher",
+  "appName": "English Teacher",
+  "webDir": "dist",
+  "android": { "adjustMarginsForEdgeToEdge": "auto" }
+}
