@@ -1537,6 +1537,20 @@ function stretchRoom(r, axis, delta) {   // move the room's far side; rooms beyo
   for (const f of state.fix) if (f[axis] >= edge) f[axis] = r2(f[axis] + delta);
   rebuildPlan();
 }
+function wallChain(w) {               // this wall plus walls continuing it in a straight line
+  const g = wallGeo(w), res = new Set([w]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const q of state.walls) {
+      if (res.has(q) || !isPlanWall(q)) continue;
+      if (![...res].some(r => r.a === q.a || r.a === q.b || r.b === q.a || r.b === q.b)) continue;
+      const h = wallGeo(q);
+      if (Math.abs(g.d.x * h.d.y - g.d.y * h.d.x) > 1e-3 || Math.abs((h.A.x - g.A.x) * g.rn.x + (h.A.y - g.A.y) * g.rn.y) > 1) continue;
+      res.add(q); grew = true;
+    }
+  }
+  return [...res];
+}
 function stretch(g, delta) {          // move everything at or beyond the wall's far end
   if (Math.abs(delta) < 0.01) return;
   for (const nd of state.nodes) { const s = (nd.x - g.A.x) * g.d.x + (nd.y - g.A.y) * g.d.y; if (s >= g.L - 0.5) { nd.x = r2(nd.x + g.d.x * delta); nd.y = r2(nd.y + g.d.y * delta); } }
@@ -2696,7 +2710,7 @@ svg.addEventListener('pointerdown', e => {
   if (ptrs.size >= 2) {
     multi = multi || { t0: performance.now(), n: 0, moved: false };
     multi.n = Math.max(multi.n, ptrs.size);
-    if (gesture && gesture.moved && ['drag', 'dimdrag', 'node', 'room', 'popen', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove'].includes(gesture.kind)) { guides = []; if (gesture.kind === 'node' || gesture.kind === 'room') rebuildPlan(); save(); render(); }
+    if (gesture && gesture.moved && ['drag', 'dimdrag', 'node', 'room', 'popen', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove', 'wmove'].includes(gesture.kind)) { guides = []; if (gesture.kind === 'node' || gesture.kind === 'room' || gesture.kind === 'wmove') rebuildPlan(); save(); render(); }
     const [a, b] = [...ptrs.values()];
     gesture = { kind: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
     return;
@@ -2744,7 +2758,7 @@ svg.addEventListener('pointermove', e => {
     view.x = gesture.vx - (e.clientX - gesture.sx) / r.width * view.w;
     view.y = gesture.vy - (e.clientY - gesture.sy) / r.height * view.h;
     applyView();
-  } else if (['wpick', 'node', 'room', 'popen', 'tapsel', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove'].includes(gesture.kind)) {
+  } else if (['wpick', 'node', 'room', 'popen', 'tapsel', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove', 'wmove'].includes(gesture.kind)) {
     planMove(e);
   } else if (gesture.kind === 'pick') {
     updateHover(e);
@@ -2832,6 +2846,16 @@ function planDown(e) {
       gesture = { ...base, kind: 'popen', wid: w.id, id: o.id, grab: xe - o.x, was }; return;
     }
   }
+  if (wh && !oh && ps && ps.t === 'wall' && ps.id === wh.dataset.wid) {
+    const w = state.walls.find(x => x.id === wh.dataset.wid);
+    if (isPlanWall(w)) {
+      const chain = wallChain(w), ids = new Set(); chain.forEach(q => { ids.add(q.a); ids.add(q.b); });
+      const free = [...ids].every(id => !state.walls.some(q => isPlanWall(q) && !chain.includes(q) && (q.a === id || q.b === id)));
+      const g = wallGeo(w);
+      gesture = { ...base, kind: 'wmove', rn: g.rn, d: g.d, A: { ...g.A }, free, set: [...ids].map(id => { const nd = nodeById(id); return { id, x: nd.x, y: nd.y }; }) };
+      return;
+    }
+  }
   if (rh && !oh && !wh && ps && ps.t === 'room' && ps.id === rh.dataset.rid) {
     const r = state.rooms.find(x => x.id === ps.id);
     if (r) { gesture = { ...base, kind: 'room', rid: r.id, set: roomPts(r).map(nd => ({ id: nd.id, x: nd.x, y: nd.y })) }; return; }
@@ -2885,6 +2909,24 @@ function planMove(e) {
       bm.a = { x: r2(gesture.a.x + ddx), y: r2(gesture.a.y + ddy) }; bm.b = { x: r2(gesture.b.x + ddx), y: r2(gesture.b.y + ddy) };
     }
     else { const bm = state.beams.find(x => x.id === gesture.id); if (bm) { const h = structSnap({ x: gesture.o.x + dx, y: gesture.o.y + dy }, bm[gesture.end === 'a' ? 'b' : 'a'], tol); bm[gesture.end] = { x: r2(h.pt.x), y: r2(h.pt.y) }; guides = h.guides || []; } }
+    render(true); return;
+  }
+  if (gesture.kind === 'wmove') {
+    if (!gesture.moved) { snapshot('Move wall'); gesture.moved = true; }
+    const st = state.snap.on && state.snap.grid ? planStep() : 1, ids = new Set(gesture.set.map(q => q.id));
+    let mx, my; guides = [];
+    if (gesture.free) { const m = snapMove(gesture.set, dx, dy, tol); mx = m.dx; my = m.dy; guides = m.guides; }
+    else {
+      const rn = gesture.rn; let k = dx * rn.x + dy * rn.y;
+      if (state.snap.on && state.snap.grid) k = Math.round(k / st) * st;
+      if (state.snap.on && (state.snap.align || state.snap.end)) {    // line the wall up with other corners
+        let best = null;
+        for (const o of state.nodes) { if (ids.has(o.id)) continue; const kk = (o.x - gesture.A.x) * rn.x + (o.y - gesture.A.y) * rn.y; if (Math.abs(kk - k) <= tol && (!best || Math.abs(kk - k) < Math.abs(best - k))) best = kk; }
+        if (best !== null) { k = best; if (Math.abs(rn.x) > 0.99) guides = [{ v: true, at: gesture.A.x + rn.x * k }]; else if (Math.abs(rn.y) > 0.99) guides = [{ v: false, at: gesture.A.y + rn.y * k }]; }
+      }
+      mx = rn.x * k; my = rn.y * k;
+    }
+    for (const s0 of gesture.set) { const nd = nodeById(s0.id); if (nd) { nd.x = r2(s0.x + mx); nd.y = r2(s0.y + my); } }
     render(true); return;
   }
   if (gesture.kind === 'node' || gesture.kind === 'room') {
@@ -2965,7 +3007,7 @@ function planUp(e) {
     selectPlan(tg);
   } else if (['popen', 'cmove', 'bmove', 'pdmove', 'fmove'].includes(gesture.kind) && !gesture.moved && e.type === 'pointerup') {
     if (gesture.was) selectPlan(underTarget(gesture.sx, gesture.sy));     // tap again on a selected item: pick what is underneath
-  } else if (['node', 'room', 'popen', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove'].includes(gesture.kind) && gesture.moved) { guides = []; if (gesture.kind === 'node' || gesture.kind === 'room') rebuildPlan(); save(); render(); }
+  } else if (['node', 'room', 'popen', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove', 'wmove'].includes(gesture.kind) && gesture.moved) { guides = []; if (gesture.kind === 'node' || gesture.kind === 'room' || gesture.kind === 'wmove') rebuildPlan(); save(); render(); }
 }
 svg.addEventListener('pointerup', endPtr);
 svg.addEventListener('pointercancel', endPtr);
@@ -3488,7 +3530,7 @@ function render(drawOnly) {
   $('#w-just-l').hidden = !pw;
   if (pw) $('#w-just').value = w.sideAuto ? 'auto' : String(w.side > 0 ? 1 : w.side < 0 ? -1 : 0);
   $('#w-plan-note').hidden = !pw;
-  $('#w-plan-note').textContent = pw ? (roomOfWall(w) ? 'Length is measured inside the room, face to face. ' : 'Length is measured along the line. ') + 'The dot on the plan marks the wall’s left end, used for “From left end” of doors and windows.' : '';
+  $('#w-plan-note').textContent = pw ? (roomOfWall(w) ? 'Length is measured inside the room, face to face. ' : 'Length is measured along the line. ') + 'Drag the selected wall to move it; walls joined to it stretch along. The dot on the plan marks the wall’s left end, used for “From left end” of doors and windows.' : '';
   if (w) $('#w-name').placeholder = wname(w);
   $$('#pshow-chips [data-show]').forEach(b => b.setAttribute('aria-pressed', String(!!state.show[b.dataset.show])));
   // rooms
