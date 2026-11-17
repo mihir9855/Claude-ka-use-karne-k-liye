@@ -207,6 +207,10 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 #draw .roomsel { fill: color-mix(in srgb, var(--sel) 15%, var(--paper)); }
 #draw .wo { fill: var(--ink); stroke: var(--ink); stroke-width: 2.6; stroke-linejoin: miter; }
 #draw .wf { fill: var(--hatch); }
+#draw .wf.rail { fill: color-mix(in srgb, var(--hatch) 35%, var(--paper)); }
+#draw .room.bal { fill: color-mix(in srgb, var(--win) 14%, var(--paper)); }
+.chk { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--ink); }
+.chk input { width: 20px; height: 20px; accent-color: var(--accent); }
 #draw .pgap { fill: var(--paper); stroke: var(--paper); stroke-width: 3; }
 #draw .pface { stroke: var(--ink); stroke-width: 1.8; }
 #draw .pout { stroke: var(--ink); stroke-width: 1.2; }
@@ -314,6 +318,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <button data-tool="line" title="Line walls: tap each corner, or drag one wall (W)"><span class="ic">╱</span><span class="tl">Line</span></button>
         <button data-tool="box" title="Box: drag corner to corner for four walls (B)"><span class="ic">▭</span><span class="tl">Box</span></button>
         <button id="tb-room" title="Add a room by typing its size (R)"><span class="ic">⊞</span><span class="tl">Room</span></button>
+        <button id="tb-bal" title="Add a balcony to a room (K)"><span class="ic">⌓</span><span class="tl">Balcony</span></button>
         <button data-tool="col" title="Column: tap to place, snaps to wall corners (C)"><span class="ic">▣</span><span class="tl">Column</span></button>
         <button data-tool="beam" title="Beam: drag or tap two points (M)"><span class="ic">┅</span><span class="tl">Beam</span></button>
         <button data-tool="pdim" title="Measure: drag or tap between two points (U)"><span class="ic">↔</span><span class="tl">Measure</span></button>
@@ -386,6 +391,8 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
           <label class="f">Ventilator width<input id="df-vent-w" inputmode="decimal" autocomplete="off"></label>
           <label class="f">Ventilator height<input id="df-vent-h" inputmode="decimal" autocomplete="off"></label>
           <label class="f full">Ventilator sill from floor<input id="df-vent-s" inputmode="decimal" autocomplete="off"></label>
+          <label class="f">Balcony railing thickness<input id="df-rail-t" inputmode="decimal" autocomplete="off"></label>
+          <label class="f">Balcony railing height<input id="df-rail-h" inputmode="decimal" autocomplete="off"></label>
           <label class="f">Door style<select id="df-door-st"></select></label>
           <label class="f">Window style<select id="df-window-st"></select></label>
         </div>
@@ -417,7 +424,10 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <div id="rsec" hidden>
           <div class="editor" style="margin-top:8px">
             <h2 style="color:var(--ink)">Selected room</h2>
-            <label class="f">Room name<input id="r-name" type="text" autocomplete="off"></label>
+            <div class="grid2">
+              <label class="f">Room name<input id="r-name" type="text" autocomplete="off"></label>
+              <label class="f">Type<select id="r-kind"><option value="room">Room</option><option value="balcony">Balcony</option></select></label>
+            </div>
             <div class="stats" id="r-stats"></div>
             <div class="grid2" id="r-dims">
               <label class="f">Inside width (left–right)<input id="r-w" inputmode="decimal" autocomplete="off"></label>
@@ -431,7 +441,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
             <div class="sub">Walls of this room · tap one to edit it or add a door or window</div>
             <div class="olist" id="r-walls"></div>
             <p class="note">Drag the selected room on the plan to move it. It comes away from rooms next to it, and sticks to them again when you drop it touching.</p>
-            <div class="row-btns"><button class="btn" id="r-dup">Duplicate room</button><button class="btn danger" id="r-del">Delete room</button></div>
+            <div class="row-btns"><button class="btn" id="r-rail" hidden>Railings on open sides</button><button class="btn" id="r-dup">Duplicate room</button><button class="btn danger" id="r-del">Delete room</button></div>
           </div>
         </div>
         <div class="scroll-x" style="margin-top:10px"><table class="q" id="q-rooms"></table></div>
@@ -663,7 +673,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const DEF_SNAP = () => ({ on: true, step: 10, end: true, mid: true, edge: true, align: true, grid: true });
 const DEF_SHOW = () => ({ chain: true, overall: true, hts: true, plan: true, user: true, pdim: true, parea: true });
 const DKEY = 'walldraft.defaults';
-const DEF_OPEN = () => ({ door: { w: 900, h: 2100, sill: 0 }, window: { w: 1200, h: 1200, sill: 900 }, vent: { w: 600, h: 450, sill: 2100 }, opening: { w: 1000, h: 2100, sill: 0 } });
+const DEF_OPEN = () => ({ rail: { t: 100, h: 1000 }, door: { w: 900, h: 2100, sill: 0 }, window: { w: 1200, h: 1200, sill: 900 }, vent: { w: 600, h: 450, sill: 2100 }, opening: { w: 1000, h: 2100, sill: 0 } });
 function blankProject(name) {
   const p = blankProject0(name);
   try {                                   // the user's own defaults from earlier projects
@@ -708,6 +718,7 @@ function norm(p) {                       // fill in fields added in later versio
   for (const k of ['pdim', 'parea', 'popen', 'pmy']) if (!(k in p.show)) p.show[k] = true;
   if (!Array.isArray(p.pdims)) p.pdims = [];
   if (!p.defs) p.defs = DEF_OPEN();
+  if (!p.defs.rail) p.defs.rail = { t: 100, h: 1000 };
   delete p.showHts; delete p.showPlan;
   if (!Array.isArray(p.nodes)) p.nodes = [];
   if (!Array.isArray(p.rooms)) p.rooms = [];
@@ -1227,6 +1238,8 @@ function wname(w) {
   return r ? r.name + ' – ' + sideWord(w) : 'Wall ' + (state.walls.indexOf(w) + 1);
 }
 function syncLengths() { for (const w of state.walls) if (isPlanWall(w)) w.length = r2(wallGeo(w).Le); }
+const isBal = r => r.kind === 'balcony';
+function areaTotals() { let carpet = 0, bal = 0; for (const r of state.rooms) { if (isBal(r)) bal += roomArea(r); else carpet += roomArea(r); } return { carpet, bal }; }
 function roomArea(r) { return Math.abs(polyArea(innerPoly(r))); }
 function roomPerim(r) { const p = simplify(innerPoly(r)); let a = 0; for (let i = 0; i < p.length; i++) { const q = p[(i + 1) % p.length]; a += Math.hypot(q.x - p[i].x, q.y - p[i].y); } return a; }
 function roomSize(r) {
@@ -1351,7 +1364,7 @@ function joinStraight() {
       const ws = state.walls.filter(w => isPlanWall(w) && (w.a === nd.id || w.b === nd.id));
       if (ws.length !== 2) continue;
       let [p, q] = ws;
-      if (Math.abs(p.thickness - q.thickness) > 0.5 || Math.abs(p.height - q.height) > 0.5 || !!p.sideAuto !== !!q.sideAuto || (p.name && q.name)) continue;
+      if (Math.abs(p.thickness - q.thickness) > 0.5 || Math.abs(p.height - q.height) > 0.5 || !!p.sideAuto !== !!q.sideAuto || !!p.rail !== !!q.rail || (p.name && q.name)) continue;
       if (p.b !== nd.id) reverseWall(p);
       if (q.a !== nd.id) reverseWall(q);
       const gp = wallGeo(p), gq = wallGeo(q);
@@ -1403,7 +1416,7 @@ function rebuildRooms() {
       || old.find(r => !used.has(r.id) && pointIn(centroid(r.poly), pts))
       || old.find(r => !used.has(r.id) && pointIn(c, r.poly));
     if (m) used.add(m.id);
-    rooms.push(m ? { id: m.id, name: m.name, nodes: f } : { id: uid(), name: null, nodes: f });
+    rooms.push(m ? { id: m.id, name: m.name, kind: m.kind, nodes: f } : { id: uid(), name: null, nodes: f });
   }
   for (const r of rooms) if (!r.name) r.name = nextRoomName(rooms.filter(q => q.name));
   state.rooms = rooms;
@@ -1713,7 +1726,7 @@ function buildPlan(opt) {
 
   for (const r of state.rooms) {
     const pts = roomPts(r); if (pts.length < 3) continue;
-    poly(pts, 'room' + (ps && ps.t === 'room' && ps.id === r.id ? ' roomsel' : ''), ia ? ` data-rid="${r.id}"` : '');
+    poly(pts, 'room' + (isBal(r) ? ' bal' : '') + (ps && ps.t === 'room' && ps.id === r.id ? ' roomsel' : ''), ia ? ` data-rid="${r.id}"` : '');
   }
   // wall bands, extended into the walls they meet; outline layer under fill layer draws them as one merged shape
   const shapes = [];
@@ -1730,7 +1743,8 @@ function buildPlan(opt) {
       return Math.min(m, gw.t * 3);
     };
     const ea = ext(gw.w.a, { x: -gw.d.x, y: -gw.d.y }), eb = ext(gw.w.b, gw.d);
-    shapes.push([at(gw, -ea, gw.f0), at(gw, gw.L + eb, gw.f0), at(gw, gw.L + eb, gw.f1), at(gw, -ea, gw.f1)]);
+    const sh = [at(gw, -ea, gw.f0), at(gw, gw.L + eb, gw.f0), at(gw, gw.L + eb, gw.f1), at(gw, -ea, gw.f1)]; sh.rail = !!gw.w.rail;
+    shapes.push(sh);
   }
   for (const nd of state.nodes) {              // bevel joints where walls meet at odd angles
     const ws = wallsAt(nd.id); if (ws.length < 2) continue;
@@ -1739,7 +1753,8 @@ function buildPlan(opt) {
     shapes.push(hull(pts));
   }
   for (const sh of shapes) poly(sh, 'wo', ' vector-effect="non-scaling-stroke"');
-  for (const sh of shapes) g.raw(`<path d="${path(sh)}" class="wf"/>`);
+  for (const sh of shapes) if (!sh.rail) g.raw(`<path d="${path(sh)}" class="wf"/>`);
+  for (const sh of shapes) if (sh.rail) g.raw(`<path d="${path(sh)}" class="wf rail"/>`);
 
   // openings
   const openHits = [];
@@ -1916,11 +1931,11 @@ function buildPlan(opt) {
   g.flush();
   const b = g.bb;
   g.text(b.x0, b.y0 - ts * 0.9, 'FLOOR PLAN', 'cap', ts * 0.85);
-  const tot = state.rooms.reduce((t, r) => t + roomArea(r), 0), ta = area(tot);
+  const at2 = areaTotals(), ta = area(at2.carpet);
   const tbX = b.x0, tbW = Math.max(b.x1 - b.x0, ts * 24), ty0 = b.y1 + ts * 1.5, tbH = ts * 3.4;
   g.rect(tbX, ty0, tbW, tbH, 'tb'); g.line(tbX, ty0 + tbH / 2, tbX + tbW, ty0 + tbH / 2, 'tbl');
   g.text(tbX + ts * 0.5, ty0 + tbH / 2 - ts * 0.5, state.name || 'Project', 'cap', ts * 0.85);
-  const info = `Floor plan · ${state.rooms.length} room${state.rooms.length === 1 ? '' : 's'} · carpet area ${ta.m2.toFixed(2)} m² (${ta.ft2.toFixed(1)} ft²) · inside dims in ${UNIT_NAME[state.unit]} · NTS · ${new Date().toLocaleDateString()}`;
+  const info = `Floor plan · ${state.rooms.length} room${state.rooms.length === 1 ? '' : 's'} · carpet area ${ta.m2.toFixed(2)} m² (${ta.ft2.toFixed(1)} ft²)${at2.bal ? ` · balcony ${area(at2.bal).m2.toFixed(2)} m²` : ''} · inside dims in ${UNIT_NAME[state.unit]} · NTS · ${new Date().toLocaleDateString()}`;
   g.raw(`<text x="${n(tbX + ts * 0.5)}" y="${n(ty0 + tbH - ts * 0.55)}" class="lbs" font-size="${n(Math.min(fs * 0.75, (tbW - ts) / (info.length * 0.6)))}">${esc(info)}</text>`);
   const pad = ts * 1.5;
   return { svg: g.P.join(''), box: { x: b.x0 - pad, y: b.y0 - pad, w: b.x1 - b.x0 + pad * 2, h: b.y1 - b.y0 + pad * 2 } };
@@ -2181,6 +2196,70 @@ function addRoomFromModal() {
   });
   closeModal(); fit();
   announceRooms(before);
+}
+function setRails(r, t, h) {           // walls not shared with another room become railings / parapets
+  const d = state.defs.rail;
+  for (const w of roomWalls(r)) if (roomsOfWall(w).length === 1) { const ss = openRanges(w); w.rail = true; w.thickness = t || d.t; w.height = h || d.h; applyRanges(w, ss); }
+}
+function nextBalName() { let i = 1; while (state.rooms.some(r => r.name === (i === 1 ? 'Balcony' : 'Balcony ' + i))) i++; return i === 1 ? 'Balcony' : 'Balcony ' + i; }
+function balconyModal() {
+  const rooms = state.rooms.filter(r => !isBal(r)), sel = selRoom(), d = state.defs.rail;
+  openModal('Add balcony', `<div class="grid2">
+    <label class="f full">Name<input id="bk-name" type="text" autocomplete="off" value="${esc(nextBalName())}"></label>
+    <label class="f full">Attach to<select id="bk-room">${rooms.map(r => `<option value="${r.id}"${sel && sel.id === r.id ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}<option value="">Not attached (place on its own)</option></select></label>
+    <label class="f">Side of the room<select id="bk-side"><option value="bottom">Bottom</option><option value="top">Top</option><option value="left">Left</option><option value="right">Right</option></select></label>
+    <label class="f">Position<select id="bk-pos"><option value="c">Centred</option><option value="s">At the start (top / left)</option><option value="e">At the end (bottom / right)</option><option value="full">Full length of the room</option></select></label>
+    <label class="f">Inside width (along the wall)<input id="bk-w" autocomplete="off" placeholder="${IMP() ? "e.g. 10'0" : 'e.g. 3000'}"></label>
+    <label class="f">Inside depth (out from the wall)<input id="bk-d" autocomplete="off" placeholder="${IMP() ? "e.g. 4'0" : 'e.g. 1200'}"></label>
+    <label class="f">Railing / parapet thickness<input id="bk-t" autocomplete="off" value="${esc(fmt(d.t))}"></label>
+    <label class="f">Railing height<input id="bk-h" autocomplete="off" value="${esc(fmt(d.h))}"></label>
+    <label class="chk full"><input type="checkbox" id="bk-door" checked> Add a sliding door from the room</label>
+  </div><p class="note">Measure the balcony inside the railing. Its area is listed separately and is not added to the carpet area.</p>`,
+  [['Add balcony', addBalcony, 'primary'], ['Cancel', closeModal]]);
+  if (!rooms.length) { $('#bk-room').value = ''; }
+  ['bk-w', 'bk-d', 'bk-t', 'bk-h'].forEach(id => enhanceFtIn(document.getElementById(id))); syncFtIn();
+  setTimeout(() => (state.unit === 'ftin' ? $('#bk-w')._fi.querySelector('input') : $('#bk-w')).focus(), 50);
+}
+function addBalcony() {
+  const pos = $('#bk-pos').value, rid = $('#bk-room').value, side = $('#bk-side').value, room = state.rooms.find(r => r.id === rid);
+  let W = parseLen($('#bk-w').value);
+  const D = parseLen($('#bk-d').value), T = parseLen($('#bk-t').value), Hh = parseLen($('#bk-h').value);
+  if (pos === 'full' && room) { const ib = roomInner(room); W = side === 'top' || side === 'bottom' ? ib.w : ib.d; }
+  for (const [v, id] of [[W, 'bk-w'], [D, 'bk-d'], [T, 'bk-t'], [Hh, 'bk-h']]) if (!isFinite(v) || v <= 0) { toast('Please fill in ' + $('#' + id).parentElement.firstChild.textContent.trim().toLowerCase() + '. ' + unitExample()); return; }
+  const name = $('#bk-name').value.trim() || nextBalName(), door = $('#bk-door').checked;
+  let x0, y0, x1, y1, far;
+  if (room) {
+    const ip = simplify(innerPoly(room)), ib = { x0: Math.min(...ip.map(q => q.x)), x1: Math.max(...ip.map(q => q.x)), y0: Math.min(...ip.map(q => q.y)), y1: Math.max(...ip.map(q => q.y)) }, nb = nodesBox(room.nodes);
+    const span = (a, b) => pos === 's' ? [a, a + W] : pos === 'e' ? [b - W, b] : pos === 'full' ? [a, b] : [(a + b) / 2 - W / 2, (a + b) / 2 + W / 2];
+    const wt = Math.max(...roomWalls(room).map(w => w.thickness), state.draw.t);
+    if (side === 'top' || side === 'bottom') { [x0, x1] = span(ib.x0, ib.x1); if (side === 'top') { y1 = nb.y0; y0 = nb.y0 - D - wt; far = 'y0'; } else { y0 = nb.y1; y1 = nb.y1 + D + wt; far = 'y1'; } }
+    else { [y0, y1] = span(ib.y0, ib.y1); if (side === 'left') { x1 = nb.x0; x0 = nb.x0 - D - wt; far = 'x0'; } else { x0 = nb.x1; x1 = nb.x1 + D + wt; far = 'x1'; } }
+  } else { const all = nodesBox(); x0 = all ? all.x1 + 2000 : 0; y0 = all ? all.y0 : 0; x1 = x0 + W; y1 = y0 + D; far = 'y1'; }
+  let bal = null;
+  commit('Add ' + name, () => {
+    const kt = state.draw.t, kh = state.draw.h; state.draw.t = T; state.draw.h = Hh;
+    const c = makeBox(r2(x0), r2(y0), r2(x1), r2(y1));
+    rebuildPlan();
+    state.draw.t = kt; state.draw.h = kh;
+    bal = nameRoomAt(c, name); if (!bal) return;
+    bal.kind = 'balcony'; setRails(bal, T, Hh); rebuildPlan();
+    for (let it = 0; it < 3; it++) {           // make the inside depth exactly what was typed
+      const b = state.rooms.find(r => r.id === bal.id); if (!b) break;
+      const ib = roomInner(b), depth = far[0] === 'y' ? ib.d : ib.w, dd = D - depth;
+      if (Math.abs(dd) < 0.5) break;
+      const nb = nodesBox(b.nodes), ax = far[0], edge = nb[far];
+      for (const id of b.nodes) { const nd = nodeById(id); if (Math.abs(nd[ax] - edge) < 0.5) nd[ax] = r2(nd[ax] + (far[1] === '0' ? -dd : dd)); }
+      rebuildPlan();
+    }
+    bal = state.rooms.find(r => r.id === bal.id) || bal;
+    if (door && room) {
+      const sw = roomWalls(bal).find(w => roomsOfWall(w).length > 1);
+      if (sw) { const dw = Math.max(600, Math.min(1800, sw.length - 300)); sw.openings.push({ id: uid(), type: 'door', style: 'slide', label: nextLabel('door'), x: r2((sw.length - dw) / 2), w: dw, h: state.defs.door.h, sill: 0, hinge: 'L', swing: 'in' }); }
+    }
+    state.planSel = { t: 'room', id: bal.id }; state.sel = null;
+  });
+  closeModal();
+  if (bal) { fit(); toast(`${name} added · ${area(roomArea(bal)).m2.toFixed(2)} m²`, 'Undo', undo); }
 }
 function selectPlan(tg) {
   state.sel = null; state.selDim = null;
@@ -2757,6 +2836,8 @@ const lenInputs = {
               set: v => { if (v <= 0) return false; for (const w of roomWalls(selRoom())) { const ss = openRanges(w); w.thickness = v; applyRanges(w, ss); } rebuildPlan(); } },
   'r-h':    { rm: 1, lbl: () => 'Ceiling height of ' + selRoom().name, get: () => { const ws = roomWalls(selRoom()); return ws.length ? ws[0].height : state.draw.h; },
               set: v => { if (v <= 0) return false; for (const w of roomWalls(selRoom())) w.height = v; } },
+  'df-rail-t': { lbl: () => 'Default railing thickness', get: () => state.defs.rail.t, set: v => { if (v <= 0) return false; state.defs.rail.t = v; } },
+  'df-rail-h': { lbl: () => 'Default railing height', get: () => state.defs.rail.h, set: v => { if (v <= 0) return false; state.defs.rail.h = v; } },
   'd-step': { lbl: () => 'Drawing snap step',  get: () => planStep(),   set: v => { if (v <= 0) return false; state.draw.step = v; } },
   's-step': { lbl: () => 'Grid step',      get: () => state.snap.step,  set: v => { if (v <= 0) return false; state.snap.step = v; } },
   'e-w':    { op: 1, lbl: () => 'Width of ' + opName(selOp()),  get: () => selOp().w, set: v => { if (v <= 0) return false; selOp().w = v; } },
@@ -2941,6 +3022,8 @@ function cycleOrtho() { const o = { '90': '45', '45': 'free', free: '90' }[state
 $('#tb-ortho').addEventListener('click', cycleOrtho);
 $('#w-elev').addEventListener('click', () => switchView('wall'));
 $('#r-del').addEventListener('click', () => delSelected());
+$('#r-kind').addEventListener('change', e => { const r = selRoom(); if (r) commit(r.name + ' is a ' + e.target.value, () => { r.kind = e.target.value === 'balcony' ? 'balcony' : undefined; }); });
+$('#r-rail').addEventListener('click', () => { const r = selRoom(); if (r) commit('Railings for ' + r.name, () => { setRails(r); rebuildPlan(); }); });
 $('#r-walls').addEventListener('click', e => { const b = e.target.closest('[data-rw]'); if (b) selectPlan({ t: 'wall', id: b.dataset.rw }); });
 $('#r-dup').addEventListener('click', () => {
   const r = selRoom(); if (!r) return;
@@ -3021,6 +3104,7 @@ document.addEventListener('keydown', e => {
   }
   if (state.view === 'plan' && isDraw() && tool.kind !== 'box' && /^[0-9.]$/.test(e.key)) { focusLen(); return; }
   if (state.view === 'plan' && k === 'r') { roomModal(); return; }
+  if (state.view === 'plan' && k === 'k') { balconyModal(); return; }
   if (state.view === 'plan' && k === 'o') { cycleOrtho(); return; }
   if (k === 'p') { switchView('plan'); return; }
   if (k === 'e') { switchView('wall'); return; }
@@ -3095,10 +3179,11 @@ function render(drawOnly) {
   // rooms
   const rl = state.rooms, selR = selRoom();
   $('#r-count').textContent = rl.length ? String(rl.length) : '';
-  $('#r-list').innerHTML = rl.length ? rl.map(r => `<button class="orow" data-rid="${r.id}" aria-selected="${!!(selR && selR.id === r.id)}"><span class="tag dimt">▭</span><span class="meta">${esc(r.name)} <span>· ${area(roomArea(r)).m2.toFixed(2)} m²${roomSize(r) ? ' · ' + roomSize(r) : ''}</span></span><span></span></button>`).join('')
+  $('#r-list').innerHTML = rl.length ? rl.map(r => `<button class="orow" data-rid="${r.id}" aria-selected="${!!(selR && selR.id === r.id)}"><span class="tag dimt">${isBal(r) ? '⌓' : '▭'}</span><span class="meta">${esc(r.name)} <span>· ${area(roomArea(r)).m2.toFixed(2)} m²${roomSize(r) ? ' · ' + roomSize(r) : ''}</span></span><span></span></button>`).join('')
     : '<div class="empty">No rooms yet. Draw walls around a space and finish at the first corner, or tap ▭ Add room by size.</div>';
   $('#rsec').hidden = !selR;
   if (selR) {
+    $('#r-kind').value = selR.kind || 'room'; $('#r-rail').hidden = !isBal(selR);
     const rect = !!roomSize(selR), ws = roomWalls(selR);
     $('#r-dims').hidden = !rect; $('#r-dims-note').hidden = rect;
     const tmix = ws.some(w => Math.abs(w.thickness - ws[0].thickness) > 0.5), hmix = ws.some(w => Math.abs(w.height - ws[0].height) > 0.5);
@@ -3108,10 +3193,11 @@ function render(drawOnly) {
     $('#r-walls').innerHTML = ws.map(w => `<button class="orow" data-rw="${w.id}"><span class="tag dimt">${esc(sideWord(w).split(' ')[0])}</span><span class="meta">${esc(fmt(w.length))} <span>· ${esc(wname(w))} · ${fmt(w.thickness)} thick${w.openings.length ? ' · ' + w.openings.map(o => o.label).join(', ') : ''}</span></span><span>›</span></button>`).join('');
   }
   if (selR) { const a = area(roomArea(selR)); $('#r-stats').innerHTML = `<div>Area<b>${a.m2.toFixed(2)} m²</b>${a.ft2.toFixed(1)} ft²</div><div>Perimeter<b>${fmt(roomPerim(selR))}</b>for skirting</div><div>Inside size<b>${roomSize(selR) || '–'}</b>W × D</div>`; }
-  const totR = rl.reduce((t, r) => t + roomArea(r), 0);
+  const tt = areaTotals();
   $('#q-rooms').innerHTML = rl.length ? `<tr><th>Room</th><th>m²</th><th>ft²</th><th>Perimeter</th></tr>` +
-    rl.map(r => `<tr><td>${esc(r.name)}</td><td>${area(roomArea(r)).m2.toFixed(2)}</td><td>${area(roomArea(r)).ft2.toFixed(1)}</td><td>${fmt(roomPerim(r))}</td></tr>`).join('') +
-    `<tr class="tot"><td>Carpet area</td><td>${area(totR).m2.toFixed(2)}</td><td>${area(totR).ft2.toFixed(1)}</td><td></td></tr>` : '';
+    rl.map(r => `<tr><td>${esc(r.name)}${isBal(r) ? ' <span style="color:var(--muted)">(balcony)</span>' : ''}</td><td>${area(roomArea(r)).m2.toFixed(2)}</td><td>${area(roomArea(r)).ft2.toFixed(1)}</td><td>${fmt(roomPerim(r))}</td></tr>`).join('') +
+    `<tr class="tot"><td>Carpet area</td><td>${area(tt.carpet).m2.toFixed(2)}</td><td>${area(tt.carpet).ft2.toFixed(1)}</td><td></td></tr>` +
+    (tt.bal ? `<tr class="tot"><td>Balcony area</td><td>${area(tt.bal).m2.toFixed(2)}</td><td>${area(tt.bal).ft2.toFixed(1)}</td><td></td></tr>` : '') : '';
   if (!w) { $('#ed').hidden = true; $('#ded').hidden = true; }
   // my measurements
   const pd = selPdim(), pdl = d => fmt(Math.hypot(d.b.x - d.a.x, d.b.y - d.a.y));
@@ -3218,7 +3304,7 @@ function render(drawOnly) {
 
 /* ---------- all tools panel ---------- */
 const FEATURES = [
-  ['Draw walls & rooms', [['tool:hand', '✎', 'Hand'], ['tool:line', '╱', 'Line wall'], ['tool:box', '▭', 'Box'], ['room', '⊞', 'Room by size']]],
+  ['Draw walls & rooms', [['tool:hand', '✎', 'Hand'], ['tool:line', '╱', 'Line wall'], ['tool:box', '▭', 'Box'], ['room', '⊞', 'Room by size'], ['balcony', '⌓', 'Balcony']]],
   ['Doors', [['add:door:single', 'sw door', 'Single door'], ['add:door:double', 'sw door', 'Double door'], ['add:door:slide', 'sw door', 'Sliding door'], ['add:door:pivot', 'sw door', 'Pivot door'], ['add:door:fold', 'sw door', 'Folding door']]],
   ['Windows & openings', [['add:window:slide2', 'sw window', 'Sliding window'], ['add:window:slide3', 'sw window', '3-track sliding'], ['add:window:case1', 'sw window', 'Casement'], ['add:window:case2', 'sw window', 'Double casement'], ['add:window:fixed', 'sw window', 'Fixed glass'], ['add:window:top', 'sw window', 'Top-hung'], ['add:window:louvre', 'sw window', 'Louvred'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening:plain', 'sw opening', 'Opening'], ['add:opening:arch', 'sw opening', 'Arched opening']]],
   ['Structure', [['tool:col', '▣', 'Column'], ['tool:beam', '┅', 'Beam']]],
@@ -3243,6 +3329,7 @@ function runFeature(k) {
   if (a === 'tool') { toPlan(); setTool(v || null); }
   else if (a === 'dim') { if (!wall()) { toast('Draw a wall first'); return; } if (state.view !== 'wall') switchView('wall'); setTool(v); }
   else if (a === 'room') { toPlan(); roomModal(); }
+  else if (a === 'balcony') { toPlan(); balconyModal(); }
   else if (a === 'add') addOpening(v, k.split(':')[2]);
   else if (a === 'view') switchView(v);
   else if (a === 'units') { const order = ['mm', 'cm', 'm', 'ft', 'ftin', 'in'], u = order[(order.indexOf(state.unit) + 1) % order.length]; commit('Change units', () => state.unit = u); toast('Units: ' + UNIT_NAME[u]); featurePanel(); }
@@ -3262,6 +3349,7 @@ function runFeature(k) {
 $('#m-body').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) runFeature(b.dataset.act); });
 $('#tb-all').addEventListener('click', featurePanel);
 $('#tb-room').addEventListener('click', () => { setTool(null); roomModal(); });
+$('#tb-bal').addEventListener('click', () => { setTool(null); balconyModal(); });
 
 /* ---------- phone bottom sheet ---------- */
 const mobile = () => window.matchMedia('(max-width: 820px)').matches;
@@ -3280,7 +3368,7 @@ function updateSheet() {
   else if (r) t = `${r.name} · ${area(roomArea(r)).m2.toFixed(2)} m²${roomSize(r) ? ' · ' + roomSize(r) : ''}`;
   else if (ps && (ps.t === 'wall') && w) t = `${wname(w)} · ${fmt(w.length)}`;
   else if (!isPlan && w) t = `${wname(w)} · ${fmt(w.length)} × ${fmt(w.height)}`;
-  else { const tot = state.rooms.reduce((a, q) => a + roomArea(q), 0); t = `${state.name || 'Project'} · ${state.rooms.length} room${state.rooms.length === 1 ? '' : 's'} · ${area(tot).m2.toFixed(2)} m²`; }
+  else { const tt = areaTotals(), nr = state.rooms.filter(q => !isBal(q)).length; t = `${state.name || 'Project'} · ${nr} room${nr === 1 ? '' : 's'} · ${area(tt.carpet).m2.toFixed(2)} m²${tt.bal ? ' + balcony ' + area(tt.bal).m2.toFixed(2) + ' m²' : ''}`; }
   $('#grab-t').textContent = t;
   const key = JSON.stringify([state.view, ps, state.sel, state.selDim]);
   if (key === lastSelKey) return;
@@ -3317,7 +3405,7 @@ function exportSVG() {
 .op{fill:${c.paper};stroke:${c.ink};stroke-width:1.5}.door{stroke:${c.door};fill:none;stroke-width:1.3}.window{stroke:${c.win};fill:none;stroke-width:1.3}.vent{stroke:${c.dim};fill:none;stroke-width:1.1}
 .opening{stroke:${c.muted};fill:none;stroke-width:1;stroke-dasharray:6 4}.dash{stroke-dasharray:7 5}.dim{stroke:${c.dim};stroke-width:1;fill:none}.ext{stroke:${c.dim};stroke-width:.7}.lvlt{fill:${c.dim};stroke:${c.dim};stroke-width:1}
 .dt{fill:${c.dim};font-family:${mono}}.lb{fill:${c.ink};font-family:${mono};font-weight:500}.lbs{fill:${c.muted};font-family:${mono}}.cap{fill:${c.ink};font-family:${head};font-weight:600;letter-spacing:.08em}
-.room{fill:#eef2f8}.wo{fill:${c.ink};stroke:${c.ink};stroke-width:2.6;stroke-linejoin:miter}.wf{fill:${c.hatch}}.pgap{fill:#ffffff;stroke:#ffffff;stroke-width:3}.sel,.lend,.hit,.whit,.nhit,.pnode{display:none}.colf{fill:#3f4a47;stroke:${c.ink};stroke-width:1.4}.colx{stroke:#ffffff;stroke-width:1}.beam{stroke:#6a3fd1;stroke-width:1.5;stroke-dasharray:10 5;fill:none}.blb{fill:#6a3fd1;font-family:${mono};font-weight:500}.colel{fill:#c5ccca;stroke:${c.ink};stroke-width:1.4}.beamel{fill:#e9e2fb;stroke:#6a3fd1;stroke-width:1.4;stroke-dasharray:8 4}.pface{stroke:${c.ink};stroke-width:1.8}.pout{stroke:${c.ink};stroke-width:1.2}.rname{fill:${c.ink};font-family:${head};font-weight:600}
+.room{fill:#eef2f8}.room.bal{fill:#e3f0fb}.wf.rail{fill:#e6ebe9}.wo{fill:${c.ink};stroke:${c.ink};stroke-width:2.6;stroke-linejoin:miter}.wf{fill:${c.hatch}}.pgap{fill:#ffffff;stroke:#ffffff;stroke-width:3}.sel,.lend,.hit,.whit,.nhit,.pnode{display:none}.colf{fill:#3f4a47;stroke:${c.ink};stroke-width:1.4}.colx{stroke:#ffffff;stroke-width:1}.beam{stroke:#6a3fd1;stroke-width:1.5;stroke-dasharray:10 5;fill:none}.blb{fill:#6a3fd1;font-family:${mono};font-weight:500}.colel{fill:#c5ccca;stroke:${c.ink};stroke-width:1.4}.beamel{fill:#e9e2fb;stroke:#6a3fd1;stroke-width:1.4;stroke-dasharray:8 4}.pface{stroke:${c.ink};stroke-width:1.8}.pout{stroke:${c.ink};stroke-width:1.2}.rname{fill:${c.ink};font-family:${head};font-weight:600}
 .tb{fill:${c.panel};stroke:${c.ink};stroke-width:1.3}.tbl{stroke:${c.ink};stroke-width:.8}.bad{fill:none;stroke:${c.warn};stroke-width:2.5;stroke-dasharray:5 3}.pwall{fill:${c.wallfill};stroke:${c.ink};stroke-width:1.5}`;
   const W = 2400, Hh = Math.round(W * b.h / b.w);
   return { str: `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${Hh}" viewBox="${b.x} ${b.y} ${b.w} ${b.h}"><style>${css}</style><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="#ffffff"/>${dr.svg}</svg>`, W, H: Hh };
@@ -3366,9 +3454,11 @@ function summaryText() {
   const u = UNIT_NAME[state.unit]; const out = [`${state.name}`, `All dimensions in ${u}`, ''];
   if (state.rooms.length) {
     out.push('Rooms (inside measurements):');
-    for (const r of state.rooms) out.push(`  ${r.name}: ${roomSize(r) ? roomSize(r) + ', ' : ''}area ${area(roomArea(r)).m2.toFixed(2)} m² (${area(roomArea(r)).ft2.toFixed(1)} ft²), perimeter ${fmt(roomPerim(r))}`);
-    const t = state.rooms.reduce((a, r) => a + roomArea(r), 0);
-    out.push(`  Total carpet area ${area(t).m2.toFixed(2)} m² (${area(t).ft2.toFixed(1)} ft²)`, '');
+    for (const r of state.rooms) out.push(`  ${r.name}${isBal(r) ? ' (balcony)' : ''}: ${roomSize(r) ? roomSize(r) + ', ' : ''}area ${area(roomArea(r)).m2.toFixed(2)} m² (${area(roomArea(r)).ft2.toFixed(1)} ft²), perimeter ${fmt(roomPerim(r))}`);
+    const tt = areaTotals();
+    out.push(`  Total carpet area ${area(tt.carpet).m2.toFixed(2)} m² (${area(tt.carpet).ft2.toFixed(1)} ft²)`);
+    if (tt.bal) out.push(`  Balcony area ${area(tt.bal).m2.toFixed(2)} m² (${area(tt.bal).ft2.toFixed(1)} ft²)`);
+    out.push('');
   }
   if (state.cols.length) out.push('Columns: ' + state.cols.map(c => `${c.label} ${sizeTxt(c)}`).join(', '));
   if (state.beams.length) out.push('Beams: ' + state.beams.map(b => `${b.label} ${fmt(b.w)}×${fmt(b.d)} (${fmt(Math.hypot(b.b.x - b.a.x, b.b.y - b.a.y))} long)`).join(', '));
