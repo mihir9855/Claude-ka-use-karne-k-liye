@@ -417,8 +417,19 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
             <h2 style="color:var(--ink)">Selected room</h2>
             <label class="f">Room name<input id="r-name" type="text" autocomplete="off"></label>
             <div class="stats" id="r-stats"></div>
-            <p class="note">Drag the selected room to move it. It sticks to other rooms with a wall thickness gap.</p>
-            <div class="row-btns"><button class="btn danger" id="r-del">Delete room</button></div>
+            <div class="grid2" id="r-dims">
+              <label class="f">Inside width (left–right)<input id="r-w" inputmode="decimal" autocomplete="off"></label>
+              <label class="f">Inside depth (top–bottom)<input id="r-d" inputmode="decimal" autocomplete="off"></label>
+            </div>
+            <p class="note" id="r-dims-note" hidden>This room is not a rectangle. Tap one of its walls below to change that wall's length.</p>
+            <div class="grid2" style="margin-top:8px">
+              <label class="f">Wall thickness (all walls)<input id="r-t" inputmode="decimal" autocomplete="off"></label>
+              <label class="f">Ceiling height<input id="r-h" inputmode="decimal" autocomplete="off"></label>
+            </div>
+            <div class="sub">Walls of this room · tap one to edit it or add a door or window</div>
+            <div class="olist" id="r-walls"></div>
+            <p class="note">Drag the selected room on the plan to move it. It comes away from rooms next to it, and sticks to them again when you drop it touching.</p>
+            <div class="row-btns"><button class="btn" id="r-dup">Duplicate room</button><button class="btn danger" id="r-del">Delete room</button></div>
           </div>
         </div>
         <div class="scroll-x" style="margin-top:10px"><table class="q" id="q-rooms"></table></div>
@@ -1414,6 +1425,17 @@ function detachRoom(r) {          // give the room its own corners and walls so 
   }
   for (const w of edges) if (w.sideAuto === undefined) w.sideAuto = true;
   r.nodes = ids.map(id => map[id] || id);
+}
+function roomInner(r) { const ip = simplify(innerPoly(r)), xs = ip.map(q => q.x), ys = ip.map(q => q.y); return { w: Math.max(...xs) - Math.min(...xs), d: Math.max(...ys) - Math.min(...ys) }; }
+function roomWalls(r) { const k = r.nodes.length, out = []; for (let i = 0; i < k; i++) { const w = findWall(r.nodes[i], r.nodes[(i + 1) % k]); if (w && !out.includes(w)) out.push(w); } return out; }
+function stretchRoom(r, axis, delta) {   // move the room's far side; rooms beyond it shift along instead of being squashed
+  if (Math.abs(delta) < 0.01) return;
+  const b = nodesBox(r.nodes), edge = (axis === 'x' ? b.x1 : b.y1) - 0.5;
+  for (const nd of state.nodes) if (nd[axis] >= edge) nd[axis] = r2(nd[axis] + delta);
+  for (const c of state.cols) if (c[axis] >= edge) c[axis] = r2(c[axis] + delta);
+  for (const bm of state.beams) for (const e of ['a', 'b']) if (bm[e][axis] >= edge) bm[e][axis] = r2(bm[e][axis] + delta);
+  for (const d of state.pdims) for (const e of ['a', 'b']) if (d[e][axis] >= edge) d[e][axis] = r2(d[e][axis] + delta);
+  rebuildPlan();
 }
 function stretch(g, delta) {          // move everything at or beyond the wall's far end
   if (Math.abs(delta) < 0.01) return;
@@ -2680,6 +2702,12 @@ const lenInputs = {
   'df-vent-w': { lbl: () => 'Default ventilator width',  get: () => state.defs.vent.w, set: v => { if (v <= 0) return false; state.defs.vent.w = v; } },
   'df-vent-h': { lbl: () => 'Default ventilator height', get: () => state.defs.vent.h, set: v => { if (v <= 0) return false; state.defs.vent.h = v; } },
   'df-vent-s': { lbl: () => 'Default ventilator sill',   get: () => state.defs.vent.sill, set: v => { if (v < 0) return false; state.defs.vent.sill = v; } },
+  'r-w':    { rm: 1, lbl: () => 'Width of ' + selRoom().name, get: () => roomInner(selRoom()).w, set: v => { if (v <= 0) return false; const r = selRoom(); stretchRoom(r, 'x', v - roomInner(r).w); } },
+  'r-d':    { rm: 1, lbl: () => 'Depth of ' + selRoom().name, get: () => roomInner(selRoom()).d, set: v => { if (v <= 0) return false; const r = selRoom(); stretchRoom(r, 'y', v - roomInner(r).d); } },
+  'r-t':    { rm: 1, lbl: () => 'Wall thickness of ' + selRoom().name, get: () => { const ws = roomWalls(selRoom()); return ws.length ? ws[0].thickness : state.draw.t; },
+              set: v => { if (v <= 0) return false; for (const w of roomWalls(selRoom())) { const ss = openRanges(w); w.thickness = v; applyRanges(w, ss); } rebuildPlan(); } },
+  'r-h':    { rm: 1, lbl: () => 'Ceiling height of ' + selRoom().name, get: () => { const ws = roomWalls(selRoom()); return ws.length ? ws[0].height : state.draw.h; },
+              set: v => { if (v <= 0) return false; for (const w of roomWalls(selRoom())) w.height = v; } },
   'd-step': { lbl: () => 'Drawing snap step',  get: () => planStep(),   set: v => { if (v <= 0) return false; state.draw.step = v; } },
   's-step': { lbl: () => 'Grid step',      get: () => state.snap.step,  set: v => { if (v <= 0) return false; state.snap.step = v; } },
   'e-w':    { op: 1, lbl: () => 'Width of ' + opName(selOp()),  get: () => selOp().w, set: v => { if (v <= 0) return false; selOp().w = v; } },
@@ -2859,6 +2887,20 @@ function cycleOrtho() { const o = { '90': '45', '45': 'free', free: '90' }[state
 $('#tb-ortho').addEventListener('click', cycleOrtho);
 $('#w-elev').addEventListener('click', () => switchView('wall'));
 $('#r-del').addEventListener('click', () => delSelected());
+$('#r-walls').addEventListener('click', e => { const b = e.target.closest('[data-rw]'); if (b) selectPlan({ t: 'wall', id: b.dataset.rw }); });
+$('#r-dup').addEventListener('click', () => {
+  const r = selRoom(); if (!r) return;
+  const pts = roomPts(r), b = nodesBox(r.nodes), all = nodesBox(), dx = all.x1 - b.x0 + 1500, ws = roomWalls(r), name = r.name + ' (copy)';
+  let copy = null;
+  commit('Duplicate ' + r.name, () => {
+    const ids = pts.map(p => addNode(p.x + dx, p.y));
+    for (let i = 0; i < ids.length; i++) { const src = findWall(r.nodes[i], r.nodes[(i + 1) % ids.length]); const nw = newWall(ids[i], ids[(i + 1) % ids.length], src ? src.thickness : state.draw.t); if (src) nw.height = src.height; state.walls.push(nw); }
+    rebuildPlan();
+    copy = nameRoomAt(centroid(ids.map(nodeById)), name);
+    if (copy) state.planSel = { t: 'room', id: copy.id };
+  });
+  fit(); toast(name + ' added', 'Undo', undo);
+});
 $('#r-list').addEventListener('click', e => { const b = e.target.closest('[data-rid]'); if (b) selectPlan({ t: 'room', id: b.dataset.rid }); });
 $('#pshow-chips').addEventListener('click', e => {
   const b = e.target.closest('[data-show]'); if (!b) return; const k = b.dataset.show;
@@ -2971,6 +3013,7 @@ function render(drawOnly) {
     if (b.op && !selOp()) continue;
     if (b.wl && !w) continue;
     if (b.st && !selStruct()) continue;
+    if (b.rm && !selRoom()) continue;
     if (document.activeElement !== el || drawOnly) el.value = fmt(b.get());
     el.placeholder = state.unit === 'ftin' ? "e.g. 3'6\"" : UNIT_NAME[state.unit];
     el.inputMode = state.unit === 'ftin' || state.unit === 'in' ? 'text' : 'decimal';
@@ -3000,6 +3043,15 @@ function render(drawOnly) {
   $('#r-list').innerHTML = rl.length ? rl.map(r => `<button class="orow" data-rid="${r.id}" aria-selected="${!!(selR && selR.id === r.id)}"><span class="tag dimt">▭</span><span class="meta">${esc(r.name)} <span>· ${area(roomArea(r)).m2.toFixed(2)} m²${roomSize(r) ? ' · ' + roomSize(r) : ''}</span></span><span></span></button>`).join('')
     : '<div class="empty">No rooms yet. Draw walls around a space and finish at the first corner, or tap ▭ Add room by size.</div>';
   $('#rsec').hidden = !selR;
+  if (selR) {
+    const rect = !!roomSize(selR), ws = roomWalls(selR);
+    $('#r-dims').hidden = !rect; $('#r-dims-note').hidden = rect;
+    const tmix = ws.some(w => Math.abs(w.thickness - ws[0].thickness) > 0.5), hmix = ws.some(w => Math.abs(w.height - ws[0].height) > 0.5);
+    if (tmix && document.activeElement !== $('#r-t')) $('#r-t').value = '';
+    if (hmix && document.activeElement !== $('#r-h')) $('#r-h').value = '';
+    $('#r-t').placeholder = tmix ? 'mixed' : ''; $('#r-h').placeholder = hmix ? 'mixed' : '';
+    $('#r-walls').innerHTML = ws.map(w => `<button class="orow" data-rw="${w.id}"><span class="tag dimt">${esc(sideWord(w).split(' ')[0])}</span><span class="meta">${esc(fmt(w.length))} <span>· ${esc(wname(w))} · ${fmt(w.thickness)} thick${w.openings.length ? ' · ' + w.openings.map(o => o.label).join(', ') : ''}</span></span><span>›</span></button>`).join('');
+  }
   if (selR) { const a = area(roomArea(selR)); $('#r-stats').innerHTML = `<div>Area<b>${a.m2.toFixed(2)} m²</b>${a.ft2.toFixed(1)} ft²</div><div>Perimeter<b>${fmt(roomPerim(selR))}</b>for skirting</div><div>Inside size<b>${roomSize(selR) || '–'}</b>W × D</div>`; }
   const totR = rl.reduce((t, r) => t + roomArea(r), 0);
   $('#q-rooms').innerHTML = rl.length ? `<tr><th>Room</th><th>m²</th><th>ft²</th><th>Perimeter</th></tr>` +
