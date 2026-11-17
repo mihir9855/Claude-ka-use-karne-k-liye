@@ -613,6 +613,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
       <section id="share-sec">
         <h2>Share &amp; backup</h2>
         <div class="row-btns" style="margin-top:0">
+          <button class="btn primary" id="x-app">⬇ Download app (HTML file)</button>
           <button class="btn primary" id="x-png">Drawing image</button>
           <button class="btn" id="x-svg">SVG file</button>
           <button class="btn" id="x-text">Copy measurements</button>
@@ -636,9 +637,11 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script>
+<script id="app-js">
 (() => {
 'use strict';
+// A clean copy of this app, taken before anything is drawn, for "Download app (HTML file)"
+const APP_SOURCE = (() => { try { const c = document.documentElement.cloneNode(true); c.querySelectorAll('script').forEach(x => { if (x.id !== 'app-js') x.remove(); }); return '<!doctype html>\n' + c.outerHTML; } catch (e) { return ''; } })();
 const KEY = 'walldraft.v1', HKEY = 'walldraft.v1.history';
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -3312,7 +3315,7 @@ const FEATURES = [
   ['Measure on wall', [['dim:h', '↔', 'Horizontal'], ['dim:v', '↕', 'Vertical'], ['dim:a', '⤡', 'Aligned'], ['dim:lvl', '▽', 'Level'], ['dim:ang', '∠', 'Angle']]],
   ['View & settings', [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Wall elevation'], ['units', 'ft', 'Units'], ['snap', '⌖', 'Snap'], ['ortho', '⟂', 'Angle lock'], ['canvas', '◐', 'Black / white'], ['fit', '⤢', 'Fit to screen'], ['tool:', '➤', 'Select']]],
   ['Edit', [['undo', '↶', 'Undo'], ['redo', '↷', 'Redo'], ['del', '✕', 'Delete selected']]],
-  ['Lists & files', [['sec:rooms-sec', '▭', 'Rooms & areas'], ['sec:struct-sec', '▣', 'Columns & beams'], ['sec:hist-sec', '☰', 'History'], ['sec:share-sec', '⇪', 'Share & backup'], ['sec:defs-sec', '⚙', 'Default sizes'], ['sec:draw-sec', '✎', 'Drawing options']]],
+  ['Lists & files', [['sec:rooms-sec', '▭', 'Rooms & areas'], ['sec:struct-sec', '▣', 'Columns & beams'], ['sec:hist-sec', '☰', 'History'], ['sec:share-sec', '⇪', 'Share & backup'], ['app', '⬇', 'Download app (HTML)'], ['sec:defs-sec', '⚙', 'Default sizes'], ['sec:draw-sec', '✎', 'Drawing options']]],
 ];
 function featurePanel() {
   const on = k => (k.startsWith('tool:') && tool && tool.kind === k.slice(5)) || (k.startsWith('dim:') && tool && tool.kind === k.slice(4)) || (k === 'view:plan' && state.view === 'plan') || (k === 'view:wall' && state.view === 'wall')
@@ -3337,6 +3340,7 @@ function runFeature(k) {
   else if (a === 'ortho') { cycleOrtho(); featurePanel(); }
   else if (a === 'canvas') { state.canvas = state.canvas === 'dark' ? 'light' : 'dark'; save(); render(); featurePanel(); }
   else if (a === 'fit') fit();
+  else if (a === 'app') downloadApp();
   else if (a === 'undo') undo();
   else if (a === 'redo') redo();
   else if (a === 'del') { if (!state.sel && !state.selDim && !state.planSel) toast('Tap something on the drawing first'); else delSelected(); }
@@ -3411,7 +3415,20 @@ function exportSVG() {
   return { str: `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${Hh}" viewBox="${b.x} ${b.y} ${b.w} ${b.h}"><style>${css}</style><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="#ffffff"/>${dr.svg}</svg>`, W, H: Hh };
 }
 const fileBase = () => ((state.name || 'walldraft') + ' ' + (state.view === 'plan' ? 'plan' : wname(wall()))).replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 60) || 'walldraft';
-function tryDownload(href, name) { try { const a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {} }
+let dlCap = null;                       // claude.ai: files are saved through the viewer's downloads permission
+(async () => { try { if (window.claude && window.claude.use) dlCap = await window.claude.use('downloads'); } catch (e) {} })();
+async function saveFile(name, data) {
+  if (dlCap) {
+    try { await dlCap.save({ filename: name, data }); toast('Saved ' + name); }
+    catch (e) { const c = e && e.code; if (c === 'declined') return; toast(c === 'rate_limited' ? 'A save is already waiting. Try again in a moment.' : c === 'rejected_extension' ? 'This file type cannot be saved here' : 'Saving is not available here. Long-press or use Copy instead.'); }
+    return;
+  }
+  try {
+    const blob = data instanceof Blob ? data : new Blob([data]), url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (e) { toast('Could not save the file on this device'); }
+}
+function downloadApp() { if (!APP_SOURCE) { toast('Could not prepare the app file'); return; } saveFile('WallDraft.html', APP_SOURCE); }
 function openModal(title, bodyHTML, buttons) {
   $('#m-title').textContent = title; $('#m-body').innerHTML = bodyHTML; const f = $('#m-foot'); f.innerHTML = '';
   for (const [label, fn, cls] of buttons) { const b = document.createElement('button'); b.className = 'btn ' + (cls || ''); b.textContent = label; b.onclick = fn; f.appendChild(b); }
@@ -3430,6 +3447,7 @@ async function copyText(txt, ta) {
   catch (e) { if (ta) { ta.focus(); ta.select(); toast('Select all and copy'); } }
 }
 
+$('#x-app').addEventListener('click', downloadApp);
 $('#x-png').addEventListener('click', () => {
   const { str, W, H } = exportSVG();
   const img = new Image();
@@ -3439,16 +3457,16 @@ $('#x-png').addEventListener('click', () => {
     const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.drawImage(img, 0, 0, W, H);
     URL.revokeObjectURL(url);
     const data = cv.toDataURL('image/png');
-    openModal('Drawing image', `<img src="${data}" alt="Wall elevation drawing"><p class="note">Long-press (phone) or right-click (computer) the image to save or share it.</p>`,
-      [['Download PNG', () => tryDownload(data, fileBase() + '.png'), 'primary'], ['Close', closeModal]]);
+    let png = null; cv.toBlob(b => { png = b; });
+    openModal('Drawing image', `<img src="${data}" alt="Wall elevation drawing"><p class="note">Tap Download PNG, or long-press the image to share it.</p>`,
+      [['Download PNG', () => { if (png) saveFile(fileBase() + '.png', png); else toast('Image still being prepared'); }, 'primary'], ['Close', closeModal]]);
   };
   img.onerror = () => { URL.revokeObjectURL(url); toast('Could not make the image on this device'); };
   img.src = url;
 });
 $('#x-svg').addEventListener('click', () => {
   const { str } = exportSVG();
-  tryDownload(URL.createObjectURL(new Blob([str], { type: 'image/svg+xml' })), fileBase() + '.svg');
-  toast('SVG file saved (opens in browsers, Inkscape, Illustrator)');
+  saveFile(fileBase() + '.svg', str);
 });
 function summaryText() {
   const u = UNIT_NAME[state.unit]; const out = [`${state.name}`, `All dimensions in ${u}`, ''];
@@ -3483,7 +3501,7 @@ $('#x-text').addEventListener('click', () => {
 $('#x-json').addEventListener('click', () => {
   const txt = JSON.stringify(state, null, 1);
   openModal('Backup', `<textarea id="m-ta" readonly>${esc(txt)}</textarea><p class="note">Save this file, or copy the text. Restore it later with Restore backup.</p>`,
-    [['Download file', () => tryDownload(URL.createObjectURL(new Blob([txt], { type: 'application/json' })), fileBase() + '.json'), 'primary'], ['Copy', () => copyText(txt, $('#m-ta'))], ['Close', closeModal]]);
+    [['Download file', () => saveFile(fileBase() + '.json', txt), 'primary'], ['Copy', () => copyText(txt, $('#m-ta'))], ['Close', closeModal]]);
 });
 $('#x-import').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;
