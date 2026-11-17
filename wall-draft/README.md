@@ -13,4 +13,7 @@ Open `index.html` in any browser (phone or computer). No install, no build, work
 - Units: mm, cm, m, inch, feet-inch. Type `900+300`, `4.2m`, `5'6"`, `5-6`, `5' 6 1/2"`.
 - Areas per wall (gross, openings, net in m² and ft²) and a door & window schedule.
 - Share: drawing image (PNG), SVG file, measurements as text (for WhatsApp), JSON backup and restore.
-- Undo / redo (Ctrl+Z / Ctrl+Y), arrow keys nudge the selected opening, Delete removes it.
+- **Dimension tools** (toolbar): ↔ horizontal, ↕ vertical, ⤡ aligned (slanted), ▽ level mark (height from floor), ∠ angle. Tap points on the drawing; a dimension attached to an opening moves with it. Drag a dimension to move its line, flip it, or replace its text (EQ, CLR…). Automatic dimensions (running, overall, sill/head heights, plan) can be switched on or off.
+- **Snap**: on/off (toolbar or S key), grid step, and snap to corners & ends, midpoints & centres, edges, grid. "Line up openings" makes a dragged window stick to the head/sill/edge of other openings, with pink guide lines.
+- **Undo / redo**: big ↶ ↷ buttons, Ctrl+Z / Ctrl+Y, two-finger tap = undo, three-finger tap = redo, an Undo button on every delete message, and a History list where you tap any step to go back to it. History is kept after closing the app.
+- Keys: H V A L G pick a dimension tool, Esc ends it, F fits the drawing, arrow keys nudge the selected opening, Delete removes the selection.
