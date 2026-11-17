@@ -1374,6 +1374,22 @@ function deleteRoom(r) {
   rebuildPlan(); state.planSel = null;
   if (!state.walls.some(w => w.id === state.active)) state.active = state.walls[0] ? state.walls[0].id : null;
 }
+function detachRoom(r) {          // give the room its own corners and walls so it can move without dragging neighbours
+  const ids = r.nodes, k = ids.length, edges = new Set();
+  for (let i = 0; i < k; i++) { const w = findWall(ids[i], ids[(i + 1) % k]); if (w) edges.add(w); }
+  const shared = w => roomsOfWall(w).length > 1, need = new Set();
+  for (const id of ids) if (state.walls.some(w => isPlanWall(w) && (w.a === id || w.b === id) && !edges.has(w))) need.add(id);
+  for (const w of edges) if (shared(w)) { need.add(w.a); need.add(w.b); }
+  if (!need.size) return;
+  const map = {};
+  for (const id of need) { const nd = nodeById(id), nid = uid(); state.nodes.push({ id: nid, x: nd.x, y: nd.y }); map[id] = nid; }
+  for (const w of edges) {
+    if (shared(w)) state.walls.push({ ...clone({ ...w, openings: [], dims: [] }), id: uid(), name: '', a: map[w.a] || w.a, b: map[w.b] || w.b, sideAuto: true });
+    else { if (map[w.a]) w.a = map[w.a]; if (map[w.b]) w.b = map[w.b]; }
+  }
+  for (const w of edges) if (w.sideAuto === undefined) w.sideAuto = true;
+  r.nodes = ids.map(id => map[id] || id);
+}
 function stretch(g, delta) {          // move everything at or beyond the wall's far end
   if (Math.abs(delta) < 0.01) return;
   for (const nd of state.nodes) { const s = (nd.x - g.A.x) * g.d.x + (nd.y - g.A.y) * g.d.y; if (s >= g.L - 0.5) { nd.x = r2(nd.x + g.d.x * delta); nd.y = r2(nd.y + g.d.y * delta); } }
@@ -1802,17 +1818,27 @@ function planSnap(p, from, tol) {
     let best = null;
     for (const nd of state.nodes) { const d = Math.hypot(nd.x - p.x, nd.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt: { x: nd.x, y: nd.y, nid: nd.id }, kind: 'end', label: 'Corner' }; }
     if (best) return { ...best, label: from ? fmt(Math.hypot(best.pt.x - from.x, best.pt.y - from.y)) + ' · corner' : 'Corner' };
+    // walls: snap to the CENTRE of the wall thickness (its middle, or anywhere along it)
+    const ang0 = state.draw.ortho === '45' ? 45 : state.draw.ortho === '90' ? 90 : 0;
+    let odir = null;
+    if (from && ang0 && Math.hypot(p.x - from.x, p.y - from.y) > 0) { const a = Math.round(Math.atan2(p.y - from.y, p.x - from.x) * 180 / Math.PI / ang0) * ang0 * Math.PI / 180; odir = { x: Math.round(Math.cos(a) * 1e9) / 1e9, y: Math.round(Math.sin(a) * 1e9) / 1e9 }; }
     for (const w of state.walls) {
-      if (!isPlanWall(w)) continue; const gw = wallGeo(w);
-      if (s.mid) { const M = { x: gw.A.x + gw.d.x * gw.L / 2, y: gw.A.y + gw.d.y * gw.L / 2 }, d = Math.hypot(M.x - p.x, M.y - p.y); if (d <= tol && (!best || best.kind !== 'mid' || d < best.d)) best = { d, pt: M, kind: 'mid', label: 'Middle of wall' }; }
+      if (!isPlanWall(w)) continue; const gw = wallGeo(w), c0 = (gw.f0 + gw.f1) / 2;
+      const C = k => ({ x: gw.A.x + gw.d.x * k + gw.n.x * c0, y: gw.A.y + gw.d.y * k + gw.n.y * c0, cw: w.id, k });
+      if (s.mid) { const M = C(gw.L / 2), d = Math.hypot(M.x - p.x, M.y - p.y); if (d <= tol && (!best || best.kind !== 'mid' || d < best.d)) best = { d, pt: M, kind: 'mid', label: 'Middle of wall (centre)' }; }
       if (s.edge && (!best || best.kind !== 'mid')) {
-        let k = (p.x - gw.A.x) * gw.d.x + (p.y - gw.A.y) * gw.d.y; k = Math.min(Math.max(k, 0), gw.L);
-        if (s.grid) k = Math.min(Math.max(Math.round(k / st) * st, 0), gw.L);
-        const Q = { x: gw.A.x + gw.d.x * k, y: gw.A.y + gw.d.y * k }, d = Math.hypot(Q.x - p.x, Q.y - p.y);
-        if (d <= tol && (!best || d < best.d)) best = { d, pt: Q, kind: 'edge', label: 'On wall' };
+        const P0 = C(0);
+        let k = (p.x - P0.x) * gw.d.x + (p.y - P0.y) * gw.d.y;
+        if (odir) {                       // keep the new wall straight: meet the centre line along the locked direction
+          const cr = odir.x * gw.d.y - odir.y * gw.d.x;
+          if (Math.abs(cr) > 1e-6) { const kk = ((from.x - P0.x) * odir.y - (from.y - P0.y) * odir.x) / cr; if (kk >= 0 && kk <= gw.L) k = kk; }
+        } else if (s.grid) k = Math.round(k / st) * st;
+        k = Math.min(Math.max(k, 0), gw.L);
+        const Q = C(k), d = Math.hypot(Q.x - p.x, Q.y - p.y);
+        if (d <= tol * (odir ? 1.6 : 1) && (!best || d < best.d)) best = { d, pt: Q, kind: 'edge', label: 'Wall centre' };
       }
     }
-    if (best) return best;
+    if (best) { if (from) best.label = fmt(Math.hypot(best.pt.x - from.x, best.pt.y - from.y)) + ' · ' + best.label.toLowerCase(); return best; }
   }
   if (from) {
     const vx = p.x - from.x, vy = p.y - from.y, ang = state.draw.ortho === '45' ? 45 : state.draw.ortho === '90' ? 90 : 0;
@@ -1838,10 +1864,11 @@ function planSnap(p, from, tol) {
 function snapMove(moving, dx, dy, tol) {   // move a set of corners; stick to other corners
   const s = state.snap, ids = new Set(moving.map(m => m.id)), others = state.nodes.filter(nd => !ids.has(nd.id));
   let bx = null, by = null;
-  if (s.on && (s.align || s.end)) for (const m of moving) for (const o of others) {
-    const ex = o.x - (m.x + dx), ey = o.y - (m.y + dy);
-    if (Math.abs(ex) <= tol && (!bx || Math.abs(ex) < Math.abs(bx.e))) bx = { e: ex, at: o.x };
-    if (Math.abs(ey) <= tol && (!by || Math.abs(ey) < Math.abs(by.e))) by = { e: ey, at: o.y };
+  const offs = moving.length > 1 ? [0, state.draw.t, -state.draw.t] : [0];
+  if (s.on && (s.align || s.end)) for (const m of moving) for (const o of others) for (const f of offs) {
+    const ex = o.x + f - (m.x + dx), ey = o.y + f - (m.y + dy);
+    if (Math.abs(ex) <= tol && (!bx || Math.abs(ex) < Math.abs(bx.e))) bx = { e: ex, at: o.x + f };
+    if (Math.abs(ey) <= tol && (!by || Math.abs(ey) < Math.abs(by.e))) by = { e: ey, at: o.y + f };
   }
   const st = s.on && s.grid ? planStep() : 1, gd = [];
   if (bx) { dx += bx.e; gd.push({ v: true, at: bx.at }); } else dx = Math.round((moving[0].x + dx) / st) * st - moving[0].x;
@@ -1858,7 +1885,19 @@ function announceRooms(before) {
   const nr = state.rooms.filter(r => !before.has(r.id));
   if (nr.length) toast(nr.map(r => `${r.name} · ${area(roomArea(r)).m2.toFixed(2)} m²`).join(', ') + ' added', 'Undo', undo);
 }
+function attach(pt, from) {
+  if (!pt || !pt.cw) return pt;
+  const w = state.walls.find(q => q.id === pt.cw); if (!isPlanWall(w)) return { x: pt.x, y: pt.y };
+  const g = wallGeo(w);
+  if (from) {                             // slide along the new wall's own line onto the wall line
+    const ux = pt.x - from.x, uy = pt.y - from.y, cr = ux * g.d.y - uy * g.d.x;
+    if (Math.abs(cr) > 1e-6) { const t = ((g.A.x - from.x) * g.d.y - (g.A.y - from.y) * g.d.x) / cr; if (t > 0) return { x: r2(from.x + ux * t), y: r2(from.y + uy * t) }; }
+  }
+  const k = (pt.x - g.A.x) * g.d.x + (pt.y - g.A.y) * g.d.y;
+  return { x: r2(g.A.x + g.d.x * k), y: r2(g.A.y + g.d.y * k) };
+}
 function addSegment(pt) {
+  pt = attach(pt, tool.last);
   const L = tool.last, len = Math.hypot(pt.x - L.x, pt.y - L.y); if (len < 1) return;
   const before = new Set(state.rooms.map(r => r.id));
   commit('Draw wall ' + fmt(len), () => {
@@ -1883,17 +1922,19 @@ function addSegment(pt) {
 function placeWallPoint() {
   if (!hover) return;
   const pt = hover.pt;
-  if (!tool.last) { tool.last = { x: pt.x, y: pt.y, nid: pt.nid || null }; tool.start = { x: pt.x, y: pt.y }; tool.count = 0; hover = null; render(); updateStatus(); return; }
+  if (!tool.last) { const a = attach(pt, null); tool.last = { x: a.x, y: a.y, nid: pt.nid || null }; tool.start = { x: a.x, y: a.y }; tool.count = 0; hover = null; render(); updateStatus(); return; }
   if (Math.hypot(pt.x - tool.last.x, pt.y - tool.last.y) < 1) { finishChain(); return; }
   addSegment(pt);
 }
 function finishChain() { if (!tool) return; tool.last = null; tool.start = null; tool.count = 0; tool.boxStart = null; tool.beamStart = null; tool.mStart = null; hover = null; guides = []; render(); updateStatus(); }
 function drawSingle(p, q) {
   if (Math.hypot(q.x - p.x, q.y - p.y) < planStep()) return;
+  p = attach(p, q);
   tool.last = { x: p.x, y: p.y, nid: p.nid || null }; tool.start = { x: p.x, y: p.y }; tool.count = 0;
   addSegment(q); finishChain();
 }
 function drawBox(p, q, name) {
+  p = attach(p, null); q = attach(q, null);
   if (Math.abs(q.x - p.x) < planStep() || Math.abs(q.y - p.y) < planStep()) { toast('Box is too small. Drag further.'); return null; }
   const before = new Set(state.rooms.map(r => r.id)); let room = null;
   commit('Draw box ' + fmt(Math.abs(q.x - p.x)) + ' × ' + fmt(Math.abs(q.y - p.y)), () => {
@@ -1943,8 +1984,8 @@ function sketchToWalls(stroke) {
   const closed = raw.length >= 4 && Math.hypot(raw[0].x - raw[raw.length - 1].x, raw[0].y - raw[raw.length - 1].y) < u * 60;
   const ang = state.draw.ortho === '45' ? 45 : state.draw.ortho === '90' ? 90 : 0;
   const step = Math.max(planStep(), 50), tol = u * 26;
-  const s0 = planSnap(raw[0], null, tol);
-  const V = [{ x: s0.pt.x, y: s0.pt.y }];
+  const s0 = planSnap(raw[0], null, tol), a0 = attach(s0.pt, null);
+  const V = [{ x: a0.x, y: a0.y }];
   for (let i = 1; i < raw.length; i++) {
     const pv = V[V.length - 1], dx = raw[i].x - pv.x, dy = raw[i].y - pv.y;
     if (Math.hypot(dx, dy) < u * 12) continue;
@@ -1964,7 +2005,7 @@ function sketchToWalls(stroke) {
     if (V.length < 3) isClosed = false;
   } else {                                     // end on a nearby corner or wall so it joins
     const e = V[V.length - 1], sn = planSnap(e, null, tol);
-    if (sn.kind === 'end' || sn.kind === 'edge' || sn.kind === 'mid') { e.x = sn.pt.x; e.y = sn.pt.y; }
+    if (sn.kind === 'end' || sn.kind === 'edge' || sn.kind === 'mid') { const a = attach(sn.pt, V.length > 1 ? V[V.length - 2] : null); e.x = a.x; e.y = a.y; }
   }
   const before = new Set(state.rooms.map(r => r.id));
   commit('Draw ' + (V.length - (isClosed ? 0 : 1)) + ' walls by hand', () => {
@@ -2314,7 +2355,7 @@ function planDown(e) {
   }
   if (rh && !oh && !wh && ps && ps.t === 'room' && ps.id === rh.dataset.rid) {
     const r = state.rooms.find(x => x.id === ps.id);
-    if (r) { gesture = { ...base, kind: 'room', set: roomPts(r).map(nd => ({ id: nd.id, x: nd.x, y: nd.y })) }; return; }
+    if (r) { gesture = { ...base, kind: 'room', rid: r.id, set: roomPts(r).map(nd => ({ id: nd.id, x: nd.x, y: nd.y })) }; return; }
   }
   gesture = { ...base, kind: 'tapsel', target: oh ? { t: 'open', id: oh.dataset.oid, wid: oh.dataset.owid } : wh ? { t: 'wall', id: wh.dataset.wid } : rh ? { t: 'room', id: rh.dataset.rid } : null };
   svg.classList.add('panning');
@@ -2360,7 +2401,10 @@ function planMove(e) {
     render(true); return;
   }
   if (gesture.kind === 'node' || gesture.kind === 'room') {
-    if (!gesture.moved) { snapshot(gesture.kind === 'room' ? 'Move room' : 'Move corner'); gesture.moved = true; }
+    if (!gesture.moved) {
+      snapshot(gesture.kind === 'room' ? 'Move room' : 'Move corner'); gesture.moved = true;
+      if (gesture.kind === 'room') { const r = state.rooms.find(x => x.id === gesture.rid); if (r) { detachRoom(r); gesture.set = roomPts(r).map(nd => ({ id: nd.id, x: nd.x, y: nd.y })); } }
+    }
     const m = snapMove(gesture.set, dx, dy, tol);
     for (const s0 of gesture.set) { const nd = nodeById(s0.id); if (nd) { nd.x = r2(s0.x + m.dx); nd.y = r2(s0.y + m.dy); } }
     guides = m.guides; render(true);
