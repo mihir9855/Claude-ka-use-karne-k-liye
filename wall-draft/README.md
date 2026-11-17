@@ -3,13 +3,14 @@
 A small CAD-style app for measuring flats, bungalows and offices on site: draw the floor plan by hand, then open any wall to draft its elevation with doors, windows, ventilators and openings.
 
 ## Floor plan (Plan view)
-- **✎ Draw walls**: tap each corner, or **sketch a room with your finger**. The sketch is straightened into walls (90°/45° lock with ⟂). Finish at the first corner and a room is made with its area.
-- While drawing, **type a length and tap an arrow** (← ↑ ↓ →) to place the next corner exactly. On a computer, just type the number.
-- **▭ Room**: type a room's width and depth; place it next to the selected room so they share a wall.
-- Lines are the **inside faces** (what you measure with the tape); wall thickness is drawn outside the room. Corners are mitred, back-to-back walls share door openings.
-- Tap a wall to select it and type its exact length (everything beyond it moves along), change thickness or height, or add a door/window to it. Double-tap a wall, or press "Open wall elevation", to see and edit that wall in elevation.
-- Drag corners or a selected room; they snap to other corners and to a wall-thickness gap.
-- Room list with area (m², ft²), perimeter (skirting) and total carpet area.
+- Opens on a **blank black CAD canvas** (◐ switches to a white one). "Start blank drawing" clears it; "Load example flat" shows a sample.
+- Wall tools: **✎ Hand** (draw with your finger, straightened automatically), **╱ Line** (tap corners, or drag one wall), **▭ Box** (drag corner to corner for four walls, or "Type size…").
+- Pick the **wall thickness** on the drawing bar (75–350 mm) before drawing; change any wall later.
+- **Walls merge automatically**: touching, crossing or overlapping walls are joined and drawn as one solid wall; straight pieces become one wall; a wall drawn across a room splits it into two rooms.
+- **Rooms are found automatically** from any closed area, with inside size, area (m², ft²), perimeter and total carpet area. Names are kept when you edit.
+- The line you draw is the room's inside face (thickness goes outside) or, if you choose, the wall centre. Walls between two rooms stay as one shared wall.
+- While drawing a line, type a length and tap an arrow (← ↑ ↓ →) for exact corners. Tap a wall to type its exact inside length, thickness, height, or add a door/window. Double-tap a wall to open its elevation.
+- Keys: D hand, W line, B box, O angle lock, R room by size, Esc stop.
 
 ## Wall elevation (Wall view)
 
