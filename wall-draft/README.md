@@ -1,6 +1,17 @@
 # WallDraft
 
-A small CAD-style app for drafting wall elevations from site measurements, with doors, windows, ventilators and plain openings.
+A small CAD-style app for measuring flats, bungalows and offices on site: draw the floor plan by hand, then open any wall to draft its elevation with doors, windows, ventilators and openings.
+
+## Floor plan (Plan view)
+- **✎ Draw walls**: tap each corner, or **sketch a room with your finger**. The sketch is straightened into walls (90°/45° lock with ⟂). Finish at the first corner and a room is made with its area.
+- While drawing, **type a length and tap an arrow** (← ↑ ↓ →) to place the next corner exactly. On a computer, just type the number.
+- **▭ Room**: type a room's width and depth; place it next to the selected room so they share a wall.
+- Lines are the **inside faces** (what you measure with the tape); wall thickness is drawn outside the room. Corners are mitred, back-to-back walls share door openings.
+- Tap a wall to select it and type its exact length (everything beyond it moves along), change thickness or height, or add a door/window to it. Double-tap a wall, or press "Open wall elevation", to see and edit that wall in elevation.
+- Drag corners or a selected room; they snap to other corners and to a wall-thickness gap.
+- Room list with area (m², ft²), perimeter (skirting) and total carpet area.
+
+## Wall elevation (Wall view)
 
 Open `index.html` in any browser (phone or computer). No install, no build, works offline. Work is saved on the device automatically.
 
