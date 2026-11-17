@@ -65,6 +65,15 @@ svg#draw.tooling { cursor: crosshair; }
 .tbar .tl { white-space: nowrap; }
 .tgroup select.unit { border: 0; background: transparent; padding: 0 8px; min-height: 36px; font: 600 13px var(--f-mono); color: var(--ink); cursor: pointer; }
 .grab { display: none; }
+.fi { display: none; gap: 6px; align-items: center; min-width: 0; }
+body.ftin .fi { display: flex; }
+body.ftin input.has-fi { display: none !important; }
+.fi .fw { position: relative; flex: 1 1 0; min-width: 0; display: block; }
+.fi .fw input { width: 100%; padding-right: 26px !important; }
+.fi .fw i { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font: 12px var(--f-mono); color: var(--muted); font-style: normal; pointer-events: none; }
+.fi.err input { border-color: var(--warn) !important; }
+.lenbox .fi { width: 140px; }
+.lenbox .fi input { width: 100%; padding: 5px 24px 5px 7px; border: 1px solid var(--accent); border-radius: 6px; background: var(--paper); font: 13px var(--f-mono); color: var(--ink); }
 .dock { position: absolute; right: max(10px, env(safe-area-inset-right, 0px)); bottom: 10px; display: flex; gap: 6px; }
 .dock button { min-width: 48px; min-height: 44px; font-size: 14px; }
 .dock .big { font-size: 18px; }
@@ -1778,11 +1787,11 @@ function drawBox(p, q, name) {
 }
 function placeTyped(dir) {
   const el = $('#len-in'), v = parseLen(el.value);
-  if (!isFinite(v) || v <= 0) { toast('Type the wall length first. ' + unitExample()); el.focus(); return; }
+  if (!isFinite(v) || v <= 0) { toast('Type the wall length first. ' + unitExample()); focusLen(); return; }
   if (!isDraw() || tool.kind === 'box') setTool('line');
   if (!tool.last) {
     const b = nodesBox();
-    tool.last = b ? { x: b.x1 + 1500, y: b.y0, nid: null } : { x: 0, y: 0, nid: null }; tool.start = { x: tool.last.x, y: tool.last.y }; tool.count = 0;
+    tool.last = b ? { x: b.x1 + 1500, y: b.y0, nid: null } : { x: 0, y: 0, nid: null }; tool.start = { x: tool.last.x, y: tool.last.y }; tool.count = 0; tool.autoStart = true;
   }
   if (!dir) {
     if (hover && hover.pt) { const dx = hover.pt.x - tool.last.x, dy = hover.pt.y - tool.last.y, l = Math.hypot(dx, dy); if (l > 1) dir = { x: dx / l, y: dy / l }; }
@@ -1792,7 +1801,9 @@ function placeTyped(dir) {
   const near = state.nodes.find(nd => Math.hypot(nd.x - pt.x, nd.y - pt.y) < 2);
   if (near) pt = { x: near.x, y: near.y, nid: near.id };
   el.value = ''; addSegment(pt);
-  if (window.matchMedia('(pointer: coarse)').matches) el.blur(); else el.focus();
+  if (tool && tool.autoStart) { tool.autoStart = false; fit(); }     // new wall started away from the plan: bring it into view
+  syncFtIn();
+  if (window.matchMedia('(pointer: coarse)').matches) { el.blur(); if (el._fi) el._fi.querySelectorAll('input').forEach(x => x.blur()); } else focusLen();
 }
 function rdp(pts, eps) {
   if (pts.length < 3) return pts.slice();
@@ -1861,7 +1872,9 @@ function roomModal() {
   </div><p class="note">Measure inside the room, wall face to wall face, in ${UNIT_NAME[state.unit]}. You can drag the room into place afterwards.</p>`,
   [['Add room', addRoomFromModal, 'primary'], ['Cancel', closeModal]]);
   if (!state.nodes.length) $('#rm-pos').disabled = true;
-  setTimeout(() => $('#rm-w').focus(), 50);
+  ['rm-w', 'rm-d', 'rm-t', 'rm-h'].forEach(id => enhanceFtIn(document.getElementById(id)));
+  syncFtIn();
+  setTimeout(() => (state.unit === 'ftin' ? $('#rm-w')._fi.querySelector('input') : $('#rm-w')).focus(), 50);
 }
 function addRoomFromModal() {
   const W = parseLen($('#rm-w').value), D = parseLen($('#rm-d').value), T = parseLen($('#rm-t').value), Hh = parseLen($('#rm-h').value);
@@ -2336,6 +2349,52 @@ const DIRS = { r: { x: 1, y: 0 }, l: { x: -1, y: 0 }, u: { x: 0, y: -1 }, d: { x
 $$('[data-dir]').forEach(b => b.addEventListener('click', () => placeTyped(DIRS[b.dataset.dir])));
 $$('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool || null)));
 
+/* ---------- feet + inches boxes ---------- */
+// In ft-in mode every length field shows two boxes. Inches over 12 (or decimal feet) are carried into feet.
+function enhanceFtIn(el) {
+  if (!el || el._fi) return;
+  const wrap = document.createElement('span'); wrap.className = 'fi';
+  wrap.innerHTML = '<span class="fw"><input inputmode="decimal" autocomplete="off" aria-label="feet" placeholder="0"><i>ft</i></span><span class="fw"><input inputmode="decimal" autocomplete="off" aria-label="inches" placeholder="0"><i>in</i></span>';
+  el.after(wrap); el.classList.add('has-fi'); el._fi = wrap;
+  const [f, i] = wrap.querySelectorAll('input');
+  const total = () => {
+    const fv = f.value.trim(), iv = i.value.trim().replace(/"/g, '');
+    if (!fv && !iv) return null;
+    const ft = fv ? parseFloat(fv.replace(',', '.')) : 0, inch = iv ? parseInches(iv.replace(',', '.')) : 0;
+    return isFinite(ft) && isFinite(inch) && !(fv && isNaN(ft)) ? ft * 12 + inch : NaN;
+  };
+  const push = () => { const t = total(); el.value = t == null ? '' : isNaN(t) ? '?' : t + '"'; wrap.classList.toggle('err', t != null && isNaN(t)); return t; };
+  const normalize = () => { const t = total(); if (t == null || !isFinite(t)) return; const e8 = Math.round(t * 8), ft = Math.floor(e8 / 96); f.value = String(ft); i.value = fracIn((e8 - ft * 96) / 8); };
+  const done = () => setTimeout(() => {
+    if (wrap.contains(document.activeElement)) { push(); return; }      // still typing in the other box
+    const t = push(); if (t != null && isNaN(t)) { toast('Type numbers only, e.g. 10 ft and 6 in'); return; }
+    normalize(); el.dispatchEvent(new Event('change'));
+  }, 0);
+  for (const x of [f, i]) {
+    x.addEventListener('input', push);
+    x.addEventListener('change', done);
+    x.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (x === f && !i.value.trim()) { i.focus(); return; }
+      if (el.id === 'len-in') { push(); normalize(); placeTyped(null); } else x.blur();
+    });
+  }
+}
+function syncFtIn() {
+  document.body.classList.toggle('ftin', state.unit === 'ftin');
+  if (state.unit !== 'ftin') return;
+  for (const el of document.querySelectorAll('input.has-fi')) {
+    const w = el._fi, [f, i] = w.querySelectorAll('input');
+    if (w.contains(document.activeElement) && el.value !== '') continue;
+    const mm = el.value.trim() ? parseLen(el.value, 'ftin') : NaN;
+    if (!isFinite(mm)) { f.value = ''; i.value = ''; w.classList.remove('err'); continue; }
+    const e8 = Math.round(Math.abs(mm) / 25.4 * 8), ft = Math.floor(e8 / 96);
+    f.value = (mm < 0 ? '-' : '') + ft; i.value = fracIn((e8 - ft * 96) / 8); w.classList.remove('err');
+  }
+}
+function focusLen() { const el = $('#len-in'); (state.unit === 'ftin' && el._fi ? el._fi.querySelector('input') : el).focus(); }
+
 /* ---------- panel ---------- */
 const lenInputs = {
   'w-len':  { wl: 1, lbl: () => 'Length of ' + wname(wall()),    get: () => wall().length,    set: v => { if (v <= 0) return false; const w = wall(); if (isPlanWall(w)) setPlanLen(w, v); else w.length = v; } },
@@ -2583,7 +2642,7 @@ document.addEventListener('keydown', e => {
     else if (tool) setTool(null); else { state.sel = null; state.selDim = null; state.planSel = null; save(); render(); }
     return;
   }
-  if (state.view === 'plan' && isDraw() && tool.kind !== 'box' && /^[0-9.]$/.test(e.key)) { $('#len-in').focus(); return; }
+  if (state.view === 'plan' && isDraw() && tool.kind !== 'box' && /^[0-9.]$/.test(e.key)) { focusLen(); return; }
   if (state.view === 'plan' && k === 'r') { roomModal(); return; }
   if (state.view === 'plan' && k === 'o') { cycleOrtho(); return; }
   if (k === 'p') { switchView('plan'); return; }
@@ -2638,6 +2697,7 @@ function render(drawOnly) {
   }
   const sd = isPlan ? null : selDim();
   if (sd) { $('#d-val').textContent = dimLabel(w, sd); }
+  syncFtIn();
   if (drawOnly) return;
   syncers.forEach(f => f());
   $('#p-unit').value = state.unit; $('#tb-unit').value = state.unit;
@@ -2900,6 +2960,7 @@ new ResizeObserver(() => {
   if (lastSize && Math.abs(r.width - lastSize.w) < 2 && Math.abs(r.height - lastSize.h) < 80) return;  // ignore phone address-bar jiggle
   lastSize = { w: r.width, h: r.height }; if (lastBox) fit();
 }).observe($('#sheet'));
+[...Object.keys(lenInputs), 'len-in'].forEach(id => enhanceFtIn(document.getElementById(id)));
 if (state.nodes.length) { rebuildPlan(); save(); }
 render();
 setTool(null);
