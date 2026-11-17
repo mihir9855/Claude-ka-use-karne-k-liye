@@ -474,7 +474,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 
       <section data-v="plan" id="kit-sec">
         <h2>Kitchen <span id="fx-count" style="letter-spacing:0;text-transform:none;font-family:var(--f-mono)"></span></h2>
-        <div class="row-btns" style="margin-top:0"><button class="btn primary" id="k-setup">⊟ Kitchen setup</button><button class="btn" id="k-ctr">▬ Platform</button><button class="btn" id="k-sink">◫ Sink</button><button class="btn" id="k-hob">⊚ Hob</button></div>
+        <div class="row-btns" style="margin-top:0"><button class="btn primary" id="k-setup">⊟ Kitchen setup</button><button class="btn" id="k-ctr">▬ Platform</button><button class="btn" id="k-sink">◫ Sink</button><button class="btn" id="k-hob">⊚ Hob</button><button class="btn" id="k-L">⌐ L-shape</button><button class="btn" id="k-C">⊐ C-shape</button></div>
         <div class="olist" id="fx-list" style="margin-top:8px"></div>
         <div id="fxsec" hidden>
           <div class="editor" style="margin-top:8px">
@@ -1766,13 +1766,27 @@ function fixOnWall(w) {               // platforms (and what sits on them) seen 
   }
   return out;
 }
+const isKQ = () => !!(tool && (tool.kind === 'kL' || tool.kind === 'kC'));
+function quickKitchen(p, kind) {     // L: tap near the corner where it turns; C: tap near the back wall
+  const r = state.rooms.find(q => !isBal(q) && pointIn(p, roomPts(q)));
+  if (!r) { toast('Tap inside the kitchen room'); return; }
+  if (!roomSize(r)) { toast('L and C platforms work on rectangular rooms. Use ▬ Platform for other shapes.'); return; }
+  const ip = simplify(innerPoly(r)), b = { x0: Math.min(...ip.map(q => q.x)), x1: Math.max(...ip.map(q => q.x)), y0: Math.min(...ip.map(q => q.y)), y1: Math.max(...ip.map(q => q.y)) };
+  const dist = { top: p.y - b.y0, bottom: b.y1 - p.y, left: p.x - b.x0, right: b.x1 - p.x };
+  const order = ['top', 'right', 'bottom', 'left'], main = order.reduce((m, sd) => dist[sd] < dist[m] ? sd : m, 'top');
+  const i = order.indexOf(main), nxt = order[(i + 1) % 4], prv = order[(i + 3) % 4];
+  const lay = kind === 'kC' ? 'U' : (dist[nxt] <= dist[prv] ? 'L' : 'L2');
+  const k = state.defs.kitchen;
+  kitchenInto(r, lay, main, k.d, k.h, 2, 4, true);
+  setTool(null);
+}
 function kitchenModal() {
   const rooms = state.rooms.filter(r => !isBal(r)), sel = selRoom(), k = state.defs.kitchen;
   if (!rooms.length) { toast('Draw or add the kitchen room first'); return; }
   const pick = sel && !isBal(sel) ? sel : rooms.find(r => r.kind === 'kitchen') || rooms[0];
   openModal('Kitchen setup', `<div class="grid2">
     <label class="f full">Room<select id="kk-room">${rooms.map(r => `<option value="${r.id}"${r === pick ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select></label>
-    <label class="f">Platform layout<select id="kk-lay"><option value="straight">Straight (one wall)</option><option value="L">L-shape</option><option value="U">U-shape</option><option value="par">Parallel (two walls)</option></select></label>
+    <label class="f">Platform layout<select id="kk-lay"><option value="straight">Straight (one wall)</option><option value="L">L-shape (turns at one corner)</option><option value="L2">L-shape (turns at the other corner)</option><option value="U">C-shape / U-shape (three walls)</option><option value="par">Parallel (two walls)</option></select></label>
     <label class="f">Main wall<select id="kk-side"><option value="top">Top</option><option value="right">Right</option><option value="bottom">Bottom</option><option value="left">Left</option></select></label>
     <label class="f">Platform depth<input id="kk-d" autocomplete="off" value="${esc(fmt(k.d))}"></label>
     <label class="f">Platform height<input id="kk-h" autocomplete="off" value="${esc(fmt(k.h))}"></label>
@@ -1788,21 +1802,24 @@ function buildKitchen() {
   const D = parseLen($('#kk-d').value), Hh = parseLen($('#kk-h').value);
   if (!(D > 0) || !(Hh > 0)) { toast('Please fill in the platform depth and height. ' + unitExample()); return; }
   const lay = $('#kk-lay').value, main = $('#kk-side').value, sink = +$('#kk-sink').value, hob = +$('#kk-hob').value, mark = $('#kk-name').checked;
+  if (kitchenInto(r, lay, main, D, Hh, sink, hob, mark)) closeModal();
+}
+function kitchenInto(r, lay, main, D, Hh, sink, hob, mark) {
   const ip = simplify(innerPoly(r)), ib = { x0: Math.min(...ip.map(q => q.x)), x1: Math.max(...ip.map(q => q.x)), y0: Math.min(...ip.map(q => q.y)), y1: Math.max(...ip.map(q => q.y)) };
   const order = ['top', 'right', 'bottom', 'left'], i = order.indexOf(main), nxt = order[(i + 1) % 4], prv = order[(i + 3) % 4], opp = order[(i + 2) % 4];
-  const sides = lay === 'L' ? [main, nxt] : lay === 'U' ? [main, nxt, prv] : lay === 'par' ? [main, opp] : [main];
+  const sides = lay === 'L' ? [main, nxt] : lay === 'L2' ? [main, prv] : lay === 'U' ? [main, nxt, prv] : lay === 'par' ? [main, opp] : [main];
   const IN = { top: { x: 0, y: 1 }, bottom: { x: 0, y: -1 }, left: { x: 1, y: 0 }, right: { x: -1, y: 0 } };
   const counters = sides.map(sd => {
     let a, b; const horiz = sd === 'top' || sd === 'bottom';
     if (horiz) { a = ib.x0; b = ib.x1; } else { a = ib.y0; b = ib.y1; }
-    if (sd !== main && lay !== 'par') {           // leave the shared corner to the main run
+    if (sd !== main && lay !== 'par' && lay !== 'straight') {           // leave the shared corner to the main run
       if (main === 'top') a += D; else if (main === 'bottom') b -= D; else if (main === 'left') a += D; else if (main === 'right') b -= D;
     }
     const m = (a + b) / 2, len = b - a;
     const c = horiz ? { x: m, y: sd === 'top' ? ib.y0 + D / 2 : ib.y1 - D / 2 } : { x: sd === 'left' ? ib.x0 + D / 2 : ib.x1 - D / 2, y: m };
     return { id: uid(), kind: 'counter', x: r2(c.x), y: r2(c.y), rot: rotFor(IN[sd]), w: r2(len), d: D, h: Hh };
   }).filter(c => c.w > 300);
-  if (!counters.length) { toast('This room is too small for that layout'); return; }
+  if (!counters.length) { toast('This room is too small for that layout'); return false; }
   const on = (c, t, kind, w, d) => { const { ax, ay } = fxAxes(c), off = Math.min(Math.max((t - 0.5) * c.w, -(c.w - w) / 2), (c.w - w) / 2), v = Math.min(0, (c.d - d) / 2); return { id: uid(), kind, x: r2(c.x + ax.x * off + ay.x * v), y: r2(c.y + ax.y * off + ay.y * v), rot: c.rot, w, d, h: Hh }; };
   const imp = IMP(), sw = sink === 2 ? (imp ? 1066.8 : 1000) : (imp ? 609.6 : 600), sd2 = imp ? 457.2 : 450, hw = hob === 4 ? (imp ? 762 : 750) : (imp ? 457.2 : 450);
   const items = [];
@@ -1818,7 +1835,9 @@ function buildKitchen() {
     state.defs.kitchen = { d: D, h: Hh };
     state.planSel = { t: 'room', id: r.id };
   });
-  closeModal(); toast(`Kitchen ready · ${counters.length} platform${counters.length > 1 ? 's' : ''}${items.length ? ' · ' + items.map(x => FXK[x.kind].name.toLowerCase()).join(' and ') : ''}`, 'Undo', undo);
+  const shapeName = lay === 'U' ? 'C-shape' : lay[0] === 'L' ? 'L-shape' : lay === 'par' ? 'Parallel' : 'Straight';
+  toast(`${shapeName} kitchen ready · ${counters.length} platform${counters.length > 1 ? 's' : ''}${items.length ? ' · ' + items.map(x => FXK[x.kind].name.toLowerCase()).join(' and ') : ''}`, 'Undo', undo);
+  return true;
 }
 
 /* ---------- measurements on plan ---------- */
@@ -2812,6 +2831,7 @@ function underTarget(x, y) {
 }
 function planDown(e) {
   const p = toSvg(e.clientX, e.clientY);
+  if (isKQ()) { gesture = { kind: 'wpick', sx: e.clientX, sy: e.clientY, stroke: [p], free: false, start: p }; hover = null; return; }
   if (isFix()) {
     const tol = upx() * (e.pointerType === 'touch' ? 26 : 13), kind = tool.kind.slice(3), size = fxDefaults(kind);
     gesture = { kind: 'wpick', sx: e.clientX, sy: e.clientY, stroke: [p], free: false, start: p };
@@ -2873,6 +2893,7 @@ function planMove(e) {
     const cur = toSvg(e.clientX, e.clientY), tol = upx() * (e.pointerType === 'touch' ? 26 : 13);
     gesture.stroke.push(cur);
     if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) > 18) gesture.free = true;
+    if (isKQ()) return;
     if (isFix()) { const kind = tool.kind.slice(3), size = fxDefaults(kind); hover = { pt: cur, fx: fxSnap(cur, kind, size, tol, gesture.free && kind === 'counter' ? gesture.start : null) }; drawOverlay(); updateStatus(); return; }
     if (!gesture.free) { planHover(e); return; }
     if (isStruct() || isMeasure()) { hover = toolSnap(cur, tool.kind === 'col' ? null : (toolFrom() || gesture.start), tol); guides = hover.guides || []; drawOverlay(); updateStatus(); return; }
@@ -2971,6 +2992,7 @@ function planUp(e) {
   if (gesture.kind === 'wpick') {
     if (e.type === 'pointerup' && ptrs.size === 0) {
       const gs = gesture; gesture = null;
+      if (isKQ()) { if (!gs.free) quickKitchen(gs.start, tool.kind); return; }
       if (isFix()) {
         if (!hover || !hover.fx) return;
         const kind = tool.kind.slice(3), size = fxDefaults(kind), at = hover.fx;
@@ -3020,7 +3042,7 @@ svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && too
 /* ---------- dimension tools ---------- */
 function setTool(kind) {
   tool = kind ? { kind, pts: [], last: null, chain: [] } : null; hover = null; guides = [];
-  if (kind) { state.sel = null; state.selDim = null; if (['hand', 'line', 'box', 'col', 'beam', 'pdim', 'fx-counter', 'fx-sink', 'fx-hob'].includes(kind)) state.planSel = null; setSheet('peek'); }
+  if (kind) { state.sel = null; state.selDim = null; if (['hand', 'line', 'box', 'col', 'beam', 'pdim', 'fx-counter', 'fx-sink', 'fx-hob', 'kL', 'kC'].includes(kind)) state.planSel = null; setSheet('peek'); }
   svg.classList.toggle('tooling', !!tool);
   $$('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.tool || null) === (kind || null))));
   render(); updateStatus();
@@ -3071,6 +3093,11 @@ function updateStatus() {
   }
   st.className = 'status';
   show('#st-t', isDraw()); show('#st-size', false); show('#st-s', isStruct());
+  if (isKQ()) {
+    msg.innerHTML = `<b>${tool.kind === 'kL' ? '⌐ L-shape kitchen' : '⊐ C-shape kitchen'}</b> · ` + esc(tool.kind === 'kL' ? 'Tap inside the room near the corner where the L turns' : 'Tap inside the room near the wall at the back of the C');
+    sn.textContent = ''; ['#st-len', '#st-close', '#st-t', '#st-s', '#st-size', '#st-fin'].forEach(i => show(i, false)); show('#st-x', true);
+    return;
+  }
   if (isFix()) {
     const kind = tool.kind.slice(3), free = gesture && gesture.kind === 'wpick' && gesture.free;
     msg.innerHTML = `<b>${FXK[kind].icon} ${FXK[kind].name}</b> · ` + esc(kind === 'counter' ? (free ? 'Let go at the other end of the platform' : 'Drag along a wall, or tap for a ' + fmt(fxDefaults('counter').w) + ' platform') : 'Tap on a platform or against a wall');
@@ -3673,7 +3700,7 @@ function render(drawOnly) {
 /* ---------- all tools panel ---------- */
 const FEATURES = [
   ['Draw walls & rooms', [['tool:hand', '✎', 'Hand'], ['tool:line', '╱', 'Line wall'], ['tool:box', '▭', 'Box'], ['room', '⊞', 'Room by size'], ['balcony', '⌓', 'Balcony']]],
-  ['Kitchen', [['kitchen', '⊟', 'Kitchen setup'], ['tool:fx-counter', '▬', 'Platform'], ['tool:fx-sink', '◫', 'Sink'], ['tool:fx-hob', '⊚', 'Hob']]],
+  ['Kitchen', [['kitchen', '⊟', 'Kitchen setup'], ['tool:fx-counter', '▬', 'Platform'], ['tool:fx-sink', '◫', 'Sink'], ['tool:fx-hob', '⊚', 'Hob'], ['tool:kL', '⌐', 'L-shape kitchen'], ['tool:kC', '⊐', 'C-shape kitchen']]],
   ['Doors', [['add:door:single', 'sw door', 'Single door'], ['add:door:double', 'sw door', 'Double door'], ['add:door:slide', 'sw door', 'Sliding door'], ['add:door:pivot', 'sw door', 'Pivot door'], ['add:door:fold', 'sw door', 'Folding door']]],
   ['Windows & openings', [['add:window:slide2', 'sw window', 'Sliding window'], ['add:window:slide3', 'sw window', '3-track sliding'], ['add:window:case1', 'sw window', 'Casement'], ['add:window:case2', 'sw window', 'Double casement'], ['add:window:fixed', 'sw window', 'Fixed glass'], ['add:window:top', 'sw window', 'Top-hung'], ['add:window:louvre', 'sw window', 'Louvred'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening:plain', 'sw opening', 'Opening'], ['add:opening:arch', 'sw opening', 'Arched opening']]],
   ['Structure', [['tool:col', '▣', 'Column'], ['tool:beam', '┅', 'Beam']]],
@@ -3723,7 +3750,7 @@ $('#tb-room').addEventListener('click', () => { setTool(null); roomModal(); });
 $('#tb-bal').addEventListener('click', () => { setTool(null); balconyModal(); });
 $('#tb-kit').addEventListener('click', () => { setTool(null); kitchenModal(); });
 $('#k-setup').addEventListener('click', kitchenModal);
-for (const [id, k] of [['k-ctr', 'fx-counter'], ['k-sink', 'fx-sink'], ['k-hob', 'fx-hob']]) $('#' + id).addEventListener('click', () => { setTool(k); });
+for (const [id, k] of [['k-ctr', 'fx-counter'], ['k-sink', 'fx-sink'], ['k-hob', 'fx-hob'], ['k-L', 'kL'], ['k-C', 'kC']]) $('#' + id).addEventListener('click', () => { setTool(k); });
 $('#fx-list').addEventListener('click', e => { const b = e.target.closest('[data-fx]'); if (b) selectPlan({ t: 'fix', id: b.dataset.fx }); });
 $('#fx-del').addEventListener('click', () => delSelected());
 $('#fx-rot').addEventListener('click', () => { const f = selFix(); if (f) commit('Rotate ' + FXK[f.kind].name.toLowerCase(), () => { f.rot = ((f.rot || 0) + 90) % 360; }); });
