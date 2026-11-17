@@ -386,6 +386,8 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
           <label class="f">Ventilator width<input id="df-vent-w" inputmode="decimal" autocomplete="off"></label>
           <label class="f">Ventilator height<input id="df-vent-h" inputmode="decimal" autocomplete="off"></label>
           <label class="f full">Ventilator sill from floor<input id="df-vent-s" inputmode="decimal" autocomplete="off"></label>
+          <label class="f">Door style<select id="df-door-st"></select></label>
+          <label class="f">Window style<select id="df-window-st"></select></label>
         </div>
         <p class="note">Every new wall, room, door and window starts with these sizes. Thickness and height you type when adding a room are kept here too. They are remembered on this phone, also for new projects.</p>
       </section>
@@ -511,16 +513,17 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
               </select>
             </label>
             <label class="f">Mark<input id="e-label" type="text" maxlength="8" autocomplete="off"></label>
+            <label class="f full">Style<select id="e-style"></select></label>
             <label class="f">Width<input id="e-w" inputmode="decimal" autocomplete="off"></label>
             <label class="f">Height<input id="e-h" inputmode="decimal" autocomplete="off"></label>
             <label class="f">From left end<input id="e-left" inputmode="decimal" autocomplete="off"></label>
             <label class="f">From right end<input id="e-right" inputmode="decimal" autocomplete="off"></label>
             <label class="f">Sill (from floor)<input id="e-sill" inputmode="decimal" autocomplete="off"></label>
             <label class="f">Head (from floor)<input id="e-head" inputmode="decimal" autocomplete="off"></label>
-            <label class="f door-only">Hinge side
+            <label class="f" id="e-hinge-l">Hinge side
               <select id="e-hinge"><option value="L">Left</option><option value="R">Right</option></select>
             </label>
-            <label class="f door-only">Opens
+            <label class="f" id="e-swing-l">Opens
               <select id="e-swing"><option value="in">Inside (down in plan)</option><option value="out">Outside (up in plan)</option></select>
             </label>
           </div>
@@ -635,6 +638,14 @@ const TYPES = {
   vent:    { name: 'Ventilator', prefix: 'V', w: 600,  h: 450,  sill: 2100 },
   opening: { name: 'Opening',    prefix: 'O', w: 1000, h: 2100, sill: 0 },
 };
+const STYLES = {
+  door:    [['single', 'Single swing'], ['double', 'Double door'], ['slide', 'Sliding door'], ['pivot', 'Pivot door'], ['fold', 'Folding door']],
+  window:  [['slide2', 'Sliding, 2 shutters'], ['slide3', 'Sliding, 3 shutters'], ['case1', 'Casement, 1 shutter'], ['case2', 'Casement, 2 shutters'], ['fixed', 'Fixed glass'], ['top', 'Top-hung'], ['louvre', 'Louvred']],
+  vent:    [['louvre', 'Louvred'], ['fixed', 'Fixed glass'], ['top', 'Top-hung']],
+  opening: [['plain', 'Plain opening'], ['arch', 'Arched opening']],
+};
+const styleOf = o => o.style || STYLES[o.type][0][0];
+const styleName = o => (STYLES[o.type].find(s => s[0] === styleOf(o)) || STYLES[o.type][0])[1];
 const DIMK = {
   h:   { name: 'Horizontal dimension', short: 'Horizontal', icon: '↔', steps: ['Tap the first point', 'Tap the second point', 'Tap where the dimension line should go'] },
   v:   { name: 'Vertical dimension',   short: 'Vertical',   icon: '↕', steps: ['Tap the first point', 'Tap the second point', 'Tap where the dimension line should go'] },
@@ -1032,20 +1043,29 @@ function buildDrawing(w, opt) {
     const x = o.x, yt = Y(o.sill + o.h), ww = o.w, hh = o.h, yb = Y(o.sill);
     const f = Math.min(ts * 0.45, ww * 0.08, hh * 0.08);
     rect(x, yt, ww, hh, 'op');
-    if (o.type === 'door') {
-      rect(x + f, yt + f, ww - 2 * f, hh - f, 'door');
-      const hx = o.hinge === 'R' ? x + ww - f : x + f, lx = o.hinge === 'R' ? x + f : x + ww - f;
-      line(lx, yt + f, hx, (yt + yb) / 2, 'door dash'); line(lx, yb, hx, (yt + yb) / 2, 'door dash');
-    } else if (o.type === 'window') {
-      rect(x + f, yt + f, ww - 2 * f, hh - 2 * f, 'window');
-      if (ww > 900) line(x + ww / 2, yt + f, x + ww / 2, yb - f, 'window');
-      line(x - f, yb + f * 0.6, x + ww + f, yb + f * 0.6, 'window');
-    } else if (o.type === 'vent') {
-      rect(x + f, yt + f, ww - 2 * f, hh - 2 * f, 'vent');
-      const k = Math.max(2, Math.round(hh / 110));
-      for (let i = 1; i < k; i++) line(x + f, yt + f + (hh - 2 * f) * i / k, x + ww - f, yt + f + (hh - 2 * f) * i / k, 'vent');
-    } else {
-      line(x, yt, x + ww, yb, 'opening'); line(x + ww, yt, x, yb, 'opening');
+    {
+      const st = styleOf(o), cls = o.type === 'door' ? 'door' : o.type === 'window' ? 'window' : o.type === 'vent' ? 'vent' : 'opening';
+      const xl = x + f, xr = x + ww - f, top = yt + f, bot = o.type === 'door' ? yb : yb - f, my = (top + bot) / 2;
+      const tri = (xa, xb, apexX, cl) => { line(xb, top, apexX, my, cl + ' dash'); line(xb, bot, apexX, my, cl + ' dash'); };   // swing marks point at the hinge
+      const arrow = (x1, x2, yy) => { const a = Math.min(ts * 0.35, Math.abs(x2 - x1) * 0.3), sg = Math.sign(x2 - x1) || 1; line(x1, yy, x2, yy, cls); line(x2, yy, x2 - sg * a, yy - a * 0.6, cls); line(x2, yy, x2 - sg * a, yy + a * 0.6, cls); };
+      const hingeL = o.hinge !== 'R';
+      if (o.type === 'opening') {
+        if (st === 'arch') { const r = Math.min(ww / 2, hh * 0.6); g.raw(`<path d="M${n(x)} ${n(yt + r)}A${n(ww / 2)} ${n(r)} 0 0 1 ${n(x + ww)} ${n(yt + r)}" class="opening" vector-effect="non-scaling-stroke"/>`); line(x, yt + r, x, yb, 'opening'); line(x + ww, yt + r, x + ww, yb, 'opening'); }
+        else { line(x, yt, x + ww, yb, 'opening'); line(x + ww, yt, x, yb, 'opening'); }
+      } else {
+        rect(xl, top, xr - xl, bot - top, cls);
+        if (o.type !== 'door') line(x - f, yb + f * 0.6, x + ww + f, yb + f * 0.6, cls);       // sill
+        const mx = (xl + xr) / 2;
+        if (st === 'single' || st === 'case1') tri(0, hingeL ? xr : xl, hingeL ? xl : xr, cls);
+        else if (st === 'double' || st === 'case2') { line(mx, top, mx, bot, cls); tri(0, mx, xl, cls); tri(0, mx, xr, cls); }
+        else if (st === 'pivot') { const px = hingeL ? xl + (xr - xl) * 0.18 : xr - (xr - xl) * 0.18; tri(0, hingeL ? xr : xl, px, cls); g.raw(`<circle cx="${n(px)}" cy="${n(top)}" r="${n(ts * 0.15)}" class="${cls}" vector-effect="non-scaling-stroke"/><circle cx="${n(px)}" cy="${n(bot)}" r="${n(ts * 0.15)}" class="${cls}" vector-effect="non-scaling-stroke"/>`); }
+        else if (st === 'slide' || st === 'slide2') { const ov = Math.min(ts * 0.3, ww * 0.04); rect(xl, top, mx + ov - xl, bot - top, cls); rect(mx - ov, top + f * 0.4, xr - mx + ov, bot - top - f * 0.8, cls); arrow(mx - (mx - xl) * 0.25, xl + (mx - xl) * 0.25, my); arrow(mx + (xr - mx) * 0.25, xr - (xr - mx) * 0.25, my); }
+        else if (st === 'slide3') { const w3 = (xr - xl) / 3; for (let i = 1; i < 3; i++) line(xl + w3 * i, top, xl + w3 * i, bot, cls); arrow(xl + w3 * 0.75, xl + w3 * 0.25, my); arrow(xl + w3 * 2.25, xl + w3 * 2.75, my); arrow(xl + w3 * 1.3, xl + w3 * 1.7, my); }
+        else if (st === 'fold') { const q = (xr - xl) / 4; for (let i = 1; i < 4; i++) line(xl + q * i, top, xl + q * i, bot, cls); for (let i = 0; i < 4; i += 2) { line(xl + q * i, top, xl + q * (i + 1), my, cls + ' dash'); line(xl + q * (i + 1), my, xl + q * (i + 2), top, cls + ' dash'); } }
+        else if (st === 'top') { line(xl, bot, mx, top, cls + ' dash'); line(xr, bot, mx, top, cls + ' dash'); }
+        else if (st === 'louvre') { const k = Math.max(2, Math.round(hh / 110)); for (let i = 1; i < k; i++) line(xl, top + (bot - top) * i / k, xr, top + (bot - top) * i / k, cls); }
+        // 'fixed': frame only
+      }
     }
     const cx = x + ww / 2, cy = (yt + yb) / 2;
     const sz = fmt(o.w) + '×' + fmt(o.h);
@@ -1728,17 +1748,46 @@ function buildPlan(opt) {
     if (s1 <= s0) continue;
     g.raw(`<path d="${path([at(gw, s0, gw.f0), at(gw, s1, gw.f0), at(gw, s1, gw.f1), at(gw, s0, gw.f1)])}" class="pgap" vector-effect="non-scaling-stroke"/>`);
     ln(at(gw, s0, gw.f0), at(gw, s0, gw.f1), 'pout'); ln(at(gw, s1, gw.f0), at(gw, s1, gw.f1), 'pout');
-    if (o.type === 'door') {
+    {
+      const st = styleOf(o), cls = o.type === 'opening' ? 'opening' : o.type, t = gw.f1 - gw.f0, mid = (s0 + s1) / 2;
       const hs = o.hinge === 'R' ? gw.sOf(o.x + o.w) : gw.sOf(o.x), ls = o.hinge === 'R' ? gw.sOf(o.x) : gw.sOf(o.x + o.w);
       const inn = o.swing !== 'out', off = inn ? gw.f0 : gw.f1, dir = inn ? -1 : 1;
-      const H = at(gw, hs, off), Lp = at(gw, ls, off), E = { x: H.x + gw.n.x * dir * o.w, y: H.y + gw.n.y * dir * o.w };
-      ln(H, E, 'door');
-      const cr = (E.x - H.x) * (Lp.y - H.y) - (E.y - H.y) * (Lp.x - H.x);
-      g.grow(E.x, E.y);
-      g.raw(`<path d="M${P2(E)}A${n(o.w)} ${n(o.w)} 0 0 ${cr > 0 ? 1 : 0} ${P2(Lp)}" class="door dash" vector-effect="non-scaling-stroke"/>`);
-    } else if (o.type === 'window' || o.type === 'vent') {
-      for (const off of [gw.f0, (gw.f0 + gw.f1) / 2, gw.f1]) ln(at(gw, s0, off), at(gw, s1, off), o.type);
-    } else ln(at(gw, s0, gw.f0), at(gw, s1, gw.f1), 'opening');
+      const leaf = (h, l, sgn, from, cl) => {          // a hinged leaf with its swing arc
+        const H = at(gw, h, from), Lp = at(gw, l, from), r = Math.abs(l - h), E = { x: H.x + gw.n.x * sgn * r, y: H.y + gw.n.y * sgn * r };
+        ln(H, E, cl); g.grow(E.x, E.y);
+        const cr = (E.x - H.x) * (Lp.y - H.y) - (E.y - H.y) * (Lp.x - H.x);
+        g.raw(`<path d="M${P2(E)}A${n(r)} ${n(r)} 0 0 ${cr > 0 ? 1 : 0} ${P2(Lp)}" class="${cl} dash" vector-effect="non-scaling-stroke"/>`);
+      };
+      const panel = (a, b, o1, o2) => { ln(at(gw, a, o1), at(gw, b, o1), cls); ln(at(gw, a, o2), at(gw, b, o2), cls); ln(at(gw, a, o1), at(gw, a, o2), cls); ln(at(gw, b, o1), at(gw, b, o2), cls); };
+      const faces = () => { ln(at(gw, s0, gw.f0), at(gw, s1, gw.f0), cls); ln(at(gw, s0, gw.f1), at(gw, s1, gw.f1), cls); };
+      const pt = Math.max(t * 0.14, 12), ov = Math.min(50, (s1 - s0) * 0.05);
+      if (o.type === 'door') {
+        if (st === 'double') { leaf(s0, mid, dir, off, 'door'); leaf(s1, mid, dir, off, 'door'); }
+        else if (st === 'slide') { panel(s0, mid + ov, gw.f0 + t * 0.3, gw.f0 + t * 0.3 + pt); panel(mid - ov, s1, gw.f0 + t * 0.55, gw.f0 + t * 0.55 + pt); }
+        else if (st === 'pivot') {
+          const ps = hs + (ls - hs) * 0.18, P = at(gw, ps, (gw.f0 + gw.f1) / 2), big = Math.abs(ls - ps), small = Math.abs(ps - hs);
+          const E1 = { x: P.x + gw.n.x * dir * big, y: P.y + gw.n.y * dir * big }, E2 = { x: P.x - gw.n.x * dir * small, y: P.y - gw.n.y * dir * small };
+          ln(E2, E1, 'door'); g.grow(E1.x, E1.y);
+          const L1 = at(gw, ls, (gw.f0 + gw.f1) / 2), L2 = at(gw, hs, (gw.f0 + gw.f1) / 2);
+          const c1 = (E1.x - P.x) * (L1.y - P.y) - (E1.y - P.y) * (L1.x - P.x), c2 = (E2.x - P.x) * (L2.y - P.y) - (E2.y - P.y) * (L2.x - P.x);
+          g.raw(`<path d="M${P2(E1)}A${n(big)} ${n(big)} 0 0 ${c1 > 0 ? 1 : 0} ${P2(L1)}M${P2(E2)}A${n(small)} ${n(small)} 0 0 ${c2 > 0 ? 1 : 0} ${P2(L2)}" class="door dash" vector-effect="non-scaling-stroke"/>`);
+        } else if (st === 'fold') {
+          const w4 = (ls - hs) / 4, depth = Math.abs(ls - hs) * 0.22, pts = [];
+          for (let i = 0; i <= 4; i++) { const b = at(gw, hs + w4 * i, off); pts.push(i % 2 ? { x: b.x + gw.n.x * dir * depth, y: b.y + gw.n.y * dir * depth } : b); }
+          for (let i = 0; i < 4; i++) ln(pts[i], pts[i + 1], 'door');
+        } else leaf(hs, ls, dir, off, 'door');
+      } else if (o.type === 'opening') ln(at(gw, s0, gw.f0), at(gw, s1, gw.f1), 'opening');
+      else {
+        faces();
+        const c = (gw.f0 + gw.f1) / 2;
+        if (st === 'slide2') { panel(s0, mid + ov, c - pt * 1.1, c - pt * 0.1); panel(mid - ov, s1, c + pt * 0.1, c + pt * 1.1); }
+        else if (st === 'slide3') { const w3 = (s1 - s0) / 3; panel(s0, s0 + w3 + ov, c - pt * 1.1, c - pt * 0.1); panel(s0 + w3 - ov, s0 + 2 * w3 + ov, c + pt * 0.1, c + pt * 1.1); panel(s0 + 2 * w3 - ov, s1, c - pt * 1.1, c - pt * 0.1); }
+        else if (st === 'case1') { ln(at(gw, s0, c), at(gw, s1, c), cls); leaf(hs, ls, 1, gw.f1, cls); }
+        else if (st === 'case2') { ln(at(gw, s0, c), at(gw, s1, c), cls); leaf(s0, mid, 1, gw.f1, cls); leaf(s1, mid, 1, gw.f1, cls); }
+        else if (st === 'louvre') { const k = Math.max(3, Math.round((s1 - s0) / 120)); for (let i = 0; i < k; i++) { const a = s0 + (s1 - s0) * (i + 0.2) / k, b = s0 + (s1 - s0) * (i + 0.8) / k; ln(at(gw, a, gw.f0 + t * 0.2), at(gw, b, gw.f1 - t * 0.2), cls); } }
+        else { ln(at(gw, s0, c), at(gw, s1, c), cls); if (st === 'top') g.raw(`<line x1="${n(at(gw, s0, c + t * 0.25).x)}" y1="${n(at(gw, s0, c + t * 0.25).y)}" x2="${n(at(gw, s1, c + t * 0.25).x)}" y2="${n(at(gw, s1, c + t * 0.25).y)}" class="${cls} dash" vector-effect="non-scaling-stroke"/>`); }
+      }
+    }
     if (!state.show.popen) {
       const lp = at(gw, (s0 + s1) / 2, gw.f1 + ts * 0.85), lq = at(gw, (s0 + s1) / 2, gw.f0 - ts * 0.85);
       g.label(lp.x, lp.y + fs * 0.35, o.label || TYPES[o.type].prefix, 'lb', fs * 0.85, { prio: 1.5, alts: [{ x: lq.x, y: lq.y + fs * 0.35 }] });
@@ -2778,11 +2827,13 @@ const syncers = [
 $('#p-unit').addEventListener('change', e => commit('Change units', () => state.unit = e.target.value));
 $('#tb-unit').addEventListener('change', e => { commit('Change units', () => state.unit = e.target.value); toast('Units: ' + e.target.options[e.target.selectedIndex].text); });
 $('#e-type').addEventListener('change', e => commit('Change type of ' + opName(selOp()), () => {
-  const o = selOp(); const t = e.target.value; o.type = t;
+  const o = selOp(); const t = e.target.value; o.type = t; o.style = (state.defs[t] && state.defs[t].style) || STYLES[t][0][0];
   o.label = nextLabel(t, o.id);
   if (t === 'door' || t === 'opening') o.sill = 0;
   if (t === 'door') { o.hinge = o.hinge || 'L'; o.swing = o.swing || 'in'; }
 }));
+for (const tp of ['door', 'window']) $('#df-' + tp + '-st').addEventListener('change', e => { state.defs[tp].style = e.target.value; save(); toast('New ' + tp + 's: ' + e.target.options[e.target.selectedIndex].text); });
+$('#e-style').addEventListener('change', e => { const o = selOp(); if (o) commit(opName(o) + ': ' + e.target.options[e.target.selectedIndex].text, () => { o.style = e.target.value; }); });
 $('#e-hinge').addEventListener('change', e => commit('Hinge side of ' + opName(selOp()), () => selOp().hinge = e.target.value));
 $('#e-swing').addEventListener('change', e => commit('Door swing of ' + opName(selOp()), () => selOp().swing = e.target.value));
 
@@ -2803,7 +2854,7 @@ function freeX(w, width) {
   for (const o of [...ops, { x: w.length, w: 0 }]) { const gp = o.x - cur; if (!best || gp > best.g) best = { g: gp, at: cur }; cur = Math.max(cur, o.x + o.w); }
   return Math.max(0, Math.min(best.at + (best.g - width) / 2, w.length - width));
 }
-function addOpening(type) {
+function addOpening(type, style) {
   const ps = state.planSel;
   if (!wall() || (state.view === 'plan' && !(ps && (ps.t === 'wall' || ps.t === 'open')))) { toast('Tap a wall on the plan first, then add the ' + TYPES[type].name.toLowerCase()); return; }
   setTool(null);
@@ -2813,6 +2864,9 @@ function addOpening(type) {
     const o = { id: uid(), type, label, w: Math.min(t.w, w.length), h: Math.min(t.h, w.height), sill: t.sill, x: 0 };
     if (o.sill + o.h > w.height) o.sill = Math.max(0, w.height - o.h);
     if (type === 'door') { o.hinge = 'L'; o.swing = 'in'; }
+    o.style = style || t.style || STYLES[type][0][0];
+    if (style === 'double' && !(state.defs.door && state.defs.door.style === 'double')) o.w = Math.max(o.w, 1500);
+    if (style === 'slide' && !(state.defs.door && state.defs.door.style === 'slide')) o.w = Math.max(o.w, 1800);
     o.x = Math.round(freeX(w, o.w));
     w.openings.push(o); state.sel = o.id; state.selDim = null;
     if (state.view === 'plan') state.planSel = { t: 'open', id: w.id };
@@ -3001,6 +3055,7 @@ function render(drawOnly) {
   const tOpts = [...new Set([...(IMP() ? [3, 4, 4.5, 6, 9, 12, 14].map(v => r2(v * 25.4)) : [75, 100, 115, 150, 200, 230, 300, 350]), r2(state.draw.t)])].sort((a, b) => a - b);
   $('#st-t').innerHTML = tOpts.map(v => `<option value="${v}"${Math.abs(v - state.draw.t) < 0.5 ? ' selected' : ''}>Wall ${esc(fmt(v))}</option>`).join('');
   $('#d-just').value = state.draw.just || 'in';
+  for (const tp of ['door', 'window']) { const cur = (state.defs[tp] && state.defs[tp].style) || STYLES[tp][0][0]; $('#df-' + tp + '-st').innerHTML = STYLES[tp].map(([k, l]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${esc(l)}</option>`).join(''); }
   if (!drawOnly) { $('#d-cs').innerHTML = sizeOpts('col'); $('#d-bs').innerHTML = sizeOpts('beam'); if (isStruct()) $('#st-s').innerHTML = sizeOpts(tool.kind); }
   $$('[data-v]').forEach(el => { el.hidden = el.dataset.v !== state.view; });
   $('#undo').disabled = !hist.length; $('#redo').disabled = !fut.length;
@@ -3104,7 +3159,10 @@ function render(drawOnly) {
   if (o) {
     $('#e-type').value = o.type; $('#e-hinge').value = o.hinge || 'L'; $('#e-swing').value = o.swing || 'in';
     const tag = $('#e-tag'); tag.className = 'tag ' + o.type; tag.textContent = o.label || TYPES[o.type].prefix;
-    $$('.door-only').forEach(el => el.hidden = o.type !== 'door');
+    const est = styleOf(o);
+    $('#e-style').innerHTML = STYLES[o.type].map(([k, l]) => `<option value="${k}"${k === est ? ' selected' : ''}>${esc(l)}</option>`).join('');
+    $('#e-hinge-l').hidden = !((o.type === 'door' && ['single', 'pivot', 'fold'].includes(est)) || est === 'case1');
+    $('#e-swing-l').hidden = !(o.type === 'door' && ['single', 'double', 'pivot', 'fold'].includes(est));
     $('#e-issues').innerHTML = issuesFor(w, o).map(s => `<li>⚠ ${esc(s)}</li>`).join('');
   }
 
@@ -3142,7 +3200,7 @@ function render(drawOnly) {
 
   const sched = {};
   for (const q of state.walls) for (const p of q.openings) {
-    const k = [p.type, Math.round(p.w), Math.round(p.h), Math.round(p.sill)].join('|');
+    const k = [p.type, styleOf(p), Math.round(p.w), Math.round(p.h), Math.round(p.sill)].join('|');
     (sched[k] = sched[k] || { p, marks: [], n: 0 }).n++;
     sched[k].marks.push(p.label || TYPES[p.type].prefix);
   }
@@ -3152,7 +3210,7 @@ function render(drawOnly) {
   for (const b of state.beams) { const k = 'B|' + b.w + '|' + b.d; (sg[k] = sg[k] || { t: 'Beam', size: fmt(b.w) + ' × ' + fmt(b.d), marks: [] }).marks.push(b.label); }
   const sr = Object.values(sg).map(g => `<tr><td>${esc(g.marks.join(', '))}</td><td>${g.t}</td><td>${esc(g.size)}</td><td>–</td><td>${g.marks.length}</td></tr>`).join('');
   $('#q-sched').innerHTML = (sl.length || sr) ? `<tr><th>Marks</th><th>Type</th><th>Size</th><th>Sill</th><th>Nos</th></tr>` +
-    sl.map(s => `<tr><td>${esc(s.marks.join(', '))}</td><td>${TYPES[s.p.type].name}</td><td>${fmt(s.p.w)} × ${fmt(s.p.h)}</td><td>${fmt(s.p.sill)}</td><td>${s.n}</td></tr>`).join('') + sr
+    sl.map(s => `<tr><td>${esc(s.marks.join(', '))}</td><td>${esc(styleName(s.p))}</td><td>${fmt(s.p.w)} × ${fmt(s.p.h)}</td><td>${fmt(s.p.sill)}</td><td>${s.n}</td></tr>`).join('') + sr
     : '<tr><td class="note">Openings you add appear here with their sizes and counts.</td></tr>';
   updateStatus();
   updateSheet();
@@ -3161,7 +3219,8 @@ function render(drawOnly) {
 /* ---------- all tools panel ---------- */
 const FEATURES = [
   ['Draw walls & rooms', [['tool:hand', '✎', 'Hand'], ['tool:line', '╱', 'Line wall'], ['tool:box', '▭', 'Box'], ['room', '⊞', 'Room by size']]],
-  ['Doors & windows', [['add:door', 'sw door', 'Door'], ['add:window', 'sw window', 'Window'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening', 'sw opening', 'Opening']]],
+  ['Doors', [['add:door:single', 'sw door', 'Single door'], ['add:door:double', 'sw door', 'Double door'], ['add:door:slide', 'sw door', 'Sliding door'], ['add:door:pivot', 'sw door', 'Pivot door'], ['add:door:fold', 'sw door', 'Folding door']]],
+  ['Windows & openings', [['add:window:slide2', 'sw window', 'Sliding window'], ['add:window:slide3', 'sw window', '3-track sliding'], ['add:window:case1', 'sw window', 'Casement'], ['add:window:case2', 'sw window', 'Double casement'], ['add:window:fixed', 'sw window', 'Fixed glass'], ['add:window:top', 'sw window', 'Top-hung'], ['add:window:louvre', 'sw window', 'Louvred'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening:plain', 'sw opening', 'Opening'], ['add:opening:arch', 'sw opening', 'Arched opening']]],
   ['Structure', [['tool:col', '▣', 'Column'], ['tool:beam', '┅', 'Beam']]],
   ['Measure on plan', [['tool:pdim', '↔', 'Measure']]],
   ['Measure on wall', [['dim:h', '↔', 'Horizontal'], ['dim:v', '↕', 'Vertical'], ['dim:a', '⤡', 'Aligned'], ['dim:lvl', '▽', 'Level'], ['dim:ang', '∠', 'Angle']]],
@@ -3184,7 +3243,7 @@ function runFeature(k) {
   if (a === 'tool') { toPlan(); setTool(v || null); }
   else if (a === 'dim') { if (!wall()) { toast('Draw a wall first'); return; } if (state.view !== 'wall') switchView('wall'); setTool(v); }
   else if (a === 'room') { toPlan(); roomModal(); }
-  else if (a === 'add') addOpening(v);
+  else if (a === 'add') addOpening(v, k.split(':')[2]);
   else if (a === 'view') switchView(v);
   else if (a === 'units') { const order = ['mm', 'cm', 'm', 'ft', 'ftin', 'in'], u = order[(order.indexOf(state.unit) + 1) % order.length]; commit('Change units', () => state.unit = u); toast('Units: ' + UNIT_NAME[u]); featurePanel(); }
   else if (a === 'snap') { toggleSnap(); featurePanel(); }
@@ -3319,7 +3378,7 @@ function summaryText() {
     const g = w.length * w.height, op = w.openings.reduce((s, p) => s + p.w * p.h, 0);
     out.push(`${wname(w)}: L ${fmt(w.length)} × H ${fmt(w.height)}, thk ${fmt(w.thickness)}`);
     for (const o of [...w.openings].sort((a, b) => a.x - b.x)) {
-      out.push(`  ${o.label} ${TYPES[o.type].name}: ${fmt(o.w)} × ${fmt(o.h)}, ${fmt(o.x)} from left, ${fmt(w.length - o.x - o.w)} from right, sill ${fmt(o.sill)}, head ${fmt(o.sill + o.h)}${o.type === 'door' ? `, hinge ${o.hinge === 'R' ? 'right' : 'left'}` : ''}`);
+      out.push(`  ${o.label} ${styleName(o)}: ${fmt(o.w)} × ${fmt(o.h)}, ${fmt(o.x)} from left, ${fmt(w.length - o.x - o.w)} from right, sill ${fmt(o.sill)}, head ${fmt(o.sill + o.h)}${o.type === 'door' ? `, hinge ${o.hinge === 'R' ? 'right' : 'left'}` : ''}`);
     }
     if (w.dims.length) out.push('  Extra dimensions: ' + w.dims.map(d => DIMK[d.kind].short + ' ' + dimLabel(w, d) + (d.text ? ` ("${d.text}")` : '')).join(', '));
     out.push(`  Area gross ${area(g).m2.toFixed(2)} m², openings ${area(op).m2.toFixed(2)} m², net ${area(g - op).m2.toFixed(2)} m² (${area(g - op).ft2.toFixed(1)} ft²)`, '');
