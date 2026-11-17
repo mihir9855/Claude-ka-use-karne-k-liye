@@ -33,7 +33,7 @@ A small CAD-style app for measuring flats, bungalows and offices on site: draw t
 
 ## Wall elevation (Wall view)
 
-Open `index.html` in any browser (phone or computer). No install, no build, works offline. Work is saved on the device automatically.
+Open `WallDraft.html` (same as `index.html`) in any browser (phone or computer). No install, no build, works offline. Work is saved on the device automatically.
 
 ## What it does
 - Several walls per project (length, height, thickness).
