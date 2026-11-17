@@ -3,6 +3,8 @@
 A small CAD-style app for measuring flats, bungalows and offices on site: draw the floor plan by hand, then open any wall to draft its elevation with doors, windows, ventilators and openings.
 
 ## Made for phones
+- ▦ All tools (first button in the bottom bar) shows every feature as big buttons: walls, rooms, doors and windows, columns and beams, plan and wall measuring, view and units, undo/redo, and shortcuts to rooms, history and sharing.
+- ⊞ Room in the bottom bar adds a room by typing its inside size.
 - Full-screen drawing, tools in a bottom bar (thumb reach), details in a pull-up sheet that opens to whatever you tap.
 - Units picker on the top bar: mm, cm, m, feet, feet-inch, inch. You can type any unit in any field (4.2m, 10.5ft, 10'6").
 

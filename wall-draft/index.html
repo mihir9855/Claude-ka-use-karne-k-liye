@@ -65,6 +65,14 @@ svg#draw.tooling { cursor: crosshair; }
 .tbar .tl { white-space: nowrap; }
 .tgroup select.unit { border: 0; background: transparent; padding: 0 8px; min-height: 36px; font: 600 13px var(--f-mono); color: var(--ink); cursor: pointer; }
 .grab { display: none; }
+.fsec + .fsec { margin-top: 14px; }
+.fsec h3 { font: 600 11px var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.fbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 70px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); cursor: pointer; font-size: 12px; text-align: center; }
+.fbtn .ic { font: 500 20px/1 var(--f-mono); }
+.fbtn .sw { width: 16px; height: 16px; }
+.fbtn:hover { background: var(--soft); }
+.fbtn[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--paper)); color: var(--accent); }
 .fi { display: none; gap: 6px; align-items: center; min-width: 0; }
 body.ftin .fi { display: flex; }
 body.ftin input.has-fi { display: none !important; }
@@ -299,11 +307,13 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
       </div>
     </div>
     <div class="tbar">
+      <div class="tgroup"><button id="tb-all" title="All tools and options"><span class="ic">▦</span><span class="tl">All tools</span></button></div>
       <div class="tgroup" role="group" aria-label="Draw" data-v="plan">
         <button data-tool="" title="Select and move (Esc)"><span class="ic">➤</span><span class="tl">Select</span></button>
         <button data-tool="hand" title="Draw walls by hand; they are straightened for you (D)"><span class="ic">✎</span><span class="tl">Hand</span></button>
         <button data-tool="line" title="Line walls: tap each corner, or drag one wall (W)"><span class="ic">╱</span><span class="tl">Line</span></button>
         <button data-tool="box" title="Box: drag corner to corner for four walls (B)"><span class="ic">▭</span><span class="tl">Box</span></button>
+        <button id="tb-room" title="Add a room by typing its size (R)"><span class="ic">⊞</span><span class="tl">Room</span></button>
         <button data-tool="col" title="Column: tap to place, snaps to wall corners (C)"><span class="ic">▣</span><span class="tl">Column</span></button>
         <button data-tool="beam" title="Beam: drag or tap two points (M)"><span class="ic">┅</span><span class="tl">Beam</span></button>
         <button data-tool="pdim" title="Measure: drag or tap between two points (U)"><span class="ic">↔</span><span class="tl">Measure</span></button>
@@ -363,7 +373,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         </div>
       </section>
 
-      <section data-v="plan">
+      <section id="draw-sec" data-v="plan">
         <h2>Drawing walls</h2>
         <div class="grid2">
           <label class="f">New wall thickness<input id="d-t" inputmode="decimal" autocomplete="off"></label>
@@ -384,7 +394,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         </div>
       </section>
 
-      <section data-v="plan">
+      <section id="rooms-sec" data-v="plan">
         <h2>Rooms <span id="r-count" style="letter-spacing:0;text-transform:none;font-family:var(--f-mono)"></span></h2>
         <div class="olist" id="r-list"></div>
         <div id="rsec" hidden>
@@ -545,7 +555,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <p class="note">“Line up openings” makes a dragged window stick to the head, sill or edge of other openings and the wall. Pink guides show what it lined up with.</p>
       </section>
 
-      <section>
+      <section id="hist-sec">
         <h2>History <span style="letter-spacing:0;text-transform:none;font:12px var(--f-ui)">tap a step to go back to it</span></h2>
         <div class="hist" id="hist"></div>
         <p class="note">Undo: ↶ button, Ctrl+Z, or tap the drawing with two fingers. Redo: ↷, Ctrl+Y, or three fingers.</p>
@@ -561,7 +571,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <div class="scroll-x"><table class="q" id="q-sched"></table></div>
       </section>
 
-      <section>
+      <section id="share-sec">
         <h2>Share &amp; backup</h2>
         <div class="row-btns" style="margin-top:0">
           <button class="btn primary" id="x-png">Drawing image</button>
@@ -2971,6 +2981,52 @@ function render(drawOnly) {
   updateStatus();
   updateSheet();
 }
+
+/* ---------- all tools panel ---------- */
+const FEATURES = [
+  ['Draw walls & rooms', [['tool:hand', '✎', 'Hand'], ['tool:line', '╱', 'Line wall'], ['tool:box', '▭', 'Box'], ['room', '⊞', 'Room by size']]],
+  ['Doors & windows', [['add:door', 'sw door', 'Door'], ['add:window', 'sw window', 'Window'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening', 'sw opening', 'Opening']]],
+  ['Structure', [['tool:col', '▣', 'Column'], ['tool:beam', '┅', 'Beam']]],
+  ['Measure on plan', [['tool:pdim', '↔', 'Measure']]],
+  ['Measure on wall', [['dim:h', '↔', 'Horizontal'], ['dim:v', '↕', 'Vertical'], ['dim:a', '⤡', 'Aligned'], ['dim:lvl', '▽', 'Level'], ['dim:ang', '∠', 'Angle']]],
+  ['View & settings', [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Wall elevation'], ['units', 'ft', 'Units'], ['snap', '⌖', 'Snap'], ['ortho', '⟂', 'Angle lock'], ['canvas', '◐', 'Black / white'], ['fit', '⤢', 'Fit to screen'], ['tool:', '➤', 'Select']]],
+  ['Edit', [['undo', '↶', 'Undo'], ['redo', '↷', 'Redo'], ['del', '✕', 'Delete selected']]],
+  ['Lists & files', [['sec:rooms-sec', '▭', 'Rooms & areas'], ['sec:struct-sec', '▣', 'Columns & beams'], ['sec:hist-sec', '☰', 'History'], ['sec:share-sec', '⇪', 'Share & backup'], ['sec:draw-sec', '⚙', 'Wall settings']]],
+];
+function featurePanel() {
+  const on = k => (k.startsWith('tool:') && tool && tool.kind === k.slice(5)) || (k.startsWith('dim:') && tool && tool.kind === k.slice(4)) || (k === 'view:plan' && state.view === 'plan') || (k === 'view:wall' && state.view === 'wall')
+    || (k === 'snap' && state.snap.on) || (k === 'canvas' && state.canvas === 'dark') || (k === 'tool:' && !tool);
+  const label = (k, l) => k === 'units' ? 'Units: ' + UNIT_NAME[state.unit] : k === 'ortho' ? 'Angle ' + (state.draw.ortho === 'free' ? 'free' : state.draw.ortho + '°') : l;
+  const body = FEATURES.map(([h, items]) => `<div class="fsec"><h3>${esc(h)}</h3><div class="fgrid">${items.map(([k, ic, l]) =>
+    `<button class="fbtn" data-act="${k}" aria-pressed="${on(k)}">${ic.startsWith('sw') ? `<span class="${ic}"></span>` : `<span class="ic">${esc(ic)}</span>`}<span>${esc(label(k, l))}</span></button>`).join('')}</div></div>`).join('');
+  openModal('All tools', body, [['Close', closeModal]]);
+}
+function runFeature(k) {
+  closeModal();
+  const [a, v] = k.split(':');
+  const toPlan = () => { if (state.view !== 'plan') switchView('plan'); };
+  if (a === 'tool') { toPlan(); setTool(v || null); }
+  else if (a === 'dim') { if (!wall()) { toast('Draw a wall first'); return; } if (state.view !== 'wall') switchView('wall'); setTool(v); }
+  else if (a === 'room') { toPlan(); roomModal(); }
+  else if (a === 'add') addOpening(v);
+  else if (a === 'view') switchView(v);
+  else if (a === 'units') { const order = ['mm', 'cm', 'm', 'ft', 'ftin', 'in'], u = order[(order.indexOf(state.unit) + 1) % order.length]; commit('Change units', () => state.unit = u); toast('Units: ' + UNIT_NAME[u]); featurePanel(); }
+  else if (a === 'snap') { toggleSnap(); featurePanel(); }
+  else if (a === 'ortho') { cycleOrtho(); featurePanel(); }
+  else if (a === 'canvas') { state.canvas = state.canvas === 'dark' ? 'light' : 'dark'; save(); render(); featurePanel(); }
+  else if (a === 'fit') fit();
+  else if (a === 'undo') undo();
+  else if (a === 'redo') redo();
+  else if (a === 'del') { if (!state.sel && !state.selDim && !state.planSel) toast('Tap something on the drawing first'); else delSelected(); }
+  else if (a === 'sec') {
+    if (['rooms-sec', 'struct-sec', 'draw-sec'].includes(v)) toPlan();
+    if (mobile()) setSheet('full');
+    requestAnimationFrame(() => { const el = document.getElementById(v); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
+  }
+}
+$('#m-body').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) runFeature(b.dataset.act); });
+$('#tb-all').addEventListener('click', featurePanel);
+$('#tb-room').addEventListener('click', () => { setTool(null); roomModal(); });
 
 /* ---------- phone bottom sheet ---------- */
 const mobile = () => window.matchMedia('(max-width: 820px)').matches;
