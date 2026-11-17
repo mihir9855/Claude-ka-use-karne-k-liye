@@ -383,6 +383,9 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
               <option value="in">Inch (in)</option>
             </select>
           </label>
+          <label class="f full">Inch precision (feet-inch and inch)
+            <select id="p-prec"><option value="1">Whole inches (13'-10")</option><option value="2">Nearest 1/2"</option><option value="4">Nearest 1/4"</option><option value="8">Nearest 1/8"</option></select>
+          </label>
         </div>
       </section>
 
@@ -708,7 +711,7 @@ function blankProject(name) {
   const p = blankProject0(name);
   try {                                   // the user's own defaults from earlier projects
     const d = JSON.parse(localStorage.getItem(DKEY) || 'null');
-    if (d) { if (d.unit) p.unit = d.unit; if (d.draw) Object.assign(p.draw, d.draw); if (d.defs) p.defs = { ...p.defs, ...d.defs }; if (d.canvas) p.canvas = d.canvas; }
+    if (d) { if (d.prec) p.prec = d.prec; if (d.unit) p.unit = d.unit; if (d.draw) Object.assign(p.draw, d.draw); if (d.defs) p.defs = { ...p.defs, ...d.defs }; if (d.canvas) p.canvas = d.canvas; }
   } catch (e) {}
   return p;
 }
@@ -781,7 +784,7 @@ let hist = [], fut = [];               // entries: { label, s: JSON of the state
 try { const h = JSON.parse(localStorage.getItem(HKEY) || 'null'); if (h && Array.isArray(h.hist)) { hist = h.hist; fut = h.fut || []; } } catch (e) {}
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
-  try { localStorage.setItem(DKEY, JSON.stringify({ unit: state.unit, canvas: state.canvas, defs: state.defs, draw: { t: state.draw.t, h: state.draw.h, just: state.draw.just, step: state.draw.step, ortho: state.draw.ortho, col: state.draw.col, beam: state.draw.beam } })); } catch (e) {}
+  try { localStorage.setItem(DKEY, JSON.stringify({ prec: state.prec, unit: state.unit, canvas: state.canvas, defs: state.defs, draw: { t: state.draw.t, h: state.draw.h, just: state.draw.just, step: state.draw.step, ortho: state.draw.ortho, col: state.draw.col, beam: state.draw.beam } })); } catch (e) {}
   try { localStorage.setItem(HKEY, JSON.stringify({ hist: hist.slice(-40), fut: fut.slice(-40) })); } catch (e) {}
 }
 const wall = () => state.walls.find(w => w.id === state.active) || state.walls[0] || null;
@@ -847,9 +850,10 @@ function parseLen(str, unit = state.unit) {
   try { const v = evalExpr(t); return isFinite(v) ? v * FACT[unit] : NaN; } catch (e) { return NaN; }
 }
 const trimNum = (v, d) => String(+v.toFixed(d));
+const DEN = () => (state && state.prec) || 1;          // inch precision: 1 = whole inches, 2, 4 or 8
 function fracIn(inches) {
-  const neg = inches < 0; const e = Math.round(Math.abs(inches) * 8);
-  const whole = Math.floor(e / 8); let n = e % 8, d = 8;
+  const D = DEN(), neg = inches < 0; const e = Math.round(Math.abs(inches) * D);
+  const whole = Math.floor(e / D); let n = e % D, d = D;
   if (!n) return (neg ? '-' : '') + whole;
   while (n % 2 === 0) { n /= 2; d /= 2; }
   return (neg ? '-' : '') + (whole ? whole + ' ' : '') + n + '/' + d;
@@ -862,8 +866,8 @@ function fmt(mm, unit = state.unit, sfx = false) {
     case 'ft': return trimNum(mm / 304.8, 2) + (sfx ? ' ft' : '′');
     case 'in': return fracIn(mm / 25.4) + '"';
     case 'ftin': {
-      const neg = mm < 0; const e = Math.round(Math.abs(mm) / 25.4 * 8);
-      const ft = Math.floor(e / 96); const inch = (e - ft * 96) / 8;
+      const D = DEN(), neg = mm < 0; const e = Math.round(Math.abs(mm) / 25.4 * D);
+      const ft = Math.floor(e / (12 * D)); const inch = (e - ft * 12 * D) / D;
       return (neg ? '-' : '') + ft + "'-" + fracIn(inch) + '"';
     }
     default: return Math.round(mm) + (sfx ? ' mm' : '');
@@ -3130,7 +3134,7 @@ function enhanceFtIn(el) {
     return isFinite(ft) && isFinite(inch) && !(fv && isNaN(ft)) ? ft * 12 + inch : NaN;
   };
   const push = () => { const t = total(); el.value = t == null ? '' : isNaN(t) ? '?' : t + '"'; wrap.classList.toggle('err', t != null && isNaN(t)); return t; };
-  const normalize = () => { const t = total(); if (t == null || !isFinite(t)) return; const e8 = Math.round(t * 8), ft = Math.floor(e8 / 96); f.value = String(ft); i.value = fracIn((e8 - ft * 96) / 8); };
+  const normalize = () => { const t = total(); if (t == null || !isFinite(t)) return; const D = DEN(), e8 = Math.round(t * D), ft = Math.floor(e8 / (12 * D)); f.value = String(ft); i.value = fracIn((e8 - ft * 12 * D) / D); };
   const done = () => setTimeout(() => {
     if (wrap.contains(document.activeElement)) { push(); return; }      // still typing in the other box
     const t = push(); if (t != null && isNaN(t)) { toast('Type numbers only, e.g. 10 ft and 6 in'); return; }
@@ -3155,8 +3159,8 @@ function syncFtIn() {
     if (w.contains(document.activeElement) && el.value !== '') continue;
     const mm = el.value.trim() ? parseLen(el.value, 'ftin') : NaN;
     if (!isFinite(mm)) { f.value = ''; i.value = ''; w.classList.remove('err'); continue; }
-    const e8 = Math.round(Math.abs(mm) / 25.4 * 8), ft = Math.floor(e8 / 96);
-    f.value = (mm < 0 ? '-' : '') + ft; i.value = fracIn((e8 - ft * 96) / 8); w.classList.remove('err');
+    const D = DEN(), e8 = Math.round(Math.abs(mm) / 25.4 * D), ft = Math.floor(e8 / (12 * D));
+    f.value = (mm < 0 ? '-' : '') + ft; i.value = fracIn((e8 - ft * 12 * D) / D); w.classList.remove('err');
   }
 }
 function focusLen() { const el = $('#len-in'); (state.unit === 'ftin' && el._fi ? el._fi.querySelector('input') : el).focus(); }
@@ -3259,6 +3263,7 @@ const syncers = [
   bindText('d-text', () => 'Change dimension text', () => selDim() ? selDim().text || '' : '', v => { if (selDim()) selDim().text = v.trim(); }),
 ];
 $('#p-unit').addEventListener('change', e => commit('Change units', () => state.unit = e.target.value));
+$('#p-prec').addEventListener('change', e => { commit('Inch precision', () => state.prec = +e.target.value); toast(+e.target.value === 1 ? 'Showing whole inches' : 'Showing nearest 1/' + e.target.value + '"'); });
 $('#tb-unit').addEventListener('change', e => { commit('Change units', () => state.unit = e.target.value); toast('Units: ' + e.target.options[e.target.selectedIndex].text); });
 $('#e-type').addEventListener('change', e => commit('Change type of ' + opName(selOp()), () => {
   const o = selOp(); const t = e.target.value; o.type = t; o.style = (state.defs[t] && state.defs[t].style) || STYLES[t][0][0];
@@ -3520,7 +3525,7 @@ function render(drawOnly) {
   syncFtIn();
   if (drawOnly) return;
   syncers.forEach(f => f());
-  $('#p-unit').value = state.unit; $('#tb-unit').value = state.unit;
+  $('#p-unit').value = state.unit; $('#tb-unit').value = state.unit; $('#p-prec').value = String(state.prec || 1);
   const showWall = !!w && (!isPlan || !!(ps && (ps.t === 'wall' || ps.t === 'open')));
   $('#wall-sec').hidden = !showWall; $('#o-sec').hidden = !showWall;
   $('#wall-h').textContent = isPlan ? 'Selected wall' : 'Walls';
