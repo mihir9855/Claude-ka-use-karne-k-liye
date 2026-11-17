@@ -886,6 +886,33 @@ function makePen(ts) {
     },
     tw: (s, size) => String(s).length * size * 0.6,
   };
+  // Labels are placed last, most important first. Each tries its own spot, then its alternatives;
+  // minor labels (prio < 2) are dropped if nothing is free, the rest are drawn anyway.
+  const L = [];
+  g.label = (x, y, s, c, size, o = {}) => L.push({ x, y, s, c, size, anchor: o.anchor || 'middle', rot: o.rot || 0, prio: o.prio ?? 2, alts: o.alts || [] });
+  g.flush = () => {
+    const placed = [];
+    const box = (x, y, s, size, anchor, rot) => {
+      const w = String(s).length * size * 0.6, x0 = anchor === 'middle' ? -w / 2 : anchor === 'end' ? -w : 0, pad = size * 0.08;
+      const r = rot * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r), xs = [], ys = [];
+      for (const [px, py] of [[x0 - pad, -size * 0.8], [x0 + w + pad, -size * 0.8], [x0 + w + pad, size * 0.22], [x0 - pad, size * 0.22]]) { xs.push(x + px * c - py * sn); ys.push(y + px * sn + py * c); }
+      return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+    };
+    const free = b => !placed.some(q => b.x0 < q.x1 && q.x0 < b.x1 && b.y0 < q.y1 && q.y0 < b.y1);
+    const order = L.map((l, i) => [l, i]).sort((a, b) => b[0].prio - a[0].prio || a[1] - b[1]);
+    for (const [l] of order) {
+      let pick = null;
+      for (const a of [{}, ...l.alts]) {
+        const cd = { x: a.x ?? l.x, y: a.y ?? l.y, size: a.size ?? l.size, anchor: a.anchor ?? l.anchor, rot: a.rot ?? l.rot };
+        cd.b = box(cd.x, cd.y, l.s, cd.size, cd.anchor, cd.rot);
+        if (free(cd.b)) { pick = cd; break; }
+      }
+      if (!pick) { if (l.prio < 2) continue; pick = { x: l.x, y: l.y, size: l.size, anchor: l.anchor, rot: l.rot }; pick.b = box(pick.x, pick.y, l.s, pick.size, pick.anchor, pick.rot); }
+      placed.push(pick.b); grow(pick.b.x0, pick.b.y0); grow(pick.b.x1, pick.b.y1);
+      P.push(`<text x="${n(pick.x)}" y="${n(pick.y)}" class="${l.c}" font-size="${n(pick.size)}"${pick.anchor !== 'start' ? ` text-anchor="${pick.anchor}"` : ''}${Math.abs(pick.rot) > 0.01 ? ` transform="rotate(${n(pick.rot)} ${n(pick.x)} ${n(pick.y)})"` : ''}>${esc(l.s)}</text>`);
+    }
+    L.length = 0;
+  };
   return g;
 }
 
@@ -963,9 +990,8 @@ function buildDrawing(w, opt) {
     line(xa, yFrom + dir * ts * 0.25, xa, yl + dir * ts * 0.35, 'ext');
     line(xb, yFrom + dir * ts * 0.25, xb, yl + dir * ts * 0.35, 'ext');
     line(xa - ts * 0.3, yl, xb + ts * 0.3, yl, 'dim'); tick(xa, yl); tick(xb, yl);
-    const fits = tw(label, fs) + ts * 0.5 < xb - xa;
-    const ty = fits || level === 0 ? yl - ts * 0.3 : yl + fs + ts * 0.2;
-    text((xa + xb) / 2, ty, label, 'dt', fs, 'middle');
+    const half = tw(label, fs) / 2 + ts * 0.4, mx = (xa + xb) / 2, ty = yl - ts * 0.3;
+    g.label(mx, ty, label, 'dt', fs, { prio: xb - xa < ts * 1.6 ? 1.5 : 2, alts: [{ y: yl + fs + ts * 0.2 }, { x: xb + half }, { x: xa - half }, { y: ty - fs * 1.1 }, { size: fs * 0.75 }] });
   }
   function vdim(za, zb, xl, xFrom, label, side = -1) {
     if (zb - za < 0.5) return;
@@ -975,10 +1001,8 @@ function buildDrawing(w, opt) {
     line(xFrom + dir * ts * 0.25, yb, xl + dir * ts * 0.35, yb, 'ext');
     line(xl, ya + ts * 0.3, xl, yb - ts * 0.3, 'dim'); tick(xl, ya); tick(xl, yb);
     const my = (ya + yb) / 2;
-    const fits = tw(label, fs * 0.9) + ts * 0.4 < Math.abs(ya - yb);
-    const tx = side < 0 ? xl - ts * 0.3 : xl + ts * 0.3 + fs * 0.8;
-    if (fits) { text(tx, my, label, 'dt', fs * 0.9, 'middle', ` transform="rotate(-90 ${n(tx)} ${n(my)})"`); g.bb.x0 = Math.min(g.bb.x0, tx - fs); g.bb.x1 = Math.max(g.bb.x1, tx + fs); }
-    else text(xl + ts * 0.35, my + fs * 0.3, label, 'dt', fs * 0.8);
+    const tx = side < 0 ? xl - ts * 0.3 : xl + ts * 0.3 + fs * 0.8, tx2 = side < 0 ? xl + ts * 0.3 + fs * 0.8 : xl - ts * 0.3;
+    g.label(tx, my, label, 'dt', fs * 0.9, { rot: -90, prio: Math.abs(ya - yb) < ts * 1.6 ? 1.5 : 2, alts: [{ x: tx2 }, { rot: 0, x: xl + ts * 0.35, y: my + fs * 0.3, anchor: 'start', size: fs * 0.8 }, { rot: 0, x: xl - ts * 0.35, y: my + fs * 0.3, anchor: 'end', size: fs * 0.8 }, { size: fs * 0.7 }] });
   }
 
   g.raw(`<defs><pattern id="hatch" patternUnits="userSpaceOnUse" width="${n(ts * 1.4)}" height="${n(ts * 1.4)}" patternTransform="rotate(45)"><rect width="${n(ts * 1.4)}" height="${n(ts * 1.4)}" class="wallbg"/><line x1="0" y1="0" x2="0" y2="${n(ts * 1.4)}" class="hl" vector-effect="non-scaling-stroke"/></pattern></defs>`);
@@ -1015,18 +1039,18 @@ function buildDrawing(w, opt) {
     const cx = x + ww / 2, cy = (yt + yb) / 2;
     const sz = fmt(o.w) + '×' + fmt(o.h);
     const lsz = Math.min(fs, ww / Math.max(3, sz.length * 0.62));
-    text(cx, cy - lsz * 0.2, o.label || TYPES[o.type].prefix, 'lb', Math.min(fs * 1.05, ww / 2.2), 'middle');
-    text(cx, cy + lsz * 1.15, sz, 'lbs', lsz, 'middle');
+    g.label(cx, cy - lsz * 0.2, o.label || TYPES[o.type].prefix, 'lb', Math.min(fs * 1.05, ww / 2.2), { prio: 3, alts: [{ y: cy - lsz * 1.4 }] });
+    g.label(cx, cy + lsz * 1.15, sz, 'lbs', lsz, { prio: 1.5, alts: [{ y: cy + lsz * 2.3 }, { size: lsz * 0.75 }] });
   }
 
   const se = structOnWall(w);
   for (const c of se.cols) {
     rect(c.x0, 0, c.x1 - c.x0, H, 'colel'); line(c.x0, 0, c.x1, H, 'colx'); line(c.x1, 0, c.x0, H, 'colx');
-    text((c.x0 + c.x1) / 2, H * 0.5, c.label, 'lb', Math.min(fs, (c.x1 - c.x0) / 1.6), 'middle');
+    g.label((c.x0 + c.x1) / 2, H * 0.5, c.label, 'lb', Math.min(fs, (c.x1 - c.x0) / 1.6), { prio: 2, alts: [{ y: H * 0.35 }, { y: H * 0.65 }] });
   }
   for (const b of se.beams) {
     rect(b.x0, 0, b.x1 - b.x0, b.depth, 'beamel');
-    text((b.x0 + b.x1) / 2, b.depth / 2 + fs * 0.3, b.label, 'blb', Math.min(fs * 0.8, (b.x1 - b.x0) / (b.label.length * 0.62 + 0.5), b.depth * 0.6), 'middle');
+    g.label((b.x0 + b.x1) / 2, b.depth / 2 + fs * 0.3, b.label, 'blb', Math.min(fs * 0.8, (b.x1 - b.x0) / (b.label.length * 0.62 + 0.5), b.depth * 0.6), { prio: 2, alts: [{ x: b.x0 + (b.x1 - b.x0) * 0.25 }, { x: b.x0 + (b.x1 - b.x0) * 0.75 }] });
     if (b.along && sh.hts) vdim(H - b.depth, H, b.x1 + ts * 0.8, b.x1, fmt(b.depth), 1);
   }
   if (sh.hts) {
@@ -1084,6 +1108,7 @@ function buildDrawing(w, opt) {
     if (opt.interactive) g.raw(`<rect x="${n(o.x)}" y="${n(Y(o.sill + o.h))}" width="${n(o.w)}" height="${n(o.h)}" class="hit" data-oid="${o.id}"/>`);
   }
 
+  g.flush();
   if (sh.user) for (const dm of w.dims) drawUserDim(w, dm, g, opt.interactive && dm.id === state.selDim ? 'hi' : '', opt.interactive);
   bottom = Math.max(bottom, g.bb.y1 + ts * 0.5);
 
@@ -1534,7 +1559,10 @@ function drawPlanDim(g, d, cls = '', ia = false) {
   const label = d.text || fmt(L), fz = Math.max(fs * 0.5, Math.min(fs, L / (label.length * 0.6 + 0.4)));
   let th = Math.atan2(u.y, u.x) * 180 / Math.PI; if (th > 89.9 || th <= -90.1) th -= 180; if (th < -180) th += 360;
   const rad = th * Math.PI / 180, up = { x: Math.sin(rad), y: -Math.cos(rad) }, pos = { x: (A.x + B.x) / 2 + up.x * ts * 0.3, y: (A.y + B.y) / 2 + up.y * ts * 0.3 };
-  g.text(pos.x, pos.y, label, C('dt'), fz, 'middle', Math.abs(th) > 0.01 ? ` transform="rotate(${n(th)} ${n(pos.x)} ${n(pos.y)})"` : '');
+  const lab2 = { x: (A.x + B.x) / 2 - up.x * (ts * 0.3 + fz * 0.8), y: (A.y + B.y) / 2 - up.y * (ts * 0.3 + fz * 0.8) };
+  const along = [0.25, 0.75, 0.15, 0.85].flatMap(f => { const m = { x: A.x + (B.x - A.x) * f, y: A.y + (B.y - A.y) * f }; return [{ x: m.x + up.x * ts * 0.3, y: m.y + up.y * ts * 0.3 }, { x: m.x - up.x * (ts * 0.3 + fz * 0.8), y: m.y - up.y * (ts * 0.3 + fz * 0.8) }]; });
+  if (g.label && !cls.includes('pv')) g.label(pos.x, pos.y, label, C('dt'), fz, { rot: th, prio: 3, alts: [lab2, ...along, { size: fz * 0.75 }] });
+  else g.text(pos.x, pos.y, label, C('dt'), fz, 'middle', Math.abs(th) > 0.01 ? ` transform="rotate(${n(th)} ${n(pos.x)} ${n(pos.y)})"` : '');
   if (ia) g.raw(`<line x1="${n(A.x)}" y1="${n(A.y)}" x2="${n(B.x)}" y2="${n(B.y)}" class="dhit" data-pdid="${d.id}" vector-effect="non-scaling-stroke"/>`);
 }
 const selPdim = () => (state.planSel && state.planSel.t === 'pdim' && state.pdims.find(d => d.id === state.planSel.id)) || null;
@@ -1689,8 +1717,10 @@ function buildPlan(opt) {
     } else if (o.type === 'window' || o.type === 'vent') {
       for (const off of [gw.f0, (gw.f0 + gw.f1) / 2, gw.f1]) ln(at(gw, s0, off), at(gw, s1, off), o.type);
     } else ln(at(gw, s0, gw.f0), at(gw, s1, gw.f1), 'opening');
-    const lp = at(gw, (s0 + s1) / 2, gw.f1 + ts * (state.show.popen ? 2.2 : 0.85));
-    g.text(lp.x, lp.y + fs * 0.35, o.label || TYPES[o.type].prefix, 'lb', fs * 0.85, 'middle');
+    if (!state.show.popen) {
+      const lp = at(gw, (s0 + s1) / 2, gw.f1 + ts * 0.85), lq = at(gw, (s0 + s1) / 2, gw.f0 - ts * 0.85);
+      g.label(lp.x, lp.y + fs * 0.35, o.label || TYPES[o.type].prefix, 'lb', fs * 0.85, { prio: 1.5, alts: [{ x: lq.x, y: lq.y + fs * 0.35 }] });
+    }
     const box = [at(gw, s0, gw.f0 - ts * 0.3), at(gw, s1, gw.f0 - ts * 0.3), at(gw, s1, gw.f1 + ts * 0.3), at(gw, s0, gw.f1 + ts * 0.3)];
     if (ia && state.sel === o.id && state.active === gw.w.id) poly(box, 'sel');
     if (ia) openHits.push(`<path d="${path(box)}" class="hit" data-oid="${o.id}" data-owid="${gw.w.id}"/>`);
@@ -1711,7 +1741,8 @@ function buildPlan(opt) {
       g.raw(`<circle cx="${n(c.x)}" cy="${n(c.y)}" r="${n(r)}" class="colf" vector-effect="non-scaling-stroke"/>`);
       g.line(c.x - r * 0.7, c.y - r * 0.7, c.x + r * 0.7, c.y + r * 0.7, 'colx'); g.line(c.x + r * 0.7, c.y - r * 0.7, c.x - r * 0.7, c.y + r * 0.7, 'colx');
     } else { const pg = colPoly(c); poly(pg, 'colf', ' vector-effect="non-scaling-stroke"'); ln(pg[0], pg[2], 'colx'); ln(pg[1], pg[3], 'colx'); }
-    g.text(c.x + colHalf(c, { x: 1, y: 0 }) + ts * 0.2, c.y - colHalf(c, { x: 0, y: 1 }) - ts * 0.15, c.label || 'C', 'lb', fs * 0.75);
+    { const hx = colHalf(c, { x: 1, y: 0 }) + ts * 0.2, hy = colHalf(c, { x: 0, y: 1 }) + ts * 0.15;
+      g.label(c.x + hx, c.y - hy, c.label || 'C', 'lb', fs * 0.75, { anchor: 'start', prio: 1, alts: [{ x: c.x - hx, anchor: 'end' }, { y: c.y + hy + fs * 0.75 }, { x: c.x - hx, y: c.y + hy + fs * 0.75, anchor: 'end' }] }); }
     if (ps && ps.t === 'col' && ps.id === c.id) { if (c.shape === 'round') g.raw(`<circle cx="${n(c.x)}" cy="${n(c.y)}" r="${n(c.w / 2 + ts * 0.15)}" class="sel" vector-effect="non-scaling-stroke"/>`); else poly(colPoly({ ...c, w: c.w + ts * 0.3, d: c.d + ts * 0.3 }), 'sel', ' vector-effect="non-scaling-stroke"'); }
   }
   for (const bm of state.beams) {
@@ -1722,11 +1753,12 @@ function buildPlan(opt) {
     let th = Math.atan2(d.y, d.x) * 180 / Math.PI; if (th > 89.9 || th <= -90.1) th -= 180; if (th < -180) th += 360;
     const rad = th * Math.PI / 180, up = { x: Math.sin(rad), y: -Math.cos(rad) }, off = hw + ts * 0.3;
     const pos = { x: (bm.a.x + bm.b.x) / 2 + up.x * off, y: (bm.a.y + bm.b.y) / 2 + up.y * off };
-    g.text(pos.x, pos.y, `${bm.label || 'B'} ${fmt(bm.w)}×${fmt(bm.d)}`, 'blb', fs * 0.75, 'middle', Math.abs(th) > 0.01 ? ` transform="rotate(${n(th)} ${n(pos.x)} ${n(pos.y)})"` : '');
+    const pos2 = { x: (bm.a.x + bm.b.x) / 2 - up.x * (off + fs * 0.6), y: (bm.a.y + bm.b.y) / 2 - up.y * (off + fs * 0.6) };
+    g.label(pos.x, pos.y, `${bm.label || 'B'} ${fmt(bm.w)}×${fmt(bm.d)}`, 'blb', fs * 0.75, { rot: th, prio: 2, alts: [pos2, { x: pos.x + d.x * L * 0.25, y: pos.y + d.y * L * 0.25 }, { x: pos.x - d.x * L * 0.25, y: pos.y - d.y * L * 0.25 }, { size: fs * 0.6 }] });
     if (ps && ps.t === 'beam' && ps.id === bm.id) poly(c, 'sel', ' vector-effect="non-scaling-stroke"');
   }
   // dimensions: inside each room, and along walls that are not part of a room
-  const dimLine = (p, q, inn, off, depth, minL = ts * 1.2) => {
+  const dimLine = (p, q, inn, off, depth, minL = ts * 1.2, labIn = null) => {
     const L = Math.hypot(q.x - p.x, q.y - p.y); if (L < minL) return;
     const d = { x: (q.x - p.x) / L, y: (q.y - p.y) / L }, A = { x: p.x + inn.x * off, y: p.y + inn.y * off }, B = { x: q.x + inn.x * off, y: q.y + inn.y * off };
     g.line(p.x + inn.x * ts * 0.15, p.y + inn.y * ts * 0.15, A.x + inn.x * ts * 0.3, A.y + inn.y * ts * 0.3, 'ext');
@@ -1734,13 +1766,17 @@ function buildPlan(opt) {
     ln(A, B, 'dim');
     const tx = (d.x + inn.x) * ts * 0.16, ty = (d.y + inn.y) * ts * 0.16;
     for (const c of [A, B]) g.line(c.x - tx, c.y - ty, c.x + tx, c.y + ty, 'dim');
-    const lab = fmt(L), fz = Math.max(fs * 0.3, Math.min(fs, (L - ts) / (lab.length * 0.6 + 0.6), depth / 9));
+    const lab = labIn || fmt(L), fz = Math.max(fs * 0.6, Math.min(fs, depth / 9));
     let th = Math.atan2(d.y, d.x) * 180 / Math.PI;
     if (th > 89.9 || th <= -90.1) th -= 180; if (th < -180) th += 360;
     const rad = th * Math.PI / 180, up = { x: Math.sin(rad), y: -Math.cos(rad) };
     const mid = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 }, toward = up.x * inn.x + up.y * inn.y > 0;
     const k = toward ? ts * 0.25 : -(ts * 0.25 + fz * 0.75), pos = { x: mid.x + up.x * k, y: mid.y + up.y * k };
-    g.text(pos.x, pos.y, lab, 'dt', fz, 'middle', Math.abs(th) > 0.01 ? ` transform="rotate(${n(th)} ${n(pos.x)} ${n(pos.y)})"` : '');
+    const k2 = toward ? -(ts * 0.25 + fz * 0.75) : ts * 0.25, k3 = k + (toward ? 1 : -1) * fz * 1.1, half = lab.length * fz * 0.3 + ts * 0.4;
+    g.label(pos.x, pos.y, lab, 'dt', fz, { rot: th, prio: L < ts * 1.6 ? 1 : 2, alts: [
+      { x: mid.x + up.x * k2, y: mid.y + up.y * k2 }, { x: mid.x + up.x * k3, y: mid.y + up.y * k3 },
+      { x: B.x + d.x * half + up.x * k, y: B.y + d.y * half + up.y * k }, { x: A.x - d.x * half + up.x * k, y: A.y - d.y * half + up.y * k },
+      { size: fz * 0.75 }] });
   };
   if (state.show.popen) for (const gw of G.values()) {         // where doors, windows and columns sit along each wall
     const se = structOnWall(gw.w), cuts = [];
@@ -1748,7 +1784,15 @@ function buildPlan(opt) {
     for (const c of se.cols) cuts.push(gw.sOf(c.x0), gw.sOf(c.x1));
     if (!cuts.length) continue;
     const pts = [...new Set([gw.i0, gw.i1, ...cuts.map(v => Math.min(Math.max(v, gw.i0), gw.i1))].map(v => Math.round(v * 10) / 10))].sort((a, b) => a - b);
-    for (let i = 0; i < pts.length - 1; i++) dimLine(at(gw, pts[i], gw.f1), at(gw, pts[i + 1], gw.f1), gw.n, ts * 0.8, 1e9, ts * 0.3);
+    const marks = [];
+    for (const o of gw.w.openings) { const a = gw.sOf(o.x), b = gw.sOf(o.x + o.w); marks.push([Math.min(a, b), Math.max(a, b), o.label || TYPES[o.type].prefix]); }
+    for (const c of se.cols) { const a = gw.sOf(c.x0), b = gw.sOf(c.x1); marks.push([Math.min(a, b), Math.max(a, b), c.label]); }
+    const roomOut = roomsOfWall(gw.w).some(r => { const e = roomEdge(r, gw.w); return (((roomSign(r) > 0) === e.fwd) ? 1 : -1) === gw.vs; });
+    const lane = roomOut ? ts * 2.4 : ts * 0.8;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const m = marks.find(q => Math.abs(q[0] - pts[i]) < 1 && Math.abs(q[1] - pts[i + 1]) < 1);
+      dimLine(at(gw, pts[i], gw.f1), at(gw, pts[i + 1], gw.f1), gw.n, lane, 1e9, ts * 0.3, m ? m[2] + ' ' + fmt(pts[i + 1] - pts[i]) : null);
+    }
     gw.chained = true;
   }
   if (state.show.pdim) {
@@ -1772,10 +1816,10 @@ function buildPlan(opt) {
     const c = centroid(ip), a = area(roomArea(r)), xs = ip.map(q => q.x), ys = ip.map(q => q.y);
     const k = Math.max(0.3, Math.min(1, (Math.max(...xs) - Math.min(...xs) - ts * 2.6) / (fs * 0.6 * Math.max(r.name.length * 1.2, 22)), (Math.max(...ys) - Math.min(...ys) - ts * 2.6) / (fs * 3.8)));
     const f = fs * k;
-    g.text(c.x, c.y - (state.show.parea ? f * 0.2 : -f * 0.3), r.name, 'rname', f * 1.1, 'middle');
+    g.label(c.x, c.y - (state.show.parea ? f * 0.2 : -f * 0.3), r.name, 'rname', f * 1.1, { prio: 5, alts: [{ y: c.y - f * 1.5 }, { y: c.y + f * 1.2 }] });
     if (state.show.parea) {
-      g.text(c.x, c.y + f * 1.05, `${a.m2.toFixed(2)} m² · ${a.ft2.toFixed(1)} ft²`, 'lbs', f * 0.8, 'middle');
-      const sz = roomSize(r); if (sz) g.text(c.x, c.y + f * 2.05, sz, 'lbs', f * 0.75, 'middle');
+      g.label(c.x, c.y + f * 1.05, `${a.m2.toFixed(2)} m² · ${a.ft2.toFixed(1)} ft²`, 'lbs', f * 0.8, { prio: 4, alts: [{ y: c.y + f * 2.2 }, { y: c.y - f * 1.4 }] });
+      const sz = roomSize(r); if (sz) g.label(c.x, c.y + f * 2.05, sz, 'lbs', f * 0.75, { prio: 1.5, alts: [{ y: c.y + f * 3.1 }] });
     }
   }
   // hit lines + corner handles
@@ -1798,6 +1842,7 @@ function buildPlan(opt) {
       if (!tool) g.raw(`<circle cx="${n(nd.x)}" cy="${n(nd.y)}" r="${n(ts * 0.7)}" class="nhit" data-nid="${nd.id}"/>`);
     }
   }
+  g.flush();
   const b = g.bb;
   g.text(b.x0, b.y0 - ts * 0.9, 'FLOOR PLAN', 'cap', ts * 0.85);
   const tot = state.rooms.reduce((t, r) => t + roomArea(r), 0), ta = area(tot);
