@@ -373,11 +373,26 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         </div>
       </section>
 
+      <section id="defs-sec">
+        <h2>Default sizes</h2>
+        <div class="grid2">
+          <label class="f">Wall thickness<input id="d-t" inputmode="decimal" autocomplete="off"></label>
+          <label class="f">Ceiling height<input id="d-h" inputmode="decimal" autocomplete="off"></label>
+          <label class="f">Door width<input id="df-door-w" inputmode="decimal" autocomplete="off"></label>
+          <label class="f">Door height<input id="df-door-h" inputmode="decimal" autocomplete="off"></label>
+          <label class="f">Window width<input id="df-window-w" inputmode="decimal" autocomplete="off"></label>
+          <label class="f">Window height<input id="df-window-h" inputmode="decimal" autocomplete="off"></label>
+          <label class="f full">Window sill from floor<input id="df-window-s" inputmode="decimal" autocomplete="off"></label>
+          <label class="f">Ventilator width<input id="df-vent-w" inputmode="decimal" autocomplete="off"></label>
+          <label class="f">Ventilator height<input id="df-vent-h" inputmode="decimal" autocomplete="off"></label>
+          <label class="f full">Ventilator sill from floor<input id="df-vent-s" inputmode="decimal" autocomplete="off"></label>
+        </div>
+        <p class="note">Every new wall, room, door and window starts with these sizes. Thickness and height you type when adding a room are kept here too. They are remembered on this phone, also for new projects.</p>
+      </section>
+
       <section id="draw-sec" data-v="plan">
         <h2>Drawing walls</h2>
         <div class="grid2">
-          <label class="f">New wall thickness<input id="d-t" inputmode="decimal" autocomplete="off"></label>
-          <label class="f">Ceiling height<input id="d-h" inputmode="decimal" autocomplete="off"></label>
           <label class="f">The line you draw is
             <select id="d-just"><option value="in">Inside face of the room</option><option value="c">Centre of the wall</option></select></label>
           <label class="f">Drawing snap step<input id="d-step" inputmode="decimal" autocomplete="off"></label>
@@ -625,12 +640,22 @@ const clone = o => JSON.parse(JSON.stringify(o));
 /* ---------- data ---------- */
 const DEF_SNAP = () => ({ on: true, step: 10, end: true, mid: true, edge: true, align: true, grid: true });
 const DEF_SHOW = () => ({ chain: true, overall: true, hts: true, plan: true, user: true, pdim: true, parea: true });
+const DKEY = 'walldraft.defaults';
+const DEF_OPEN = () => ({ door: { w: 900, h: 2100, sill: 0 }, window: { w: 1200, h: 1200, sill: 900 }, vent: { w: 600, h: 450, sill: 2100 }, opening: { w: 1000, h: 2100, sill: 0 } });
 function blankProject(name) {
-  return { v: 4, name, unit: 'mm', view: 'plan', canvas: 'dark', active: null, sel: null, selDim: null, planSel: null,
+  const p = blankProject0(name);
+  try {                                   // the user's own defaults from earlier projects
+    const d = JSON.parse(localStorage.getItem(DKEY) || 'null');
+    if (d) { if (d.unit) p.unit = d.unit; if (d.draw) Object.assign(p.draw, d.draw); if (d.defs) p.defs = { ...p.defs, ...d.defs }; if (d.canvas) p.canvas = d.canvas; }
+  } catch (e) {}
+  return p;
+}
+function blankProject0(name) {
+  return { v: 4, defs: DEF_OPEN(), name, unit: 'mm', view: 'plan', canvas: 'dark', active: null, sel: null, selDim: null, planSel: null,
     snap: DEF_SNAP(), show: DEF_SHOW(), draw: { t: 230, h: 3000, ortho: '90', just: 'in', step: 50, col: { shape: 'rect', w: 230, d: 450 }, beam: { shape: 'rect', w: 230, d: 450 } }, nodes: [], walls: [], rooms: [], cols: [], beams: [], pdims: [] };
 }
 function sample() {
-  const s = blankProject('Example flat (replace with your measurements)');
+  const s = blankProject0('Example flat (replace with your measurements)');
   const keep = state; state = s;                 // plan helpers work on the global state
   makeBox(0, 0, 4200, 3600); rebuildPlan();
   makeBox(4200, 0, 7315, 3600); rebuildPlan();
@@ -651,6 +676,7 @@ function sample() {
 function newProject() {
   const p = blankProject('New site');
   p.unit = state.unit; p.snap = state.snap; p.show = state.show; p.draw = state.draw; p.canvas = state.canvas;
+  p.defs = state.defs;
   return p;
 }
 function norm(p) {                       // fill in fields added in later versions
@@ -659,6 +685,7 @@ function norm(p) {                       // fill in fields added in later versio
   if (!p.show) p.show = { ...DEF_SHOW(), hts: p.showHts !== false, plan: p.showPlan !== false };
   for (const k of ['pdim', 'parea', 'popen', 'pmy']) if (!(k in p.show)) p.show[k] = true;
   if (!Array.isArray(p.pdims)) p.pdims = [];
+  if (!p.defs) p.defs = DEF_OPEN();
   delete p.showHts; delete p.showPlan;
   if (!Array.isArray(p.nodes)) p.nodes = [];
   if (!Array.isArray(p.rooms)) p.rooms = [];
@@ -689,6 +716,7 @@ let hist = [], fut = [];               // entries: { label, s: JSON of the state
 try { const h = JSON.parse(localStorage.getItem(HKEY) || 'null'); if (h && Array.isArray(h.hist)) { hist = h.hist; fut = h.fut || []; } } catch (e) {}
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  try { localStorage.setItem(DKEY, JSON.stringify({ unit: state.unit, canvas: state.canvas, defs: state.defs, draw: { t: state.draw.t, h: state.draw.h, just: state.draw.just, step: state.draw.step, ortho: state.draw.ortho, col: state.draw.col, beam: state.draw.beam } })); } catch (e) {}
   try { localStorage.setItem(HKEY, JSON.stringify({ hist: hist.slice(-40), fut: fut.slice(-40) })); } catch (e) {}
 }
 const wall = () => state.walls.find(w => w.id === state.active) || state.walls[0] || null;
@@ -1962,7 +1990,7 @@ function roomModal() {
     <label class="f">Ceiling height<input id="rm-h" autocomplete="off" value="${esc(fmt(state.draw.h))}"></label>
     <label class="f full">Place it
       <select id="rm-pos"><option value="r">To the right of ${esc(ref)} (shares the wall)</option><option value="b">Below ${esc(ref)} (shares the wall)</option><option value="f">On its own</option></select></label>
-  </div><p class="note">Measure inside the room, wall face to wall face, in ${UNIT_NAME[state.unit]}. You can drag the room into place afterwards.</p>`,
+  </div><p class="note">Measure inside the room, wall face to wall face, in ${UNIT_NAME[state.unit]}. Wall thickness and ceiling height are remembered for the next room. You can drag the room into place afterwards.</p>`,
   [['Add room', addRoomFromModal, 'primary'], ['Cancel', closeModal]]);
   if (!state.nodes.length) $('#rm-pos').disabled = true;
   ['rm-w', 'rm-d', 'rm-t', 'rm-h'].forEach(id => enhanceFtIn(document.getElementById(id)));
@@ -1979,7 +2007,7 @@ function addRoomFromModal() {
   if (ref) { if (pos === 'r') { x = ref.x1; y = ref.y0; } else if (pos === 'b') { x = ref.x0; y = ref.y1; } else { x = all.x1 + 2000; y = all.y0; } }
   const before = new Set(state.rooms.map(r => r.id)); let room = null;
   commit('Add ' + name, () => {
-    const kt = state.draw.t, kh = state.draw.h; state.draw.t = T; state.draw.h = Hh;
+    state.draw.t = T; state.draw.h = Hh;             // remember for the next room and wall
     const c = makeBox(x, y, x + W, y + D);
     rebuildPlan();
     room = nameRoomAt(c, name);
@@ -1991,7 +2019,6 @@ function addRoomFromModal() {
       for (const id of room.nodes) { const nd = nodeById(id); if (nd.x > cx) nd.x = r2(nd.x + dw); if (nd.y > cy) nd.y = r2(nd.y + dd); }
       rebuildPlan(); room = nameRoomAt({ x: cx, y: cy }, name);
     }
-    state.draw.t = kt; state.draw.h = kh;
     if (room) state.planSel = { t: 'room', id: room.id };
     state.sel = null;
   });
@@ -2556,6 +2583,14 @@ const lenInputs = {
   's-d':    { st: 1, lbl: () => 'Depth of ' + (selStruct().o.label || ''), get: () => selStruct().o.d, set: v => { if (v <= 0) return false; selStruct().o.d = v; } },
   's-len':  { st: 1, lbl: () => 'Length of ' + (selStruct().o.label || ''), get: () => { const o = selStruct().o; return o.a ? Math.hypot(o.b.x - o.a.x, o.b.y - o.a.y) : 0; },
               set: v => { const o = selStruct().o; if (!o.a || v <= 0) return false; const L = Math.hypot(o.b.x - o.a.x, o.b.y - o.a.y) || 1; o.b = { x: r2(o.a.x + (o.b.x - o.a.x) / L * v), y: r2(o.a.y + (o.b.y - o.a.y) / L * v) }; } },
+  'df-door-w': { lbl: () => 'Default door width',  get: () => state.defs.door.w, set: v => { if (v <= 0) return false; state.defs.door.w = v; } },
+  'df-door-h': { lbl: () => 'Default door height', get: () => state.defs.door.h, set: v => { if (v <= 0) return false; state.defs.door.h = v; } },
+  'df-window-w': { lbl: () => 'Default window width',  get: () => state.defs.window.w, set: v => { if (v <= 0) return false; state.defs.window.w = v; } },
+  'df-window-h': { lbl: () => 'Default window height', get: () => state.defs.window.h, set: v => { if (v <= 0) return false; state.defs.window.h = v; } },
+  'df-window-s': { lbl: () => 'Default window sill',   get: () => state.defs.window.sill, set: v => { if (v < 0) return false; state.defs.window.sill = v; } },
+  'df-vent-w': { lbl: () => 'Default ventilator width',  get: () => state.defs.vent.w, set: v => { if (v <= 0) return false; state.defs.vent.w = v; } },
+  'df-vent-h': { lbl: () => 'Default ventilator height', get: () => state.defs.vent.h, set: v => { if (v <= 0) return false; state.defs.vent.h = v; } },
+  'df-vent-s': { lbl: () => 'Default ventilator sill',   get: () => state.defs.vent.sill, set: v => { if (v < 0) return false; state.defs.vent.sill = v; } },
   'd-step': { lbl: () => 'Drawing snap step',  get: () => planStep(),   set: v => { if (v <= 0) return false; state.draw.step = v; } },
   's-step': { lbl: () => 'Grid step',      get: () => state.snap.step,  set: v => { if (v <= 0) return false; state.snap.step = v; } },
   'e-w':    { op: 1, lbl: () => 'Width of ' + opName(selOp()),  get: () => selOp().w, set: v => { if (v <= 0) return false; selOp().w = v; } },
@@ -2657,7 +2692,7 @@ function addOpening(type) {
   setTool(null);
   const label = nextLabel(type);
   commit('Add ' + TYPES[type].name.toLowerCase() + ' ' + label, () => {
-    const w = wall(), t = TYPES[type];
+    const w = wall(), t = { ...TYPES[type], ...(state.defs[type] || {}) };
     const o = { id: uid(), type, label, w: Math.min(t.w, w.length), h: Math.min(t.h, w.height), sill: t.sill, x: 0 };
     if (o.sill + o.h > w.height) o.sill = Math.max(0, w.height - o.h);
     if (type === 'door') { o.hinge = 'L'; o.swing = 'in'; }
@@ -2991,7 +3026,7 @@ const FEATURES = [
   ['Measure on wall', [['dim:h', '↔', 'Horizontal'], ['dim:v', '↕', 'Vertical'], ['dim:a', '⤡', 'Aligned'], ['dim:lvl', '▽', 'Level'], ['dim:ang', '∠', 'Angle']]],
   ['View & settings', [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Wall elevation'], ['units', 'ft', 'Units'], ['snap', '⌖', 'Snap'], ['ortho', '⟂', 'Angle lock'], ['canvas', '◐', 'Black / white'], ['fit', '⤢', 'Fit to screen'], ['tool:', '➤', 'Select']]],
   ['Edit', [['undo', '↶', 'Undo'], ['redo', '↷', 'Redo'], ['del', '✕', 'Delete selected']]],
-  ['Lists & files', [['sec:rooms-sec', '▭', 'Rooms & areas'], ['sec:struct-sec', '▣', 'Columns & beams'], ['sec:hist-sec', '☰', 'History'], ['sec:share-sec', '⇪', 'Share & backup'], ['sec:draw-sec', '⚙', 'Wall settings']]],
+  ['Lists & files', [['sec:rooms-sec', '▭', 'Rooms & areas'], ['sec:struct-sec', '▣', 'Columns & beams'], ['sec:hist-sec', '☰', 'History'], ['sec:share-sec', '⇪', 'Share & backup'], ['sec:defs-sec', '⚙', 'Default sizes'], ['sec:draw-sec', '✎', 'Drawing options']]],
 ];
 function featurePanel() {
   const on = k => (k.startsWith('tool:') && tool && tool.kind === k.slice(5)) || (k.startsWith('dim:') && tool && tool.kind === k.slice(4)) || (k === 'view:plan' && state.view === 'plan') || (k === 'view:wall' && state.view === 'wall')
