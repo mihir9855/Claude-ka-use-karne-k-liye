@@ -220,8 +220,11 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 #draw .pface { stroke: var(--ink); stroke-width: 1.8; }
 #draw .pout { stroke: var(--ink); stroke-width: 1.2; }
 #draw .whit { stroke: transparent; stroke-width: 22; cursor: pointer; }
-#dg > :not([data-oid]):not([data-wid]):not([data-rid]):not([data-cid]):not([data-bid]):not([data-bend]):not([data-nid]):not([data-did]):not([data-pdid]):not([data-fid]):not([data-dm]) { pointer-events: none; }
+#dg > :not([data-oid]):not([data-wid]):not([data-rid]):not([data-cid]):not([data-bid]):not([data-bend]):not([data-nid]):not([data-did]):not([data-pdid]):not([data-fid]):not([data-dm]):not([data-refid]) { pointer-events: none; }
 #draw .whit { stroke-width: 26; }
+#draw .refl { stroke: var(--snap); stroke-width: 1.2; stroke-dasharray: 12 6 2 6; opacity: .85; }
+#draw .refl.hi { stroke-width: 2.4; opacity: 1; }
+#draw .reft { fill: var(--snap); font-family: var(--f-mono); }
 #draw .dmhit { fill: transparent; cursor: pointer; }
 #draw text[data-dm] { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-decoration-color: color-mix(in srgb, var(--dim) 55%, transparent); }
 #draw .wsel { stroke: var(--sel); stroke-width: 4; opacity: .85; }
@@ -330,6 +333,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <button data-tool="col" title="Column: tap to place, snaps to wall corners (C)"><span class="ic">▣</span><span class="tl">Column</span></button>
         <button data-tool="beam" title="Beam: drag or tap two points (M)"><span class="ic">┅</span><span class="tl">Beam</span></button>
         <button data-tool="pdim" title="Measure: drag or tap between two points (U)"><span class="ic">↔</span><span class="tl">Measure</span></button>
+        <button data-tool="ref" title="Reference line through two points"><span class="ic">⋯</span><span class="tl">Ref line</span></button>
       </div>
       <div class="tgroup" role="group" aria-label="Dimension tools" data-v="wall">
         <button data-tool="" title="Select and move (Esc)"><span class="ic">➤</span><span class="tl">Select</span></button>
@@ -465,10 +469,21 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
           <div class="editor" style="margin-top:8px">
             <h2 style="color:var(--ink)">Selected measurement</h2>
             <p class="bigval" id="pd-val"></p>
+            <label class="f">Length (moves the end point)<input id="pd-len" inputmode="decimal" autocomplete="off"></label>
             <label class="f">Text on drawing (empty shows the measurement)<input id="pd-text" type="text" maxlength="24" autocomplete="off" placeholder="e.g. CLR, EQ"></label>
-            <div class="row-btns"><button class="btn" id="pd-flip">Flip side</button><button class="btn danger" id="pd-del">Delete</button></div>
+            <div class="row-btns"><button class="btn primary" id="pd-ref">⋯ Reference line at the end</button><button class="btn" id="pd-flip">Flip side</button><button class="btn danger" id="pd-del">Delete</button></div>
           </div>
         </div>
+        <div id="refsec" hidden>
+          <div class="editor" style="margin-top:8px">
+            <h2 style="color:var(--ink)">Selected reference line</h2>
+            <label class="f">Copy at a distance<input id="ref-off" inputmode="decimal" autocomplete="off"></label>
+            <div class="row-btns"><button class="btn" id="ref-a">Copy to one side</button><button class="btn" id="ref-b">Copy to the other side</button><button class="btn danger" id="ref-del">Delete</button></div>
+            <p class="note">Walls, corners and new walls snap onto reference lines and where they cross. Reference lines are not printed.</p>
+          </div>
+        </div>
+        <div class="row-btns"><button class="btn danger" id="ref-clear">Remove all reference lines</button></div>
+        <p class="note">Reference lines: select a wall and tap “Reference line…” to place one at an exact distance (e.g. 35.5"), or use ⋯ Ref line. Drag a wall onto it and it snaps there.</p>
         <p class="note">Tap ↔ Measure, then drag between two points, or tap them one after the other. It snaps to corners, inside corners, wall faces, door and window edges and columns. Drag a measurement to move its line.</p>
       </section>
 
@@ -530,6 +545,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <p class="note" id="unit-note"></p>
         <div class="row-btns">
           <button class="btn primary" id="w-elev" hidden>Open wall elevation ›</button>
+          <button class="btn" id="w-ref" hidden>⋯ Reference line…</button>
           <button class="btn" id="w-dup">Duplicate wall</button>
           <button class="btn danger" id="w-del">Delete wall</button>
         </div>
@@ -717,7 +733,7 @@ function blankProject(name) {
 }
 function blankProject0(name) {
   return { v: 4, defs: DEF_OPEN(), name, unit: 'mm', view: 'plan', canvas: 'dark', active: null, sel: null, selDim: null, planSel: null,
-    snap: DEF_SNAP(), show: DEF_SHOW(), draw: { t: 230, h: 3000, ortho: '90', just: 'in', step: 50, col: { shape: 'rect', w: 230, d: 450 }, beam: { shape: 'rect', w: 230, d: 450 } }, nodes: [], walls: [], rooms: [], cols: [], beams: [], pdims: [], fix: [] };
+    snap: DEF_SNAP(), show: DEF_SHOW(), draw: { t: 230, h: 3000, ortho: '90', just: 'in', step: 50, col: { shape: 'rect', w: 230, d: 450 }, beam: { shape: 'rect', w: 230, d: 450 } }, nodes: [], walls: [], rooms: [], cols: [], beams: [], pdims: [], fix: [], refs: [] };
 }
 function sample() {
   const s = blankProject0('Example flat (replace with your measurements)');
@@ -751,6 +767,7 @@ function norm(p) {                       // fill in fields added in later versio
   for (const k of ['pdim', 'parea', 'popen', 'pmy']) if (!(k in p.show)) p.show[k] = true;
   if (!Array.isArray(p.pdims)) p.pdims = [];
   if (!Array.isArray(p.fix)) p.fix = [];
+  if (!Array.isArray(p.refs)) p.refs = [];
   if (!p.defs) p.defs = DEF_OPEN();
   if (!p.defs.rail) p.defs.rail = { t: 100, h: 1000 };
   if (!p.defs.kitchen) p.defs.kitchen = { d: 600, h: 850 };
@@ -1653,6 +1670,43 @@ function structOnWall(w) {            // columns standing in this wall and beams
   return { cols, beams };
 }
 
+/* ---------- reference lines ---------- */
+// An endless guide line through (x, y) along unit direction (dx, dy). Things snap to it; it is never printed.
+const selRef = () => (state.planSel && state.planSel.t === 'ref' && state.refs.find(r => r.id === state.planSel.id)) || null;
+function addRefLine(x, y, dx, dy, label) {
+  const L = Math.hypot(dx, dy) || 1, r = { id: uid(), x: r2(x), y: r2(y), dx: dx / L, dy: dy / L, label: label || '' };
+  commit('Add reference line' + (label ? ' ' + label : ''), () => { state.refs.push(r); state.planSel = { t: 'ref', id: r.id }; });
+  return r;
+}
+function refHits(p, tol) {               // crossings first (two references, or a reference and a wall line), then the line itself
+  let best = null;
+  const lines = state.refs.map(r => ({ P: { x: r.x, y: r.y }, d: { x: r.dx, y: r.dy }, inf: true }));
+  const wl = state.walls.filter(isPlanWall).map(w => { const g = wallGeo(w); return { P: g.A, d: g.d, L: g.L }; });
+  const cross = (a, b) => { const cr = a.d.x * b.d.y - a.d.y * b.d.x; if (Math.abs(cr) < 1e-6) return null; const t = ((b.P.x - a.P.x) * b.d.y - (b.P.y - a.P.y) * b.d.x) / cr; return { x: a.P.x + a.d.x * t, y: a.P.y + a.d.y * t, u: ((b.P.x - a.P.x) * a.d.y - (b.P.y - a.P.y) * a.d.x) / cr }; };
+  for (let i = 0; i < lines.length; i++) {
+    for (let j = i + 1; j < lines.length; j++) { const c = cross(lines[i], lines[j]); if (c) { const d = Math.hypot(c.x - p.x, c.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt: { x: c.x, y: c.y }, kind: 'end', label: 'Reference crossing' }; } }
+    for (const w of wl) { const c = cross(lines[i], w); if (c && c.u >= -1 && c.u <= w.L + 1) { const d = Math.hypot(c.x - p.x, c.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt: { x: c.x, y: c.y }, kind: 'end', label: 'Reference meets wall' }; } }
+  }
+  if (best) return best;
+  for (const l of lines) { const k = (p.x - l.P.x) * l.d.x + (p.y - l.P.y) * l.d.y, q = { x: l.P.x + l.d.x * k, y: l.P.y + l.d.y * k }, d = Math.hypot(q.x - p.x, q.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt: q, kind: 'edge', label: 'On reference line' }; }
+  return best;
+}
+function refModalForWall(w) {
+  const g = wallGeo(w);
+  openModal('Reference line from ' + wname(w), `<div class="grid2">
+    <label class="f full">Distance from the wall face<input id="rf-d" inputmode="decimal" autocomplete="off" placeholder="${IMP() ? "e.g. 2'11.5 or 35.5in" : 'e.g. 900'}"></label>
+    <label class="f full">Side<select id="rf-side"><option value="in">Into the room (from the inside face)</option><option value="out">Outside (from the outer face)</option></select></label>
+  </div><p class="note">A dashed line parallel to this wall. Drag another wall onto it and it snaps there. ${esc(unitExample())}.</p>`,
+  [['Add reference line', () => {
+    const v = parseLen($('#rf-d').value); if (!isFinite(v) || v < 0) { toast('Please type the distance. ' + unitExample()); return; }
+    const inside = $('#rf-side').value === 'in', f = inside ? g.f0 - v : g.f1 + v;
+    closeModal(); addRefLine(g.A.x + g.n.x * f, g.A.y + g.n.y * f, g.d.x, g.d.y, fmt(v) + (inside ? ' in' : ' out'));
+    toast('Reference line ' + fmt(v) + ' from ' + wname(w), 'Undo', undo);
+  }, 'primary'], ['Cancel', closeModal]]);
+  enhanceFtIn($('#rf-d')); syncFtIn();
+  setTimeout(() => (state.unit === 'ftin' ? $('#rf-d')._fi.querySelector('input') : $('#rf-d')).focus(), 60);
+}
+
 /* ---------- editable measurements ---------- */
 // Measurement numbers drawn on the plan and elevations can be tapped; each carries what it controls.
 let dimBinds = new Map(), dmSeq = 0;
@@ -1841,7 +1895,7 @@ function kitchenInto(r, lay, main, D, Hh, sink, hob, mark) {
 }
 
 /* ---------- measurements on plan ---------- */
-const isMeasure = () => !!(tool && tool.kind === 'pdim');
+const isMeasure = () => !!(tool && (tool.kind === 'pdim' || tool.kind === 'ref'));
 function measureSnap(p, from, tol) {
   if (state.snap.on) {
     let best = null;
@@ -1888,7 +1942,8 @@ function drawPlanDim(g, d, cls = '', ia = false) {
   const rad = th * Math.PI / 180, up = { x: Math.sin(rad), y: -Math.cos(rad) }, pos = { x: (A.x + B.x) / 2 + up.x * ts * 0.3, y: (A.y + B.y) / 2 + up.y * ts * 0.3 };
   const lab2 = { x: (A.x + B.x) / 2 - up.x * (ts * 0.3 + fz * 0.8), y: (A.y + B.y) / 2 - up.y * (ts * 0.3 + fz * 0.8) };
   const along = [0.25, 0.75, 0.15, 0.85].flatMap(f => { const m = { x: A.x + (B.x - A.x) * f, y: A.y + (B.y - A.y) * f }; return [{ x: m.x + up.x * ts * 0.3, y: m.y + up.y * ts * 0.3 }, { x: m.x - up.x * (ts * 0.3 + fz * 0.8), y: m.y - up.y * (ts * 0.3 + fz * 0.8) }]; });
-  if (g.label && !cls.includes('pv')) g.label(pos.x, pos.y, label, C('dt'), fz, { rot: th, prio: 3, alts: [lab2, ...along, { size: fz * 0.75 }] });
+  const did = d.id, pdm = ia && d.id ? dmReg({ title: 'Measurement', what: 'Length (moves the end point)', value: L, min: 1, apply: v => { const q = state.pdims.find(x => x.id === did); if (q) { const LL = Math.hypot(q.b.x - q.a.x, q.b.y - q.a.y) || 1; q.b = { x: r2(q.a.x + (q.b.x - q.a.x) / LL * v), y: r2(q.a.y + (q.b.y - q.a.y) / LL * v) }; } } }) : null;
+  if (g.label && !cls.includes('pv')) g.label(pos.x, pos.y, label, C('dt'), fz, { rot: th, prio: 3, dm: pdm, alts: [lab2, ...along, { size: fz * 0.75 }] });
   else g.text(pos.x, pos.y, label, C('dt'), fz, 'middle', Math.abs(th) > 0.01 ? ` transform="rotate(${n(th)} ${n(pos.x)} ${n(pos.y)})"` : '');
   if (ia) g.raw(`<line x1="${n(A.x)}" y1="${n(A.y)}" x2="${n(B.x)}" y2="${n(B.y)}" class="dhit" data-pdid="${d.id}" vector-effect="non-scaling-stroke"/>`);
 }
@@ -1967,7 +2022,7 @@ const smallScreen = () => window.matchMedia('(max-width: 820px)').matches;
 function planTs() { const b = nodesBox(); return Math.max(b ? b.x1 - b.x0 : 0, b ? b.y1 - b.y0 : 0, 3000) / (smallScreen() ? 30 : 45); }
 const isDraw = () => !!(tool && (tool.kind === 'hand' || tool.kind === 'line' || tool.kind === 'box'));
 const isStruct = () => !!(tool && (tool.kind === 'col' || tool.kind === 'beam'));
-const toolFrom = () => tool ? (tool.kind === 'beam' ? tool.beamStart : tool.kind === 'pdim' ? tool.mStart : null) : null;
+const toolFrom = () => tool ? (tool.kind === 'beam' ? tool.beamStart : (tool.kind === 'pdim' || tool.kind === 'ref') ? tool.mStart : null) : null;
 const toolSnap = (p, from, tol) => isMeasure() ? measureSnap(p, from, tol) : structSnap(p, from, tol);
 function hull(pts) {
   const P = [...pts].sort((a, b) => a.x - b.x || a.y - b.y), cr = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
@@ -2199,6 +2254,17 @@ function buildPlan(opt) {
     }
   }
   if (state.show.pmy) for (const d of state.pdims) drawPlanDim(g, d, ps && ps.t === 'pdim' && ps.id === d.id ? 'hi' : '', ia);
+  if (ia && state.refs.length) {                 // reference lines: drawn across the plan, never printed
+    const bb = nodesBox() || { x0: -2000, y0: -2000, x1: 6000, y1: 6000 }, R = Math.max(bb.x1 - bb.x0, bb.y1 - bb.y0, 4000) * 1.5;
+    const cx = (bb.x0 + bb.x1) / 2, cy = (bb.y0 + bb.y1) / 2;
+    for (const r of state.refs) {
+      const k = (cx - r.x) * r.dx + (cy - r.y) * r.dy, mx = r.x + r.dx * k, my = r.y + r.dy * k;
+      const a = { x: mx - r.dx * R, y: my - r.dy * R }, b = { x: mx + r.dx * R, y: my + r.dy * R }, hi = ps && ps.t === 'ref' && ps.id === r.id;
+      g.raw(`<line x1="${n(a.x)}" y1="${n(a.y)}" x2="${n(b.x)}" y2="${n(b.y)}" class="refl${hi ? ' hi' : ''}" vector-effect="non-scaling-stroke"/>`);
+      g.raw(`<line x1="${n(a.x)}" y1="${n(a.y)}" x2="${n(b.x)}" y2="${n(b.y)}" class="whit" data-refid="${r.id}" vector-effect="non-scaling-stroke"/>`);
+      if (r.label) { let th = Math.atan2(r.dy, r.dx) * 180 / Math.PI; if (th > 89.9 || th <= -90.1) th -= 180; if (th < -180) th += 360; const lp = { x: r.x + r.dx * (k - R * 0.45) - r.dy * ts * 0.3, y: r.y + r.dy * (k - R * 0.45) + r.dx * ts * 0.3 }; g.raw(`<text x="${n(lp.x)}" y="${n(lp.y)}" class="reft" font-size="${n(fs * 0.7)}" transform="rotate(${n(th)} ${n(lp.x)} ${n(lp.y)})">${esc(r.label)}</text>`); }
+    }
+  }
   // room names + areas
   for (const r of state.rooms) {
     const ip = innerPoly(r); if (ip.length < 3) continue;
@@ -2253,6 +2319,13 @@ function planSnap(p, from, tol) {
     let best = null;
     for (const nd of state.nodes) { const d = Math.hypot(nd.x - p.x, nd.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt: { x: nd.x, y: nd.y, nid: nd.id }, kind: 'end', label: 'Corner' }; }
     if (best) return { ...best, label: from ? fmt(Math.hypot(best.pt.x - from.x, best.pt.y - from.y)) + ' · corner' : 'Corner' };
+    const rh = state.refs.length ? refHits(p, tol) : null;
+    if (rh && rh.kind === 'end') return { ...rh, label: from ? fmt(Math.hypot(rh.pt.x - from.x, rh.pt.y - from.y)) + ' · ' + rh.label.toLowerCase() : rh.label };
+    if (rh && from && state.draw.ortho !== 'free') {      // keep the wall straight: meet the reference line along the locked direction
+      const ang = state.draw.ortho === '45' ? 45 : 90, a = Math.round(Math.atan2(p.y - from.y, p.x - from.x) * 180 / Math.PI / ang) * ang * Math.PI / 180, od = { x: Math.round(Math.cos(a) * 1e9) / 1e9, y: Math.round(Math.sin(a) * 1e9) / 1e9 };
+      for (const r of state.refs) { const cr = od.x * r.dy - od.y * r.dx; if (Math.abs(cr) < 1e-6) continue; const t = ((r.x - from.x) * r.dy - (r.y - from.y) * r.dx) / cr; if (t <= 0) continue; const q = { x: from.x + od.x * t, y: from.y + od.y * t }; if (Math.hypot(q.x - p.x, q.y - p.y) <= tol * 1.6) return { d: 0, pt: q, kind: 'edge', label: fmt(t) + ' · to reference line' }; }
+    }
+    if (rh) return { ...rh, label: from ? fmt(Math.hypot(rh.pt.x - from.x, rh.pt.y - from.y)) + ' · on reference line' : rh.label };
     // walls: snap to the CENTRE of the wall thickness (its middle, or anywhere along it)
     const ang0 = state.draw.ortho === '45' ? 45 : state.draw.ortho === '90' ? 90 : 0;
     let odir = null;
@@ -2308,6 +2381,10 @@ function snapMove(moving, dx, dy, tol) {   // move a set of corners; stick to ot
   const st = s.on && s.grid ? planStep() : 1, gd = [];
   if (bx) { dx += bx.e; gd.push({ v: true, at: bx.at }); } else dx = Math.round((moving[0].x + dx) / st) * st - moving[0].x;
   if (by) { dy += by.e; gd.push({ v: false, at: by.at }); } else dy = Math.round((moving[0].y + dy) / st) * st - moving[0].y;
+  if (s.on && moving.length === 1 && state.refs.length) {      // a single corner lands on a reference line or crossing
+    const m = moving[0], h = refHits({ x: m.x + dx, y: m.y + dy }, tol);
+    if (h) { dx = h.pt.x - m.x; dy = h.pt.y - m.y; }
+  }
   return { dx, dy, guides: gd };
 }
 function planHover(e) {
@@ -2570,7 +2647,7 @@ function selectPlan(tg) {
   if (!tg) state.planSel = null;
   else if (tg.t === 'wall') { state.active = tg.id; state.planSel = { t: 'wall', id: tg.id }; }
   else if (tg.t === 'open') { state.active = tg.wid; state.sel = tg.id; state.planSel = { t: 'open', id: tg.wid }; }
-  else if (tg.t === 'col' || tg.t === 'beam' || tg.t === 'pdim' || tg.t === 'fix') state.planSel = { t: tg.t, id: tg.id };
+  else if (tg.t === 'col' || tg.t === 'beam' || tg.t === 'pdim' || tg.t === 'fix' || tg.t === 'ref') state.planSel = { t: tg.t, id: tg.id };
   else state.planSel = { t: 'room', id: tg.id };
   save(); render();
 }
@@ -2643,7 +2720,8 @@ function planOverlay() {
   }
   if (isMeasure() && hover) {
     const st = tool.mStart || (free ? gesture.start : null);
-    if (st) { drawPlanDim(g, { a: st, b: hover.pt, off: 0 }, 'pv'); g.raw(`<circle cx="${n(st.x)}" cy="${n(st.y)}" r="${n(u * 5)}" class="snapm" vector-effect="non-scaling-stroke"/>`); }
+    if (st && tool.kind === 'ref') { const dx = hover.pt.x - st.x, dy = hover.pt.y - st.y, L = Math.hypot(dx, dy); if (L > 1) { const R = u * 4000; g.raw(`<line x1="${n(st.x - dx / L * R)}" y1="${n(st.y - dy / L * R)}" x2="${n(st.x + dx / L * R)}" y2="${n(st.y + dy / L * R)}" class="refl" vector-effect="non-scaling-stroke"/>`); } }
+    else if (st) { drawPlanDim(g, { a: st, b: hover.pt, off: 0 }, 'pv'); g.raw(`<circle cx="${n(st.x)}" cy="${n(st.y)}" r="${n(u * 5)}" class="snapm" vector-effect="non-scaling-stroke"/>`); }
     mark(hover);
   }
   if (isStruct() && hover) {
@@ -2824,7 +2902,7 @@ function underTarget(x, y) {
   const ps = state.planSel, cur = ps ? (ps.t === 'open' ? state.sel : ps.id) : null;
   for (const el of document.elementsFromPoint(x, y)) {
     const d = el.dataset || {};
-    const tg = d.fid ? { t: 'fix', id: d.fid } : d.pdid ? { t: 'pdim', id: d.pdid } : d.cid ? { t: 'col', id: d.cid } : d.bid ? { t: 'beam', id: d.bid } : d.oid && d.owid ? { t: 'open', id: d.oid, wid: d.owid } : d.wid ? { t: 'wall', id: d.wid } : d.rid ? { t: 'room', id: d.rid } : null;
+    const tg = d.refid ? { t: 'ref', id: d.refid } : d.fid ? { t: 'fix', id: d.fid } : d.pdid ? { t: 'pdim', id: d.pdid } : d.cid ? { t: 'col', id: d.cid } : d.bid ? { t: 'beam', id: d.bid } : d.oid && d.owid ? { t: 'open', id: d.oid, wid: d.owid } : d.wid ? { t: 'wall', id: d.wid } : d.rid ? { t: 'room', id: d.rid } : null;
     if (tg && tg.id !== cur) return tg;
   }
   return null;
@@ -2855,6 +2933,8 @@ function planDown(e) {
   const mh = q('[data-dm]');
   if (mh && !tool) { gesture = { ...base, kind: 'tapsel', target: null, dm: mh.dataset.dm }; svg.classList.add('panning'); return; }
   const dh = q('[data-pdid]');
+  const refh = q('[data-refid]');
+  if (refh && !q('[data-oid]') && !q('[data-wid]') && !q('[data-cid]') && !q('[data-bid]') && !q('[data-fid]') && !q('[data-dm]')) { gesture = { ...base, kind: 'tapsel', target: { t: 'ref', id: refh.dataset.refid } }; svg.classList.add('panning'); return; }
   const fh = q('[data-fid]');
   if (fh && !q('[data-oid]')) { const f = state.fix.find(x => x.id === fh.dataset.fid); if (f) { const was = !!(ps && ps.t === 'fix' && ps.id === f.id); if (!was) selectPlan({ t: 'fix', id: f.id }); gesture = { ...base, kind: 'fmove', id: f.id, ox: f.x, oy: f.y, was }; return; } }
   if (dh) { const d = state.pdims.find(x => x.id === dh.dataset.pdid); if (d) { const was = !!(ps && ps.t === 'pdim' && ps.id === d.id); if (!was) selectPlan({ t: 'pdim', id: d.id }); gesture = { ...base, kind: 'pdmove', id: d.id, was }; return; } }
@@ -2947,6 +3027,7 @@ function planMove(e) {
       if (state.snap.on && (state.snap.align || state.snap.end)) {    // line the wall up with other corners
         let best = null;
         for (const o of state.nodes) { if (ids.has(o.id)) continue; const kk = (o.x - gesture.A.x) * rn.x + (o.y - gesture.A.y) * rn.y; if (Math.abs(kk - k) <= tol && (!best || Math.abs(kk - k) < Math.abs(best - k))) best = kk; }
+        for (const r of state.refs) { if (Math.abs(r.dx * rn.x + r.dy * rn.y) > 1e-3) continue; const kk = (r.x - gesture.A.x) * rn.x + (r.y - gesture.A.y) * rn.y; if (Math.abs(kk - k) <= tol * 1.5) { best = kk; break; } }   // parallel reference line wins
         if (best !== null) { k = best; if (Math.abs(rn.x) > 0.99) guides = [{ v: true, at: gesture.A.x + rn.x * k }]; else if (Math.abs(rn.y) > 0.99) guides = [{ v: false, at: gesture.A.y + rn.y * k }]; }
       }
       mx = rn.x * k; my = rn.y * k;
@@ -3001,9 +3082,10 @@ function planUp(e) {
       }
       if (isMeasure()) {
         if (!hover) return;
-        if (gs.free && !tool.mStart) addPdim(gs.start, hover.pt);
+        const done = (a, b) => { if (tool.kind === 'ref') { if (Math.hypot(b.x - a.x, b.y - a.y) > 1) { addRefLine(a.x, a.y, b.x - a.x, b.y - a.y, ''); toast('Reference line added', 'Undo', undo); } } else addPdim(a, b); };
+        if (gs.free && !tool.mStart) done(gs.start, hover.pt);
         else if (!tool.mStart) tool.mStart = hover.pt;
-        else { addPdim(tool.mStart, hover.pt); tool.mStart = null; }
+        else { done(tool.mStart, hover.pt); tool.mStart = null; }
         hover = null; render(); updateStatus(); return;
       }
       if (isStruct()) {
@@ -3042,7 +3124,7 @@ svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && too
 /* ---------- dimension tools ---------- */
 function setTool(kind) {
   tool = kind ? { kind, pts: [], last: null, chain: [] } : null; hover = null; guides = [];
-  if (kind) { state.sel = null; state.selDim = null; if (['hand', 'line', 'box', 'col', 'beam', 'pdim', 'fx-counter', 'fx-sink', 'fx-hob', 'kL', 'kC'].includes(kind)) state.planSel = null; setSheet('peek'); }
+  if (kind) { state.sel = null; state.selDim = null; if (['hand', 'line', 'box', 'col', 'beam', 'pdim', 'fx-counter', 'fx-sink', 'fx-hob', 'kL', 'kC', 'ref'].includes(kind)) state.planSel = null; setSheet('peek'); }
   svg.classList.toggle('tooling', !!tool);
   $$('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.tool || null) === (kind || null))));
   render(); updateStatus();
@@ -3107,7 +3189,7 @@ function updateStatus() {
   }
   if (isMeasure()) {
     const free = gesture && gesture.kind === 'wpick' && gesture.free;
-    msg.innerHTML = '<b>↔ Measure</b> · ' + esc(free ? 'Let go on the second point' : tool.mStart ? 'Tap the second point' : 'Drag between two points, or tap them one after the other');
+    msg.innerHTML = (tool.kind === 'ref' ? '<b>⋯ Reference line</b> · ' : '<b>↔ Measure</b> · ') + esc(free ? 'Let go on the second point' : tool.mStart ? 'Tap the second point' : tool.kind === 'ref' ? 'Drag along the line you want, or tap two points on it' : 'Drag between two points, or tap them one after the other');
     sn.textContent = hover && hover.label ? hover.label : '';
     ['#st-len', '#st-close', '#st-t', '#st-s', '#st-size'].forEach(i => show(i, false)); show('#st-fin', !!tool.mStart); show('#st-x', true);
     return;
@@ -3219,6 +3301,8 @@ const lenInputs = {
               set: v => { if (v <= 0) return false; for (const w of roomWalls(selRoom())) w.height = v; } },
   'df-rail-t': { lbl: () => 'Default railing thickness', get: () => state.defs.rail.t, set: v => { if (v <= 0) return false; state.defs.rail.t = v; } },
   'df-rail-h': { lbl: () => 'Default railing height', get: () => state.defs.rail.h, set: v => { if (v <= 0) return false; state.defs.rail.h = v; } },
+  'pd-len': { pd: 1, lbl: () => 'Measurement length', get: () => { const d = selPdim(); return Math.hypot(d.b.x - d.a.x, d.b.y - d.a.y); }, set: v => { if (v <= 0) return false; const d = selPdim(), L = Math.hypot(d.b.x - d.a.x, d.b.y - d.a.y) || 1; d.b = { x: r2(d.a.x + (d.b.x - d.a.x) / L * v), y: r2(d.a.y + (d.b.y - d.a.y) / L * v) }; } },
+  'ref-off': { lbl: () => 'Reference copy distance', get: () => state.refOff || 900, set: v => { if (v <= 0) return false; state.refOff = v; } },
   'fx-w': { fx: 1, lbl: () => 'Length of ' + FXK[selFix().kind].name.toLowerCase(), get: () => selFix().w, set: v => { if (v <= 0) return false; selFix().w = v; } },
   'fx-d': { fx: 1, lbl: () => 'Depth of ' + FXK[selFix().kind].name.toLowerCase(), get: () => selFix().d, set: v => { if (v <= 0) return false; const f = selFix(), { ay } = fxAxes(f), dd = v - f.d; if (f.kind === 'counter') { f.x = r2(f.x + ay.x * dd / 2); f.y = r2(f.y + ay.y * dd / 2); } f.d = v; } },
   'fx-h': { fx: 1, lbl: () => 'Height of ' + FXK[selFix().kind].name.toLowerCase(), get: () => selFix().h || state.defs.kitchen.h, set: v => { if (v <= 0) return false; selFix().h = v; } },
@@ -3371,6 +3455,9 @@ function delSelected() {
   const o = selOp(), d = selDim();
   const ps = state.planSel;
   if (o) { commit('Delete ' + opName(o), () => { deleteOpening(wall(), o.id); state.sel = null; if (ps && ps.t === 'open') state.planSel = { t: 'wall', id: ps.id }; }); toast('Deleted ' + opName(o), 'Undo', undo); }
+  else if (state.view === 'plan' && selRef()) {
+    const r = selRef(); commit('Delete reference line', () => { state.refs = state.refs.filter(x => x !== r); state.planSel = null; }); toast('Deleted reference line', 'Undo', undo);
+  }
   else if (state.view === 'plan' && selFix()) {
     const f = selFix(); commit('Delete ' + FXK[f.kind].name.toLowerCase(), () => { state.fix = state.fix.filter(x => x !== f); state.planSel = null; }); toast('Deleted ' + FXK[f.kind].name.toLowerCase(), 'Undo', undo);
   }
@@ -3542,6 +3629,7 @@ function render(drawOnly) {
     if (b.st && !selStruct()) continue;
     if (b.rm && !selRoom()) continue;
     if (b.fx && !selFix()) continue;
+    if (b.pd && !selPdim()) continue;
     if (document.activeElement !== el || drawOnly) el.value = fmt(b.get());
     el.placeholder = state.unit === 'ftin' ? "e.g. 3'6\"" : UNIT_NAME[state.unit];
     el.inputMode = state.unit === 'ftin' || state.unit === 'in' ? 'text' : 'decimal';
@@ -3558,7 +3646,7 @@ function render(drawOnly) {
   $('#wall-h').textContent = isPlan ? 'Selected wall' : 'Walls';
   $('#w-tabs').hidden = isPlan;
   const pw = isPlanWall(w);
-  $('#w-elev').hidden = !isPlan; $('#w-dup').hidden = isPlan;
+  $('#w-elev').hidden = !isPlan; $('#w-dup').hidden = isPlan; $('#w-ref').hidden = !(isPlan && pw);
   $('#w-just-l').hidden = !pw;
   if (pw) $('#w-just').value = w.sideAuto ? 'auto' : String(w.side > 0 ? 1 : w.side < 0 ? -1 : 0);
   $('#w-plan-note').hidden = !pw;
@@ -3600,6 +3688,7 @@ function render(drawOnly) {
   $('#pd-list').innerHTML = state.pdims.length ? state.pdims.map((d, i) => `<button class="orow" data-pd="${d.id}" aria-selected="${pd === d}"><span class="tag dimt">↔</span><span class="meta">${esc(pdl(d))} <span>· measurement ${i + 1}${d.text ? ' · shown as “' + esc(d.text) + '”' : ''}</span></span><span></span></button>`).join('')
     : '<div class="empty">No measurements yet. Pick ↔ Measure in the tool bar.</div>';
   $('#pdsec').hidden = !pd;
+  $('#refsec').hidden = !selRef(); $('#ref-clear').hidden = !state.refs.length;
   if (pd) $('#pd-val').textContent = pdl(pd);
   // columns & beams
   const ss = selStruct(), ns = state.cols.length + state.beams.length;
@@ -3704,7 +3793,7 @@ const FEATURES = [
   ['Doors', [['add:door:single', 'sw door', 'Single door'], ['add:door:double', 'sw door', 'Double door'], ['add:door:slide', 'sw door', 'Sliding door'], ['add:door:pivot', 'sw door', 'Pivot door'], ['add:door:fold', 'sw door', 'Folding door']]],
   ['Windows & openings', [['add:window:slide2', 'sw window', 'Sliding window'], ['add:window:slide3', 'sw window', '3-track sliding'], ['add:window:case1', 'sw window', 'Casement'], ['add:window:case2', 'sw window', 'Double casement'], ['add:window:fixed', 'sw window', 'Fixed glass'], ['add:window:top', 'sw window', 'Top-hung'], ['add:window:louvre', 'sw window', 'Louvred'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening:plain', 'sw opening', 'Opening'], ['add:opening:arch', 'sw opening', 'Arched opening']]],
   ['Structure', [['tool:col', '▣', 'Column'], ['tool:beam', '┅', 'Beam']]],
-  ['Measure on plan', [['tool:pdim', '↔', 'Measure']]],
+  ['Measure on plan', [['tool:pdim', '↔', 'Measure'], ['tool:ref', '⋯', 'Reference line']]],
   ['Measure on wall', [['dim:h', '↔', 'Horizontal'], ['dim:v', '↕', 'Vertical'], ['dim:a', '⤡', 'Aligned'], ['dim:lvl', '▽', 'Level'], ['dim:ang', '∠', 'Angle']]],
   ['View & settings', [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Wall elevation'], ['units', 'ft', 'Units'], ['snap', '⌖', 'Snap'], ['ortho', '⟂', 'Angle lock'], ['canvas', '◐', 'Black / white'], ['fit', '⤢', 'Fit to screen'], ['tool:', '➤', 'Select']]],
   ['Edit', [['undo', '↶', 'Undo'], ['redo', '↷', 'Redo'], ['del', '✕', 'Delete selected']]],
@@ -3753,6 +3842,13 @@ $('#k-setup').addEventListener('click', kitchenModal);
 for (const [id, k] of [['k-ctr', 'fx-counter'], ['k-sink', 'fx-sink'], ['k-hob', 'fx-hob'], ['k-L', 'kL'], ['k-C', 'kC']]) $('#' + id).addEventListener('click', () => { setTool(k); });
 $('#fx-list').addEventListener('click', e => { const b = e.target.closest('[data-fx]'); if (b) selectPlan({ t: 'fix', id: b.dataset.fx }); });
 $('#fx-del').addEventListener('click', () => delSelected());
+$('#w-ref').addEventListener('click', () => { const w = wall(); if (isPlanWall(w)) refModalForWall(w); });
+$('#pd-ref').addEventListener('click', () => { const d = selPdim(); if (!d) return; const dx = d.b.x - d.a.x, dy = d.b.y - d.a.y; addRefLine(d.b.x, d.b.y, -dy, dx, fmt(Math.hypot(dx, dy))); toast('Reference line at ' + fmt(Math.hypot(dx, dy)), 'Undo', undo); });
+const refCopy = sg => { const r = selRef(); if (!r) return; const v = state.refOff || 900; addRefLine(r.x - r.dy * v * sg, r.y + r.dx * v * sg, r.dx, r.dy, fmt(v) + ' from line'); toast('Reference line copied ' + fmt(v) + ' away', 'Undo', undo); };
+$('#ref-a').addEventListener('click', () => refCopy(1));
+$('#ref-b').addEventListener('click', () => refCopy(-1));
+$('#ref-del').addEventListener('click', () => delSelected());
+armDelete($('#ref-clear'), 'Remove all reference lines', () => { if (!state.refs.length) return; commit('Remove reference lines', () => { state.refs = []; if (state.planSel && state.planSel.t === 'ref') state.planSel = null; }); toast('Reference lines removed', 'Undo', undo); });
 $('#fx-rot').addEventListener('click', () => { const f = selFix(); if (f) commit('Rotate ' + FXK[f.kind].name.toLowerCase(), () => { f.rot = ((f.rot || 0) + 90) % 360; }); });
 $('#fx-dup').addEventListener('click', () => { const f = selFix(); if (!f) return; const { ax } = fxAxes(f); let c; commit('Duplicate ' + FXK[f.kind].name.toLowerCase(), () => { c = { ...f, id: uid(), x: r2(f.x + ax.x * (f.w + 100)), y: r2(f.y + ax.y * (f.w + 100)) }; state.fix.push(c); state.planSel = { t: 'fix', id: c.id }; }); });
 
@@ -3769,6 +3865,7 @@ function updateSheet() {
   const pdm = selPdim();
   if (o) t = `${o.label || TYPES[o.type].prefix} · ${TYPES[o.type].name.toLowerCase()} ${fmt(o.w)}×${fmt(o.h)}`;
   else if (selFix()) { const f = selFix(); t = `${FXK[f.kind].name} · ${fmt(f.w)} × ${fmt(f.d)}`; }
+  else if (selRef()) t = 'Reference line' + (selRef().label ? ' · ' + selRef().label : '');
   else if (pdm) t = `Measurement · ${fmt(Math.hypot(pdm.b.x - pdm.a.x, pdm.b.y - pdm.a.y))}`;
   else if (ss) t = `${ss.o.label} · ${ss.kind === 'col' ? 'column ' + sizeTxt(ss.o) : 'beam ' + fmt(ss.o.w) + '×' + fmt(ss.o.d)}`;
   else if (r) t = `${r.name} · ${area(roomArea(r)).m2.toFixed(2)} m²${roomSize(r) ? ' · ' + roomSize(r) : ''}`;
@@ -3780,7 +3877,7 @@ function updateSheet() {
   if (key === lastSelKey) return;
   const first = lastSelKey === null; lastSelKey = key;
   if (first || !mobile() || tool) return;
-  const target = o ? '#ed' : state.selDim && !isPlan ? '#ded' : selFix() ? '#fxsec' : pdm ? '#pdsec' : ss ? '#ssec' : r ? '#rsec' : (ps && ps.t === 'wall') ? '#wall-sec' : null;
+  const target = o ? '#ed' : state.selDim && !isPlan ? '#ded' : selFix() ? '#fxsec' : selRef() ? '#refsec' : pdm ? '#pdsec' : ss ? '#ssec' : r ? '#rsec' : (ps && ps.t === 'wall') ? '#wall-sec' : null;
   if (ptrs.size) { pendingSheet = target; return; }      // finger still down: decide when it lifts
   openSheetTo(target);
 }
