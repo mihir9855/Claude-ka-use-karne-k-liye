@@ -2,6 +2,16 @@
 
 A small CAD-style app for measuring flats, bungalows and offices on site: draw the floor plan by hand, then open any wall to draft its elevation with doors, windows, ventilators and openings.
 
+## Made for phones
+- Full-screen drawing, tools in a bottom bar (thumb reach), details in a pull-up sheet that opens to whatever you tap.
+- Units picker on the top bar: mm, cm, m, feet, feet-inch, inch. You can type any unit in any field (4.2m, 10.5ft, 10'6").
+
+## Columns & beams
+- ▣ Column: tap to place; snaps to wall corners (centre of the walls) and along walls. Sizes 230×230 … 450×450, round, or imperial 9"×9" … 18"×18". Rotate, resize, drag.
+- ┅ Beam: drag, or tap its ends; snaps to columns and wall corners. Width × depth presets; drag the beam or its ends.
+- Wall elevations show columns standing in the wall and beams above it (with beam depth). Schedule and "Copy measurements" list them.
+- Tap a selected beam/column again to select the wall underneath.
+
 ## Floor plan (Plan view)
 - Opens on a **blank black CAD canvas** (◐ switches to a white one). "Start blank drawing" clears it; "Load example flat" shows a sample.
 - Wall tools: **✎ Hand** (draw with your finger, straightened automatically), **╱ Line** (tap corners, or drag one wall), **▭ Box** (drag corner to corner for four walls, or "Type size…").
