@@ -203,7 +203,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 #draw .pface { stroke: var(--ink); stroke-width: 1.8; }
 #draw .pout { stroke: var(--ink); stroke-width: 1.2; }
 #draw .whit { stroke: transparent; stroke-width: 22; cursor: pointer; }
-#dg > :not([data-oid]):not([data-wid]):not([data-rid]):not([data-cid]):not([data-bid]):not([data-bend]):not([data-nid]):not([data-did]) { pointer-events: none; }
+#dg > :not([data-oid]):not([data-wid]):not([data-rid]):not([data-cid]):not([data-bid]):not([data-bend]):not([data-nid]):not([data-did]):not([data-pdid]) { pointer-events: none; }
 #draw .whit { stroke-width: 26; }
 #draw .wsel { stroke: var(--sel); stroke-width: 4; opacity: .85; }
 #draw .lend { fill: var(--sel); }
@@ -306,6 +306,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <button data-tool="box" title="Box: drag corner to corner for four walls (B)"><span class="ic">▭</span><span class="tl">Box</span></button>
         <button data-tool="col" title="Column: tap to place, snaps to wall corners (C)"><span class="ic">▣</span><span class="tl">Column</span></button>
         <button data-tool="beam" title="Beam: drag or tap two points (M)"><span class="ic">┅</span><span class="tl">Beam</span></button>
+        <button data-tool="pdim" title="Measure: drag or tap between two points (U)"><span class="ic">↔</span><span class="tl">Measure</span></button>
       </div>
       <div class="tgroup" role="group" aria-label="Dimension tools" data-v="wall">
         <button data-tool="" title="Select and move (Esc)"><span class="ic">➤</span><span class="tl">Select</span></button>
@@ -378,6 +379,8 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <div class="chips" id="pshow-chips">
           <button class="chip" data-show="pdim">Wall lengths</button>
           <button class="chip" data-show="parea">Room areas</button>
+          <button class="chip" data-show="popen">Door, window &amp; column positions</button>
+          <button class="chip" data-show="pmy">My measurements</button>
         </div>
       </section>
 
@@ -394,6 +397,20 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
           </div>
         </div>
         <div class="scroll-x" style="margin-top:10px"><table class="q" id="q-rooms"></table></div>
+      </section>
+
+      <section data-v="plan" id="pdim-sec">
+        <h2>Measurements on plan <span id="pd-count" style="letter-spacing:0;text-transform:none;font-family:var(--f-mono)"></span></h2>
+        <div class="olist" id="pd-list"></div>
+        <div id="pdsec" hidden>
+          <div class="editor" style="margin-top:8px">
+            <h2 style="color:var(--ink)">Selected measurement</h2>
+            <p class="bigval" id="pd-val"></p>
+            <label class="f">Text on drawing (empty shows the measurement)<input id="pd-text" type="text" maxlength="24" autocomplete="off" placeholder="e.g. CLR, EQ"></label>
+            <div class="row-btns"><button class="btn" id="pd-flip">Flip side</button><button class="btn danger" id="pd-del">Delete</button></div>
+          </div>
+        </div>
+        <p class="note">Tap ↔ Measure, then drag between two points, or tap them one after the other. It snaps to corners, inside corners, wall faces, door and window edges and columns. Drag a measurement to move its line.</p>
       </section>
 
       <section data-v="plan" id="struct-sec">
@@ -600,7 +617,7 @@ const DEF_SNAP = () => ({ on: true, step: 10, end: true, mid: true, edge: true, 
 const DEF_SHOW = () => ({ chain: true, overall: true, hts: true, plan: true, user: true, pdim: true, parea: true });
 function blankProject(name) {
   return { v: 4, name, unit: 'mm', view: 'plan', canvas: 'dark', active: null, sel: null, selDim: null, planSel: null,
-    snap: DEF_SNAP(), show: DEF_SHOW(), draw: { t: 230, h: 3000, ortho: '90', just: 'in', step: 50, col: { shape: 'rect', w: 230, d: 450 }, beam: { shape: 'rect', w: 230, d: 450 } }, nodes: [], walls: [], rooms: [], cols: [], beams: [] };
+    snap: DEF_SNAP(), show: DEF_SHOW(), draw: { t: 230, h: 3000, ortho: '90', just: 'in', step: 50, col: { shape: 'rect', w: 230, d: 450 }, beam: { shape: 'rect', w: 230, d: 450 } }, nodes: [], walls: [], rooms: [], cols: [], beams: [], pdims: [] };
 }
 function sample() {
   const s = blankProject('Example flat (replace with your measurements)');
@@ -630,7 +647,8 @@ function norm(p) {                       // fill in fields added in later versio
   if (typeof p.snap !== 'object' || !p.snap) p.snap = DEF_SNAP();
   if (!isFinite(p.snap.step) || p.snap.step <= 0) p.snap.step = 10;
   if (!p.show) p.show = { ...DEF_SHOW(), hts: p.showHts !== false, plan: p.showPlan !== false };
-  for (const k of ['pdim', 'parea']) if (!(k in p.show)) p.show[k] = true;
+  for (const k of ['pdim', 'parea', 'popen', 'pmy']) if (!(k in p.show)) p.show[k] = true;
+  if (!Array.isArray(p.pdims)) p.pdims = [];
   delete p.showHts; delete p.showPlan;
   if (!Array.isArray(p.nodes)) p.nodes = [];
   if (!Array.isArray(p.rooms)) p.rooms = [];
@@ -1416,6 +1434,57 @@ function structOnWall(w) {            // columns standing in this wall and beams
   return { cols, beams };
 }
 
+/* ---------- measurements on plan ---------- */
+const isMeasure = () => !!(tool && tool.kind === 'pdim');
+function measureSnap(p, from, tol) {
+  if (state.snap.on) {
+    let best = null;
+    const tryPt = (q, label) => { const d = Math.hypot(q.x - p.x, q.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt: { x: q.x, y: q.y }, kind: 'end', label }; };
+    for (const r of state.rooms) for (const q of innerPoly(r)) tryPt(q, 'Inside corner');
+    for (const nd of state.nodes) tryPt(nd, 'Corner');
+    for (const w of state.walls) {
+      if (!isPlanWall(w)) continue; const g = wallGeo(w);
+      const at = (sp, f) => ({ x: g.A.x + g.d.x * sp + g.n.x * f, y: g.A.y + g.d.y * sp + g.n.y * f });
+      for (const o of w.openings) for (const x of [o.x, o.x + o.w]) for (const f of [g.f0, g.f1]) tryPt(at(g.sOf(x), f), 'Edge of ' + opName(o));
+      for (const f of [g.f0, g.f1]) { tryPt(at(0, f), 'Wall end'); tryPt(at(g.L, f), 'Wall end'); }
+    }
+    for (const c of state.cols) { tryPt(c, 'Column centre'); if (c.shape !== 'round') colPoly(c).forEach(q => tryPt(q, 'Column corner')); }
+    if (best) return best;
+    for (const w of state.walls) {                       // slide along wall faces
+      if (!isPlanWall(w)) continue; const g = wallGeo(w);
+      for (const f of [g.f0, g.f1]) {
+        const P0 = { x: g.A.x + g.n.x * f, y: g.A.y + g.n.y * f };
+        let k = (p.x - P0.x) * g.d.x + (p.y - P0.y) * g.d.y; k = Math.min(Math.max(k, 0), g.L);
+        const Q = { x: P0.x + g.d.x * k, y: P0.y + g.d.y * k }, d = Math.hypot(Q.x - p.x, Q.y - p.y);
+        if (d <= tol && (!best || d < best.d)) best = { d, pt: Q, kind: 'edge', label: 'Wall face' };
+      }
+    }
+    if (best) { if (from) best.label = fmt(Math.hypot(best.pt.x - from.x, best.pt.y - from.y)) + ' · ' + best.label; return best; }
+  }
+  return planSnap(p, from, tol);
+}
+function addPdim(a, b) {
+  const L = Math.hypot(b.x - a.x, b.y - a.y); if (L < 1) return;
+  commit('Add measurement ' + fmt(L), () => { state.pdims.push({ id: uid(), a: { x: r2(a.x), y: r2(a.y) }, b: { x: r2(b.x), y: r2(b.y) }, off: r2(planTs() * 1.2), text: '' }); state.show.pmy = true; });
+  toast('Measured ' + fmt(L), 'Undo', undo);
+}
+function drawPlanDim(g, d, cls = '', ia = false) {
+  const ts = g.ts, fs = g.fs, n = g.n, C = c => cls ? c + ' ' + cls : c;
+  const a = d.a, b = d.b, L = Math.hypot(b.x - a.x, b.y - a.y); if (L < 0.5) return;
+  const u = { x: (b.x - a.x) / L, y: (b.y - a.y) / L }, nn = { x: -u.y, y: u.x }, off = d.off || 0, sg = Math.sign(off) || 1;
+  const A = { x: a.x + nn.x * off, y: a.y + nn.y * off }, B = { x: b.x + nn.x * off, y: b.y + nn.y * off };
+  if (Math.abs(off) > ts * 0.3) for (const [p, q] of [[a, A], [b, B]]) g.line(p.x + nn.x * sg * ts * 0.2, p.y + nn.y * sg * ts * 0.2, q.x + nn.x * sg * ts * 0.35, q.y + nn.y * sg * ts * 0.35, C('ext'));
+  g.line(A.x - u.x * ts * 0.3, A.y - u.y * ts * 0.3, B.x + u.x * ts * 0.3, B.y + u.y * ts * 0.3, C('dim'));
+  const tx = (u.x + nn.x) * ts * 0.16, ty = (u.y + nn.y) * ts * 0.16;
+  for (const q of [A, B]) g.line(q.x - tx, q.y - ty, q.x + tx, q.y + ty, C('dim'));
+  const label = d.text || fmt(L), fz = Math.max(fs * 0.5, Math.min(fs, L / (label.length * 0.6 + 0.4)));
+  let th = Math.atan2(u.y, u.x) * 180 / Math.PI; if (th > 89.9 || th <= -90.1) th -= 180; if (th < -180) th += 360;
+  const rad = th * Math.PI / 180, up = { x: Math.sin(rad), y: -Math.cos(rad) }, pos = { x: (A.x + B.x) / 2 + up.x * ts * 0.3, y: (A.y + B.y) / 2 + up.y * ts * 0.3 };
+  g.text(pos.x, pos.y, label, C('dt'), fz, 'middle', Math.abs(th) > 0.01 ? ` transform="rotate(${n(th)} ${n(pos.x)} ${n(pos.y)})"` : '');
+  if (ia) g.raw(`<line x1="${n(A.x)}" y1="${n(A.y)}" x2="${n(B.x)}" y2="${n(B.y)}" class="dhit" data-pdid="${d.id}" vector-effect="non-scaling-stroke"/>`);
+}
+const selPdim = () => (state.planSel && state.planSel.t === 'pdim' && state.pdims.find(d => d.id === state.planSel.id)) || null;
+
 /* ---------- snapping ---------- */
 function snapBoxes(w) {
   const out = [{ x: 0, z: 0, w: w.length, h: w.height, ref: { t: 'wall' }, name: 'wall' }];
@@ -1489,6 +1558,8 @@ const smallScreen = () => window.matchMedia('(max-width: 820px)').matches;
 function planTs() { const b = nodesBox(); return Math.max(b ? b.x1 - b.x0 : 0, b ? b.y1 - b.y0 : 0, 3000) / (smallScreen() ? 30 : 45); }
 const isDraw = () => !!(tool && (tool.kind === 'hand' || tool.kind === 'line' || tool.kind === 'box'));
 const isStruct = () => !!(tool && (tool.kind === 'col' || tool.kind === 'beam'));
+const toolFrom = () => tool ? (tool.kind === 'beam' ? tool.beamStart : tool.kind === 'pdim' ? tool.mStart : null) : null;
+const toolSnap = (p, from, tol) => isMeasure() ? measureSnap(p, from, tol) : structSnap(p, from, tol);
 function hull(pts) {
   const P = [...pts].sort((a, b) => a.x - b.x || a.y - b.y), cr = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
   const lo = [], up = [];
@@ -1507,7 +1578,7 @@ function buildPlan(opt) {
   const at = (gw, s, off) => ({ x: gw.A.x + gw.d.x * s + gw.n.x * off, y: gw.A.y + gw.d.y * s + gw.n.y * off });
   const ln = (p, q, cls) => g.line(p.x, p.y, q.x, q.y, cls);
 
-  if (!walls.length && !state.cols.length && !state.beams.length) {
+  if (!walls.length && !state.cols.length && !state.beams.length && !state.pdims.length) {
     g.text(0, 0, 'Blank drawing', 'cap', ts * 1.3);
     g.text(0, ts * 1.7, '✎ Hand: draw walls with your finger', 'lbs', fs);
     g.text(0, ts * 3.0, '╱ Line: tap each corner, or drag one wall', 'lbs', fs);
@@ -1547,6 +1618,7 @@ function buildPlan(opt) {
   for (const sh of shapes) g.raw(`<path d="${path(sh)}" class="wf"/>`);
 
   // openings
+  const openHits = [];
   for (const gw of G.values()) for (const o of gw.w.openings) {
     const a = gw.sOf(o.x), b = gw.sOf(o.x + o.w), s0 = Math.max(Math.min(a, b), 0), s1 = Math.min(Math.max(a, b), gw.L);
     if (s1 <= s0) continue;
@@ -1563,11 +1635,11 @@ function buildPlan(opt) {
     } else if (o.type === 'window' || o.type === 'vent') {
       for (const off of [gw.f0, (gw.f0 + gw.f1) / 2, gw.f1]) ln(at(gw, s0, off), at(gw, s1, off), o.type);
     } else ln(at(gw, s0, gw.f0), at(gw, s1, gw.f1), 'opening');
-    const lp = at(gw, (s0 + s1) / 2, gw.f1 + ts * 0.85);
+    const lp = at(gw, (s0 + s1) / 2, gw.f1 + ts * (state.show.popen ? 2.2 : 0.85));
     g.text(lp.x, lp.y + fs * 0.35, o.label || TYPES[o.type].prefix, 'lb', fs * 0.85, 'middle');
     const box = [at(gw, s0, gw.f0 - ts * 0.3), at(gw, s1, gw.f0 - ts * 0.3), at(gw, s1, gw.f1 + ts * 0.3), at(gw, s0, gw.f1 + ts * 0.3)];
     if (ia && state.sel === o.id && state.active === gw.w.id) poly(box, 'sel');
-    if (ia) g.raw(`<path d="${path(box)}" class="hit" data-oid="${o.id}" data-owid="${gw.w.id}"/>`);
+    if (ia) openHits.push(`<path d="${path(box)}" class="hit" data-oid="${o.id}" data-owid="${gw.w.id}"/>`);
   }
   // selected wall
   if (ps && (ps.t === 'wall' || ps.t === 'open')) {
@@ -1600,8 +1672,8 @@ function buildPlan(opt) {
     if (ps && ps.t === 'beam' && ps.id === bm.id) poly(c, 'sel', ' vector-effect="non-scaling-stroke"');
   }
   // dimensions: inside each room, and along walls that are not part of a room
-  const dimLine = (p, q, inn, off, depth) => {
-    const L = Math.hypot(q.x - p.x, q.y - p.y); if (L < ts * 1.2) return;
+  const dimLine = (p, q, inn, off, depth, minL = ts * 1.2) => {
+    const L = Math.hypot(q.x - p.x, q.y - p.y); if (L < minL) return;
     const d = { x: (q.x - p.x) / L, y: (q.y - p.y) / L }, A = { x: p.x + inn.x * off, y: p.y + inn.y * off }, B = { x: q.x + inn.x * off, y: q.y + inn.y * off };
     g.line(p.x + inn.x * ts * 0.15, p.y + inn.y * ts * 0.15, A.x + inn.x * ts * 0.3, A.y + inn.y * ts * 0.3, 'ext');
     g.line(q.x + inn.x * ts * 0.15, q.y + inn.y * ts * 0.15, B.x + inn.x * ts * 0.3, B.y + inn.y * ts * 0.3, 'ext');
@@ -1616,6 +1688,15 @@ function buildPlan(opt) {
     const k = toward ? ts * 0.25 : -(ts * 0.25 + fz * 0.75), pos = { x: mid.x + up.x * k, y: mid.y + up.y * k };
     g.text(pos.x, pos.y, lab, 'dt', fz, 'middle', Math.abs(th) > 0.01 ? ` transform="rotate(${n(th)} ${n(pos.x)} ${n(pos.y)})"` : '');
   };
+  if (state.show.popen) for (const gw of G.values()) {         // where doors, windows and columns sit along each wall
+    const se = structOnWall(gw.w), cuts = [];
+    for (const o of gw.w.openings) cuts.push(gw.sOf(o.x), gw.sOf(o.x + o.w));
+    for (const c of se.cols) cuts.push(gw.sOf(c.x0), gw.sOf(c.x1));
+    if (!cuts.length) continue;
+    const pts = [...new Set([gw.i0, gw.i1, ...cuts.map(v => Math.min(Math.max(v, gw.i0), gw.i1))].map(v => Math.round(v * 10) / 10))].sort((a, b) => a - b);
+    for (let i = 0; i < pts.length - 1; i++) dimLine(at(gw, pts[i], gw.f1), at(gw, pts[i + 1], gw.f1), gw.n, ts * 0.8, 1e9, ts * 0.3);
+    gw.chained = true;
+  }
   if (state.show.pdim) {
     for (const r of state.rooms) {
       const ip = simplify(innerPoly(r)), sg = polyArea(ip) > 0 ? 1 : -1, b = { x0: Math.min(...ip.map(q => q.x)), x1: Math.max(...ip.map(q => q.x)), y0: Math.min(...ip.map(q => q.y)), y1: Math.max(...ip.map(q => q.y)) };
@@ -1630,6 +1711,7 @@ function buildPlan(opt) {
       dimLine(at(gw, 0, gw.f1), at(gw, gw.L, gw.f1), gw.n, ts * 0.9, 1e9);
     }
   }
+  if (state.show.pmy) for (const d of state.pdims) drawPlanDim(g, d, ps && ps.t === 'pdim' && ps.id === d.id ? 'hi' : '', ia);
   // room names + areas
   for (const r of state.rooms) {
     const ip = innerPoly(r); if (ip.length < 3) continue;
@@ -1647,6 +1729,7 @@ function buildPlan(opt) {
     for (const gw of G.values()) { const p = at(gw, 0, (gw.f0 + gw.f1) / 2), q = at(gw, gw.L, (gw.f0 + gw.f1) / 2); g.raw(`<line x1="${n(p.x)}" y1="${n(p.y)}" x2="${n(q.x)}" y2="${n(q.y)}" class="whit" data-wid="${gw.w.id}" vector-effect="non-scaling-stroke"/>`); }
     for (const bm of state.beams) g.raw(`<line x1="${n(bm.a.x)}" y1="${n(bm.a.y)}" x2="${n(bm.b.x)}" y2="${n(bm.b.y)}" class="whit" data-bid="${bm.id}" vector-effect="non-scaling-stroke"/>`);
     for (const c of state.cols) g.raw(`<circle cx="${n(c.x)}" cy="${n(c.y)}" r="${n(Math.max(colHalf(c, { x: 1, y: 0 }), colHalf(c, { x: 0, y: 1 }), ts * 0.6))}" class="hit" data-cid="${c.id}"/>`);
+    openHits.forEach(h => g.raw(h));                        // doors and windows on top so they can be dragged
     const sb = ps && ps.t === 'beam' && state.beams.find(b => b.id === ps.id);
     if (sb && !tool) for (const end of ['a', 'b']) {
       g.raw(`<circle cx="${n(sb[end].x)}" cy="${n(sb[end].y)}" r="${n(ts * 0.22)}" class="pnode" vector-effect="non-scaling-stroke"/>`);
@@ -1729,7 +1812,7 @@ function snapMove(moving, dx, dy, tol) {   // move a set of corners; stick to ot
 }
 function planHover(e) {
   const p = toSvg(e.clientX, e.clientY), tol = upx() * (e.pointerType === 'touch' ? 26 : 13);
-  hover = isStruct() ? structSnap(p, tool.kind === 'beam' ? tool.beamStart : null, tol) : planSnap(p, tool && tool.kind !== 'box' ? tool.last : null, tol);
+  hover = (isStruct() || isMeasure()) ? toolSnap(p, toolFrom(), tol) : planSnap(p, tool && tool.kind !== 'box' ? tool.last : null, tol);
   guides = hover.guides || [];
   drawOverlay(); updateStatus();
 }
@@ -1766,7 +1849,7 @@ function placeWallPoint() {
   if (Math.hypot(pt.x - tool.last.x, pt.y - tool.last.y) < 1) { finishChain(); return; }
   addSegment(pt);
 }
-function finishChain() { if (!tool) return; tool.last = null; tool.start = null; tool.count = 0; tool.boxStart = null; tool.beamStart = null; hover = null; guides = []; render(); updateStatus(); }
+function finishChain() { if (!tool) return; tool.last = null; tool.start = null; tool.count = 0; tool.boxStart = null; tool.beamStart = null; tool.mStart = null; hover = null; guides = []; render(); updateStatus(); }
 function drawSingle(p, q) {
   if (Math.hypot(q.x - p.x, q.y - p.y) < planStep()) return;
   tool.last = { x: p.x, y: p.y, nid: p.nid || null }; tool.start = { x: p.x, y: p.y }; tool.count = 0;
@@ -1910,7 +1993,7 @@ function selectPlan(tg) {
   if (!tg) state.planSel = null;
   else if (tg.t === 'wall') { state.active = tg.id; state.planSel = { t: 'wall', id: tg.id }; }
   else if (tg.t === 'open') { state.active = tg.wid; state.sel = tg.id; state.planSel = { t: 'open', id: tg.wid }; }
-  else if (tg.t === 'col' || tg.t === 'beam') state.planSel = { t: tg.t, id: tg.id };
+  else if (tg.t === 'col' || tg.t === 'beam' || tg.t === 'pdim') state.planSel = { t: tg.t, id: tg.id };
   else state.planSel = { t: 'room', id: tg.id };
   save(); render();
 }
@@ -1976,6 +2059,11 @@ function planOverlay() {
     g.raw(`<path d="M${n(L.x - rx * h)} ${n(L.y - ry * h)}L${n(b.x - rx * h)} ${n(b.y - ry * h)}L${n(b.x + rx * (t - h))} ${n(b.y + ry * (t - h))}L${n(L.x + rx * (t - h))} ${n(L.y + ry * (t - h))}Z" class="pvband" vector-effect="non-scaling-stroke"/>`);
     g.text((L.x + b.x) / 2 - rx * u * 18, (L.y + b.y) / 2 - ry * u * 18 + u * 5, fmt(len), 'dt pv', u * 15, 'middle');
   };
+  if (isMeasure() && hover) {
+    const st = tool.mStart || (free ? gesture.start : null);
+    if (st) { drawPlanDim(g, { a: st, b: hover.pt, off: 0 }, 'pv'); g.raw(`<circle cx="${n(st.x)}" cy="${n(st.y)}" r="${n(u * 5)}" class="snapm" vector-effect="non-scaling-stroke"/>`); }
+    mark(hover);
+  }
   if (isStruct() && hover) {
     if (tool.kind === 'col') {
       const v = state.draw.col; let rot = 0;
@@ -2063,7 +2151,7 @@ svg.addEventListener('pointerdown', e => {
   if (ptrs.size >= 2) {
     multi = multi || { t0: performance.now(), n: 0, moved: false };
     multi.n = Math.max(multi.n, ptrs.size);
-    if (gesture && gesture.moved && ['drag', 'dimdrag', 'node', 'room', 'popen', 'cmove', 'bmove', 'bend'].includes(gesture.kind)) { guides = []; if (gesture.kind === 'node' || gesture.kind === 'room') rebuildPlan(); save(); render(); }
+    if (gesture && gesture.moved && ['drag', 'dimdrag', 'node', 'room', 'popen', 'cmove', 'bmove', 'bend', 'pdmove'].includes(gesture.kind)) { guides = []; if (gesture.kind === 'node' || gesture.kind === 'room') rebuildPlan(); save(); render(); }
     const [a, b] = [...ptrs.values()];
     gesture = { kind: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
     return;
@@ -2109,7 +2197,7 @@ svg.addEventListener('pointermove', e => {
     view.x = gesture.vx - (e.clientX - gesture.sx) / r.width * view.w;
     view.y = gesture.vy - (e.clientY - gesture.sy) / r.height * view.h;
     applyView();
-  } else if (['wpick', 'node', 'room', 'popen', 'tapsel', 'cmove', 'bmove', 'bend'].includes(gesture.kind)) {
+  } else if (['wpick', 'node', 'room', 'popen', 'tapsel', 'cmove', 'bmove', 'bend', 'pdmove'].includes(gesture.kind)) {
     planMove(e);
   } else if (gesture.kind === 'pick') {
     updateHover(e);
@@ -2140,6 +2228,7 @@ function endPtr(e) {
     if ((gesture.kind === 'drag' || gesture.kind === 'dimdrag') && gesture.moved) { guides = []; save(); render(); }
   }
   if (ptrs.size === 0) {
+    if (pendingSheet !== undefined) { const t = pendingSheet; pendingSheet = undefined; if (!(gesture && gesture.moved) && mobile() && !tool) openSheetTo(t); }   // open details on a tap, not after a drag
     if (multi && !multi.moved && performance.now() - multi.t0 < 450) { if (multi.n === 2) undo(); else if (multi.n >= 3) redo(); }
     multi = null; gesture = null; svg.classList.remove('panning');
     if (e.pointerType !== 'mouse' && tool) { hover = null; drawOverlay(); }
@@ -2150,17 +2239,17 @@ function underTarget(x, y) {
   const ps = state.planSel, cur = ps ? (ps.t === 'open' ? state.sel : ps.id) : null;
   for (const el of document.elementsFromPoint(x, y)) {
     const d = el.dataset || {};
-    const tg = d.cid ? { t: 'col', id: d.cid } : d.bid ? { t: 'beam', id: d.bid } : d.oid && d.owid ? { t: 'open', id: d.oid, wid: d.owid } : d.wid ? { t: 'wall', id: d.wid } : d.rid ? { t: 'room', id: d.rid } : null;
+    const tg = d.pdid ? { t: 'pdim', id: d.pdid } : d.cid ? { t: 'col', id: d.cid } : d.bid ? { t: 'beam', id: d.bid } : d.oid && d.owid ? { t: 'open', id: d.oid, wid: d.owid } : d.wid ? { t: 'wall', id: d.wid } : d.rid ? { t: 'room', id: d.rid } : null;
     if (tg && tg.id !== cur) return tg;
   }
   return null;
 }
 function planDown(e) {
   const p = toSvg(e.clientX, e.clientY);
-  if (isStruct()) {
+  if (isStruct() || isMeasure()) {
     const tol = upx() * (e.pointerType === 'touch' ? 26 : 13);
-    gesture = { kind: 'wpick', sx: e.clientX, sy: e.clientY, stroke: [p], free: false, start: structSnap(p, null, tol).pt };
-    hover = structSnap(p, tool.kind === 'beam' ? tool.beamStart : null, tol); guides = hover.guides || []; drawOverlay(); updateStatus(); return;
+    gesture = { kind: 'wpick', sx: e.clientX, sy: e.clientY, stroke: [p], free: false, start: toolSnap(p, null, tol).pt };
+    hover = toolSnap(p, toolFrom(), tol); guides = hover.guides || []; drawOverlay(); updateStatus(); return;
   }
   if (isDraw()) {
     const tol = upx() * (e.pointerType === 'touch' ? 26 : 13), h = planSnap(p, tool.kind === 'box' ? null : tool.last, tol);
@@ -2172,13 +2261,19 @@ function planDown(e) {
   const base = { sx: e.clientX, sy: e.clientY, p0: p, moved: false, vx: view.x, vy: view.y };
   const ch = q('[data-cid]'), bh = q('[data-bid]'), eh = q('[data-bend]');
   if (eh) { const [id, end] = eh.dataset.bend.split(':'), bm = state.beams.find(x => x.id === id); if (bm) { gesture = { ...base, kind: 'bend', id, end, o: { ...bm[end] } }; return; } }
-  if (ch && ps && ps.t === 'col' && ps.id === ch.dataset.cid) { const c = state.cols.find(x => x.id === ps.id); if (c) { gesture = { ...base, kind: 'cmove', id: c.id, ox: c.x, oy: c.y }; return; } }
-  if (bh && ps && ps.t === 'beam' && ps.id === bh.dataset.bid) { const bm = state.beams.find(x => x.id === ps.id); if (bm) { gesture = { ...base, kind: 'bmove', id: bm.id, a: { ...bm.a }, b: { ...bm.b } }; return; } }
-  if (ch || bh) { gesture = { ...base, kind: 'tapsel', target: ch ? { t: 'col', id: ch.dataset.cid } : { t: 'beam', id: bh.dataset.bid } }; svg.classList.add('panning'); return; }
+  const dh = q('[data-pdid]');
+  if (dh) { const d = state.pdims.find(x => x.id === dh.dataset.pdid); if (d) { const was = !!(ps && ps.t === 'pdim' && ps.id === d.id); if (!was) selectPlan({ t: 'pdim', id: d.id }); gesture = { ...base, kind: 'pdmove', id: d.id, was }; return; } }
+  if (ch) { const c = state.cols.find(x => x.id === ch.dataset.cid); if (c) { const was = !!(ps && ps.t === 'col' && ps.id === c.id); if (!was) selectPlan({ t: 'col', id: c.id }); gesture = { ...base, kind: 'cmove', id: c.id, ox: c.x, oy: c.y, was }; return; } }
+  if (bh) { const bm = state.beams.find(x => x.id === bh.dataset.bid); if (bm) { const was = !!(ps && ps.t === 'beam' && ps.id === bm.id); if (!was) selectPlan({ t: 'beam', id: bm.id }); gesture = { ...base, kind: 'bmove', id: bm.id, a: { ...bm.a }, b: { ...bm.b }, was }; return; } }
   if (nh) { const nd = nodeById(nh.dataset.nid); if (nd) { gesture = { ...base, kind: 'node', set: [{ id: nd.id, x: nd.x, y: nd.y }] }; return; } }
-  if (oh && state.sel === oh.dataset.oid) {
+  if (oh) {
     const w = state.walls.find(x => x.id === oh.dataset.owid), o = w && w.openings.find(x => x.id === oh.dataset.oid);
-    if (o) { gesture = { ...base, kind: 'popen', wid: w.id, id: o.id, ox: o.x }; return; }
+    if (o) {
+      const was = state.sel === o.id;
+      if (!was) selectPlan({ t: 'open', id: o.id, wid: w.id });
+      const g = wallGeo(w), sp = (p.x - g.A.x) * g.d.x + (p.y - g.A.y) * g.d.y, xe = g.vs > 0 ? g.i1 - sp : sp - g.i0;
+      gesture = { ...base, kind: 'popen', wid: w.id, id: o.id, grab: xe - o.x, was }; return;
+    }
   }
   if (rh && !oh && !wh && ps && ps.t === 'room' && ps.id === rh.dataset.rid) {
     const r = state.rooms.find(x => x.id === ps.id);
@@ -2194,7 +2289,7 @@ function planMove(e) {
     gesture.stroke.push(cur);
     if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) > 18) gesture.free = true;
     if (!gesture.free) { planHover(e); return; }
-    if (isStruct()) { hover = structSnap(cur, tool.kind === 'beam' ? (tool.beamStart || gesture.start) : null, tol); guides = hover.guides || []; drawOverlay(); updateStatus(); return; }
+    if (isStruct() || isMeasure()) { hover = toolSnap(cur, tool.kind === 'col' ? null : (toolFrom() || gesture.start), tol); guides = hover.guides || []; drawOverlay(); updateStatus(); return; }
     if (tool.kind === 'hand') { hover = null; guides = []; }
     else { hover = planSnap(cur, tool.kind === 'box' ? null : gesture.start, tol); guides = hover.guides || []; }
     drawOverlay(); updateStatus();
@@ -2209,8 +2304,21 @@ function planMove(e) {
   const p = toSvg(e.clientX, e.clientY), dx = p.x - gesture.p0.x, dy = p.y - gesture.p0.y, tol = upx() * (e.pointerType === 'touch' ? 22 : 11);
   if (gesture.kind === 'cmove' || gesture.kind === 'bmove' || gesture.kind === 'bend') {
     if (!gesture.moved) { snapshot({ cmove: 'Move column', bmove: 'Move beam', bend: 'Change beam end' }[gesture.kind]); gesture.moved = true; }
-    if (gesture.kind === 'cmove') { const c = state.cols.find(x => x.id === gesture.id), h = structSnap({ x: gesture.ox + dx, y: gesture.oy + dy }, null, tol); if (c) { c.x = r2(h.pt.x); c.y = r2(h.pt.y); guides = h.guides || []; } }
-    else if (gesture.kind === 'bmove') { const bm = state.beams.find(x => x.id === gesture.id), st = state.snap.on && state.snap.grid ? planStep() : 1, ddx = Math.round(dx / st) * st, ddy = Math.round(dy / st) * st; if (bm) { bm.a = { x: r2(gesture.a.x + ddx), y: r2(gesture.a.y + ddy) }; bm.b = { x: r2(gesture.b.x + ddx), y: r2(gesture.b.y + ddy) }; } }
+    if (gesture.kind === 'cmove') {
+      const c = state.cols.find(x => x.id === gesture.id), h = structSnap({ x: gesture.ox + dx, y: gesture.oy + dy }, null, tol);
+      if (c) { c.x = r2(h.pt.x); c.y = r2(h.pt.y); guides = h.guides || []; if (h.wall) { const gw = wallGeo(h.wall); c.rot = Math.round(Math.atan2(gw.d.y, gw.d.x) * 180 / Math.PI - 90); } }
+    }
+    else if (gesture.kind === 'bmove') {
+      const bm = state.beams.find(x => x.id === gesture.id); if (!bm) return;
+      let ddx = dx, ddy = dy, corr = null;
+      for (const P of [{ x: gesture.a.x + dx, y: gesture.a.y + dy }, { x: gesture.b.x + dx, y: gesture.b.y + dy }]) {   // pull an end onto a column, corner or wall line
+        const h = structSnap(P, null, tol);
+        if (h.kind === 'end' || h.kind === 'edge') { const cx = h.pt.x - P.x, cy = h.pt.y - P.y, m = Math.hypot(cx, cy); if (!corr || m < corr.m) corr = { x: cx, y: cy, m }; }
+      }
+      if (corr) { ddx += corr.x; ddy += corr.y; }
+      else if (state.snap.on && state.snap.grid) { const st = planStep(); ddx = Math.round(dx / st) * st; ddy = Math.round(dy / st) * st; }
+      bm.a = { x: r2(gesture.a.x + ddx), y: r2(gesture.a.y + ddy) }; bm.b = { x: r2(gesture.b.x + ddx), y: r2(gesture.b.y + ddy) };
+    }
     else { const bm = state.beams.find(x => x.id === gesture.id); if (bm) { const h = structSnap({ x: gesture.o.x + dx, y: gesture.o.y + dy }, bm[gesture.end === 'a' ? 'b' : 'a'], tol); bm[gesture.end] = { x: r2(h.pt.x), y: r2(h.pt.y) }; guides = h.guides || []; } }
     render(true); return;
   }
@@ -2220,16 +2328,41 @@ function planMove(e) {
     for (const s0 of gesture.set) { const nd = nodeById(s0.id); if (nd) { nd.x = r2(s0.x + m.dx); nd.y = r2(s0.y + m.dy); } }
     guides = m.guides; render(true);
   } else if (gesture.kind === 'popen') {
-    const w = state.walls.find(x => x.id === gesture.wid), o = w && w.openings.find(x => x.id === gesture.id); if (!o) return;
+    let w = state.walls.find(x => x.id === gesture.wid); const o = w && w.openings.find(x => x.id === gesture.id); if (!o) return;
     if (!gesture.moved) { snapshot('Move ' + opName(o)); gesture.moved = true; }
-    const gw = wallGeo(w), res = snapOpening(w, o, gesture.ox + dx * gw.u.x + dy * gw.u.y, o.sill, false, tol);
-    o.x = res.x; guides = []; render(true);
+    let best = null;                                   // the wall under the finger: the opening hops onto it
+    for (const q2 of state.walls) {
+      if (!isPlanWall(q2)) continue;
+      const g2 = wallGeo(q2), vx = p.x - g2.A.x, vy = p.y - g2.A.y, sp = vx * g2.d.x + vy * g2.d.y;
+      if (sp < g2.i0 - tol || sp > g2.i1 + tol) continue;
+      const dist = Math.abs(vx * g2.n.x + vy * g2.n.y - (g2.f0 + g2.f1) / 2) - g2.t / 2;
+      if (dist <= tol * 1.5 && (!best || dist < best.dist)) best = { q: q2, dist };
+    }
+    if (best && best.q !== w) {
+      freezeRefs(w, o.id); w.openings = w.openings.filter(x => x !== o); best.q.openings.push(o);
+      w = best.q; gesture.wid = w.id; gesture.grab = o.w / 2; state.active = w.id; state.planSel = { t: 'open', id: w.id };
+      if (o.sill + o.h > w.height) o.sill = Math.max(0, w.height - o.h);
+    }
+    const g = wallGeo(w), sp = (p.x - g.A.x) * g.d.x + (p.y - g.A.y) * g.d.y, xe = g.vs > 0 ? g.i1 - sp : sp - g.i0;
+    o.x = snapOpening(w, o, xe - gesture.grab, o.sill, false, tol).x; guides = []; render(true);
+  } else if (gesture.kind === 'pdmove') {
+    const d = state.pdims.find(x => x.id === gesture.id); if (!d) return;
+    if (!gesture.moved) { snapshot('Move measurement'); gesture.moved = true; }
+    const L = Math.hypot(d.b.x - d.a.x, d.b.y - d.a.y) || 1, nn = { x: -(d.b.y - d.a.y) / L, y: (d.b.x - d.a.x) / L };
+    d.off = r2((p.x - d.a.x) * nn.x + (p.y - d.a.y) * nn.y); render(true);
   }
 }
 function planUp(e) {
   if (gesture.kind === 'wpick') {
     if (e.type === 'pointerup' && ptrs.size === 0) {
       const gs = gesture; gesture = null;
+      if (isMeasure()) {
+        if (!hover) return;
+        if (gs.free && !tool.mStart) addPdim(gs.start, hover.pt);
+        else if (!tool.mStart) tool.mStart = hover.pt;
+        else { addPdim(tool.mStart, hover.pt); tool.mStart = null; }
+        hover = null; render(); updateStatus(); return;
+      }
       if (isStruct()) {
         if (!hover) return;
         if (tool.kind === 'col') placeColumn(hover);
@@ -2253,9 +2386,9 @@ function planUp(e) {
     if (tg && tg.t === 'wall' && lastTap.id === tg.id && now - lastTap.t < 450) { lastTap = { t: 0, id: null }; state.active = tg.id; switchView('wall'); return; }
     lastTap = { t: now, id: tg && tg.id };
     selectPlan(tg);
-  } else if (['popen', 'cmove', 'bmove'].includes(gesture.kind) && !gesture.moved && e.type === 'pointerup') {
-    selectPlan(underTarget(gesture.sx, gesture.sy));     // tap again on a selected item: pick what is underneath
-  } else if (['node', 'room', 'popen', 'cmove', 'bmove', 'bend'].includes(gesture.kind) && gesture.moved) { guides = []; if (gesture.kind === 'node' || gesture.kind === 'room') rebuildPlan(); save(); render(); }
+  } else if (['popen', 'cmove', 'bmove', 'pdmove'].includes(gesture.kind) && !gesture.moved && e.type === 'pointerup') {
+    if (gesture.was) selectPlan(underTarget(gesture.sx, gesture.sy));     // tap again on a selected item: pick what is underneath
+  } else if (['node', 'room', 'popen', 'cmove', 'bmove', 'bend', 'pdmove'].includes(gesture.kind) && gesture.moved) { guides = []; if (gesture.kind === 'node' || gesture.kind === 'room') rebuildPlan(); save(); render(); }
 }
 svg.addEventListener('pointerup', endPtr);
 svg.addEventListener('pointercancel', endPtr);
@@ -2264,7 +2397,7 @@ svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && too
 /* ---------- dimension tools ---------- */
 function setTool(kind) {
   tool = kind ? { kind, pts: [], last: null, chain: [] } : null; hover = null; guides = [];
-  if (kind) { state.sel = null; state.selDim = null; if (['hand', 'line', 'box', 'col', 'beam'].includes(kind)) state.planSel = null; setSheet('peek'); }
+  if (kind) { state.sel = null; state.selDim = null; if (['hand', 'line', 'box', 'col', 'beam', 'pdim'].includes(kind)) state.planSel = null; setSheet('peek'); }
   svg.classList.toggle('tooling', !!tool);
   $$('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.tool || null) === (kind || null))));
   render(); updateStatus();
@@ -2315,6 +2448,13 @@ function updateStatus() {
   }
   st.className = 'status';
   show('#st-t', isDraw()); show('#st-size', false); show('#st-s', isStruct());
+  if (isMeasure()) {
+    const free = gesture && gesture.kind === 'wpick' && gesture.free;
+    msg.innerHTML = '<b>↔ Measure</b> · ' + esc(free ? 'Let go on the second point' : tool.mStart ? 'Tap the second point' : 'Drag between two points, or tap them one after the other');
+    sn.textContent = hover && hover.label ? hover.label : '';
+    ['#st-len', '#st-close', '#st-t', '#st-s', '#st-size'].forEach(i => show(i, false)); show('#st-fin', !!tool.mStart); show('#st-x', true);
+    return;
+  }
   if (isStruct()) {
     const k = tool.kind, free = gesture && gesture.kind === 'wpick' && gesture.free;
     const step = k === 'col' ? 'Tap to place a column. It snaps to wall corners and along walls.' : free ? 'Let go at the other end' : tool.beamStart ? 'Tap the next point, or New start' : 'Drag along the beam, or tap its two ends';
@@ -2460,8 +2600,12 @@ $('#st-s').addEventListener('change', e => { if (isStruct()) setSize(tool.kind, 
 $('#s-shape').addEventListener('change', e => { const ss = selStruct(); if (ss) commit('Column shape', () => { ss.o.shape = e.target.value; if (ss.o.shape === 'round') ss.o.d = ss.o.w; }); });
 $('#s-rot').addEventListener('click', () => { const ss = selStruct(); if (ss) commit('Rotate column ' + ss.o.label, () => { ss.o.rot = ((ss.o.rot || 0) + 90) % 360; }); });
 $('#s-del').addEventListener('click', () => delSelected());
+$('#pd-del').addEventListener('click', () => delSelected());
+$('#pd-flip').addEventListener('click', () => { const d = selPdim(); if (d) commit('Flip measurement', () => { d.off = -(d.off || 0); }); });
+$('#pd-list').addEventListener('click', e => { const b = e.target.closest('[data-pd]'); if (b) selectPlan({ t: 'pdim', id: b.dataset.pd }); });
 $('#s-list').addEventListener('click', e => { const b = e.target.closest('[data-sid]'); if (b) { const [t, id] = b.dataset.sid.split(':'); selectPlan({ t, id }); } });
 const syncers = [
+  bindText('pd-text', () => 'Change measurement text', () => selPdim() ? selPdim().text || '' : '', v => { const d = selPdim(); if (d) d.text = v.trim(); }),
   bindText('s-label', () => 'Change mark', () => selStruct() ? selStruct().o.label || '' : '', v => { const ss = selStruct(); if (ss) ss.o.label = v.trim().toUpperCase(); }),
   bindText('p-name', () => 'Rename project', () => state.name, v => state.name = v.trim()),
   bindText('w-name', () => 'Rename wall', () => wall() ? wall().name : '', v => { if (wall()) wall().name = v.trim(); }),
@@ -2545,6 +2689,9 @@ function delSelected() {
   const o = selOp(), d = selDim();
   const ps = state.planSel;
   if (o) { commit('Delete ' + opName(o), () => { deleteOpening(wall(), o.id); state.sel = null; if (ps && ps.t === 'open') state.planSel = { t: 'wall', id: ps.id }; }); toast('Deleted ' + opName(o), 'Undo', undo); }
+  else if (state.view === 'plan' && selPdim()) {
+    const d = selPdim(); commit('Delete measurement', () => { state.pdims = state.pdims.filter(x => x !== d); state.planSel = null; }); toast('Deleted measurement', 'Undo', undo);
+  }
   else if (state.view === 'plan' && selStruct()) {
     const ss = selStruct(), nm = (ss.kind === 'col' ? 'column ' : 'beam ') + (ss.o.label || '');
     commit('Delete ' + nm, () => { if (ss.kind === 'col') state.cols = state.cols.filter(c => c !== ss.o); else state.beams = state.beams.filter(b => b !== ss.o); state.planSel = null; });
@@ -2637,7 +2784,7 @@ document.addEventListener('keydown', e => {
   if (typing || !$('#modal').hidden) { if (e.key === 'Escape') closeModal(); return; }
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key === 'Escape') {
-    if ((isDraw() && (tool.last || tool.boxStart)) || (isStruct() && tool.beamStart)) finishChain();
+    if ((isDraw() && (tool.last || tool.boxStart)) || (isStruct() && tool.beamStart) || (isMeasure() && tool.mStart)) finishChain();
     else if (tool && tool.pts.length) { tool.pts = []; drawOverlay(); updateStatus(); }
     else if (tool) setTool(null); else { state.sel = null; state.selDim = null; state.planSel = null; save(); render(); }
     return;
@@ -2647,7 +2794,7 @@ document.addEventListener('keydown', e => {
   if (state.view === 'plan' && k === 'o') { cycleOrtho(); return; }
   if (k === 'p') { switchView('plan'); return; }
   if (k === 'e') { switchView('wall'); return; }
-  const map = state.view === 'plan' ? { d: 'hand', w: 'line', b: 'box', c: 'col', m: 'beam' } : { h: 'h', v: 'v', a: 'a', l: 'lvl', g: 'ang' };
+  const map = state.view === 'plan' ? { d: 'hand', w: 'line', b: 'box', c: 'col', m: 'beam', u: 'pdim' } : { h: 'h', v: 'v', a: 'a', l: 'lvl', g: 'ang' };
   if (map[k]) { setTool(tool && tool.kind === map[k] ? null : map[k]); return; }
   if (k === 's') { toggleSnap(); return; }
   if (k === 'f') { fit(); return; }
@@ -2725,6 +2872,13 @@ function render(drawOnly) {
     rl.map(r => `<tr><td>${esc(r.name)}</td><td>${area(roomArea(r)).m2.toFixed(2)}</td><td>${area(roomArea(r)).ft2.toFixed(1)}</td><td>${fmt(roomPerim(r))}</td></tr>`).join('') +
     `<tr class="tot"><td>Carpet area</td><td>${area(totR).m2.toFixed(2)}</td><td>${area(totR).ft2.toFixed(1)}</td><td></td></tr>` : '';
   if (!w) { $('#ed').hidden = true; $('#ded').hidden = true; }
+  // my measurements
+  const pd = selPdim(), pdl = d => fmt(Math.hypot(d.b.x - d.a.x, d.b.y - d.a.y));
+  $('#pd-count').textContent = state.pdims.length ? String(state.pdims.length) : '';
+  $('#pd-list').innerHTML = state.pdims.length ? state.pdims.map((d, i) => `<button class="orow" data-pd="${d.id}" aria-selected="${pd === d}"><span class="tag dimt">↔</span><span class="meta">${esc(pdl(d))} <span>· measurement ${i + 1}${d.text ? ' · shown as “' + esc(d.text) + '”' : ''}</span></span><span></span></button>`).join('')
+    : '<div class="empty">No measurements yet. Pick ↔ Measure in the tool bar.</div>';
+  $('#pdsec').hidden = !pd;
+  if (pd) $('#pd-val').textContent = pdl(pd);
   // columns & beams
   const ss = selStruct(), ns = state.cols.length + state.beams.length;
   $('#s-count').textContent = ns ? String(ns) : '';
@@ -2828,7 +2982,9 @@ function setSheet(st) {
 function updateSheet() {
   const isPlan = state.view === 'plan', ps = state.planSel, w = wall(), ss = selStruct(), o = selOp(), r = selRoom();
   let t;
+  const pdm = selPdim();
   if (o) t = `${o.label || TYPES[o.type].prefix} · ${TYPES[o.type].name.toLowerCase()} ${fmt(o.w)}×${fmt(o.h)}`;
+  else if (pdm) t = `Measurement · ${fmt(Math.hypot(pdm.b.x - pdm.a.x, pdm.b.y - pdm.a.y))}`;
   else if (ss) t = `${ss.o.label} · ${ss.kind === 'col' ? 'column ' + sizeTxt(ss.o) : 'beam ' + fmt(ss.o.w) + '×' + fmt(ss.o.d)}`;
   else if (r) t = `${r.name} · ${area(roomArea(r)).m2.toFixed(2)} m²${roomSize(r) ? ' · ' + roomSize(r) : ''}`;
   else if (ps && (ps.t === 'wall') && w) t = `${wname(w)} · ${fmt(w.length)}`;
@@ -2839,7 +2995,12 @@ function updateSheet() {
   if (key === lastSelKey) return;
   const first = lastSelKey === null; lastSelKey = key;
   if (first || !mobile() || tool) return;
-  const target = o ? '#ed' : state.selDim && !isPlan ? '#ded' : ss ? '#ssec' : r ? '#rsec' : (ps && ps.t === 'wall') ? '#wall-sec' : null;
+  const target = o ? '#ed' : state.selDim && !isPlan ? '#ded' : pdm ? '#pdsec' : ss ? '#ssec' : r ? '#rsec' : (ps && ps.t === 'wall') ? '#wall-sec' : null;
+  if (ptrs.size) { pendingSheet = target; return; }      // finger still down: decide when it lifts
+  openSheetTo(target);
+}
+let pendingSheet;
+function openSheetTo(target) {
   if (!target) { setSheet('peek'); return; }
   if (sheetState === 'peek') setSheet('half');
   requestAnimationFrame(() => { const el = $(target), box = $('.panel-in'); if (el && !el.hidden) box.scrollTo({ top: el.offsetTop - 8, behavior: 'smooth' }); });
@@ -2920,7 +3081,8 @@ function summaryText() {
   }
   if (state.cols.length) out.push('Columns: ' + state.cols.map(c => `${c.label} ${sizeTxt(c)}`).join(', '));
   if (state.beams.length) out.push('Beams: ' + state.beams.map(b => `${b.label} ${fmt(b.w)}×${fmt(b.d)} (${fmt(Math.hypot(b.b.x - b.a.x, b.b.y - b.a.y))} long)`).join(', '));
-  if (state.cols.length || state.beams.length) out.push('');
+  if (state.pdims.length) out.push('Measurements on plan: ' + state.pdims.map(d => (d.text ? d.text + ' ' : '') + fmt(Math.hypot(d.b.x - d.a.x, d.b.y - d.a.y))).join(', '));
+  if (state.cols.length || state.beams.length || state.pdims.length) out.push('');
   for (const w of state.walls) {
     const g = w.length * w.height, op = w.openings.reduce((s, p) => s + p.w * p.h, 0);
     out.push(`${wname(w)}: L ${fmt(w.length)} × H ${fmt(w.height)}, thk ${fmt(w.thickness)}`);

@@ -6,6 +6,13 @@ A small CAD-style app for measuring flats, bungalows and offices on site: draw t
 - Full-screen drawing, tools in a bottom bar (thumb reach), details in a pull-up sheet that opens to whatever you tap.
 - Units picker on the top bar: mm, cm, m, feet, feet-inch, inch. You can type any unit in any field (4.2m, 10.5ft, 10'6").
 
+## Moving things & measuring on the plan
+- Press and drag a door, window, column, beam or measurement straight away (no need to tap first).
+- Doors/windows slide along their wall and hop onto another wall when you drag over it; they snap to wall ends, the centre and other openings.
+- Columns snap to wall corners and along walls and turn to match the wall; beams snap onto columns, corners and wall centre lines.
+- "Door, window & column positions" draws running dimensions outside each wall (corner → door → corner) that update while you drag.
+- ↔ Measure: drag or tap between any two points (corners, inside corners, wall faces, door edges, columns). Drag a measurement to move its line; change its text or flip it in the sheet.
+
 ## Columns & beams
 - ▣ Column: tap to place; snaps to wall corners (centre of the walls) and along walls. Sizes 230×230 … 450×450, round, or imperial 9"×9" … 18"×18". Rotate, resize, drag.
 - ┅ Beam: drag, or tap its ends; snaps to columns and wall corners. Width × depth presets; drag the beam or its ends.
