@@ -220,8 +220,10 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 #draw .pface { stroke: var(--ink); stroke-width: 1.8; }
 #draw .pout { stroke: var(--ink); stroke-width: 1.2; }
 #draw .whit { stroke: transparent; stroke-width: 22; cursor: pointer; }
-#dg > :not([data-oid]):not([data-wid]):not([data-rid]):not([data-cid]):not([data-bid]):not([data-bend]):not([data-nid]):not([data-did]):not([data-pdid]):not([data-fid]) { pointer-events: none; }
+#dg > :not([data-oid]):not([data-wid]):not([data-rid]):not([data-cid]):not([data-bid]):not([data-bend]):not([data-nid]):not([data-did]):not([data-pdid]):not([data-fid]):not([data-dm]) { pointer-events: none; }
 #draw .whit { stroke-width: 26; }
+#draw .dmhit { fill: transparent; cursor: pointer; }
+#draw text[data-dm] { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-decoration-color: color-mix(in srgb, var(--dim) 55%, transparent); }
 #draw .wsel { stroke: var(--sel); stroke-width: 4; opacity: .85; }
 #draw .lend { fill: var(--sel); }
 #draw .pnode { fill: var(--panel); stroke: var(--accent); stroke-width: 1.5; }
@@ -952,7 +954,7 @@ function makePen(ts) {
   // Labels are placed last, most important first. Each tries its own spot, then its alternatives;
   // minor labels (prio < 2) are dropped if nothing is free, the rest are drawn anyway.
   const L = [];
-  g.label = (x, y, s, c, size, o = {}) => L.push({ x, y, s, c, size, anchor: o.anchor || 'middle', rot: o.rot || 0, prio: o.prio ?? 2, alts: o.alts || [] });
+  g.label = (x, y, s, c, size, o = {}) => L.push({ x, y, s, c, size, anchor: o.anchor || 'middle', rot: o.rot || 0, prio: o.prio ?? 2, alts: o.alts || [], dm: o.dm || null });
   g.flush = () => {
     const placed = [];
     const box = (x, y, s, size, anchor, rot) => {
@@ -972,7 +974,9 @@ function makePen(ts) {
       }
       if (!pick) { if (l.prio < 2) continue; pick = { x: l.x, y: l.y, size: l.size, anchor: l.anchor, rot: l.rot }; pick.b = box(pick.x, pick.y, l.s, pick.size, pick.anchor, pick.rot); }
       placed.push(pick.b); grow(pick.b.x0, pick.b.y0); grow(pick.b.x1, pick.b.y1);
-      P.push(`<text x="${n(pick.x)}" y="${n(pick.y)}" class="${l.c}" font-size="${n(pick.size)}"${pick.anchor !== 'start' ? ` text-anchor="${pick.anchor}"` : ''}${Math.abs(pick.rot) > 0.01 ? ` transform="rotate(${n(pick.rot)} ${n(pick.x)} ${n(pick.y)})"` : ''}>${esc(l.s)}</text>`);
+      const dmA = l.dm ? ` data-dm="${l.dm}"` : '';
+      if (l.dm) { const pd = pick.size * 0.45; P.push(`<rect x="${n(pick.b.x0 - pd)}" y="${n(pick.b.y0 - pd)}" width="${n(pick.b.x1 - pick.b.x0 + pd * 2)}" height="${n(pick.b.y1 - pick.b.y0 + pd * 2)}" class="dmhit"${dmA}/>`); }
+      P.push(`<text${dmA} x="${n(pick.x)}" y="${n(pick.y)}" class="${l.c}" font-size="${n(pick.size)}"${pick.anchor !== 'start' ? ` text-anchor="${pick.anchor}"` : ''}${Math.abs(pick.rot) > 0.01 ? ` transform="rotate(${n(pick.rot)} ${n(pick.x)} ${n(pick.y)})"` : ''}>${esc(l.s)}</text>`);
     }
     L.length = 0;
   };
@@ -1044,19 +1048,22 @@ function buildDrawing(w, opt) {
   const sh = state.show;
   const o1 = ts * 2.1, o2 = sh.chain ? ts * 4 : ts * 2.1;
   const Y = z => H - z;
+  if (opt.interactive) { dimBinds = new Map(); dmSeq = 0; }
+  const bind = b => opt.interactive ? dmReg(b) : null, wid = w.id;
+  const W_ = () => state.walls.find(q => q.id === wid);
   const { line, rect, text, tw } = g;
   const tick = (x, y) => line(x - ts * 0.22, y + ts * 0.22, x + ts * 0.22, y - ts * 0.22, 'dim');
 
-  function hdim(xa, xb, yl, yFrom, label, level = 0) {
+  function hdim(xa, xb, yl, yFrom, label, level = 0, dm = null) {
     if (xb - xa < 0.5) return;
     const dir = yl > yFrom ? 1 : -1;
     line(xa, yFrom + dir * ts * 0.25, xa, yl + dir * ts * 0.35, 'ext');
     line(xb, yFrom + dir * ts * 0.25, xb, yl + dir * ts * 0.35, 'ext');
     line(xa - ts * 0.3, yl, xb + ts * 0.3, yl, 'dim'); tick(xa, yl); tick(xb, yl);
     const half = tw(label, fs) / 2 + ts * 0.4, mx = (xa + xb) / 2, ty = yl - ts * 0.3;
-    g.label(mx, ty, label, 'dt', fs, { prio: xb - xa < ts * 1.6 ? 1.5 : 2, alts: [{ y: yl + fs + ts * 0.2 }, { x: xb + half }, { x: xa - half }, { y: ty - fs * 1.1 }, { size: fs * 0.75 }] });
+    g.label(mx, ty, label, 'dt', fs, { prio: xb - xa < ts * 1.6 ? 1.5 : 2, dm, alts: [{ y: yl + fs + ts * 0.2 }, { x: xb + half }, { x: xa - half }, { y: ty - fs * 1.1 }, { size: fs * 0.75 }] });
   }
-  function vdim(za, zb, xl, xFrom, label, side = -1) {
+  function vdim(za, zb, xl, xFrom, label, side = -1, dm = null) {
     if (zb - za < 0.5) return;
     const dir = xl > xFrom ? 1 : -1;
     const ya = Y(za), yb = Y(zb);
@@ -1065,7 +1072,7 @@ function buildDrawing(w, opt) {
     line(xl, ya + ts * 0.3, xl, yb - ts * 0.3, 'dim'); tick(xl, ya); tick(xl, yb);
     const my = (ya + yb) / 2;
     const tx = side < 0 ? xl - ts * 0.3 : xl + ts * 0.3 + fs * 0.8, tx2 = side < 0 ? xl + ts * 0.3 + fs * 0.8 : xl - ts * 0.3;
-    g.label(tx, my, label, 'dt', fs * 0.9, { rot: -90, prio: Math.abs(ya - yb) < ts * 1.6 ? 1.5 : 2, alts: [{ x: tx2 }, { rot: 0, x: xl + ts * 0.35, y: my + fs * 0.3, anchor: 'start', size: fs * 0.8 }, { rot: 0, x: xl - ts * 0.35, y: my + fs * 0.3, anchor: 'end', size: fs * 0.8 }, { size: fs * 0.7 }] });
+    g.label(tx, my, label, 'dt', fs * 0.9, { rot: -90, prio: Math.abs(ya - yb) < ts * 1.6 ? 1.5 : 2, dm, alts: [{ x: tx2 }, { rot: 0, x: xl + ts * 0.35, y: my + fs * 0.3, anchor: 'start', size: fs * 0.8 }, { rot: 0, x: xl - ts * 0.35, y: my + fs * 0.3, anchor: 'end', size: fs * 0.8 }, { size: fs * 0.7 }] });
   }
 
   g.raw(`<defs><pattern id="hatch" patternUnits="userSpaceOnUse" width="${n(ts * 1.4)}" height="${n(ts * 1.4)}" patternTransform="rotate(45)"><rect width="${n(ts * 1.4)}" height="${n(ts * 1.4)}" class="wallbg"/><line x1="0" y1="0" x2="0" y2="${n(ts * 1.4)}" class="hl" vector-effect="non-scaling-stroke"/></pattern></defs>`);
@@ -1127,13 +1134,20 @@ function buildDrawing(w, opt) {
   for (const b of se.beams) {
     rect(b.x0, 0, b.x1 - b.x0, b.depth, 'beamel');
     g.label((b.x0 + b.x1) / 2, b.depth / 2 + fs * 0.3, b.label, 'blb', Math.min(fs * 0.8, (b.x1 - b.x0) / (b.label.length * 0.62 + 0.5), b.depth * 0.6), { prio: 2, alts: [{ x: b.x0 + (b.x1 - b.x0) * 0.25 }, { x: b.x0 + (b.x1 - b.x0) * 0.75 }] });
-    if (b.along && sh.hts) vdim(H - b.depth, H, b.x1 + ts * 0.8, b.x1, fmt(b.depth), 1);
+    if (b.along && sh.hts) { const bid = b.id; vdim(H - b.depth, H, b.x1 + ts * 0.8, b.x1, fmt(b.depth), 1, bind({ title: 'Depth of beam ' + b.label.split(' ')[0], what: 'Beam depth', value: b.depth, min: 1, apply: v => { const bm = state.beams.find(z => z.id === bid); if (bm) bm.d = v; } })); }
   }
   if (sh.hts) {
     for (const o of w.openings) {
       const xl = o.x + o.w + ts * 0.8;
       const pts = [...new Set([0, o.sill, o.sill + o.h, H].map(v => Math.round(v * 100) / 100))].filter(v => v >= 0 && v <= H).sort((a, b) => a - b);
-      for (let i = 0; i < pts.length - 1; i++) vdim(pts[i], pts[i + 1], xl, o.x + o.w, fmt(pts[i + 1] - pts[i]), 1);
+      const oid = o.id, mk = o.label || TYPES[o.type].prefix, O_ = () => { const ww = W_(); return ww && ww.openings.find(q => q.id === oid); };
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1];
+        const bb = Math.abs(a) < 0.5 && Math.abs(b - o.sill) < 0.5 ? { title: 'Sill of ' + mk, what: 'Sill height from floor', value: b - a, min: 0, apply: v => { const q = O_(); if (q) q.sill = v; } }
+          : Math.abs(a - o.sill) < 0.5 && Math.abs(b - o.sill - o.h) < 0.5 ? { title: 'Height of ' + mk, what: 'Height', value: b - a, min: 1, apply: v => { const q = O_(); if (q) q.h = v; } }
+          : { title: 'Above ' + mk, what: 'Gap from top of ' + mk + ' to ceiling', value: b - a, min: 0, note: 'Moves ' + mk + ' up or down.', apply: v => { const q = O_(); if (q) q.sill = Math.max(0, H - v - q.h); } };
+        vdim(a, b, xl, o.x + o.w, fmt(b - a), 1, bind(bb));
+      }
     }
   }
 
@@ -1142,9 +1156,27 @@ function buildDrawing(w, opt) {
     for (const o of w.openings) pts.push(Math.min(Math.max(o.x, 0), L), Math.min(Math.max(o.x + o.w, 0), L));
     for (const c of se.cols) pts.push(c.x0, c.x1);
     const chain = [...new Set(pts.map(v => Math.round(v * 100) / 100))].sort((a, b) => a - b);
-    if (chain.length > 2) chain.slice(0, -1).forEach((a, i) => hdim(a, chain[i + 1], H + o1, H, fmt(chain[i + 1] - a), i % 2));
+    const its = w.openings.map(o => ({ x0: o.x, x1: o.x + o.w, name: o.label || TYPES[o.type].prefix, id: o.id, kind: 'o' })).concat(se.cols.map(c => ({ x0: c.x0, x1: c.x1, name: c.label, id: c.id, kind: 'c' })));
+    const gpl = isPlanWall(w) ? wallGeo(w) : null;
+    const shiftItem = (q, dx) => {
+      if (q.kind === 'o') { const ww = W_(), o = ww && ww.openings.find(z => z.id === q.id); if (o) o.x = r2(o.x + dx); }
+      else if (gpl) { const c = state.cols.find(z => z.id === q.id), sd = gpl.vs > 0 ? -dx : dx; if (c) { c.x = r2(c.x + gpl.d.x * sd); c.y = r2(c.y + gpl.d.y * sd); } }
+    };
+    if (chain.length > 2) chain.slice(0, -1).forEach((a, i) => {
+      const b = chain[i + 1], it = its.find(q => Math.abs(q.x0 - a) < 1 && Math.abs(q.x1 - b) < 1);
+      let bb = null;
+      if (it && it.kind === 'o') bb = { title: 'Width of ' + it.name, what: 'Width', value: b - a, min: 1, apply: v => { const ww = W_(), o = ww && ww.openings.find(z => z.id === it.id); if (o) o.w = v; } };
+      else if (!it) {
+        const right = its.find(q => Math.abs(q.x0 - b) < 1), left = its.find(q => Math.abs(q.x1 - a) < 1);
+        if (right || left) bb = { title: 'Gap ' + (left ? left.name : 'wall end') + ' → ' + (right ? right.name : 'wall end'), what: 'Gap', value: b - a, min: 0, note: 'Moves ' + (right || left).name + '.', apply: v => right ? shiftItem(right, v - (b - a)) : shiftItem(left, (b - a) - v) };
+      }
+      hdim(a, b, H + o1, H, fmt(b - a), i % 2, bind(bb));
+    });
   }
-  if (sh.overall) { hdim(0, L, H + o2, H, fmt(L)); vdim(0, H, -o1, 0, fmt(H), -1); }
+  if (sh.overall) {
+    hdim(0, L, H + o2, H, fmt(L), 0, bind({ title: 'Length of ' + wname(w), what: isPlanWall(w) ? 'Inside length' : 'Length', value: L, min: 1, apply: v => { const ww = W_(); if (!ww) return; if (isPlanWall(ww)) setPlanLen(ww, v); else ww.length = v; } }));
+    vdim(0, H, -o1, 0, fmt(H), -1, bind({ title: 'Height of ' + wname(w), what: 'Wall height', value: H, min: 1, apply: v => { const ww = W_(); if (ww) ww.height = v; } }));
+  }
 
   let bottom = H + o2 + ts;
   if (sh.plan) {
@@ -1582,7 +1614,7 @@ function structOnWall(w) {            // columns standing in this wall and beams
   for (const c of state.cols) {
     const vx = c.x - g.A.x, vy = c.y - g.A.y, s = vx * g.d.x + vy * g.d.y, p = vx * g.n.x + vy * g.n.y;
     if (Math.abs(p - c0) > g.t / 2 + colHalf(c, g.n) - 1) continue;
-    const h = colHalf(c, g.d), r = rng(s - h, s + h); if (r) cols.push({ ...r, label: c.label || 'C' });
+    const h = colHalf(c, g.d), r = rng(s - h, s + h); if (r) cols.push({ ...r, id: c.id, label: c.label || 'C' });
   }
   for (const b of state.beams) {
     const ex = b.b.x - b.a.x, ey = b.b.y - b.a.y, L = Math.hypot(ex, ey); if (L < 1) continue;
@@ -1591,7 +1623,7 @@ function structOnWall(w) {            // columns standing in this wall and beams
       const p = (b.a.x - g.A.x) * g.n.x + (b.a.y - g.A.y) * g.n.y;
       if (Math.abs(p - c0) > g.t / 2 + b.w / 2 - 1) continue;
       const r = rng((b.a.x - g.A.x) * g.d.x + (b.a.y - g.A.y) * g.d.y, (b.b.x - g.A.x) * g.d.x + (b.b.y - g.A.y) * g.d.y);
-      if (r) beams.push({ ...r, depth: b.d, label: `${b.label || 'B'} ${fmt(b.w)}×${fmt(b.d)}`, along: true });
+      if (r) beams.push({ ...r, id: b.id, depth: b.d, label: `${b.label || 'B'} ${fmt(b.w)}×${fmt(b.d)}`, along: true });
     } else {
       const P0 = { x: g.A.x + g.n.x * c0, y: g.A.y + g.n.y * c0 }, q = { x: P0.x - b.a.x, y: P0.y - b.a.y };
       const u = (q.x * g.d.y - q.y * g.d.x) / cr, sp = (q.x * e.y - q.y * e.x) / cr;
@@ -1601,6 +1633,43 @@ function structOnWall(w) {            // columns standing in this wall and beams
     }
   }
   return { cols, beams };
+}
+
+/* ---------- editable measurements ---------- */
+// Measurement numbers drawn on the plan and elevations can be tapped; each carries what it controls.
+let dimBinds = new Map(), dmSeq = 0;
+const dmReg = b => { if (!b) return null; const id = 'm' + (++dmSeq); dimBinds.set(id, b); return id; };
+function moveOpeningPlan(wid, oid, ds) { const w = state.walls.find(q => q.id === wid), o = w && w.openings.find(q => q.id === oid); if (!o) return; const g = wallGeo(w); o.x = r2(o.x + (g.vs > 0 ? -ds : ds)); }
+function chainBind(gw, a, b, items) {        // items: [{s0, s1, name, kind:'o'|'c', id}] along a plan wall (plan s from A)
+  const it = items.find(q => Math.abs(q.s0 - a) < 1 && Math.abs(q.s1 - b) < 1), wid = gw.w.id;
+  if (it && it.kind === 'o') return { title: 'Width of ' + it.name, what: 'Width', value: b - a, min: 1, apply: v => {
+    const w = state.walls.find(q => q.id === wid), o = w && w.openings.find(q => q.id === it.id); if (!o) return; const g = wallGeo(w); if (g.vs > 0) o.x = r2(o.x + o.w - v); o.w = v; } };
+  if (it && it.kind === 'c') return { title: 'Size of column ' + it.name, what: 'Size along the wall', value: b - a, min: 1, apply: v => {
+    const c = state.cols.find(q => q.id === it.id); if (!c) return; const { ax } = colAxes(c); if (c.shape === 'round') { c.w = c.d = v; } else if (Math.abs(ax.x * gw.d.x + ax.y * gw.d.y) > 0.7) c.w = v; else c.d = v; } };
+  const right = items.find(q => Math.abs(q.s0 - b) < 1), left = items.find(q => Math.abs(q.s1 - a) < 1);
+  const mv = right || left; if (!mv) return null;
+  const nm = q => q ? q.name : 'wall end';
+  return { title: 'Gap ' + nm(left) + ' → ' + nm(right), what: 'Gap', value: b - a, min: 0, note: right ? 'Moves ' + right.name + '.' : 'Moves ' + left.name + '.', apply: v => {
+    const ds = right ? v - (b - a) : (b - a) - v;
+    if (mv.kind === 'o') moveOpeningPlan(wid, mv.id, ds);
+    else { const c = state.cols.find(q => q.id === mv.id); if (c) { c.x = r2(c.x + gw.d.x * ds); c.y = r2(c.y + gw.d.y * ds); } }
+  } };
+}
+function openDimEdit(id) {
+  const b = dimBinds.get(id); if (!b) return;
+  openModal(b.title, `<label class="f">${esc(b.what || 'Measurement')}<input id="dm-in" inputmode="decimal" autocomplete="off" value="${esc(fmt(b.value))}"></label>
+    <p class="note">${esc((b.note ? b.note + ' ' : '') + unitExample() + '.')}</p>`, [['Save', () => saveDimEdit(b), 'primary'], ['Cancel', closeModal]]);
+  const el = $('#dm-in'); enhanceFtIn(el); syncFtIn();
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveDimEdit(b); } });
+  setTimeout(() => { const t = state.unit === 'ftin' && el._fi ? el._fi.querySelector('input') : el; t.focus(); if (t.select) t.select(); }, 60);
+}
+function saveDimEdit(b) {
+  const el = $('#dm-in'); if (el._fi && state.unit === 'ftin') el._fi.querySelectorAll('input')[0].dispatchEvent(new Event('input'));
+  const v = parseLen(el.value);
+  if (!isFinite(v) || v < 0 || (b.min && v < b.min)) { toast('Please type a valid measurement. ' + unitExample()); return; }
+  if (Math.abs(v - b.value) < 0.01) { closeModal(); return; }
+  commit(b.title + ': ' + fmt(v), () => { b.apply(v); if (state.nodes.length) rebuildPlan(); });
+  closeModal(); toast(b.title + ' set to ' + fmt(v), 'Undo', undo);
 }
 
 /* ---------- kitchen fixtures: platform (counter), sink, hob ---------- */
@@ -1874,6 +1943,8 @@ function buildPlan(opt) {
   syncLengths();
   const ts = planTs(), g = makePen(ts), fs = g.fs, n = g.n, ia = opt.interactive;
   const ps = ia ? state.planSel : null;
+  if (ia) { dimBinds = new Map(); dmSeq = 0; }
+  const bind = b => ia ? dmReg(b) : null;
   const P2 = p => `${n(p.x)} ${n(p.y)}`;
   const path = pts => `M${pts.map(P2).join('L')}Z`;
   const poly = (pts, cls, ex = '') => { pts.forEach(p => g.grow(p.x, p.y)); g.raw(`<path d="${path(pts)}" class="${cls}"${ex}/>`); };
@@ -2035,7 +2106,7 @@ function buildPlan(opt) {
     if (selF) poly(fxPoly({ ...f, w: f.w + ts * 0.25, d: f.d + ts * 0.25 }), 'sel', ' vector-effect="non-scaling-stroke"');
   }
   // dimensions: inside each room, and along walls that are not part of a room
-  const dimLine = (p, q, inn, off, depth, minL = ts * 1.2, labIn = null) => {
+  const dimLine = (p, q, inn, off, depth, minL = ts * 1.2, labIn = null, dm = null) => {
     const L = Math.hypot(q.x - p.x, q.y - p.y); if (L < minL) return;
     const d = { x: (q.x - p.x) / L, y: (q.y - p.y) / L }, A = { x: p.x + inn.x * off, y: p.y + inn.y * off }, B = { x: q.x + inn.x * off, y: q.y + inn.y * off };
     g.line(p.x + inn.x * ts * 0.15, p.y + inn.y * ts * 0.15, A.x + inn.x * ts * 0.3, A.y + inn.y * ts * 0.3, 'ext');
@@ -2050,7 +2121,7 @@ function buildPlan(opt) {
     const mid = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 }, toward = up.x * inn.x + up.y * inn.y > 0;
     const k = toward ? ts * 0.25 : -(ts * 0.25 + fz * 0.75), pos = { x: mid.x + up.x * k, y: mid.y + up.y * k };
     const k2 = toward ? -(ts * 0.25 + fz * 0.75) : ts * 0.25, k3 = k + (toward ? 1 : -1) * fz * 1.1, half = lab.length * fz * 0.3 + ts * 0.4;
-    g.label(pos.x, pos.y, lab, 'dt', fz, { rot: th, prio: L < ts * 1.6 ? 1 : 2, alts: [
+    g.label(pos.x, pos.y, lab, 'dt', fz, { rot: th, prio: L < ts * 1.6 ? 1 : 2, dm, alts: [
       { x: mid.x + up.x * k2, y: mid.y + up.y * k2 }, { x: mid.x + up.x * k3, y: mid.y + up.y * k3 },
       { x: B.x + d.x * half + up.x * k, y: B.y + d.y * half + up.y * k }, { x: A.x - d.x * half + up.x * k, y: A.y - d.y * half + up.y * k },
       { size: fz * 0.75 }] });
@@ -2061,14 +2132,14 @@ function buildPlan(opt) {
     for (const c of se.cols) cuts.push(gw.sOf(c.x0), gw.sOf(c.x1));
     if (!cuts.length) continue;
     const pts = [...new Set([gw.i0, gw.i1, ...cuts.map(v => Math.min(Math.max(v, gw.i0), gw.i1))].map(v => Math.round(v * 10) / 10))].sort((a, b) => a - b);
-    const marks = [];
-    for (const o of gw.w.openings) { const a = gw.sOf(o.x), b = gw.sOf(o.x + o.w); marks.push([Math.min(a, b), Math.max(a, b), o.label || TYPES[o.type].prefix]); }
-    for (const c of se.cols) { const a = gw.sOf(c.x0), b = gw.sOf(c.x1); marks.push([Math.min(a, b), Math.max(a, b), c.label]); }
+    const marks = [], items = [];
+    for (const o of gw.w.openings) { const a = gw.sOf(o.x), b = gw.sOf(o.x + o.w); marks.push([Math.min(a, b), Math.max(a, b), o.label || TYPES[o.type].prefix]); items.push({ s0: Math.min(a, b), s1: Math.max(a, b), name: o.label || TYPES[o.type].prefix, kind: 'o', id: o.id }); }
+    for (const c of se.cols) { const a = gw.sOf(c.x0), b = gw.sOf(c.x1); marks.push([Math.min(a, b), Math.max(a, b), c.label]); items.push({ s0: Math.min(a, b), s1: Math.max(a, b), name: c.label, kind: 'c', id: c.id }); }
     const roomOut = roomsOfWall(gw.w).some(r => { const e = roomEdge(r, gw.w); return (((roomSign(r) > 0) === e.fwd) ? 1 : -1) === gw.vs; });
     const lane = roomOut ? ts * 2.4 : ts * 0.8;
     for (let i = 0; i < pts.length - 1; i++) {
       const m = marks.find(q => Math.abs(q[0] - pts[i]) < 1 && Math.abs(q[1] - pts[i + 1]) < 1);
-      dimLine(at(gw, pts[i], gw.f1), at(gw, pts[i + 1], gw.f1), gw.n, lane, 1e9, ts * 0.3, m ? m[2] + ' ' + fmt(pts[i + 1] - pts[i]) : null);
+      dimLine(at(gw, pts[i], gw.f1), at(gw, pts[i + 1], gw.f1), gw.n, lane, 1e9, ts * 0.3, m ? m[2] + ' ' + fmt(pts[i + 1] - pts[i]) : null, bind(chainBind(gw, pts[i], pts[i + 1], items)));
     }
     gw.chained = true;
   }
@@ -2078,12 +2149,16 @@ function buildPlan(opt) {
       for (let i = 0; i < ip.length; i++) {
         const p = ip[i], q = ip[(i + 1) % ip.length], L = Math.hypot(q.x - p.x, q.y - p.y) || 1, d = { x: (q.x - p.x) / L, y: (q.y - p.y) / L };
         const inn = { x: -d.y * sg, y: d.x * sg }, depth = Math.abs(d.x) > Math.abs(d.y) ? b.y1 - b.y0 : b.x1 - b.x0;
-        dimLine(p, q, inn, ts * 0.9, depth);
+        let rb = null;
+        if (roomSize(r)) { const hz = Math.abs(d.x) > Math.abs(d.y), rid = r.id; rb = { title: (hz ? 'Width of ' : 'Depth of ') + r.name, what: hz ? 'Inside width' : 'Inside depth', value: L, min: 1, note: 'Rooms beyond it move along.', apply: v => { const rr = state.rooms.find(x => x.id === rid); if (rr) stretchRoom(rr, hz ? 'x' : 'y', v - (hz ? roomInner(rr).w : roomInner(rr).d)); } }; }
+        else { const ws = roomWalls(r).filter(w => { const gw = wallGeo(w); return Math.abs(gw.d.x * d.y - gw.d.y * d.x) < 1e-3 && Math.abs((p.x - gw.A.x) * gw.rn.x + (p.y - gw.A.y) * gw.rn.y) < gw.t + 1; }); if (ws.length === 1) { const wid = ws[0].id; rb = { title: 'Length of ' + wname(ws[0]), what: 'Inside length', value: L, min: 1, apply: v => { const w = state.walls.find(x => x.id === wid); if (w) setPlanLen(w, wallGeo(w).Le + v - L); } }; } }
+        dimLine(p, q, inn, ts * 0.9, depth, ts * 1.2, null, bind(rb));
       }
     }
     for (const gw of G.values()) {
       if (roomsOfWall(gw.w).length) continue;
-      dimLine(at(gw, 0, gw.f1), at(gw, gw.L, gw.f1), gw.n, ts * 0.9, 1e9);
+      const wid = gw.w.id;
+      dimLine(at(gw, 0, gw.f1), at(gw, gw.L, gw.f1), gw.n, ts * 0.9, 1e9, ts * 1.2, null, bind({ title: 'Length of ' + wname(gw.w), what: 'Length', value: gw.L, min: 1, apply: v => { const w = state.walls.find(x => x.id === wid); if (w) setPlanLen(w, v); } }));
     }
   }
   if (state.show.pmy) for (const d of state.pdims) drawPlanDim(g, d, ps && ps.t === 'pdim' && ps.id === d.id ? 'hi' : '', ia);
@@ -2631,6 +2706,8 @@ svg.addEventListener('pointerdown', e => {
   if (state.view === 'plan') { planDown(e); return; }
   if (tool) { gesture = { kind: 'pick' }; updateHover(e); return; }
   const p = toSvg(e.clientX, e.clientY);
+  const mh2 = e.target.closest && e.target.closest('[data-dm]');
+  if (mh2) { gesture = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false, dm: mh2.dataset.dm }; return; }
   const dh = e.target.closest && e.target.closest('[data-did]');
   if (dh) {
     const id = dh.getAttribute('data-did');
@@ -2694,7 +2771,8 @@ function endPtr(e) {
   if (state.view === 'plan') planUp(e);
   if (gesture) {
     if (gesture.kind === 'pick' && ptrs.size === 0 && e.type === 'pointerup') placePoint();
-    if (gesture.kind === 'pan' && !gesture.moved && (state.sel || state.selDim)) { state.sel = null; state.selDim = null; save(); render(); }
+    if (gesture.kind === 'pan' && !gesture.moved && gesture.dm && e.type === 'pointerup') openDimEdit(gesture.dm);
+    else if (gesture.kind === 'pan' && !gesture.moved && (state.sel || state.selDim)) { state.sel = null; state.selDim = null; save(); render(); }
     if ((gesture.kind === 'drag' || gesture.kind === 'dimdrag') && gesture.moved) { guides = []; save(); render(); }
   }
   if (ptrs.size === 0) {
@@ -2736,6 +2814,8 @@ function planDown(e) {
   const base = { sx: e.clientX, sy: e.clientY, p0: p, moved: false, vx: view.x, vy: view.y };
   const ch = q('[data-cid]'), bh = q('[data-bid]'), eh = q('[data-bend]');
   if (eh) { const [id, end] = eh.dataset.bend.split(':'), bm = state.beams.find(x => x.id === id); if (bm) { gesture = { ...base, kind: 'bend', id, end, o: { ...bm[end] } }; return; } }
+  const mh = q('[data-dm]');
+  if (mh && !tool) { gesture = { ...base, kind: 'tapsel', target: null, dm: mh.dataset.dm }; svg.classList.add('panning'); return; }
   const dh = q('[data-pdid]');
   const fh = q('[data-fid]');
   if (fh && !q('[data-oid]')) { const f = state.fix.find(x => x.id === fh.dataset.fid); if (f) { const was = !!(ps && ps.t === 'fix' && ps.id === f.id); if (!was) selectPlan({ t: 'fix', id: f.id }); gesture = { ...base, kind: 'fmove', id: f.id, ox: f.x, oy: f.y, was }; return; } }
@@ -2876,6 +2956,8 @@ function planUp(e) {
         else { const a = tool.boxStart; tool.boxStart = null; drawBox(a, hover.pt); finishChain(); }
       } else placeWallPoint();
     }
+  } else if (gesture.kind === 'tapsel' && !gesture.moved && e.type === 'pointerup' && gesture.dm) {
+    openDimEdit(gesture.dm);
   } else if (gesture.kind === 'tapsel' && !gesture.moved && e.type === 'pointerup') {
     const tg = gesture.target, now = performance.now();
     if (tg && tg.t === 'wall' && lastTap.id === tg.id && now - lastTap.t < 450) { lastTap = { t: 0, id: null }; state.active = tg.id; switchView('wall'); return; }
@@ -2938,7 +3020,7 @@ function updateStatus() {
   $('#sheet').classList.toggle('drawing', !!tool);
   if (!tool) {
     st.className = 'status quiet';
-    msg.textContent = plan ? 'Tap a wall or room to select · double-tap a wall for its elevation · pinch to zoom' : 'Drag openings to move · pinch or scroll to zoom · two-finger tap = undo';
+    msg.textContent = plan ? 'Tap a measurement to change it · tap a wall or room to select · pinch to zoom' : 'Tap a measurement to change it · drag openings to move · pinch to zoom';
     sn.textContent = ''; ['#st-len', '#st-close', '#st-fin', '#st-x', '#st-t', '#st-size', '#st-s'].forEach(i => show(i, false)); return;
   }
   st.className = 'status';
