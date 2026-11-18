@@ -513,7 +513,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
             </select>
           </label>
           <label class="f full">Inch precision (feet-inch and inch)
-            <select id="p-prec"><option value="1">Whole inches (13'-10")</option><option value="2">Nearest 1/2"</option><option value="4">Nearest 1/4"</option><option value="8">Nearest 1/8"</option></select>
+            <select id="p-prec"><option value="0">Exact: ½ ¼ ⅛ only when the size has it</option><option value="1">Whole inches (13'-10")</option><option value="2">Nearest 1/2"</option><option value="4">Nearest 1/4"</option><option value="8">Nearest 1/8"</option></select>
           </label>
         </div>
       </section>
@@ -854,7 +854,7 @@ function blankProject(name) {
   const p = blankProject0(name);
   try {                                   // the user's own defaults from earlier projects
     const d = JSON.parse(localStorage.getItem(DKEY) || 'null');
-    if (d) { if (d.prec) p.prec = d.prec; if (d.unit) p.unit = d.unit; if (d.draw) Object.assign(p.draw, d.draw); if (d.defs) p.defs = { ...p.defs, ...d.defs }; if (d.canvas) p.canvas = d.canvas; }
+    if (d) { if (d.prec && d.prec !== 1) p.prec = d.prec; if (d.unit) p.unit = d.unit; if (d.draw) Object.assign(p.draw, d.draw); if (d.defs) p.defs = { ...p.defs, ...d.defs }; if (d.canvas) p.canvas = d.canvas; }
   } catch (e) {}
   return p;
 }
@@ -888,6 +888,7 @@ function newProject() {
   return p;
 }
 function norm(p) {                       // fill in fields added in later versions
+  if (p.precV !== 2) { if (!(p.prec > 1)) p.prec = 0; p.precV = 2; }   // whole-inch rounding hid real sizes: show them exactly
   if (typeof p.snap !== 'object' || !p.snap) p.snap = DEF_SNAP();
   if (!isFinite(p.snap.step) || p.snap.step <= 0) p.snap.step = 10;
   if (!p.show) p.show = { ...DEF_SHOW(), hts: p.showHts !== false, plan: p.showPlan !== false };
@@ -994,9 +995,14 @@ function parseLen(str, unit = state.unit) {
   try { const v = evalExpr(t); return isFinite(v) ? v * FACT[unit] : NaN; } catch (e) { return NaN; }
 }
 const trimNum = (v, d) => String(+v.toFixed(d));
-const DEN = () => (state && state.prec) || 1;          // inch precision: 1 = whole inches, 2, 4 or 8
+const DEN = () => (state && state.prec > 0) ? state.prec : 0;   // inch precision: 0 = exact, else 1 = whole inches, 2, 4 or 8
+function inchSplit(a) {                   // a (inches, ≥ 0) as e counts of 1/D inch
+  const D0 = DEN(); if (D0) return { D: D0, e: Math.round(a * D0) };
+  for (const D of [1, 2, 4, 8]) { const e = Math.round(a * D); if (Math.abs(a * D - e) <= 0.008 * D) return { D, e }; }   // exact: show ½ ¼ ⅛ only when the size really has it
+  return { D: 1, e: Math.round(a) };
+}
 function fracIn(inches) {
-  const D = DEN(), neg = inches < 0; const e = Math.round(Math.abs(inches) * D);
+  const neg = inches < 0, { D, e } = inchSplit(Math.abs(inches));
   const whole = Math.floor(e / D); let n = e % D, d = D;
   if (!n) return (neg ? '-' : '') + whole;
   while (n % 2 === 0) { n /= 2; d /= 2; }
@@ -1010,7 +1016,7 @@ function fmt(mm, unit = state.unit, sfx = false) {
     case 'ft': return trimNum(mm / 304.8, 2) + (sfx ? ' ft' : '′');
     case 'in': return fracIn(mm / 25.4) + '"';
     case 'ftin': {
-      const D = DEN(), neg = mm < 0; const e = Math.round(Math.abs(mm) / 25.4 * D);
+      const neg = mm < 0, { D, e } = inchSplit(Math.abs(mm) / 25.4);
       const ft = Math.floor(e / (12 * D)); const inch = (e - ft * 12 * D) / D;
       return (neg ? '-' : '') + ft + "'-" + fracIn(inch) + '"';
     }
@@ -2552,7 +2558,8 @@ function objSnapPts() {
   return [...out.filter(o => !o.late), ...out.filter(o => o.late)];
 }
 function planSnap(p, from, tol) {
-  const s = state.snap, gd = [], st0 = planStep(), fine = IMP() ? 25.4 : 10, st = st0 <= tol * 2.5 ? st0 : fine <= tol * 2.5 ? fine : 0;   // zoomed far in: finer grid, so the point stays under the finger
+  const s = state.snap, gd = [], st0 = planStep(), custom = state.draw.step && state.draw.step !== 50, steps = IMP() ? [25.4, 76.2, 152.4, 304.8] : [10, 50, 100, 500],
+    st = custom ? (st0 <= tol * 2.5 ? st0 : 0) : (steps.find(v => v >= tol * 0.35) || steps[steps.length - 1]);   // grid follows the zoom: zoom in for finer points
   if (s.on) {
     let best = null;
     for (const nd of state.nodes) { const d = Math.hypot(nd.x - p.x, nd.y - p.y); if (d <= tol * 1.4 && (!best || d < best.d)) best = { d, pt: { x: nd.x, y: nd.y, nid: nd.id }, kind: 'end', label: 'Corner' }; }   // corners win over wall centres
@@ -2624,7 +2631,7 @@ function planSnap(p, from, tol) {
       return { pt, kind: gd.length ? 'align' : 'ortho', label: fmt(Math.hypot(pt.x - from.x, pt.y - from.y)), guides: gd };
     }
   }
-  if (s.on && s.grid && st) return { pt: { x: Math.round(p.x / st) * st, y: Math.round(p.y / st) * st }, kind: 'grid', label: from ? fmt(Math.hypot(p.x - from.x, p.y - from.y)) : 'Grid' };
+  if (s.on && s.grid && st) return { pt: { x: Math.round(p.x / st) * st, y: Math.round(p.y / st) * st }, kind: 'grid', label: (from ? fmt(Math.hypot(p.x - from.x, p.y - from.y)) + ' · ' : '') + 'grid ' + fmt(st) };
   return { pt: { x: p.x, y: p.y }, kind: null, label: from ? fmt(Math.hypot(p.x - from.x, p.y - from.y)) : '' };
 }
 function snapMove(moving, dx, dy, tol) {   // move a set of corners; stick to other corners
@@ -3790,7 +3797,7 @@ function enhanceFtIn(el) {
     return isFinite(ft) && isFinite(inch) && !(fv && isNaN(ft)) ? ft * 12 + inch : NaN;
   };
   const push = () => { const t = total(); el.value = t == null ? '' : isNaN(t) ? '?' : t + '"'; wrap.classList.toggle('err', t != null && isNaN(t)); return t; };
-  const normalize = () => { const t = total(); if (t == null || !isFinite(t)) return; const D = DEN(), e8 = Math.round(t * D), ft = Math.floor(e8 / (12 * D)); f.value = String(ft); i.value = fracIn((e8 - ft * 12 * D) / D); };
+  const normalize = () => { const t = total(); if (t == null || !isFinite(t)) return; const { D, e: e8 } = inchSplit(Math.abs(t)), ft = Math.floor(e8 / (12 * D)); f.value = String(ft); i.value = fracIn((e8 - ft * 12 * D) / D); };
   const done = () => setTimeout(() => {
     if (wrap.contains(document.activeElement)) { push(); return; }      // still typing in the other box
     const t = push(); if (t != null && isNaN(t)) { toast('Type numbers only, e.g. 10 ft and 6 in'); return; }
@@ -3815,7 +3822,7 @@ function syncFtIn() {
     if (w.contains(document.activeElement) && el.value !== '') continue;
     const mm = el.value.trim() ? parseLen(el.value, 'ftin') : NaN;
     if (!isFinite(mm)) { f.value = ''; i.value = ''; w.classList.remove('err'); continue; }
-    const D = DEN(), e8 = Math.round(Math.abs(mm) / 25.4 * D), ft = Math.floor(e8 / (12 * D));
+    const { D, e: e8 } = inchSplit(Math.abs(mm) / 25.4), ft = Math.floor(e8 / (12 * D));
     f.value = (mm < 0 ? '-' : '') + ft; i.value = fracIn((e8 - ft * 12 * D) / D); w.classList.remove('err');
   }
 }
@@ -3923,7 +3930,7 @@ const syncers = [
   bindText('d-text', () => 'Change dimension text', () => selDim() ? selDim().text || '' : '', v => { if (selDim()) selDim().text = v.trim(); }),
 ];
 $('#p-unit').addEventListener('change', e => commit('Change units', () => state.unit = e.target.value));
-$('#p-prec').addEventListener('change', e => { commit('Inch precision', () => state.prec = +e.target.value); toast(+e.target.value === 1 ? 'Showing whole inches' : 'Showing nearest 1/' + e.target.value + '"'); });
+$('#p-prec').addEventListener('change', e => { commit('Inch precision', () => state.prec = +e.target.value); toast(+e.target.value === 0 ? 'Showing exact sizes (fractions only where the size has them)' : +e.target.value === 1 ? 'Showing whole inches' : 'Showing nearest 1/' + e.target.value + '"'); });
 $('#tb-unit').addEventListener('change', e => { commit('Change units', () => state.unit = e.target.value); toast('Units: ' + e.target.options[e.target.selectedIndex].text); });
 $('#e-type').addEventListener('change', e => commit('Change type of ' + opName(selOp()), () => {
   const o = selOp(); const t = e.target.value; o.type = t; o.style = (state.defs[t] && state.defs[t].style) || STYLES[t][0][0];
@@ -4194,7 +4201,7 @@ function render(drawOnly) {
   syncFtIn();
   if (drawOnly) return;
   syncers.forEach(f => f());
-  $('#p-unit').value = state.unit; $('#tb-unit').value = state.unit; $('#p-prec').value = String(state.prec || 1);
+  $('#p-unit').value = state.unit; $('#tb-unit').value = state.unit; $('#p-prec').value = String(state.prec > 0 ? state.prec : 0);
   const showWall = !!w && (!isPlan || !!(ps && (ps.t === 'wall' || ps.t === 'open')));
   $('#wall-sec').hidden = !showWall; $('#o-sec').hidden = !showWall;
   $('#wall-h').textContent = isPlan ? 'Selected wall' : 'Walls';
