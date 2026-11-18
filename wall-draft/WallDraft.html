@@ -1768,23 +1768,11 @@ function colWallSnap(p, tol, col) {      // a column against a wall: on its cent
   return best;
 }
 function structSnap(p, from, tol, col) {
-  if (state.snap.on) {
-    let best = null;
-    for (const c of state.cols) { if (col && c.id === col.id) continue; const d = Math.hypot(c.x - p.x, c.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt: { x: c.x, y: c.y }, kind: 'end', label: 'Column ' + (c.label || '') }; }
-    for (const pt of cornerCentres()) { const d = Math.hypot(pt.x - p.x, pt.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt, kind: 'end', label: 'Wall corner' }; }
-    if (best) return best;
-    if (col) { const cw = colWallSnap(p, tol, col); if (cw) return cw; }
-    for (const w of state.walls) {
-      if (!isPlanWall(w)) continue;
-      const g = wallGeo(w), c0 = (g.f0 + g.f1) / 2, P0 = { x: g.A.x + g.n.x * c0, y: g.A.y + g.n.y * c0 };
-      let k = (p.x - P0.x) * g.d.x + (p.y - P0.y) * g.d.y; k = Math.min(Math.max(k, 0), g.L);
-      if (state.snap.grid) k = Math.min(Math.max(Math.round(k / planStep()) * planStep(), 0), g.L);
-      const Q = { x: P0.x + g.d.x * k, y: P0.y + g.d.y * k }, d = Math.hypot(Q.x - p.x, Q.y - p.y);
-      if (d <= tol && (!best || d < best.d)) best = { d, pt: Q, kind: 'edge', label: 'On ' + wname(w), wall: w };
-    }
-    if (best) return best;
-  }
-  return planSnap(p, from, tol);
+  const skip = gesture && ['cmove', 'bmove', 'bend'].includes(gesture.kind) ? gesture.id : null;
+  const h = planSnap(p, from, tol, skip);
+  if (h.pt && h.pt.cw) h.wall = state.walls.find(w => w.id === h.pt.cw) || null;
+  if (col && state.snap.on && ((h.kind !== 'end' && h.kind !== 'mid') || /(^|· )(edge of|end of|middle)/i.test(h.label))) { const cw = colWallSnap(p, tol, col); if (cw) return cw; }   // a column on a wall: centre or flush with a face / end
+  return h;
 }
 function placeColumn(h) {
   const v = state.draw.col; let rot = 0;
@@ -2146,34 +2134,7 @@ function addDLine(a, b) {
   commit('Add line ' + fmt(L), () => { state.dlines.push({ id: uid(), a: { x: r2(a.x), y: r2(a.y) }, b: { x: r2(b.x), y: r2(b.y) } }); });
   return true;
 }
-function measureSnap(p, from, tol) {
-  if (state.snap.on) {
-    let best = null;
-    const tryPt = (q, label) => { const d = Math.hypot(q.x - p.x, q.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt: { x: q.x, y: q.y }, kind: 'end', label }; };
-    for (const r of state.rooms) for (const q of innerPoly(r)) tryPt(q, 'Inside corner');
-    for (const nd of state.nodes) tryPt(nd, 'Corner');
-    for (const w of state.walls) {
-      if (!isPlanWall(w)) continue; const g = wallGeo(w);
-      const at = (sp, f) => ({ x: g.A.x + g.d.x * sp + g.n.x * f, y: g.A.y + g.d.y * sp + g.n.y * f });
-      for (const o of w.openings) for (const x of [o.x, o.x + o.w]) for (const f of [g.f0, g.f1]) tryPt(at(g.sOf(x), f), 'Edge of ' + opName(o));
-      for (const f of [g.f0, g.f1, (g.f0 + g.f1) / 2]) { tryPt(at(0, f), 'Wall end'); tryPt(at(g.L, f), 'Wall end'); }
-    }
-    for (const c of state.cols) { tryPt(c, 'Column centre'); if (c.shape !== 'round') colPoly(c).forEach(q => tryPt(q, 'Column corner')); }
-    for (const l of state.dlines) { tryPt(l.a, 'Line end'); tryPt(l.b, 'Line end'); }
-    if (best) return best;
-    for (const w of state.walls) {                       // slide along wall faces
-      if (!isPlanWall(w)) continue; const g = wallGeo(w);
-      for (const [f, nm] of [[g.f0, 'Inside face'], [g.f1, 'Outside face'], [(g.f0 + g.f1) / 2, 'Wall centre']]) {
-        const P0 = { x: g.A.x + g.n.x * f, y: g.A.y + g.n.y * f };
-        let k = (p.x - P0.x) * g.d.x + (p.y - P0.y) * g.d.y; k = Math.min(Math.max(k, 0), g.L);
-        const Q = { x: P0.x + g.d.x * k, y: P0.y + g.d.y * k }, d = Math.hypot(Q.x - p.x, Q.y - p.y);
-        if (d <= tol * 1.3 && (!best || d < best.d)) best = { d, pt: Q, kind: 'edge', label: nm };
-      }
-    }
-    if (best) { if (from) best.label = fmt(Math.hypot(best.pt.x - from.x, best.pt.y - from.y)) + ' · ' + best.label; return best; }
-  }
-  return planSnap(p, from, tol);
-}
+function measureSnap(p, from, tol) { return planSnap(p, from, tol); }
 function addPdim(a, b) {
   const L = Math.hypot(b.x - a.x, b.y - a.y); if (L < 1) return;
   commit('Add measurement ' + fmt(L), () => { state.pdims.push({ id: uid(), a: { x: r2(a.x), y: r2(a.y) }, b: { x: r2(b.x), y: r2(b.y) }, off: r2(planTs() * 1.2), text: '' }); state.show.pmy = true; });
@@ -2576,14 +2537,16 @@ function buildPlan(opt) {
 
 /* ---------- floor plan: snapping & drawing tools ---------- */
 const planStep = () => (IMP() && (state.draw.step || 50) === 50) ? 76.2 : (state.draw.step || 50);
-function objSnapPts() {
+function objSnapPts(skip) {
   const out = [], add = (q, l, k) => out.push({ x: q.x, y: q.y, l, k });
   for (const c of state.cols) {
+    if (skip && c.id === skip) continue;
     add(c, 'Column centre ' + (c.label || ''));
     if (c.shape === 'round') for (let i = 0; i < 4; i++) add({ x: c.x + Math.cos(i * Math.PI / 2) * c.w / 2, y: c.y + Math.sin(i * Math.PI / 2) * c.w / 2 }, 'Column edge');
     else { const pg = colPoly(c); pg.forEach(q => add(q, 'Column corner ' + (c.label || ''))); pg.forEach((q, i) => { const r = pg[(i + 1) % 4]; out.push({ x: (q.x + r.x) / 2, y: (q.y + r.y) / 2, l: 'Column side middle', k: 'mid', late: true }); }); }
   }
   for (const b of state.beams) {
+    if (skip && b.id === skip) continue;
     const L = Math.hypot(b.b.x - b.a.x, b.b.y - b.a.y); if (L < 1) continue;
     const nx = -(b.b.y - b.a.y) / L * b.w / 2, ny = (b.b.x - b.a.x) / L * b.w / 2, lb = 'Beam ' + (b.label || '');
     for (const e of [b.a, b.b]) { add(e, lb + ' end'); add({ x: e.x + nx, y: e.y + ny }, lb + ' corner'); add({ x: e.x - nx, y: e.y - ny }, lb + ' corner'); }
@@ -2594,61 +2557,74 @@ function objSnapPts() {
   for (const l of state.dlines) { add(l.a, 'Line end'); add(l.b, 'Line end'); out.push({ x: (l.a.x + l.b.x) / 2, y: (l.a.y + l.b.y) / 2, l: 'Line middle', k: 'mid', late: true }); }
   return [...out.filter(o => !o.late), ...out.filter(o => o.late)];
 }
-function planSnap(p, from, tol) {
+function planSnap(p, from, tol, skip) {   // ONE snap for every tool: points first (corners, ends), then middles, then sliding along lines
   const s = state.snap, gd = [], st0 = planStep(), custom = state.draw.step && state.draw.step !== 50, steps = IMP() ? [25.4, 76.2, 152.4, 304.8] : [10, 50, 100, 500],
     st = custom ? (st0 <= tol * 2.5 ? st0 : 0) : (steps.find(v => v >= tol * 0.35) || steps[steps.length - 1]);   // grid follows the zoom: zoom in for finer points
+  const tag = b => { if (from) b.label = fmt(Math.hypot(b.pt.x - from.x, b.pt.y - from.y)) + ' · ' + b.label.toLowerCase(); return b; };
   if (s.on) {
-    let best = null;
-    for (const nd of state.nodes) { const d = Math.hypot(nd.x - p.x, nd.y - p.y); if (d <= tol * 1.4 && (!best || d < best.d)) best = { d, pt: { x: nd.x, y: nd.y, nid: nd.id }, kind: 'end', label: 'Corner' }; }   // corners win over wall centres
-    if (best) return { ...best, label: from ? fmt(Math.hypot(best.pt.x - from.x, best.pt.y - from.y)) + ' · corner' : 'Corner' };
-    const rh = state.refs.length ? refHits(p, tol) : null;
-    if (rh && rh.kind === 'end') return { ...rh, label: from ? fmt(Math.hypot(rh.pt.x - from.x, rh.pt.y - from.y)) + ' · ' + rh.label.toLowerCase() : rh.label };
-    if (rh && from && state.draw.ortho !== 'free') {      // keep the wall straight: meet the reference line along the locked direction
-      const ang = state.draw.ortho === '45' ? 45 : 90, a = Math.round(Math.atan2(p.y - from.y, p.x - from.x) * 180 / Math.PI / ang) * ang * Math.PI / 180, od = { x: Math.round(Math.cos(a) * 1e9) / 1e9, y: Math.round(Math.sin(a) * 1e9) / 1e9 };
-      for (const r of state.refs) { const cr = od.x * r.dy - od.y * r.dx; if (Math.abs(cr) < 1e-6) continue; const t = ((r.x - from.x) * r.dy - (r.y - from.y) * r.dx) / cr; if (t <= 0) continue; const q = { x: from.x + od.x * t, y: from.y + od.y * t }; if (Math.hypot(q.x - p.x, q.y - p.y) <= tol * 1.6) return { d: 0, pt: q, kind: 'edge', label: fmt(t) + ' · to reference line' }; }
-    }
-    if (rh) return { ...rh, label: from ? fmt(Math.hypot(rh.pt.x - from.x, rh.pt.y - from.y)) + ' · on reference line' : rh.label };
-    if (s.end) for (const op of objSnapPts()) {   // corners and centres of beams, columns, kitchen platforms and measurements
-      const d = Math.hypot(op.x - p.x, op.y - p.y);
-      if (d <= tol * 1.2 && (!best || d < best.d - (op.k === 'mid' ? 0.5 : 0))) best = { d, pt: { x: op.x, y: op.y }, kind: op.k || 'end', label: op.l };
-    }
-    // walls: three snap lines each — centre, inside face, outside face — plus their corners and middles
-    const ang0 = state.draw.ortho === '45' ? 45 : state.draw.ortho === '90' ? 90 : 0;
-    let odir = null;
-    if (from && ang0 && Math.hypot(p.x - from.x, p.y - from.y) > 0) { const a = Math.round(Math.atan2(p.y - from.y, p.x - from.x) * 180 / Math.PI / ang0) * ang0 * Math.PI / 180; odir = { x: Math.round(Math.cos(a) * 1e9) / 1e9, y: Math.round(Math.sin(a) * 1e9) / 1e9 }; }
-    const lines = [];
+    const near = list => { let b = null; for (const c of list) { const d = Math.hypot(c.pt.x - p.x, c.pt.y - p.y); if (d <= c.r && (!b || d < b.d)) b = { d, pt: c.pt, kind: c.k, label: c.l }; } return b; };
+    const lines = [];                     // every wall has three snap lines: centre, inside face, outside face
     for (const w of state.walls) {
       if (!isPlanWall(w)) continue; const gw = wallGeo(w);
       for (const [f, nm] of [[(gw.f0 + gw.f1) / 2, 'Wall centre'], [gw.f0, 'Inside face'], [gw.f1, 'Outside face']])
         lines.push({ w, gw, f, nm, P0: { x: gw.A.x + gw.n.x * f, y: gw.A.y + gw.n.y * f } });
     }
     const at = (l, k) => ({ x: l.P0.x + l.gw.d.x * k, y: l.P0.y + l.gw.d.y * k, cw: l.w.id });
-    if (s.end) {                            // corners of the faces and centre lines, where joined walls meet
-      for (let i = 0; i < lines.length; i++) for (let j = i + 1; j < lines.length; j++) {
+    // 1. points
+    if (s.end) {
+      const pts = [];
+      for (const nd of state.nodes) pts.push({ pt: { x: nd.x, y: nd.y, nid: nd.id }, r: tol * 1.4, k: 'end', l: 'Wall corner' });
+      for (let i = 0; i < lines.length; i++) for (let j = i + 1; j < lines.length; j++) {      // where the faces / centre lines of joined walls meet
         const A = lines[i], B = lines[j];
         if (A.w === B.w || A.nm !== B.nm) continue;
         if (!(A.w.a === B.w.a || A.w.a === B.w.b || A.w.b === B.w.a || A.w.b === B.w.b)) continue;
         const cr = A.gw.d.x * B.gw.d.y - A.gw.d.y * B.gw.d.x; if (Math.abs(cr) < 1e-6) continue;
-        const t = ((B.P0.x - A.P0.x) * B.gw.d.y - (B.P0.y - A.P0.y) * B.gw.d.x) / cr, Q = at(A, t), d = Math.hypot(Q.x - p.x, Q.y - p.y);
-        if (d <= tol * 1.3 && (!best || d < best.d)) best = { d, pt: Q, kind: 'end', label: A.nm === 'Wall centre' ? 'Centre corner' : A.nm === 'Inside face' ? 'Inside corner' : 'Outside corner' };
+        const t = ((B.P0.x - A.P0.x) * B.gw.d.y - (B.P0.y - A.P0.y) * B.gw.d.x) / cr;
+        pts.push({ pt: at(A, t), r: tol * 1.3, k: 'end', l: A.nm === 'Wall centre' ? 'Centre corner' : A.nm === 'Inside face' ? 'Inside corner' : 'Outside corner' });
       }
-      for (const l of lines) for (const k of [0, l.gw.L]) {      // free ends of each line
-        const Q = at(l, k), d = Math.hypot(Q.x - p.x, Q.y - p.y);
-        if (d <= tol && (!best || d < best.d)) best = { d, pt: Q, kind: 'end', label: 'End of ' + l.nm.toLowerCase() };
+      for (const l of lines) for (const k of [0, l.gw.L]) pts.push({ pt: at(l, k), r: tol * 1.2, k: 'end', l: 'End of ' + l.nm.toLowerCase() });
+      for (const l of lines) if (l.nm !== 'Wall centre') for (const o of l.w.openings) for (const x of [o.x, o.x + o.w]) pts.push({ pt: at(l, l.gw.sOf(x)), r: tol, k: 'end', l: 'Edge of ' + (o.label || TYPES[o.type].name) });
+      for (const op of objSnapPts(skip)) if (op.k !== 'mid') pts.push({ pt: { x: op.x, y: op.y }, r: tol * 1.2, k: 'end', l: op.l });
+      if (state.refs.length) { const rh = refHits(p, tol); if (rh && rh.kind === 'end') pts.push({ pt: rh.pt, r: tol, k: 'end', l: rh.label }); }
+      const b = near(pts); if (b) return tag(b);
+    }
+    // 2. middles
+    if (s.mid) {
+      const pts = [];
+      for (const l of lines) pts.push({ pt: at(l, l.gw.L / 2), r: tol, k: 'mid', l: 'Middle · ' + l.nm.toLowerCase() });
+      for (const op of objSnapPts(skip)) if (op.k === 'mid') pts.push({ pt: { x: op.x, y: op.y }, r: tol, k: 'mid', l: op.l });
+      const b = near(pts); if (b) return tag(b);
+    }
+    // 3. along lines: wall faces and centres, reference lines, 2D lines
+    if (s.edge) {
+      const ang0 = state.draw.ortho === '45' ? 45 : state.draw.ortho === '90' ? 90 : 0;
+      let odir = null;
+      if (from && ang0 && Math.hypot(p.x - from.x, p.y - from.y) > 0) { const a = Math.round(Math.atan2(p.y - from.y, p.x - from.x) * 180 / Math.PI / ang0) * ang0 * Math.PI / 180; odir = { x: Math.round(Math.cos(a) * 1e9) / 1e9, y: Math.round(Math.sin(a) * 1e9) / 1e9 }; }
+      let best = null;
+      const cand = (q, lab, r, extra) => { const d = Math.hypot(q.x - p.x, q.y - p.y); if (d <= r && (!best || d < best.d)) best = { d, pt: { x: q.x, y: q.y, ...(extra || {}) }, kind: 'edge', label: lab }; };
+      for (const l of lines) {
+        let k = (p.x - l.P0.x) * l.gw.d.x + (p.y - l.P0.y) * l.gw.d.y, locked = false;
+        if (odir) {                       // keep the new wall straight: meet the line along the locked direction
+          const cr = odir.x * l.gw.d.y - odir.y * l.gw.d.x;
+          if (Math.abs(cr) > 1e-6) { const kk = ((from.x - l.P0.x) * odir.y - (from.y - l.P0.y) * odir.x) / cr; if (kk >= 0 && kk <= l.gw.L) { k = kk; locked = true; } }
+        }
+        if (!locked && s.grid && st) k = Math.round(k / st) * st;
+        k = Math.min(Math.max(k, 0), l.gw.L);
+        cand(at(l, k), l.nm, tol * (locked ? 1.6 : 1), { cw: l.w.id });
       }
+      for (const r of state.refs) {
+        let q = null;
+        if (odir) { const cr = odir.x * r.dy - odir.y * r.dx; if (Math.abs(cr) > 1e-6) { const t = ((r.x - from.x) * r.dy - (r.y - from.y) * r.dx) / cr; if (t > 0) q = { x: from.x + odir.x * t, y: from.y + odir.y * t }; } }
+        if (q) cand(q, 'Reference line', tol * 1.6);
+        else { const k = (p.x - r.x) * r.dx + (p.y - r.y) * r.dy; cand({ x: r.x + r.dx * k, y: r.y + r.dy * k }, 'Reference line', tol); }
+      }
+      for (const dl of state.dlines) {
+        const L = Math.hypot(dl.b.x - dl.a.x, dl.b.y - dl.a.y); if (L < 1) continue;
+        const ux = (dl.b.x - dl.a.x) / L, uy = (dl.b.y - dl.a.y) / L, k = Math.min(Math.max((p.x - dl.a.x) * ux + (p.y - dl.a.y) * uy, 0), L);
+        cand({ x: dl.a.x + ux * k, y: dl.a.y + uy * k }, 'On line', tol);
+      }
+      if (best) return tag(best);
     }
-    if (!best && s.mid) for (const l of lines) { const M = at(l, l.gw.L / 2), d = Math.hypot(M.x - p.x, M.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt: M, kind: 'mid', label: 'Middle · ' + l.nm.toLowerCase() }; }
-    if (!best && s.edge) for (const l of lines) {
-      let k = (p.x - l.P0.x) * l.gw.d.x + (p.y - l.P0.y) * l.gw.d.y;
-      if (odir) {                           // keep the new wall straight: meet the line along the locked direction
-        const cr = odir.x * l.gw.d.y - odir.y * l.gw.d.x;
-        if (Math.abs(cr) > 1e-6) { const kk = ((from.x - l.P0.x) * odir.y - (from.y - l.P0.y) * odir.x) / cr; if (kk >= 0 && kk <= l.gw.L) k = kk; }
-      } else if (s.grid && st) k = Math.round(k / st) * st;
-      k = Math.min(Math.max(k, 0), l.gw.L);
-      const Q = at(l, k), d = Math.hypot(Q.x - p.x, Q.y - p.y);
-      if (d <= tol * (odir ? 1.6 : 1) && (!best || d < best.d)) best = { d, pt: Q, kind: 'edge', label: l.nm };
-    }
-    if (best) { if (from) best.label = fmt(Math.hypot(best.pt.x - from.x, best.pt.y - from.y)) + ' · ' + best.label.toLowerCase(); return best; }
   }
   if (from) {
     const vx = p.x - from.x, vy = p.y - from.y, ang = state.draw.ortho === '45' ? 45 : state.draw.ortho === '90' ? 90 : 0;
