@@ -31,6 +31,12 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 option { background-color: var(--panel); color: var(--ink); }
+#qbar { position: fixed; z-index: 25; display: flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 20px rgb(0 0 0 / .35); max-width: calc(100vw - 16px); overflow-x: auto; scrollbar-width: none; }
+#qbar::-webkit-scrollbar { display: none; }
+#qbar button { flex: none; display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 46px; min-height: 46px; padding: 4px 6px; border: 0; border-radius: 9px; background: transparent; color: var(--ink); font: 11px var(--f-ui); cursor: pointer; }
+#qbar button:hover { background: var(--soft); }
+#qbar .ic { font: 500 17px/1.1 var(--f-mono); }
+#qbar .qdel { color: var(--warn); }
 #loupe { position: fixed; z-index: 70; width: 124px; height: 124px; border-radius: 50%; overflow: hidden; border: 2px solid var(--snap); background: var(--paper); box-shadow: 0 6px 22px rgb(0 0 0 / .45); pointer-events: none; }
 #lsvg { width: 100%; height: 100%; display: block; }
 #loupe-t { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font: 600 10px var(--f-mono); color: var(--snap); text-shadow: 0 0 3px var(--paper), 0 0 3px var(--paper); white-space: nowrap; overflow: hidden; padding: 0 14px; }
@@ -382,6 +388,16 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 <div class="app">
   <main class="sheet" id="sheet">
     <svg id="draw" class="dwg" xmlns="http://www.w3.org/2000/svg" aria-label="Wall elevation drawing"></svg>
+    <div id="qbar" hidden role="toolbar" aria-label="Actions for the selected object">
+      <button data-q="move" title="Move"><span class="ic">✥</span><span>Move</span></button>
+      <button data-q="rotate" title="Rotate by an angle about a point"><span class="ic">↻</span><span>Rotate</span></button>
+      <button data-q="r90" title="Turn 90° about its own centre"><span class="ic">⟳</span><span>90°</span></button>
+      <button data-q="copy" title="Copy"><span class="ic">⧉</span><span>Copy</span></button>
+      <button data-q="mirror" title="Mirror"><span class="ic">⇋</span><span>Mirror</span></button>
+      <button data-q="offset" title="Offset a parallel copy"><span class="ic">⫽</span><span>Offset</span></button>
+      <button data-q="info" title="Sizes and details"><span class="ic">ⓘ</span><span>Edit</span></button>
+      <button data-q="del" class="qdel" title="Delete"><span class="ic">⌫</span><span>Delete</span></button>
+    </div>
     <div id="loupe" hidden aria-hidden="true"><svg id="lsvg" class="dwg" xmlns="http://www.w3.org/2000/svg"></svg><div id="loupe-t"></div></div>
     <section id="epane" hidden aria-label="Elevations">
       <div class="ep-head">
@@ -3020,7 +3036,48 @@ function fit() {
 let fitKey = '';
 const viewKey = () => state.view === 'plan' ? 'plan' : 'wall|' + state.active + '|' + state.show.plan;
 function fitIfNeeded() { const k = viewKey(); if (k !== fitKey) { fitKey = k; fit(); } }
-function applyView() { svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); drawOverlay(); }
+function applyView() { svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`); drawOverlay(); placeQbar(); }
+/* quick actions over the selected object: move, rotate, copy, mirror, offset, delete */
+function qTarget() { const ps = state.planSel; if (state.view !== 'plan' || tool || !ps) return null; return ps.t === 'open' ? { t: 'open', id: state.sel, wid: ps.id } : { t: ps.t, id: ps.id }; }
+function placeQbar() { try { placeQbar0(); } catch (e) { $('#qbar').hidden = true; } }   // may run before the rest of the app has started
+function placeQbar0() {
+  const qb = $('#qbar'), tg = qTarget();
+  if (!tg || !view || (gesture && gesture.moved) || !$('#modal').hidden) { qb.hidden = true; return; }
+  let pts;
+  if (tg.t === 'open') { const w = state.walls.find(x => x.id === tg.wid), o = w && w.openings.find(x => x.id === tg.id); if (!w || !o || !isPlanWall(w)) { qb.hidden = true; return; } const g = wallGeo(w), a = g.sOf(o.x), b = g.sOf(o.x + o.w); pts = [a, b].flatMap(k => [g.f0, g.f1].map(f => ({ x: g.A.x + g.d.x * k + g.n.x * f, y: g.A.y + g.d.y * k + g.n.y * f }))); }
+  else pts = modShapes(expandSet([tg]), 0).flatMap(sh => sh.pts);
+  if (tg.t === 'ref') { const r = state.refs.find(x => x.id === tg.id); if (r) pts = [{ x: r.x, y: r.y }]; }
+  if (!pts.length) { qb.hidden = true; return; }
+  const one = tg.t !== 'open', lin = ['wall', 'beam', 'ref'].includes(tg.t);
+  qb.querySelectorAll('[data-q]').forEach(b => { const k = b.dataset.q; b.hidden = (!one && !['info', 'del'].includes(k)) || (k === 'offset' && !lin) || (k === 'r90' && tg.t === 'ref'); });
+  qb.hidden = false;
+  const r = svg.getBoundingClientRect(), sx = x => r.left + (x - view.x) / view.w * r.width, sy = y => r.top + (y - view.y) / view.h * r.height;
+  const xs = pts.map(q => sx(q.x)), ys = pts.map(q => sy(q.y)), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const W = qb.offsetWidth, H = qb.offsetHeight, top = r.top + 64, bot = matchMedia('(max-width: 820px)').matches ? innerHeight - ($('.panel').getBoundingClientRect().height + $('#ribbon').getBoundingClientRect().height) - 8 : r.bottom - 48;
+  let y = y0 - H - 14; if (y < top) y = y1 + 14; if (y + H > bot) y = Math.max(top, Math.min(bot - H, (y0 + y1) / 2 - H / 2));
+  const x = Math.min(Math.max(8, (x0 + x1) / 2 - W / 2), innerWidth - W - 8);
+  qb.style.left = Math.round(x) + 'px'; qb.style.top = Math.round(y) + 'px';
+}
+function selTargetSection() { const ps = state.planSel; return selOp() ? '#ed' : selFix() ? '#fxsec' : selRef() ? '#refsec' : selPdim() ? '#pdsec' : selStruct() ? '#ssec' : selRoom() ? '#rsec' : (ps && ps.t === 'wall') ? '#wall-sec' : null; }
+$('#qbar').addEventListener('click', e => {
+  const b = e.target.closest('[data-q]'); if (!b) return; const k = b.dataset.q, tg = qTarget(); if (!tg) return;
+  if (['move', 'rotate', 'copy', 'mirror'].includes(k)) { setTool(k); return; }
+  if (k === 'offset') {                    // offset this very wall / beam / line
+    setTool('offset');
+    const it = tg.t === 'wall' ? state.walls.find(w => w.id === tg.id) : null;
+    if (it || tg.t !== 'wall') { const c = modShapes(expandSet([tg]), 0)[0]; if (c) { const m = { x: (c.pts[0].x + c.pts[1].x) / 2, y: (c.pts[0].y + c.pts[1].y) / 2 }; const t0 = tg.t === 'ref' ? (() => { const r = state.refs.find(x => x.id === tg.id); return { x: r.x, y: r.y }; })() : tg.t === 'wall' ? (() => { const g = wallGeo(it); return { x: (g.A.x + g.B.x) / 2, y: (g.A.y + g.B.y) / 2 }; })() : tg.t === 'beam' ? (() => { const bm = state.beams.find(x => x.id === tg.id); return { x: (bm.a.x + bm.b.x) / 2, y: (bm.a.y + bm.b.y) / 2 }; })() : m; const pk = pickLinear(t0, upx() * 30); if (pk) { tool.target = pk; render(); updateStatus(); } } }
+    return;
+  }
+  if (k === 'r90') {
+    const ex = expandSet([tg]), pts = modShapes(ex, 0).flatMap(sh => sh.pts); if (!pts.length) return;
+    const xs = pts.map(q => q.x), ys = pts.map(q => q.y), c = { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
+    commit('Turn 90°', () => { modApply([tg], makeT('rotate', c, null, Math.PI / 2), false); state.planSel = tg.t === 'wall' || tg.t === 'room' ? null : { t: tg.t, id: tg.id }; });
+    toast('Turned 90° about its centre', 'Undo', undo); return;
+  }
+  if (k === 'del') { if (tg.t === 'room') { const r = selRoom(); commit('Delete ' + r.name, () => deleteRoom(r)); toast('Deleted ' + r.name, 'Undo', undo); } else delSelected(); return; }
+  if (k === 'info') { if (mobile()) { setSheet('half'); const t = selTargetSection(); requestAnimationFrame(() => { const el = t && $(t), box = $('.panel-in'); if (el && !el.hidden) box.scrollTo({ top: el.offsetTop - 8, behavior: 'smooth' }); }); } else { const t = selTargetSection(), el = t && $(t); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }
+});
+window.addEventListener('resize', () => placeQbar());
 const upx = () => view.w / Math.max(svg.getBoundingClientRect().width, 1);   // drawing units per screen pixel
 function toSvg(cx, cy) { const r = svg.getBoundingClientRect(); return { x: view.x + (cx - r.left) / r.width * view.w, y: view.y + (cy - r.top) / r.height * view.h }; }
 const toModel = p => ({ x: p.x, z: wall().height - p.y });
@@ -4351,6 +4408,7 @@ function render(drawOnly) {
   if (!drawOnly) { $('#d-cs').innerHTML = sizeOpts('col'); $('#d-bs').innerHTML = sizeOpts('beam'); if (isStruct()) $('#st-s').innerHTML = sizeOpts(tool.kind); }
   $$('[data-v]').forEach(el => { el.hidden = el.dataset.v !== state.view; });
   if (!drawOnly) epRender();
+  placeQbar();
   $('#undo').disabled = !hist.length; $('#redo').disabled = !fut.length;
   $('#undo').title = hist.length ? 'Undo: ' + hist[hist.length - 1].label + ' (Ctrl+Z)' : 'Nothing to undo';
   $('#redo').title = fut.length ? 'Redo: ' + fut[fut.length - 1].label + ' (Ctrl+Y)' : 'Nothing to redo';
