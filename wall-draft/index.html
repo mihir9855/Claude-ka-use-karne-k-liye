@@ -234,6 +234,8 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 .dwg .pwall { fill: var(--wallfill); stroke: var(--ink); stroke-width: 1.5; }
 .dwg .guide { stroke: var(--snap); stroke-width: 1; stroke-dasharray: 4 4; }
 .dwg .snapm { stroke: var(--snap); stroke-width: 2; fill: none; }
+.dwg .dl { stroke: var(--ink); stroke-width: 1.4; }
+.dwg .dl.pvl { stroke: var(--snap); }
 .dwg .rub { stroke: var(--snap); stroke-width: 1; stroke-dasharray: 5 4; fill: none; }
 .dwg .msel { stroke: var(--snap); stroke-width: 2.5; stroke-dasharray: 7 4; fill: color-mix(in srgb, var(--snap) 12%, transparent); }
 .dwg .mghost { stroke: var(--snap); stroke-width: 1.4; fill: color-mix(in srgb, var(--snap) 8%, transparent); }
@@ -259,7 +261,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 .dwg .pface { stroke: var(--ink); stroke-width: 1.8; }
 .dwg .pout { stroke: var(--ink); stroke-width: 1.2; }
 .dwg .whit { stroke: transparent; stroke-width: 22; cursor: pointer; }
-#dg > :not([data-oid]):not([data-wid]):not([data-rid]):not([data-cid]):not([data-bid]):not([data-bend]):not([data-nid]):not([data-did]):not([data-pdid]):not([data-fid]):not([data-dm]):not([data-refid]) { pointer-events: none; }
+#dg > :not([data-oid]):not([data-wid]):not([data-rid]):not([data-cid]):not([data-bid]):not([data-bend]):not([data-nid]):not([data-did]):not([data-pdid]):not([data-fid]):not([data-dm]):not([data-refid]):not([data-lid]) { pointer-events: none; }
 .dwg .whit { stroke-width: 26; }
 .dwg .refl { stroke: var(--snap); stroke-width: 1.2; stroke-dasharray: 12 6 2 6; opacity: .85; }
 .dwg .refl.hi { stroke-width: 2.4; opacity: 1; }
@@ -408,7 +410,8 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <div class="rgroup" data-v="plan"><div class="rbtns">
           <button data-tool="" title="Select and move (Esc)"><span class="ic">➤</span><span class="tl">Select</span></button>
           <button data-tool="hand" title="Draw walls by hand; they are straightened for you (D)"><span class="ic">✎</span><span class="tl">Hand</span></button>
-          <button data-tool="line" title="Line walls: tap each corner, or drag one wall (W)"><span class="ic">╱</span><span class="tl">Line</span></button>
+          <button data-tool="line" title="Wall: tap each corner, or drag one wall. Choose centre, left or right of the line (W)"><span class="ic">▥</span><span class="tl">Wall</span></button>
+          <button data-tool="dline" title="Line: a plain 2D drawing line, not a wall (L)"><span class="ic">╱</span><span class="tl">Line</span></button>
           <button data-tool="box" title="Box: drag corner to corner for four walls (B)"><span class="ic">▭</span><span class="tl">Box</span></button>
           <button id="tb-room" title="Add a room by typing its size (R)"><span class="ic">⊞</span><span class="tl">Room</span></button>
           <button id="tb-bal" title="Add a balcony to a room (K)"><span class="ic">⌓</span><span class="tl">Balcony</span></button>
@@ -477,6 +480,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
       <span class="lenbox" id="st-len" hidden><input id="len-in" placeholder="length" autocomplete="off" aria-label="Wall length"><button data-dir="l" title="Place to the left">←</button><button data-dir="u" title="Place upward">↑</button><button data-dir="d" title="Place downward">↓</button><button data-dir="r" title="Place to the right">→</button></span>
       <span class="lenbox" id="st-off" hidden><span style="font-size:12px;color:var(--muted)">Distance</span><input id="off-in" placeholder="through point" autocomplete="off" aria-label="Offset distance"><select id="off-mode" aria-label="Offset measured between"><option value="line">Lines (AutoCAD)</option><option value="clear">Clear gap (face to face)</option></select></span>
       <span class="lenbox" id="st-mod" hidden><button id="mod-all" title="Select everything">All</button><button id="mod-none" title="Clear the selection">None</button><input id="mod-in" autocomplete="off" aria-label="Distance or angle"><button data-mdir="l" title="Move to the left">←</button><button data-mdir="u" title="Move up">↑</button><button data-mdir="d" title="Move down">↓</button><button data-mdir="r" title="Move to the right">→</button><button data-mrot="1" title="Rotate anticlockwise by the angle">↺</button><button data-mrot="-1" title="Rotate clockwise by the angle">↻</button><select id="mod-mk" aria-label="Original after mirror"><option value="keep">Keep original</option><option value="del">Erase original</option></select><button id="mod-go" class="primary">Next ▸</button></span>
+      <select id="st-loc" title="Where the wall sits on the line you draw" aria-label="Wall location line"><option value="in">Auto: room inside face</option><option value="c">Centre line</option><option value="L">Left of line</option><option value="R">Right of line</option></select>
       <select id="st-t" title="Thickness of new walls" aria-label="Thickness of new walls"></select>
       <select id="st-s" title="Size" aria-label="Size" hidden></select>
       <select id="st-ba" title="Where the beam sits on a wall" aria-label="Beam position on the wall" hidden><option value="c">On wall centre line</option><option value="in">Flush with inside face</option><option value="out">Flush with outside face</option></select>
@@ -543,7 +547,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <h2>Drawing walls</h2>
         <div class="grid2">
           <label class="f">The line you draw is
-            <select id="d-just"><option value="in">Inside face of the room</option><option value="c">Centre of the wall</option></select></label>
+            <select id="d-just"><option value="in">Inside face of the room (auto)</option><option value="c">Centre line of the wall</option><option value="L">Left of the line (wall on the left as you draw)</option><option value="R">Right of the line (wall on the right as you draw)</option></select></label>
           <label class="f">Drawing snap step<input id="d-step" inputmode="decimal" autocomplete="off"></label>
         </div>
         <p class="note"><b>✎ Hand</b>: draw walls with your finger; they are straightened for you. <b>╱ Line</b>: tap each corner, or drag one straight wall. <b>▭ Box</b>: drag corner to corner for four walls.
@@ -860,7 +864,7 @@ function blankProject(name) {
 }
 function blankProject0(name) {
   return { v: 4, defs: DEF_OPEN(), name, unit: 'mm', view: 'plan', canvas: 'dark', active: null, sel: null, selDim: null, planSel: null,
-    snap: DEF_SNAP(), show: DEF_SHOW(), draw: { t: 230, h: 3000, ortho: '90', just: 'in', step: 50, col: { shape: 'rect', w: 230, d: 450 }, beam: { shape: 'rect', w: 230, d: 450 } }, nodes: [], walls: [], rooms: [], cols: [], beams: [], pdims: [], fix: [], refs: [] };
+    snap: DEF_SNAP(), show: DEF_SHOW(), draw: { t: 230, h: 3000, ortho: '90', just: 'in', step: 50, col: { shape: 'rect', w: 230, d: 450 }, beam: { shape: 'rect', w: 230, d: 450 } }, nodes: [], walls: [], rooms: [], cols: [], beams: [], pdims: [], fix: [], refs: [], dlines: [] };
 }
 function sample() {
   const s = blankProject0('Example flat (replace with your measurements)');
@@ -896,6 +900,7 @@ function norm(p) {                       // fill in fields added in later versio
   if (!Array.isArray(p.pdims)) p.pdims = [];
   if (!Array.isArray(p.fix)) p.fix = [];
   if (!Array.isArray(p.refs)) p.refs = [];
+  if (!Array.isArray(p.dlines)) p.dlines = [];
   if (!p.defs) p.defs = DEF_OPEN();
   if (!p.defs.rail) p.defs.rail = { t: 100, h: 1000 };
   if (!p.defs.kitchen) p.defs.kitchen = { d: 600, h: 850 };
@@ -1487,8 +1492,8 @@ function addNode(x, y) {
   const id = uid(); state.nodes.push({ id, x: r2(x), y: r2(y) }); return id;
 }
 function newWall(a, b, t) {
-  const c = state.draw.just === 'c';
-  return { id: uid(), name: '', a, b, side: 0, sideAuto: !c, length: 0, height: state.draw.h, thickness: t || state.draw.t, openings: [], dims: [] };
+  const j = state.draw.just || 'in', side = j === 'L' ? -1 : j === 'R' ? 1 : 0;   // Revit-style location line: centre, left or right of what you draw
+  return { id: uid(), name: '', a, b, side, sideAuto: j === 'in', length: 0, height: state.draw.h, thickness: t || state.draw.t, openings: [], dims: [] };
 }
 function nextRoomName(list = state.rooms) { let i = list.length + 1; while (list.some(r => r.name === 'Room ' + i) || state.rooms.some(r => r.name === 'Room ' + i)) i++; return 'Room ' + i; }
 function makeBox(x0, y0, x1, y1) {
@@ -2134,7 +2139,13 @@ function kitchenInto(r, lay, main, D, Hh, sink, hob, mark) {
 }
 
 /* ---------- measurements on plan ---------- */
-const isMeasure = () => !!(tool && (tool.kind === 'pdim' || tool.kind === 'ref'));
+const isMeasure = () => !!(tool && (tool.kind === 'pdim' || tool.kind === 'ref' || tool.kind === 'dline'));
+const selDL = () => (state.planSel && state.planSel.t === 'dl' && state.dlines.find(l => l.id === state.planSel.id)) || null;
+function addDLine(a, b) {
+  const L = Math.hypot(b.x - a.x, b.y - a.y); if (L < 1) return false;
+  commit('Add line ' + fmt(L), () => { state.dlines.push({ id: uid(), a: { x: r2(a.x), y: r2(a.y) }, b: { x: r2(b.x), y: r2(b.y) } }); });
+  return true;
+}
 function measureSnap(p, from, tol) {
   if (state.snap.on) {
     let best = null;
@@ -2148,6 +2159,7 @@ function measureSnap(p, from, tol) {
       for (const f of [g.f0, g.f1, (g.f0 + g.f1) / 2]) { tryPt(at(0, f), 'Wall end'); tryPt(at(g.L, f), 'Wall end'); }
     }
     for (const c of state.cols) { tryPt(c, 'Column centre'); if (c.shape !== 'round') colPoly(c).forEach(q => tryPt(q, 'Column corner')); }
+    for (const l of state.dlines) { tryPt(l.a, 'Line end'); tryPt(l.b, 'Line end'); }
     if (best) return best;
     for (const w of state.walls) {                       // slide along wall faces
       if (!isPlanWall(w)) continue; const g = wallGeo(w);
@@ -2261,7 +2273,7 @@ const smallScreen = () => window.matchMedia('(max-width: 820px)').matches;
 function planTs() { const b = nodesBox(); return Math.max(b ? b.x1 - b.x0 : 0, b ? b.y1 - b.y0 : 0, 3000) / (smallScreen() ? 30 : 45); }
 const isDraw = () => !!(tool && (tool.kind === 'hand' || tool.kind === 'line' || tool.kind === 'box'));
 const isStruct = () => !!(tool && (tool.kind === 'col' || tool.kind === 'beam'));
-const toolFrom = () => tool ? (tool.kind === 'beam' ? tool.beamStart : (tool.kind === 'pdim' || tool.kind === 'ref') ? tool.mStart : null) : null;
+const toolFrom = () => tool ? (tool.kind === 'beam' ? tool.beamStart : (tool.kind === 'pdim' || tool.kind === 'ref' || tool.kind === 'dline') ? tool.mStart : null) : null;
 const toolSnap = (p, from, tol) => isMeasure() ? measureSnap(p, from, tol) : structSnap(p, from, tol, tool && tool.kind === 'col' ? state.draw.col : null);
 function hull(pts) {
   const P = [...pts].sort((a, b) => a.x - b.x || a.y - b.y), cr = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
@@ -2287,7 +2299,7 @@ function buildPlan(opt) {
   if (!walls.length && !state.cols.length && !state.beams.length && !state.pdims.length) {
     g.text(0, 0, 'Blank drawing', 'cap', ts * 1.3);
     g.text(0, ts * 1.7, '✎ Hand: draw walls with your finger', 'lbs', fs);
-    g.text(0, ts * 3.0, '╱ Line: tap each corner, or drag one wall', 'lbs', fs);
+    g.text(0, ts * 3.0, '▥ Wall: tap each corner, or drag one wall', 'lbs', fs);
     g.text(0, ts * 4.3, '▭ Box: drag from corner to corner', 'lbs', fs);
     g.grow(10000, 7000);
     const b = g.bb; return { svg: g.P.join(''), box: { x: b.x0 - ts * 3, y: b.y0 - ts * 3, w: b.x1 - b.x0 + ts * 6, h: b.y1 - b.y0 + ts * 6 } };
@@ -2390,6 +2402,10 @@ function buildPlan(opt) {
       const L0 = at(gw, gw.sOf(0), (gw.f0 + gw.f1) / 2);
       g.raw(`<circle cx="${n(L0.x)}" cy="${n(L0.y)}" r="${n(Math.max(gw.t * 0.4, ts * 0.22))}" class="lend"/>`);
     }
+  }
+  for (const l of state.dlines) {          // plain 2D lines
+    ln(l.a, l.b, 'dl');
+    if (ps && ps.t === 'dl' && ps.id === l.id) { ln(l.a, l.b, 'sel'); const L = Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y); g.text((l.a.x + l.b.x) / 2, (l.a.y + l.b.y) / 2 - ts * 0.3, fmt(L), 'dt', fs * 0.8, 'middle'); }
   }
   // columns (solid, crossed) and beams (dashed, overhead)
   for (const c of state.cols) {
@@ -2528,6 +2544,7 @@ function buildPlan(opt) {
       g.raw(`<line x1="${n(bm.a.x)}" y1="${n(bm.a.y)}" x2="${n(bm.b.x)}" y2="${n(bm.b.y)}" class="whit" data-bid="${bm.id}" vector-effect="non-scaling-stroke"/>`);
     }
     for (const c of state.cols) g.raw(`<circle cx="${n(c.x)}" cy="${n(c.y)}" r="${n(Math.max(colHalf(c, { x: 1, y: 0 }), colHalf(c, { x: 0, y: 1 }), ts * 0.6))}" class="hit" data-cid="${c.id}"/>`);
+    for (const l of state.dlines) g.raw(`<line x1="${n(l.a.x)}" y1="${n(l.a.y)}" x2="${n(l.b.x)}" y2="${n(l.b.y)}" class="whit" data-lid="${l.id}" vector-effect="non-scaling-stroke"/>`);
     for (const f of [...state.fix.filter(q => q.kind === 'counter'), ...state.fix.filter(q => q.kind !== 'counter')]) g.raw(`<path d="${path(fxPoly(f))}" class="hit" data-fid="${f.id}"/>`);
     openHits.forEach(h => g.raw(h));                        // doors and windows on top so they can be dragged
     const sb = ps && ps.t === 'beam' && state.beams.find(b => b.id === ps.id);
@@ -2574,6 +2591,7 @@ function objSnapPts() {
   }
   for (const f of state.fix) fxPoly(f).forEach(q => add(q, FXK[f.kind].name + ' corner'));
   for (const d of state.pdims) { add(d.a, 'Measurement end'); add(d.b, 'Measurement end'); }
+  for (const l of state.dlines) { add(l.a, 'Line end'); add(l.b, 'Line end'); out.push({ x: (l.a.x + l.b.x) / 2, y: (l.a.y + l.b.y) / 2, l: 'Line middle', k: 'mid', late: true }); }
   return [...out.filter(o => !o.late), ...out.filter(o => o.late)];
 }
 function planSnap(p, from, tol) {
@@ -2747,6 +2765,14 @@ function drawBox(p, q, name) {
 }
 function placeTyped(dir) {
   const el = $('#len-in'), v = parseLen(el.value);
+  if (tool && tool.kind === 'dline') {
+    if (!isFinite(v) || v <= 0) { toast('Type the line length first. ' + unitExample()); focusLen(); return; }
+    if (!tool.mStart) { toast('Tap the start point first'); return; }
+    if (!dir) { if (hover && hover.pt) { const dx = hover.pt.x - tool.mStart.x, dy = hover.pt.y - tool.mStart.y, l = Math.hypot(dx, dy); if (l > 1) dir = { x: dx / l, y: dy / l }; } if (!dir) dir = { x: 1, y: 0 }; }
+    const b = { x: tool.mStart.x + dir.x * v, y: tool.mStart.y + dir.y * v };
+    if (addDLine(tool.mStart, b)) tool.mStart = b;
+    el.value = ''; syncFtIn(); render(); updateStatus(); return;
+  }
   if (!isFinite(v) || v <= 0) { toast('Type the wall length first. ' + unitExample()); focusLen(); return; }
   if (!isDraw() || tool.kind === 'box') setTool('line');
   if (!tool.last) {
@@ -2933,7 +2959,7 @@ function selectPlan(tg) {
   if (!tg) state.planSel = null;
   else if (tg.t === 'wall') { state.active = tg.id; state.planSel = { t: 'wall', id: tg.id }; }
   else if (tg.t === 'open') { state.active = tg.wid; state.sel = tg.id; state.planSel = { t: 'open', id: tg.wid }; }
-  else if (tg.t === 'col' || tg.t === 'beam' || tg.t === 'pdim' || tg.t === 'fix' || tg.t === 'ref') state.planSel = { t: tg.t, id: tg.id };
+  else if (tg.t === 'col' || tg.t === 'beam' || tg.t === 'pdim' || tg.t === 'fix' || tg.t === 'ref' || tg.t === 'dl') state.planSel = { t: tg.t, id: tg.id };
   else state.planSel = { t: 'room', id: tg.id };
   save(); render();
 }
@@ -2995,7 +3021,7 @@ function planOverlay() {
   };
   const band = (L, b) => {
     const dx = b.x - L.x, dy = b.y - L.y, len = Math.hypot(dx, dy); if (len < 1) return;
-    const t = state.draw.t, rx = -dy / len, ry = dx / len, h = state.draw.just === 'c' ? t / 2 : 0;
+    const t = state.draw.t, rx = -dy / len, ry = dx / len, h = state.draw.just === 'R' ? 0 : state.draw.just === 'L' ? t : t / 2;   // preview = what gets built (auto walls stay centred until a room closes)
     g.raw(`<path d="M${n(L.x - rx * h)} ${n(L.y - ry * h)}L${n(b.x - rx * h)} ${n(b.y - ry * h)}L${n(b.x + rx * (t - h))} ${n(b.y + ry * (t - h))}L${n(L.x + rx * (t - h))} ${n(L.y + ry * (t - h))}Z" class="pvband" vector-effect="non-scaling-stroke"/>`);
     g.text((L.x + b.x) / 2 - rx * u * 18, (L.y + b.y) / 2 - ry * u * 18 + u * 5, fmt(len), 'dt pv', u * 15, 'middle');
   };
@@ -3045,6 +3071,7 @@ function planOverlay() {
   if (isMeasure() && hover) {
     const st = tool.mStart || (free ? gesture.start : null);
     if (st && tool.kind === 'ref') { const dx = hover.pt.x - st.x, dy = hover.pt.y - st.y, L = Math.hypot(dx, dy); if (L > 1) { const R = u * 4000; g.raw(`<line x1="${n(st.x - dx / L * R)}" y1="${n(st.y - dy / L * R)}" x2="${n(st.x + dx / L * R)}" y2="${n(st.y + dy / L * R)}" class="refl" vector-effect="non-scaling-stroke"/>`); } }
+    else if (st && tool.kind === 'dline') { g.raw(`<line x1="${n(st.x)}" y1="${n(st.y)}" x2="${n(hover.pt.x)}" y2="${n(hover.pt.y)}" class="dl pvl" vector-effect="non-scaling-stroke"/>`); const L = Math.hypot(hover.pt.x - st.x, hover.pt.y - st.y); if (L > 1) g.text((st.x + hover.pt.x) / 2, (st.y + hover.pt.y) / 2 - u * 10, fmt(L), 'dt pv', u * 15, 'middle'); }
     else if (st) { drawPlanDim(g, { a: st, b: hover.pt, off: 0 }, 'pv'); g.raw(`<circle cx="${n(st.x)}" cy="${n(st.y)}" r="${n(u * 5)}" class="snapm" vector-effect="non-scaling-stroke"/>`); }
     mark(hover);
   }
@@ -3228,7 +3255,7 @@ const isMod = () => !!(tool && MODK[tool.kind]);
 const tgKey = t => t.t + ':' + t.id;
 let mirKeep = 'keep';
 function expandSet(set) {
-  const W = new Set(), R = new Set(), ex = { walls: W, rooms: R, explicit: new Set(), cols: [], beams: [], fix: [], pdims: [], refs: [] };
+  const W = new Set(), R = new Set(), ex = { walls: W, rooms: R, explicit: new Set(), cols: [], beams: [], fix: [], pdims: [], refs: [], dls: [] };
   const find = (list, id) => list.find(x => x.id === id), push = (arr, o) => { if (o && !arr.includes(o)) arr.push(o); };
   for (const t of set) {
     if (t.t === 'wall') { const w = find(state.walls, t.id); if (w && isPlanWall(w)) { W.add(w); ex.explicit.add(w); } }
@@ -3242,11 +3269,12 @@ function expandSet(set) {
     else if (t.t === 'fix') push(ex.fix, find(state.fix, t.id));
     else if (t.t === 'pdim') push(ex.pdims, find(state.pdims, t.id));
     else if (t.t === 'ref') push(ex.refs, find(state.refs, t.id));
+    else if (t.t === 'dl') push(ex.dls, find(state.dlines, t.id));
   }
   for (const r of state.rooms) { const rw = roomWalls(r); if (!R.has(r) && rw.length >= 3 && rw.length === r.nodes.length && rw.every(w => W.has(w))) R.add(r); }
   return ex;
 }
-const setCount = ex => ex.walls.size + ex.cols.length + ex.beams.length + ex.fix.length + ex.pdims.length + ex.refs.length;
+const setCount = ex => ex.walls.size + ex.cols.length + ex.beams.length + ex.fix.length + ex.pdims.length + ex.refs.length + ex.dls.length;
 function makeT(kind, base, pt, ang) {
   if (kind === 'move' || kind === 'copy') { const dx = pt.x - base.x, dy = pt.y - base.y; return { f: p => ({ x: p.x + dx, y: p.y + dy }), v: q => q, rot: r => r, mir: false, dist: Math.hypot(dx, dy) }; }
   if (kind === 'rotate') {
@@ -3297,6 +3325,7 @@ function modApply(set, T, copy) {
   each(ex.beams, state.beams, 'B', b => { b.a = P(b.a); b.b = P(b.b); });
   each(ex.fix, state.fix, null, f => { Object.assign(f, P(f)); f.rot = nrot(T.rot(f.rot || 0)); });
   each(ex.pdims, state.pdims, null, d => { d.a = P(d.a); d.b = P(d.b); });
+  each(ex.dls, state.dlines, null, l => { l.a = P(l.a); l.b = P(l.b); });
   each(ex.refs, state.refs, null, r => { const q = P(r), v = T.v({ x: r.dx, y: r.dy }), L = Math.hypot(v.x, v.y) || 1; r.x = q.x; r.y = q.y; r.dx = v.x / L; r.dy = v.y / L; });
   rebuildPlan();
   state.planSel = null; state.sel = null;
@@ -3309,6 +3338,7 @@ function eraseSet(set) {
     state.walls = state.walls.filter(w => !del.has(w.id));
     state.cols = state.cols.filter(c => !ex.cols.includes(c)); state.beams = state.beams.filter(b => !ex.beams.includes(b));
     state.fix = state.fix.filter(f => !ex.fix.includes(f)); state.pdims = state.pdims.filter(d => !ex.pdims.includes(d)); state.refs = state.refs.filter(r => !ex.refs.includes(r));
+    state.dlines = state.dlines.filter(l => !ex.dls.includes(l));
     rebuildPlan(); state.planSel = null; state.sel = null;
     if (!state.walls.some(w => w.id === state.active)) state.active = state.walls[0] ? state.walls[0].id : null;
   });
@@ -3321,6 +3351,7 @@ function modShapes(ex, R) {             // outlines of the selected things, for 
   for (const b of ex.beams) { const L = Math.hypot(b.b.x - b.a.x, b.b.y - b.a.y) || 1, nx = -(b.b.y - b.a.y) / L * b.w / 2, ny = (b.b.x - b.a.x) / L * b.w / 2; out.push({ pts: [{ x: b.a.x + nx, y: b.a.y + ny }, { x: b.b.x + nx, y: b.b.y + ny }, { x: b.b.x - nx, y: b.b.y - ny }, { x: b.a.x - nx, y: b.a.y - ny }], closed: true }); }
   for (const f of ex.fix) out.push({ pts: fxPoly(f), closed: true });
   for (const d of ex.pdims) out.push({ pts: [d.a, d.b], closed: false });
+  for (const l of ex.dls) out.push({ pts: [l.a, l.b], closed: false });
   for (const r of ex.refs) out.push({ pts: [{ x: r.x - r.dx * R, y: r.y - r.dy * R }, { x: r.x + r.dx * R, y: r.y + r.dy * R }], closed: false });
   return out;
 }
@@ -3346,6 +3377,7 @@ function windowSelect(a, b, crossing) {   // left to right: only what is fully i
   for (const f of state.fix) if (hit(fxPoly(f), true)) out.push({ t: 'fix', id: f.id });
   for (const d of state.pdims) if (hit([d.a, d.b], false)) out.push({ t: 'pdim', id: d.id });
   for (const r of state.refs) if (inR(r)) out.push({ t: 'ref', id: r.id });
+  for (const l of state.dlines) if (hit([l.a, l.b], false)) out.push({ t: 'dl', id: l.id });
   return out;
 }
 function modPick(x, y) { const c = targetsAt(x, y).filter(t => t.t !== 'open'); return c.find(t => t.t !== 'room') || c[0] || null; }
@@ -3396,7 +3428,7 @@ function modTyped(dir, rotSign) {
   modDo({ x: tool.base.x + d[0] * v, y: tool.base.y + d[1] * v });
 }
 $('#mod-go').addEventListener('click', modNext);
-$('#mod-all').addEventListener('click', () => { if (!isMod()) return; tool.set = [...state.walls.filter(isPlanWall).map(w => ({ t: 'wall', id: w.id })), ...state.cols.map(c => ({ t: 'col', id: c.id })), ...state.beams.map(b => ({ t: 'beam', id: b.id })), ...state.fix.map(f => ({ t: 'fix', id: f.id })), ...state.pdims.map(d => ({ t: 'pdim', id: d.id })), ...state.refs.map(r => ({ t: 'ref', id: r.id }))]; drawOverlay(); updateStatus(); });
+$('#mod-all').addEventListener('click', () => { if (!isMod()) return; tool.set = [...state.walls.filter(isPlanWall).map(w => ({ t: 'wall', id: w.id })), ...state.cols.map(c => ({ t: 'col', id: c.id })), ...state.beams.map(b => ({ t: 'beam', id: b.id })), ...state.fix.map(f => ({ t: 'fix', id: f.id })), ...state.pdims.map(d => ({ t: 'pdim', id: d.id })), ...state.refs.map(r => ({ t: 'ref', id: r.id })), ...state.dlines.map(l => ({ t: 'dl', id: l.id }))]; drawOverlay(); updateStatus(); });
 $('#mod-none').addEventListener('click', () => { if (!isMod()) return; tool.set = []; drawOverlay(); updateStatus(); });
 $$('[data-mdir]').forEach(b => b.addEventListener('click', () => modTyped(b.dataset.mdir)));
 $$('[data-mrot]').forEach(b => b.addEventListener('click', () => modTyped(null, +b.dataset.mrot)));
@@ -3406,7 +3438,7 @@ function targetsAt(x, y) {
   const seen = new Set(), out = [];
   for (const el of document.elementsFromPoint(x, y)) {
     const d = el.dataset || {};
-    const tg = d.dm ? null : d.refid ? { t: 'ref', id: d.refid } : d.fid ? { t: 'fix', id: d.fid } : d.cid ? { t: 'col', id: d.cid } : d.bid ? { t: 'beam', id: d.bid } : d.oid && d.owid ? { t: 'open', id: d.oid, wid: d.owid } : d.pdid ? { t: 'pdim', id: d.pdid } : d.wid ? { t: 'wall', id: d.wid } : d.rid ? { t: 'room', id: d.rid } : null;
+    const tg = d.dm ? null : d.lid ? { t: 'dl', id: d.lid } : d.refid ? { t: 'ref', id: d.refid } : d.fid ? { t: 'fix', id: d.fid } : d.cid ? { t: 'col', id: d.cid } : d.bid ? { t: 'beam', id: d.bid } : d.oid && d.owid ? { t: 'open', id: d.oid, wid: d.owid } : d.pdid ? { t: 'pdim', id: d.pdid } : d.wid ? { t: 'wall', id: d.wid } : d.rid ? { t: 'room', id: d.rid } : null;
     if (!tg || seen.has(tg.t + tg.id)) continue; seen.add(tg.t + tg.id); out.push(tg);
   }
   return out;
@@ -3416,6 +3448,7 @@ function tgLabel(tg) {
   if (tg.t === 'beam') { const b = state.beams.find(x => x.id === tg.id); return ['┅', b ? 'Beam ' + b.label + ' · ' + fmt(b.w) + '×' + fmt(b.d) : 'Beam']; }
   if (tg.t === 'col') { const c = state.cols.find(x => x.id === tg.id); return ['▣', c ? 'Column ' + c.label + ' · ' + sizeTxt(c) : 'Column']; }
   if (tg.t === 'open') { const w = state.walls.find(x => x.id === tg.wid), o = w && w.openings.find(x => x.id === tg.id); return ['◻', o ? (o.label || '') + ' · ' + styleName(o) + ' ' + fmt(o.w) + '×' + fmt(o.h) : 'Opening']; }
+  if (tg.t === 'dl') { const l = state.dlines.find(x => x.id === tg.id); return ['╱', 'Line' + (l ? ' · ' + fmt(Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y)) : '')]; }
   if (tg.t === 'ref') { const r = state.refs.find(x => x.id === tg.id); return ['⋯', 'Reference line' + (r && r.label ? ' · ' + r.label : '')]; }
   if (tg.t === 'fix') { const f = state.fix.find(x => x.id === tg.id); return [f ? FXK[f.kind].icon : '▬', f ? FXK[f.kind].name + ' · ' + fmt(f.w) + '×' + fmt(f.d) : 'Kitchen item']; }
   if (tg.t === 'pdim') { const d = state.pdims.find(x => x.id === tg.id); return ['↔', d ? 'Measurement · ' + fmt(Math.hypot(d.b.x - d.a.x, d.b.y - d.a.y)) : 'Measurement']; }
@@ -3430,7 +3463,7 @@ function underTarget(x, y) {
   const ps = state.planSel, cur = ps ? (ps.t === 'open' ? state.sel : ps.id) : null;
   for (const el of document.elementsFromPoint(x, y)) {
     const d = el.dataset || {};
-    const tg = d.refid ? { t: 'ref', id: d.refid } : d.fid ? { t: 'fix', id: d.fid } : d.pdid ? { t: 'pdim', id: d.pdid } : d.cid ? { t: 'col', id: d.cid } : d.bid ? { t: 'beam', id: d.bid } : d.oid && d.owid ? { t: 'open', id: d.oid, wid: d.owid } : d.wid ? { t: 'wall', id: d.wid } : d.rid ? { t: 'room', id: d.rid } : null;
+    const tg = d.lid ? { t: 'dl', id: d.lid } : d.refid ? { t: 'ref', id: d.refid } : d.fid ? { t: 'fix', id: d.fid } : d.pdid ? { t: 'pdim', id: d.pdid } : d.cid ? { t: 'col', id: d.cid } : d.bid ? { t: 'beam', id: d.bid } : d.oid && d.owid ? { t: 'open', id: d.oid, wid: d.owid } : d.wid ? { t: 'wall', id: d.wid } : d.rid ? { t: 'room', id: d.rid } : null;
     if (tg && tg.id !== cur) return tg;
   }
   return null;
@@ -3467,6 +3500,8 @@ function planDown(e) {
   const mh = q('[data-dm]');
   if (mh && !tool) { gesture = { ...base, kind: 'tapsel', target: null, dm: mh.dataset.dm }; svg.classList.add('panning'); return; }
   const dh = q('[data-pdid]');
+  const lnh = q('[data-lid]');
+  if (lnh && !q('[data-oid]') && !q('[data-cid]') && !q('[data-dm]')) { gesture = { ...base, kind: 'tapsel', target: { t: 'dl', id: lnh.dataset.lid } }; svg.classList.add('panning'); return; }
   const refh = q('[data-refid]');
   if (refh && !q('[data-oid]') && !q('[data-wid]') && !q('[data-cid]') && !q('[data-bid]') && !q('[data-fid]') && !q('[data-dm]')) { gesture = { ...base, kind: 'tapsel', target: { t: 'ref', id: refh.dataset.refid } }; svg.classList.add('panning'); return; }
   const fh = q('[data-fid]');
@@ -3625,6 +3660,12 @@ function planUp(e) {
       }
       if (isMeasure()) {
         if (!hover) return;
+        if (tool.kind === 'dline') {                    // lines chain on: each tap adds the next line
+          if (gs.free && !tool.mStart) addDLine(gs.start, hover.pt);
+          else if (!tool.mStart) tool.mStart = hover.pt;
+          else if (addDLine(tool.mStart, hover.pt)) tool.mStart = hover.pt;
+          hover = null; render(); updateStatus(); return;
+        }
         const done = (a, b) => { if (tool.kind === 'ref') { if (Math.hypot(b.x - a.x, b.y - a.y) > 1) { addRefLine(a.x, a.y, b.x - a.x, b.y - a.y, ''); toast('Reference line added', 'Undo', undo); } } else addPdim(a, b); };
         if (gs.free && !tool.mStart) done(gs.start, hover.pt);
         else if (!tool.mStart) tool.mStart = hover.pt;
@@ -3674,7 +3715,7 @@ function setTool(kind) {
   const pre = MODK[kind] && state.planSel && state.planSel.t !== 'open' ? { t: state.planSel.t, id: state.planSel.id } : null;
   tool = kind ? { kind, pts: [], last: null, chain: [] } : null; hover = null; guides = [];
   if (MODK[kind]) { tool.set = pre ? [pre] : []; tool.step = pre ? 'base' : 'select'; tool.base = null; state.planSel = null; state.sel = null; if (state.view !== 'plan') switchView('plan'); }
-  if (kind) { state.sel = null; state.selDim = null; if (['hand', 'line', 'box', 'col', 'beam', 'pdim', 'fx-counter', 'fx-sink', 'fx-hob', 'kL', 'kC', 'ref', 'offset'].includes(kind)) state.planSel = null; setSheet('peek'); }
+  if (kind) { state.sel = null; state.selDim = null; if (['hand', 'line', 'dline', 'box', 'col', 'beam', 'pdim', 'fx-counter', 'fx-sink', 'fx-hob', 'kL', 'kC', 'ref', 'offset'].includes(kind)) state.planSel = null; setSheet('peek'); }
   svg.classList.toggle('tooling', !!tool);
   $$('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.tool || null) === (kind || null))));
   render(); updateStatus();
@@ -3721,10 +3762,10 @@ function updateStatus() {
   if (!tool) {
     st.className = 'status quiet';
     msg.textContent = plan ? 'Tap a measurement to change it · tap a wall or room to select · pinch to zoom' : 'Tap a measurement to change it · drag openings to move · pinch to zoom';
-    sn.textContent = ''; ['#st-len', '#st-close', '#st-fin', '#st-x', '#st-t', '#st-size', '#st-s', '#st-off', '#st-ba', '#st-mod'].forEach(i => show(i, false)); return;
+    sn.textContent = ''; ['#st-len', '#st-close', '#st-fin', '#st-x', '#st-t', '#st-size', '#st-s', '#st-off', '#st-ba', '#st-mod', '#st-loc'].forEach(i => show(i, false)); return;
   }
   st.className = 'status';
-  show('#st-t', isDraw()); show('#st-size', false); show('#st-s', isStruct()); show('#st-ba', !!(tool && tool.kind === 'beam'));
+  show('#st-t', isDraw()); show('#st-loc', isDraw() && tool.kind !== 'box'); show('#st-size', false); show('#st-s', isStruct()); show('#st-ba', !!(tool && tool.kind === 'beam'));
   show('#st-off', isOff()); show('#st-mod', isMod());
   if (isMod()) {
     const k = tool.kind, sel = tool.step === 'select', cnt = setCount(expandSet(tool.set));
@@ -3762,6 +3803,12 @@ function updateStatus() {
   }
   if (isMeasure()) {
     const free = gesture && gesture.kind === 'wpick' && gesture.free;
+    if (tool.kind === 'dline') {
+      msg.innerHTML = '<b>╱ Line</b> · ' + esc(free ? 'Let go at the end of the line' : tool.mStart ? 'Tap the next point, or type a length and pick a direction' : 'Tap the start point, or drag a line');
+      sn.textContent = hover && hover.label ? hover.label : '';
+      ['#st-close', '#st-t', '#st-s', '#st-size'].forEach(i => show(i, false)); show('#st-len', !!tool.mStart); show('#st-fin', !!tool.mStart); show('#st-x', true);
+      return;
+    }
     msg.innerHTML = (tool.kind === 'ref' ? '<b>⋯ Reference line</b> · ' : '<b>↔ Measure</b> · ') + esc(free ? 'Let go on the second point' : tool.mStart ? 'Tap the second point' : tool.kind === 'ref' ? 'Drag along the line you want, or tap two points on it' : 'Drag between two points, or tap them one after the other');
     sn.textContent = hover && hover.label ? hover.label : '';
     ['#st-len', '#st-close', '#st-t', '#st-s', '#st-size'].forEach(i => show(i, false)); show('#st-fin', !!tool.mStart); show('#st-x', true);
@@ -3780,7 +3827,7 @@ function updateStatus() {
     const step = k === 'hand' ? (free ? 'Lift your finger to make the walls' : tool.last ? 'Tap the next corner, or keep drawing by hand' : 'Draw walls with your finger. Close the shape to make a room.')
       : k === 'line' ? (free ? 'Let go to place the wall' : tool.last ? 'Tap the next corner, or type a length and tap an arrow' : 'Tap the first corner, or drag to draw one wall')
       : (free ? 'Let go at the opposite corner' : tool.boxStart ? 'Tap the opposite corner' : 'Drag from one corner to the opposite corner');
-    msg.innerHTML = `<b>${{ hand: '✎ Hand', line: '╱ Line', box: '▭ Box' }[k]}</b> · ` + esc(step);
+    msg.innerHTML = `<b>${{ hand: '✎ Hand', line: '▥ Wall', box: '▭ Box' }[k]}</b> · ` + esc(step);
     sn.textContent = hover && hover.label ? hover.label : '';
     show('#st-len', k !== 'box'); show('#st-size', k === 'box'); show('#st-close', k !== 'box' && (tool.count || 0) >= 2 && !!tool.last);
     show('#st-fin', !!(tool.last || tool.boxStart)); show('#st-x', true);
@@ -4030,6 +4077,9 @@ function delSelected() {
   const o = selOp(), d = selDim();
   const ps = state.planSel;
   if (o) { commit('Delete ' + opName(o), () => { deleteOpening(wall(), o.id); state.sel = null; if (ps && ps.t === 'open') state.planSel = { t: 'wall', id: ps.id }; }); toast('Deleted ' + opName(o), 'Undo', undo); }
+  else if (state.view === 'plan' && selDL()) {
+    const l = selDL(); commit('Delete line', () => { state.dlines = state.dlines.filter(x => x !== l); state.planSel = null; }); toast('Deleted line', 'Undo', undo);
+  }
   else if (state.view === 'plan' && selRef()) {
     const r = selRef(); commit('Delete reference line', () => { state.refs = state.refs.filter(x => x !== r); state.planSel = null; }); toast('Deleted reference line', 'Undo', undo);
   }
@@ -4063,6 +4113,8 @@ $('#e-center').addEventListener('click', () => commit('Center ' + opName(selOp()
 $('#v-plan').addEventListener('click', () => switchView('plan'));
 $('#v-wall').addEventListener('click', () => switchView('wall'));
 $('#tb-canvas').addEventListener('click', () => { state.canvas = state.canvas === 'dark' ? 'light' : 'dark'; save(); render(); });
+const LOCN = { in: 'Auto: walls sit on the centre until the room is closed, then move outside so the line is the inside face', c: 'New walls: centre line on what you draw', L: 'New walls: left of the line you draw', R: 'New walls: right of the line you draw' };
+$('#st-loc').addEventListener('change', e => { state.draw.just = e.target.value; save(); drawOverlay(); toast(LOCN[e.target.value]); });
 $('#d-just').addEventListener('change', e => { state.draw.just = e.target.value; save(); toast(e.target.value === 'c' ? 'New lines are the centre of the wall' : 'New lines are the inside face of the room'); });
 armDelete($('#p-blank'), 'Start blank drawing', () => { commit('Start blank drawing', () => { state = newProject(); }); fitKey = ''; views = {}; curMode = null; view = null; render(); toast('Blank drawing ready. Undo brings the old one back.', 'Undo', undo); });
 $('#x-example').addEventListener('click', () => { commit('Load example', () => { state = norm(sample()); }); views = {}; curMode = null; view = null; render(); toast('Example flat loaded', 'Undo', undo); });
@@ -4159,7 +4211,7 @@ document.addEventListener('keydown', e => {
   if (state.view === 'plan' && k === 'o') { cycleOrtho(); return; }
   if (k === 'p') { switchView('plan'); return; }
   if (k === 'e') { switchView('wall'); return; }
-  const map = state.view === 'plan' ? { d: 'hand', w: 'line', b: 'box', c: 'col', m: 'beam', u: 'pdim' } : { h: 'h', v: 'v', a: 'a', l: 'lvl', g: 'ang' };
+  const map = state.view === 'plan' ? { d: 'hand', w: 'line', l: 'dline', b: 'box', c: 'col', m: 'beam', u: 'pdim' } : { h: 'h', v: 'v', a: 'a', l: 'lvl', g: 'ang' };
   if (map[k]) { setTool(tool && tool.kind === map[k] ? null : map[k]); return; }
   if (k === 's') { toggleSnap(); return; }
   if (k === 'f') { fit(); return; }
@@ -4189,7 +4241,7 @@ function render(drawOnly) {
   $('#tb-canvas').setAttribute('aria-pressed', String(state.canvas === 'dark'));
   const tOpts = [...new Set([...(IMP() ? [3, 4, 4.5, 6, 9, 12, 14].map(v => r2(v * 25.4)) : [75, 100, 115, 150, 200, 230, 300, 350]), r2(state.draw.t)])].sort((a, b) => a - b);
   $('#st-t').innerHTML = tOpts.map(v => `<option value="${v}"${Math.abs(v - state.draw.t) < 0.5 ? ' selected' : ''}>Wall ${esc(fmt(v))}</option>`).join('');
-  $('#d-just').value = state.draw.just || 'in';
+  $('#d-just').value = state.draw.just || 'in'; $('#st-loc').value = state.draw.just || 'in';
   $('#st-ba').value = state.draw.beamAlign || 'c';
   if (document.activeElement !== $('#off-in')) $('#off-in').value = state.offD > 0 ? fmt(state.offD) : '';
   $('#off-mode').value = state.offMode === 'clear' ? 'clear' : 'line';
@@ -4369,7 +4421,7 @@ function render(drawOnly) {
 
 /* ---------- all tools panel ---------- */
 const FEATURES = [
-  ['Draw walls & rooms', [['tool:hand', '✎', 'Hand'], ['tool:line', '╱', 'Line wall'], ['tool:box', '▭', 'Box'], ['room', '⊞', 'Room by size'], ['balcony', '⌓', 'Balcony']]],
+  ['Draw walls & rooms', [['tool:hand', '✎', 'Hand'], ['tool:line', '▥', 'Wall'], ['tool:dline', '╱', 'Line (2D)'], ['tool:box', '▭', 'Box'], ['room', '⊞', 'Room by size'], ['balcony', '⌓', 'Balcony']]],
   ['Kitchen', [['kitchen', '⊟', 'Kitchen setup'], ['tool:fx-counter', '▬', 'Platform'], ['tool:fx-sink', '◫', 'Sink'], ['tool:fx-hob', '⊚', 'Hob'], ['tool:kL', '⌐', 'L-shape kitchen'], ['tool:kC', '⊐', 'C-shape kitchen']]],
   ['Doors', [['add:door:single', 'sw door', 'Single door'], ['add:door:double', 'sw door', 'Double door'], ['add:door:slide', 'sw door', 'Sliding door'], ['add:door:pivot', 'sw door', 'Pivot door'], ['add:door:fold', 'sw door', 'Folding door']]],
   ['Windows & openings', [['add:window:slide2', 'sw window', 'Sliding window'], ['add:window:slide3', 'sw window', '3-track sliding'], ['add:window:case1', 'sw window', 'Casement'], ['add:window:case2', 'sw window', 'Double casement'], ['add:window:fixed', 'sw window', 'Fixed glass'], ['add:window:top', 'sw window', 'Top-hung'], ['add:window:louvre', 'sw window', 'Louvred'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening:plain', 'sw opening', 'Opening'], ['add:opening:arch', 'sw opening', 'Arched opening']]],
@@ -4462,6 +4514,7 @@ function updateSheet() {
   const pdm = selPdim();
   if (o) t = `${o.label || TYPES[o.type].prefix} · ${TYPES[o.type].name.toLowerCase()} ${fmt(o.w)}×${fmt(o.h)}`;
   else if (selFix()) { const f = selFix(); t = `${FXK[f.kind].name} · ${fmt(f.w)} × ${fmt(f.d)}`; }
+  else if (selDL()) { const l = selDL(); t = 'Line · ' + fmt(Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y)) + ' · Erase or Move it from the ribbon'; }
   else if (selRef()) t = 'Reference line' + (selRef().label ? ' · ' + selRef().label : '');
   else if (pdm) t = `Measurement · ${fmt(Math.hypot(pdm.b.x - pdm.a.x, pdm.b.y - pdm.a.y))}`;
   else if (ss) t = `${ss.o.label} · ${ss.kind === 'col' ? 'column ' + sizeTxt(ss.o) : 'beam ' + fmt(ss.o.w) + '×' + fmt(ss.o.d)}`;
@@ -4628,7 +4681,7 @@ function exportSVG(given) {
 .opening{stroke:${c.muted};fill:none;stroke-width:1;stroke-dasharray:6 4}.dash{stroke-dasharray:7 5}.dim{stroke:${c.dim};stroke-width:1;fill:none}.ext{stroke:${c.dim};stroke-width:.7}.lvlt{fill:${c.dim};stroke:${c.dim};stroke-width:1}
 .dt{fill:${c.dim};font-family:${mono}}.lb{fill:${c.ink};font-family:${mono};font-weight:500}.lbs{fill:${c.muted};font-family:${mono}}.cap{fill:${c.ink};font-family:${head};font-weight:600;letter-spacing:.08em}
 .room{fill:#eef2f8}.room.bal{fill:#e3f0fb}.room.kit{fill:#f6ece2}.ctr{fill:#e9ecea;stroke:${c.ink};stroke-width:1.3}.fxo{fill:#ffffff;stroke:${c.ink};stroke-width:1.2}.fxi{fill:none;stroke:${c.win};stroke-width:1.1}.ctrel{fill:#e5e9e7;stroke:${c.ink};stroke-width:1.3}.wf.rail{fill:#e6ebe9}.wo{fill:${c.ink};stroke:${c.ink};stroke-width:2.6;stroke-linejoin:miter}.wf{fill:${c.hatch}}.pgap{fill:#ffffff;stroke:#ffffff;stroke-width:3}.sel,.lend,.hit,.whit,.nhit,.pnode{display:none}.colf{fill:#3f4a47;stroke:${c.ink};stroke-width:1.4}.colx{stroke:#ffffff;stroke-width:1}.beam{stroke:#6a3fd1;stroke-width:1.5;stroke-dasharray:10 5;fill:none}.blb{fill:#6a3fd1;font-family:${mono};font-weight:500}.colel{fill:#c5ccca;stroke:${c.ink};stroke-width:1.4}.beamel{fill:#e9e2fb;stroke:#6a3fd1;stroke-width:1.4;stroke-dasharray:8 4}.pface{stroke:${c.ink};stroke-width:1.8}.pout{stroke:${c.ink};stroke-width:1.2}.rname{fill:${c.ink};font-family:${head};font-weight:600}
-.eplet{fill:#1f5fd0;font-family:${head};font-weight:700}.eplc{fill:none;stroke:#1f5fd0;stroke-width:2}.epact,.ephit{display:none}
+.dl{stroke:${c.ink};stroke-width:1.4}.eplet{fill:#1f5fd0;font-family:${head};font-weight:700}.eplc{fill:none;stroke:#1f5fd0;stroke-width:2}.epact,.ephit{display:none}
 .tb{fill:${c.panel};stroke:${c.ink};stroke-width:1.3}.tbl{stroke:${c.ink};stroke-width:.8}.bad{fill:none;stroke:${c.warn};stroke-width:2.5;stroke-dasharray:5 3}.pwall{fill:${c.wallfill};stroke:${c.ink};stroke-width:1.5}`;
   const W = 2400, Hh = Math.round(W * b.h / b.w);
   return { str: `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${Hh}" viewBox="${b.x} ${b.y} ${b.w} ${b.h}"><style>${css}</style><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="#ffffff"/>${dr.svg}</svg>`, W, H: Hh };
@@ -4732,10 +4785,10 @@ function unionOutline(shapes, holes) {   // outline of overlapping convex shapes
   }
   return res;
 }
-const DXF_LAYERS = { WALLS: 7, RAILING: 8, DOORS: 30, WINDOWS: 5, OPENINGS: 8, COLUMNS: 7, BEAMS: 6, KITCHEN: 40, DIMENSIONS: 3, TEXT: 2, ROOMS: 9, REFERENCE: 4, TITLE: 8 };
+const DXF_LAYERS = { LINES: 7, WALLS: 7, RAILING: 8, DOORS: 30, WINDOWS: 5, OPENINGS: 8, COLUMNS: 7, BEAMS: 6, KITCHEN: 40, DIMENSIONS: 3, TEXT: 2, ROOMS: 9, REFERENCE: 4, TITLE: 8 };
 const DXF_CLASS = { wall: 'WALLS', pwall: 'WALLS', pout: 'WALLS', pface: 'WALLS', gnd: 'WALLS', gh: 'WALLS', op: 'OPENINGS', door: 'DOORS', window: 'WINDOWS', vent: 'WINDOWS', opening: 'OPENINGS',
   colf: 'COLUMNS', colx: 'COLUMNS', colel: 'COLUMNS', beam: 'BEAMS', beamel: 'BEAMS', blb: 'BEAMS', ctr: 'KITCHEN', ctrel: 'KITCHEN', fxo: 'KITCHEN', fxi: 'KITCHEN',
-  dim: 'DIMENSIONS', ext: 'DIMENSIONS', dt: 'DIMENSIONS', lvlt: 'DIMENSIONS', lb: 'TEXT', lbs: 'TEXT', rname: 'TEXT', cap: 'TEXT', refl: 'REFERENCE', reft: 'REFERENCE', tb: 'TITLE', tbl: 'TITLE', bad: 'TEXT' };
+  dim: 'DIMENSIONS', ext: 'DIMENSIONS', dt: 'DIMENSIONS', lvlt: 'DIMENSIONS', lb: 'TEXT', lbs: 'TEXT', rname: 'TEXT', cap: 'TEXT', refl: 'REFERENCE', reft: 'REFERENCE', dl: 'LINES', tb: 'TITLE', tbl: 'TITLE', bad: 'TEXT' };
 const DXF_SKIP = new Set(['wo', 'wf', 'pgap', 'room', 'roomsel', 'wallbg', 'hl', 'sel', 'lend', 'hit', 'whit', 'nhit', 'pnode', 'dhit', 'dmhit', 'rub', 'snapm']);
 function svgArcPts(x1, y1, rx, ry, phi, fa, fs, x2, y2) {   // SVG arc -> centre form -> points
   const cp = Math.cos(phi), sp = Math.sin(phi), dx = (x1 - x2) / 2, dy = (y1 - y2) / 2;
