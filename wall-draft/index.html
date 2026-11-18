@@ -249,6 +249,13 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 .dwg .mtxt { fill: var(--snap); font-family: var(--f-mono); }
 .dwg .snapt { paint-order: stroke; stroke: var(--paper); stroke-width: 3px; stroke-linejoin: round; }
 .lenbox button.primary { background: var(--accent); color: var(--accent-ink); }
+.orow.osn { text-align: left; align-items: center; grid-template-columns: 24px 36px 1fr; }
+.orow.osn small { color: var(--muted); font-size: 11.5px; }
+.orow.osn .tag { flex: none; width: 36px; justify-content: center; text-align: center; }
+.orow.osn .meta { flex: 1 1 auto !important; margin-right: auto; text-align: left; min-width: 0; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.3; }
+.orow.osn .osb { flex: none; width: 22px; height: 22px; border-radius: 5px; border: 2px solid var(--line); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--accent-ink); }
+.orow.osn[aria-pressed="true"] .osb { background: var(--accent); border-color: var(--accent); }
+.orow.osn[aria-pressed="false"] { opacity: .65; }
 .dwg.tooling .hit, .dwg.tooling .dhit { cursor: crosshair; }
 .dwg .room { fill: color-mix(in srgb, var(--accent) 6%, var(--paper)); cursor: pointer; }
 .dwg .roomsel { fill: color-mix(in srgb, var(--sel) 15%, var(--paper)); }
@@ -399,7 +406,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
       </div>
       <div class="tgroup" data-v="plan"><button id="tb-ortho" title="Angle lock while drawing (O)"><span class="ic">⟂</span><span id="tb-ortho-t">90°</span></button></div>
       <div class="tgroup" role="group" aria-label="Snap and canvas">
-        <button id="tb-snap" title="Snap on or off (S)"><span class="ic">⌖</span>Snap</button>
+        <button id="tb-snap" title="Snap on or off (S or F3)"><span class="ic">⌖</span>Snap</button><button id="tb-osnap" title="Which snap points are on (object snap settings)" aria-label="Snap settings">▾</button>
         <button id="tb-canvas" title="Black or white drawing canvas"><span class="ic">◐</span><span class="lbl-l">Canvas</span></button>
       </div>
     </div>
@@ -766,7 +773,8 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <div class="grid2" style="margin-top:10px">
           <label class="f">Grid step<input id="s-step" inputmode="decimal" autocomplete="off"></label>
         </div>
-        <div class="sub">Snap to</div>
+        <div class="row-btns" style="margin-top:10px"><button class="btn primary" id="s-osnap">Object snap settings…</button></div>
+        <div class="sub">Quick switches</div>
         <div class="chips" id="snap-chips">
           <button class="chip" data-snap="end">Corners &amp; ends</button>
           <button class="chip" data-snap="mid">Midpoints &amp; centres</button>
@@ -860,7 +868,7 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const clone = o => JSON.parse(JSON.stringify(o));
 
 /* ---------- data ---------- */
-const DEF_SNAP = () => ({ on: true, step: 10, end: true, mid: true, edge: true, align: true, grid: true, int: true, perp: true, precise: true });
+const DEF_SNAP = () => ({ on: true, step: 10, end: true, mid: true, cen: true, int: true, perp: true, edge: true, opn: true, fc: true, fi: true, fo: true, align: true, grid: true, precise: true, ap: 1 });
 const DEF_SHOW = () => ({ chain: true, overall: true, hts: true, plan: true, user: true, pdim: true, parea: true });
 const DKEY = 'walldraft.defaults';
 const DEF_OPEN = () => ({ kitchen: { d: 600, h: 850 }, rail: { t: 100, h: 1000 }, door: { w: 900, h: 2100, sill: 0 }, window: { w: 1200, h: 1200, sill: 900 }, vent: { w: 600, h: 450, sill: 2100 }, opening: { w: 1000, h: 2100, sill: 0 } });
@@ -905,7 +913,8 @@ function norm(p) {                       // fill in fields added in later versio
   if (p.precV !== 2) { if (!(p.prec > 1)) p.prec = 0; p.precV = 2; }   // whole-inch rounding hid real sizes: show them exactly
   if (typeof p.snap !== 'object' || !p.snap) p.snap = DEF_SNAP();
   if (!isFinite(p.snap.step) || p.snap.step <= 0) p.snap.step = 10;
-  for (const k of ['int', 'perp', 'precise']) if (!(k in p.snap)) p.snap[k] = true;
+  for (const k of ['int', 'perp', 'precise', 'cen', 'opn', 'fc', 'fi', 'fo']) if (!(k in p.snap)) p.snap[k] = true;
+  if (!(p.snap.ap > 0)) p.snap.ap = 1;
   if (!p.show) p.show = { ...DEF_SHOW(), hts: p.showHts !== false, plan: p.showPlan !== false };
   for (const k of ['pdim', 'parea', 'popen', 'pmy']) if (!(k in p.show)) p.show[k] = true;
   if (!Array.isArray(p.pdims)) p.pdims = [];
@@ -2552,7 +2561,7 @@ function objSnapPts(skip) {
   const out = [], add = (q, l, k) => out.push({ x: q.x, y: q.y, l, k });
   for (const c of state.cols) {
     if (skip && c.id === skip) continue;
-    add(c, 'Column centre ' + (c.label || ''));
+    out.push({ x: c.x, y: c.y, l: 'Column centre ' + (c.label || ''), m: 'cen' });
     if (c.shape === 'round') for (let i = 0; i < 4; i++) add({ x: c.x + Math.cos(i * Math.PI / 2) * c.w / 2, y: c.y + Math.sin(i * Math.PI / 2) * c.w / 2 }, 'Column edge');
     else { const pg = colPoly(c); pg.forEach(q => add(q, 'Column corner ' + (c.label || ''))); pg.forEach((q, i) => { const r = pg[(i + 1) % 4]; out.push({ x: (q.x + r.x) / 2, y: (q.y + r.y) / 2, l: 'Column side middle', k: 'mid', late: true }); }); }
   }
@@ -2565,6 +2574,7 @@ function objSnapPts(skip) {
   }
   for (const f of state.fix) fxPoly(f).forEach(q => add(q, FXK[f.kind].name + ' corner'));
   for (const d of state.pdims) { add(d.a, 'Measurement end'); add(d.b, 'Measurement end'); }
+  for (const r of state.rooms) { if (r.nodes.length < 3) continue; const c = centroid(innerPoly(r)); out.push({ x: c.x, y: c.y, l: 'Centre of ' + r.name, m: 'cen' }); }
   for (const l of state.dlines) { add(l.a, 'Line end'); add(l.b, 'Line end'); out.push({ x: (l.a.x + l.b.x) / 2, y: (l.a.y + l.b.y) / 2, l: 'Line middle', k: 'mid', late: true }); }
   return [...out.filter(o => !o.late), ...out.filter(o => o.late)];
 }
@@ -2581,34 +2591,35 @@ function snapSegs(lines, skip) {          // every straight line in the plan, fo
   return out;
 }
 function planSnap(p, from, tol, skip) {   // ONE snap for every tool: points first (corners, ends), then middles, then sliding along lines
+  tol *= state.snap.ap || 1;              // aperture: how far from the crosshair a snap point is picked up
   const s = state.snap, gd = [], st0 = planStep(), custom = state.draw.step && state.draw.step !== 50, steps = IMP() ? [25.4, 76.2, 152.4, 304.8] : [10, 50, 100, 500],
     st = custom ? (st0 <= tol * 2.5 ? st0 : 0) : (steps.find(v => v >= tol * 0.35) || steps[steps.length - 1]);   // grid follows the zoom: zoom in for finer points
   const tag = b => { if (from) b.label = fmt(Math.hypot(b.pt.x - from.x, b.pt.y - from.y)) + ' · ' + b.label.toLowerCase(); return b; };
   if (s.on) {
-    const near = list => { let b = null; for (const c of list) { const d = Math.hypot(c.pt.x - p.x, c.pt.y - p.y); if (d <= c.r && (!b || d < b.d)) b = { d, pt: c.pt, kind: c.k, label: c.l }; } return b; };
+    const near = list => { let b = null; for (const c of list) { if (s[c.m] === false) continue; const d = Math.hypot(c.pt.x - p.x, c.pt.y - p.y); if (d <= c.r && (!b || d < b.d)) b = { d, pt: c.pt, kind: c.k, label: c.l, m: c.m }; } return b; };
     const lines = [];                     // every wall has three snap lines: centre, inside face, outside face
     for (const w of state.walls) {
       if (!isPlanWall(w)) continue; const gw = wallGeo(w);
-      for (const [f, nm] of [[(gw.f0 + gw.f1) / 2, 'Wall centre'], [gw.f0, 'Inside face'], [gw.f1, 'Outside face']])
-        lines.push({ w, gw, f, nm, P0: { x: gw.A.x + gw.n.x * f, y: gw.A.y + gw.n.y * f } });
+      for (const [f, nm, key] of [[(gw.f0 + gw.f1) / 2, 'Wall centre', 'fc'], [gw.f0, 'Inside face', 'fi'], [gw.f1, 'Outside face', 'fo']])
+        if (s[key] !== false) lines.push({ w, gw, f, nm, P0: { x: gw.A.x + gw.n.x * f, y: gw.A.y + gw.n.y * f } });
     }
     const at = (l, k) => ({ x: l.P0.x + l.gw.d.x * k, y: l.P0.y + l.gw.d.y * k, cw: l.w.id });
     // 1. points
-    if (s.end) {
+    {
       const pts = [];
-      for (const nd of state.nodes) pts.push({ pt: { x: nd.x, y: nd.y, nid: nd.id }, r: tol * 1.4, k: 'end', l: 'Wall corner' });
+      for (const nd of state.nodes) pts.push({ pt: { x: nd.x, y: nd.y, nid: nd.id }, r: tol * 1.4, k: 'end', m: 'end', l: 'Wall corner' });
       for (let i = 0; i < lines.length; i++) for (let j = i + 1; j < lines.length; j++) {      // where the faces / centre lines of joined walls meet
         const A = lines[i], B = lines[j];
         if (A.w === B.w || A.nm !== B.nm) continue;
         if (!(A.w.a === B.w.a || A.w.a === B.w.b || A.w.b === B.w.a || A.w.b === B.w.b)) continue;
         const cr = A.gw.d.x * B.gw.d.y - A.gw.d.y * B.gw.d.x; if (Math.abs(cr) < 1e-6) continue;
         const t = ((B.P0.x - A.P0.x) * B.gw.d.y - (B.P0.y - A.P0.y) * B.gw.d.x) / cr;
-        pts.push({ pt: at(A, t), r: tol * 1.3, k: 'end', l: A.nm === 'Wall centre' ? 'Centre corner' : A.nm === 'Inside face' ? 'Inside corner' : 'Outside corner' });
+        pts.push({ pt: at(A, t), r: tol * 1.3, k: 'end', m: 'end', l: A.nm === 'Wall centre' ? 'Centre corner' : A.nm === 'Inside face' ? 'Inside corner' : 'Outside corner' });
       }
-      for (const l of lines) for (const k of [0, l.gw.L]) pts.push({ pt: at(l, k), r: tol * 1.2, k: 'end', l: 'End of ' + l.nm.toLowerCase() });
-      for (const l of lines) if (l.nm !== 'Wall centre') for (const o of l.w.openings) for (const x of [o.x, o.x + o.w]) pts.push({ pt: at(l, l.gw.sOf(x)), r: tol, k: 'end', l: 'Edge of ' + (o.label || TYPES[o.type].name) });
-      for (const op of objSnapPts(skip)) if (op.k !== 'mid') pts.push({ pt: { x: op.x, y: op.y }, r: tol * 1.2, k: 'end', l: op.l });
-      if (state.refs.length) { const rh = refHits(p, tol); if (rh && rh.kind === 'end') pts.push({ pt: rh.pt, r: tol, k: 'end', l: rh.label }); }
+      for (const l of lines) for (const k of [0, l.gw.L]) pts.push({ pt: at(l, k), r: tol * 1.2, k: 'end', m: 'end', l: 'End of ' + l.nm.toLowerCase() });
+      for (const l of lines) if (l.nm !== 'Wall centre') for (const o of l.w.openings) for (const x of [o.x, o.x + o.w]) pts.push({ pt: at(l, l.gw.sOf(x)), r: tol, k: 'end', m: 'opn', l: 'Edge of ' + (o.label || TYPES[o.type].name) });
+      for (const op of objSnapPts(skip)) if (op.k !== 'mid') pts.push({ pt: { x: op.x, y: op.y }, r: tol * 1.2, k: 'end', m: op.m || 'end', l: op.l });
+      if (state.refs.length) { const rh = refHits(p, tol); if (rh && rh.kind === 'end') pts.push({ pt: rh.pt, r: tol, k: 'end', m: 'int', l: rh.label }); }
       if (s.int !== false || (from && s.perp !== false)) {
         const segs = snapSegs(lines, skip), dist = (sg, q) => { const k = (q.x - sg.P.x) * sg.d.x + (q.y - sg.P.y) * sg.d.y, kk = sg.inf ? k : Math.min(Math.max(k, 0), sg.L); return Math.hypot(sg.P.x + sg.d.x * kk - q.x, sg.P.y + sg.d.y * kk - q.y); };
         const close = segs.filter(sg => dist(sg, p) <= tol * 1.3);
@@ -2617,12 +2628,12 @@ function planSnap(p, from, tol, skip) {   // ONE snap for every tool: points fir
           const cr = A.d.x * B.d.y - A.d.y * B.d.x; if (Math.abs(cr) < 1e-6) continue;
           const t = ((B.P.x - A.P.x) * B.d.y - (B.P.y - A.P.y) * B.d.x) / cr, u2 = ((B.P.x - A.P.x) * A.d.y - (B.P.y - A.P.y) * A.d.x) / cr;
           if (!A.inf && (t < -0.5 || t > A.L + 0.5)) continue; if (!B.inf && (u2 < -0.5 || u2 > B.L + 0.5)) continue;
-          pts.push({ pt: { x: A.P.x + A.d.x * t, y: A.P.y + A.d.y * t, ...(A.w ? { cw: A.w.id } : {}) }, r: tol * 1.2, k: 'end', l: 'Intersection' });
+          pts.push({ pt: { x: A.P.x + A.d.x * t, y: A.P.y + A.d.y * t, ...(A.w ? { cw: A.w.id } : {}) }, r: tol * 1.2, k: 'end', m: 'int', l: 'Intersection' });
         }
         if (from && s.perp !== false) for (const sg of close) {      // foot of the perpendicular from where the line started
           const k = (from.x - sg.P.x) * sg.d.x + (from.y - sg.P.y) * sg.d.y; if (!sg.inf && (k < 0 || k > sg.L)) continue;
           const q = { x: sg.P.x + sg.d.x * k, y: sg.P.y + sg.d.y * k }; if (Math.hypot(q.x - from.x, q.y - from.y) < 1) continue;
-          pts.push({ pt: { ...q, ...(sg.w ? { cw: sg.w.id } : {}) }, r: tol, k: 'end', l: 'Perpendicular' });
+          pts.push({ pt: { ...q, ...(sg.w ? { cw: sg.w.id } : {}) }, r: tol, k: 'end', m: 'perp', l: 'Perpendicular' });
         }
       }
       const b = near(pts); if (b) return tag(b);
@@ -2630,8 +2641,8 @@ function planSnap(p, from, tol, skip) {   // ONE snap for every tool: points fir
     // 2. middles
     if (s.mid) {
       const pts = [];
-      for (const l of lines) pts.push({ pt: at(l, l.gw.L / 2), r: tol, k: 'mid', l: 'Middle · ' + l.nm.toLowerCase() });
-      for (const op of objSnapPts(skip)) if (op.k === 'mid') pts.push({ pt: { x: op.x, y: op.y }, r: tol, k: 'mid', l: op.l });
+      for (const l of lines) pts.push({ pt: at(l, l.gw.L / 2), r: tol, k: 'mid', m: 'mid', l: 'Middle · ' + l.nm.toLowerCase() });
+      for (const op of objSnapPts(skip)) if (op.k === 'mid') pts.push({ pt: { x: op.x, y: op.y }, r: tol, k: 'mid', m: 'mid', l: op.l });
       const b = near(pts); if (b) return tag(b);
     }
     // 3. along lines: wall faces and centres, reference lines, 2D lines
@@ -2640,7 +2651,7 @@ function planSnap(p, from, tol, skip) {   // ONE snap for every tool: points fir
       let odir = null;
       if (from && ang0 && Math.hypot(p.x - from.x, p.y - from.y) > 0) { const a = Math.round(Math.atan2(p.y - from.y, p.x - from.x) * 180 / Math.PI / ang0) * ang0 * Math.PI / 180; odir = { x: Math.round(Math.cos(a) * 1e9) / 1e9, y: Math.round(Math.sin(a) * 1e9) / 1e9 }; }
       let best = null;
-      const cand = (q, lab, r, extra) => { const d = Math.hypot(q.x - p.x, q.y - p.y); if (d <= r && (!best || d < best.d)) best = { d, pt: { x: q.x, y: q.y, ...(extra || {}) }, kind: 'edge', label: lab }; };
+      const cand = (q, lab, r, extra) => { const d = Math.hypot(q.x - p.x, q.y - p.y); if (d <= r && (!best || d < best.d)) best = { d, pt: { x: q.x, y: q.y, ...(extra || {}) }, kind: 'edge', m: 'edge', label: lab }; };
       for (const l of lines) {
         let k = (p.x - l.P0.x) * l.gw.d.x + (p.y - l.P0.y) * l.gw.d.y, locked = false;
         if (odir) {                       // keep the new wall straight: meet the line along the locked direction
@@ -3028,7 +3039,16 @@ function planOverlay() {
   for (const gd of guides) gd.v ? g.line(gd.at, view.y, gd.at, view.y + view.h, 'guide') : g.line(view.x, gd.at, view.x + view.w, gd.at, 'guide');
   const free = gesture && gesture.kind === 'wpick' && gesture.free;
   const mark = (hv) => {
-    const q = hv.pt, r = u * 7;
+    const q = hv.pt, r = u * 7, ns = ' class="snapm" vector-effect="non-scaling-stroke"';
+    if (hv.m === 'cen' || hv.m === 'int' || hv.m === 'perp' || hv.m === 'edge' || hv.m === 'opn') {
+      if (hv.label) g.raw(`<text x="${n(q.x + r * 1.8)}" y="${n(q.y - r * 1.6)}" class="mtxt snapt" font-size="${n(u * 12)}">${esc(hv.label)}</text>`);
+      if (hv.m === 'cen') g.raw(`<circle cx="${n(q.x)}" cy="${n(q.y)}" r="${n(r)}"${ns}/>`);
+      else if (hv.m === 'int') g.raw(`<path d="M${n(q.x - r)} ${n(q.y - r)}L${n(q.x + r)} ${n(q.y + r)}M${n(q.x + r)} ${n(q.y - r)}L${n(q.x - r)} ${n(q.y + r)}" style="stroke-width:3"${ns}/>`);
+      else if (hv.m === 'perp') g.raw(`<path d="M${n(q.x - r)} ${n(q.y + r)}H${n(q.x + r)}M${n(q.x - r)} ${n(q.y + r)}V${n(q.y - r)}M${n(q.x - r)} ${n(q.y)}H${n(q.x)}V${n(q.y + r)}"${ns}/>`);
+      else if (hv.m === 'opn') g.raw(`<path d="M${n(q.x - r)} ${n(q.y - r)}H${n(q.x + r)}V${n(q.y + r)}H${n(q.x - r)}ZM${n(q.x - r)} ${n(q.y + r)}L${n(q.x + r)} ${n(q.y - r)}"${ns}/>`);
+      else g.raw(`<path d="M${n(q.x - r)} ${n(q.y - r)}H${n(q.x + r)}L${n(q.x - r)} ${n(q.y + r)}H${n(q.x + r)}Z"${ns}/>`);   // nearest: hourglass
+      return;
+    }
     if (hv.label && hv.kind && hv.kind !== 'ortho' && hv.kind !== 'align') g.raw(`<text x="${n(q.x + r * 1.8)}" y="${n(q.y - r * 1.6)}" class="mtxt snapt" font-size="${n(u * 12)}">${esc(hv.label)}</text>`);
     if (hv.kind === 'end') g.raw(`<rect x="${n(q.x - r)}" y="${n(q.y - r)}" width="${n(2 * r)}" height="${n(2 * r)}" class="snapm" vector-effect="non-scaling-stroke"/>`);
     else if (hv.kind === 'mid') g.raw(`<path d="M${n(q.x)} ${n(q.y - r * 1.2)}L${n(q.x + r * 1.1)} ${n(q.y + r * 0.8)}H${n(q.x - r * 1.1)}Z" class="snapm" vector-effect="non-scaling-stroke"/>`);
@@ -4235,12 +4255,49 @@ $('#snap-chips').addEventListener('click', e => {
 function toggleSnap() { state.snap.on = !state.snap.on; save(); render(); toast('Snap ' + (state.snap.on ? 'on' : 'off')); }
 $('#s-on').addEventListener('click', toggleSnap);
 $('#tb-snap').addEventListener('click', toggleSnap);
+/* object snap settings, AutoCAD style: pick which snap points are on */
+const OSNAP = [
+  ['Object snap points', [
+    ['end', '□', 'Endpoint', 'Wall corners, ends of wall faces and lines, beam / column / platform corners'],
+    ['mid', '△', 'Midpoint', 'Middle of walls, lines, beams and column sides'],
+    ['cen', '○', 'Center', 'Centre of columns and rooms'],
+    ['int', '✕', 'Intersection', 'Where two lines cross: wall faces, lines, reference lines, beam edges'],
+    ['perp', '⊥', 'Perpendicular', 'Square off onto a wall or line from where you started'],
+    ['edge', '⧗', 'Nearest', 'Anywhere along a wall face, wall centre, reference line or line'],
+    ['opn', '⊠', 'Door & window edges', 'Jambs of doors, windows and openings on both wall faces']]],
+  ['Wall lines to snap on', [
+    ['fc', '┃', 'Wall centre line', 'The centre line of every wall'],
+    ['fi', '▏', 'Inside face', 'The room side of every wall'],
+    ['fo', '▕', 'Outside face', 'The outer side of every wall']]],
+  ['Helpers', [
+    ['grid', '#', 'Grid', 'When nothing is near, snap to a grid that follows the zoom'],
+    ['align', '⋮', 'Line up (tracking)', 'Guides that line points and openings up with others'],
+    ['precise', '✛', 'Precise touch cursor', 'Phone: crosshair above the finger with a magnifier; lift to place']]]];
+function osnapModal() {
+  const sn = state.snap, row = ([k, ic, t, d]) => `<button class="orow osn" data-osn="${k}" aria-pressed="${sn[k] !== false}"><span class="osb">${sn[k] !== false ? '✓' : ''}</span><span class="tag dimt">${esc(ic)}</span><span class="meta"><b>${esc(t)}</b><br><small>${esc(d)}</small></span></button>`;
+  openModal('Object snap settings', `<button class="switch" id="osn-on" aria-pressed="${!!sn.on}"><span>Object snap is <b>${sn.on ? 'on' : 'off'}</b> (S or F3)</span><span class="knob"></span></button>
+    ${OSNAP.map(([h, rows]) => `<div class="sub">${esc(h)}</div><div class="olist">${rows.map(row).join('')}</div>`).join('')}
+    <label class="f full" style="margin-top:12px">Aperture (how far a point is picked up)<select id="osn-ap"><option value="0.6">Small</option><option value="1">Medium</option><option value="1.5">Large</option></select></label>`,
+    [['Select all', () => { for (const [, rows] of OSNAP) for (const [k] of rows) state.snap[k] = true; state.snap.on = true; save(); render(); osnapModal(); }],
+     ['Clear all', () => { for (const [, rows] of OSNAP.slice(0, 1)) for (const [k] of rows) state.snap[k] = false; save(); render(); osnapModal(); }],
+     ['Done', closeModal, 'primary']]);
+  $('#osn-ap').value = String(sn.ap || 1);
+}
+$('#m-body').addEventListener('click', e => {
+  const b = e.target.closest('[data-osn]');
+  if (b) { const k = b.dataset.osn; state.snap[k] = state.snap[k] === false; if (state.snap[k]) state.snap.on = true; save(); render(); b.setAttribute('aria-pressed', String(state.snap[k])); b.querySelector('.osb').textContent = state.snap[k] ? '✓' : ''; return; }
+  if (e.target.closest('#osn-on')) { toggleSnap(); osnapModal(); }
+});
+$('#m-body').addEventListener('change', e => { if (e.target.id === 'osn-ap') { state.snap.ap = +e.target.value; save(); toast('Aperture: ' + e.target.options[e.target.selectedIndex].text.toLowerCase()); } });
+$('#tb-osnap').addEventListener('click', osnapModal);
+$('#s-osnap').addEventListener('click', osnapModal);
 
 document.addEventListener('keydown', e => {
   const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
   const k = e.key.toLowerCase();
   if ((e.ctrlKey || e.metaKey) && k === 'z' && !typing) { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if ((e.ctrlKey || e.metaKey) && k === 'y' && !typing) { e.preventDefault(); redo(); return; }
+  if (e.key === 'F3') { e.preventDefault(); toggleSnap(); return; }
   if (typing || !$('#modal').hidden) { if (e.key === 'Escape') closeModal(); return; }
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key === 'Escape') {
@@ -4474,7 +4531,7 @@ const FEATURES = [
   ['Structure', [['tool:col', '▣', 'Column'], ['tool:beam', '┅', 'Beam']]],
   ['Measure on plan', [['tool:pdim', '↔', 'Measure'], ['tool:ref', '⋯', 'Reference line'], ['tool:offset', '⫽', 'Offset']]],
   ['Measure on wall', [['dim:h', '↔', 'Horizontal'], ['dim:v', '↕', 'Vertical'], ['dim:a', '⤡', 'Aligned'], ['dim:lvl', '▽', 'Level'], ['dim:ang', '∠', 'Angle']]],
-  ['View & settings', [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Wall elevation'], ['units', 'ft', 'Units'], ['snap', '⌖', 'Snap'], ['ortho', '⟂', 'Angle lock'], ['canvas', '◐', 'Black / white'], ['fit', '⤢', 'Fit to screen'], ['tool:', '➤', 'Select']]],
+  ['View & settings', [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Wall elevation'], ['units', 'ft', 'Units'], ['snap', '⌖', 'Snap'], ['osnap', '▾', 'Snap settings'], ['ortho', '⟂', 'Angle lock'], ['canvas', '◐', 'Black / white'], ['fit', '⤢', 'Fit to screen'], ['tool:', '➤', 'Select']]],
   ['Edit', [['undo', '↶', 'Undo'], ['redo', '↷', 'Redo'], ['del', '✕', 'Delete selected']]],
   ['Lists & files', [['sec:rooms-sec', '▭', 'Rooms & areas'], ['sec:struct-sec', '▣', 'Columns & beams'], ['sec:hist-sec', '☰', 'History'], ['sec:share-sec', '⇪', 'Share & backup'], ['app', '⬇', 'Download app (HTML)'], ['sec:defs-sec', '⚙', 'Default sizes'], ['sec:draw-sec', '✎', 'Drawing options']]],
 ];
@@ -4499,6 +4556,7 @@ function runFeature(k) {
   else if (a === 'view') switchView(v);
   else if (a === 'units') { const order = ['mm', 'cm', 'm', 'ft', 'ftin', 'in'], u = order[(order.indexOf(state.unit) + 1) % order.length]; commit('Change units', () => state.unit = u); toast('Units: ' + UNIT_NAME[u]); featurePanel(); }
   else if (a === 'snap') { toggleSnap(); featurePanel(); }
+  else if (a === 'osnap') osnapModal();
   else if (a === 'ortho') { cycleOrtho(); featurePanel(); }
   else if (a === 'canvas') { state.canvas = state.canvas === 'dark' ? 'light' : 'dark'; save(); render(); featurePanel(); }
   else if (a === 'fit') fit();
