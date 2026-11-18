@@ -334,6 +334,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <button data-tool="beam" title="Beam: drag or tap two points (M)"><span class="ic">┅</span><span class="tl">Beam</span></button>
         <button data-tool="pdim" title="Measure: drag or tap between two points (U)"><span class="ic">↔</span><span class="tl">Measure</span></button>
         <button data-tool="ref" title="Reference line through two points"><span class="ic">⋯</span><span class="tl">Ref line</span></button>
+        <button data-tool="offset" title="Offset: parallel copy of a wall, beam or reference line at a distance"><span class="ic">⫽</span><span class="tl">Offset</span></button>
       </div>
       <div class="tgroup" role="group" aria-label="Dimension tools" data-v="wall">
         <button data-tool="" title="Select and move (Esc)"><span class="ic">➤</span><span class="tl">Select</span></button>
@@ -353,8 +354,10 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
     <div class="status quiet" id="status">
       <span id="st-msg"></span><span class="sn" id="st-snap"></span>
       <span class="lenbox" id="st-len" hidden><input id="len-in" placeholder="length" autocomplete="off" aria-label="Wall length"><button data-dir="l" title="Place to the left">←</button><button data-dir="u" title="Place upward">↑</button><button data-dir="d" title="Place downward">↓</button><button data-dir="r" title="Place to the right">→</button></span>
+      <span class="lenbox" id="st-off" hidden><span style="font-size:12px;color:var(--muted)">Distance</span><input id="off-in" placeholder="through point" autocomplete="off" aria-label="Offset distance"><select id="off-mode" aria-label="Offset measured between"><option value="line">Lines (AutoCAD)</option><option value="clear">Clear gap (face to face)</option></select></span>
       <select id="st-t" title="Thickness of new walls" aria-label="Thickness of new walls"></select>
       <select id="st-s" title="Size" aria-label="Size" hidden></select>
+      <select id="st-ba" title="Where the beam sits on a wall" aria-label="Beam position on the wall" hidden><option value="c">On wall centre line</option><option value="in">Flush with inside face</option><option value="out">Flush with outside face</option></select>
       <button id="st-size" hidden>Type size…</button>
       <button id="st-close" hidden>Close room</button><button id="st-fin" hidden>New start</button><button id="st-x" hidden>Done</button>
     </div>
@@ -518,6 +521,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
             <h2 style="color:var(--ink)"><span id="s-kind">Selected column</span> <span class="tag dimt" id="s-tag"></span></h2>
             <div class="grid2">
               <label class="f">Mark<input id="s-label" type="text" maxlength="8" autocomplete="off"></label>
+              <label class="f beam-only full">Position on the wall<select id="s-balign"><option value="c">On the wall centre line</option><option value="in">Flush with the inside face</option><option value="out">Flush with the outside face</option></select></label>
               <label class="f col-only">Shape<select id="s-shape"><option value="rect">Rectangle</option><option value="round">Round</option></select></label>
               <label class="f"><span id="s-w-l">Width</span><input id="s-w" inputmode="decimal" autocomplete="off"></label>
               <label class="f"><span id="s-d-l">Depth</span><input id="s-d" inputmode="decimal" autocomplete="off"></label>
@@ -1397,7 +1401,7 @@ function splitCrossings() {
     if (Math.abs(den) < 1e-9) continue;
     const t = ((C.x - A.x) * s.y - (C.y - A.y) * s.x) / den, u = ((C.x - A.x) * r.y - (C.y - A.y) * r.x) / den;
     const ea = 1 / Math.hypot(r.x, r.y), eb = 1 / Math.hypot(s.x, s.y);
-    if (t > ea && t < 1 - ea && u > eb && u < 1 - eb) addNode(A.x + r.x * t, A.y + r.y * t);
+    if (t > ea && t < 1 - ea && u > eb && u < 1 - eb) { const px = A.x + r.x * t, py = A.y + r.y * t, had = nodeAt(px, py), id = addNode(px, py); if (!had) nodeById(id).auto = true; }   // auto: made where walls cross
   }
 }
 function splitWall(w, nid) {
@@ -1448,6 +1452,7 @@ function joinStraight() {
   for (let guard = 0; guard < 500; guard++) {
     let did = false;
     for (const nd of state.nodes) {
+      if (!nd.auto) continue;               // never remove a point the user placed; only tidy joints the app made
       const ws = state.walls.filter(w => isPlanWall(w) && (w.a === nd.id || w.b === nd.id));
       if (ws.length !== 2) continue;
       let [p, q] = ws;
@@ -1634,10 +1639,29 @@ function placeColumn(h) {
   commit('Add column ' + label, () => { state.cols.push({ id: uid(), label, x: r2(h.pt.x), y: r2(h.pt.y), w: v.w, d: v.d, shape: v.shape || 'rect', rot }); });
   toast(`Column ${label} ${sizeTxt(v)} placed`, 'Undo', undo);
 }
+function alignBeam(bm, how) {           // put a beam that runs along a wall on its centre line, inside face or outside face
+  const L = Math.hypot(bm.b.x - bm.a.x, bm.b.y - bm.a.y); if (L < 1) return false;
+  const e = { x: (bm.b.x - bm.a.x) / L, y: (bm.b.y - bm.a.y) / L };
+  let best = null;
+  for (const w of state.walls) {
+    if (!isPlanWall(w)) continue; const g = wallGeo(w);
+    if (Math.abs(e.x * g.d.y - e.y * g.d.x) > 1e-3) continue;
+    const off = (bm.a.x - g.A.x) * g.n.x + (bm.a.y - g.A.y) * g.n.y;
+    if (off < g.f0 - bm.w || off > g.f1 + bm.w) continue;
+    const s0 = (bm.a.x - g.A.x) * g.d.x + (bm.a.y - g.A.y) * g.d.y, s1 = (bm.b.x - g.A.x) * g.d.x + (bm.b.y - g.A.y) * g.d.y;
+    if (Math.max(s0, s1) < -1 || Math.min(s0, s1) > g.L + 1) continue;
+    const dist = Math.abs(off - (g.f0 + g.f1) / 2); if (!best || dist < best.dist) best = { g, off, dist };
+  }
+  bm.align = how;
+  if (!best) return false;
+  const g = best.g, c = how === 'in' ? g.f0 + bm.w / 2 : how === 'out' ? g.f1 - bm.w / 2 : (g.f0 + g.f1) / 2, sh = c - best.off;
+  bm.a = { x: r2(bm.a.x + g.n.x * sh), y: r2(bm.a.y + g.n.y * sh) }; bm.b = { x: r2(bm.b.x + g.n.x * sh), y: r2(bm.b.y + g.n.y * sh) };
+  return true;
+}
 function placeBeam(a, b) {
   if (Math.hypot(b.x - a.x, b.y - a.y) < planStep()) return false;
   const v = state.draw.beam, label = nextMark('B', state.beams);
-  commit('Add beam ' + label, () => { state.beams.push({ id: uid(), label, a: { x: r2(a.x), y: r2(a.y) }, b: { x: r2(b.x), y: r2(b.y) }, w: v.w, d: v.d }); });
+  commit('Add beam ' + label, () => { const bm = { id: uid(), label, a: { x: r2(a.x), y: r2(a.y) }, b: { x: r2(b.x), y: r2(b.y) }, w: v.w, d: v.d }; alignBeam(bm, state.draw.beamAlign || 'c'); state.beams.push(bm); });
   toast(`Beam ${label} ${fmt(v.w)}×${fmt(v.d)} · ${fmt(Math.hypot(b.x - a.x, b.y - a.y))} long`, 'Undo', undo);
   return true;
 }
@@ -1705,6 +1729,72 @@ function refModalForWall(w) {
   }, 'primary'], ['Cancel', closeModal]]);
   enhanceFtIn($('#rf-d')); syncFtIn();
   setTimeout(() => (state.unit === 'ftin' ? $('#rf-d')._fi.querySelector('input') : $('#rf-d')).focus(), 60);
+}
+
+/* ---------- offset (AutoCAD style) ---------- */
+// Pick a wall, beam or reference line, then tap the side: a parallel copy is made at the distance (line to line).
+const isOff = () => !!(tool && tool.kind === 'offset');
+function pickLinear(p, tol) {
+  let best = null; const take = (dist, it) => { if (dist <= tol && (!best || dist < best.dist)) best = { ...it, dist }; };
+  for (const w of state.walls) {
+    if (!isPlanWall(w)) continue; const g = wallGeo(w), sp = (p.x - g.A.x) * g.d.x + (p.y - g.A.y) * g.d.y;
+    if (sp < -tol || sp > g.L + tol) continue;
+    take(Math.max(0, Math.abs((p.x - g.A.x) * g.n.x + (p.y - g.A.y) * g.n.y - (g.f0 + g.f1) / 2) - g.t / 2), { kind: 'wall', id: w.id, P: g.A, d: g.d, L: g.L, name: wname(w) });
+  }
+  for (const b of state.beams) {
+    const dx = b.b.x - b.a.x, dy = b.b.y - b.a.y, L = Math.hypot(dx, dy); if (L < 1) continue;
+    const d = { x: dx / L, y: dy / L }, sp = (p.x - b.a.x) * d.x + (p.y - b.a.y) * d.y; if (sp < -tol || sp > L + tol) continue;
+    take(Math.max(0, Math.abs((p.x - b.a.x) * -d.y + (p.y - b.a.y) * d.x) - b.w / 2), { kind: 'beam', id: b.id, P: b.a, d, L, name: 'beam ' + (b.label || '') });
+  }
+  for (const r of state.refs) take(Math.abs((p.x - r.x) * -r.dy + (p.y - r.y) * r.dx), { kind: 'ref', id: r.id, P: { x: r.x, y: r.y }, d: { x: r.dx, y: r.dy }, L: 0, name: 'reference line' });
+  return best;
+}
+function offsetFor(t, p) {                // which side of the picked line, and how far
+  const rn = { x: -t.d.y, y: t.d.x }, k = (p.x - t.P.x) * rn.x + (p.y - t.P.y) * rn.y, sg = k < 0 ? -1 : 1;
+  let dist = state.offD;
+  if (!(dist > 0)) { dist = Math.abs(k); if (state.snap.on && state.snap.grid) dist = Math.max(planStep(), Math.round(dist / planStep()) * planStep()); }
+  return { v: { x: rn.x * sg * dist, y: rn.y * sg * dist }, dist };
+}
+function offsetTap(p, tol) {
+  if (!tool.target) {
+    const t = pickLinear(p, tol);
+    if (!t) { toast('Tap a wall, beam or reference line'); return; }
+    tool.target = t; hover = null; render(); updateStatus(); return;
+  }
+  const t = tool.target, o = offsetFor(t, p), v = o.v;
+  if (!(o.dist > 0)) return;
+  if (t.kind === 'wall') {
+    const w = state.walls.find(x => x.id === t.id); if (!isPlanWall(w)) { tool.target = null; return; }
+    const g = wallGeo(w), before = new Set(state.rooms.map(r => r.id));
+    commit('Offset ' + wname(w) + ' ' + fmt(o.dist), () => {
+      const a = addNode(g.A.x + v.x, g.A.y + v.y), b = addNode(g.B.x + v.x, g.B.y + v.y);
+      if (a !== b && !findWall(a, b)) { const nw = newWall(a, b, w.thickness); nw.height = w.height; nw.sideAuto = w.sideAuto; nw.side = w.sideAuto ? 0 : w.side; state.walls.push(nw); }
+      rebuildPlan();
+      if (state.offMode === 'clear' && state.offD > 0) {   // make the gap between the facing wall faces exact
+        const sd = { x: v.x / o.dist, y: v.y / o.dist }, on = q => Math.abs((q.x - g.A.x) * sd.x + (q.y - g.A.y) * sd.y - o.dist) < 1;
+        const ow = state.walls.find(x => x.id === w.id), og = ow && isPlanWall(ow) ? wallGeo(ow) : g;
+        const nw = state.walls.find(q => isPlanWall(q) && on(nodeById(q.a)) && on(nodeById(q.b)));
+        if (nw) {
+          const ng = wallGeo(nw), c1 = ng.n.x * sd.x + ng.n.y * sd.y, c0 = og.n.x * sd.x + og.n.y * sd.y;
+          const gap = o.dist + Math.min(ng.f0 * c1, ng.f1 * c1) - Math.max(og.f0 * c0, og.f1 * c0), delta = state.offD - gap;
+          for (const nd of state.nodes) if (on(nd)) { nd.x = r2(nd.x + sd.x * delta); nd.y = r2(nd.y + sd.y * delta); }
+          rebuildPlan();
+        }
+      }
+    });
+    announceRooms(before);
+    if (!state.rooms.some(r => !before.has(r.id))) toast('Wall offset ' + fmt(o.dist), 'Undo', undo);
+  } else if (t.kind === 'beam') {
+    const bm = state.beams.find(x => x.id === t.id); if (!bm) { tool.target = null; return; }
+    const label = nextMark('B', state.beams);
+    commit('Offset beam ' + fmt(o.dist), () => { state.beams.push({ ...bm, id: uid(), label, a: { x: r2(bm.a.x + v.x), y: r2(bm.a.y + v.y) }, b: { x: r2(bm.b.x + v.x), y: r2(bm.b.y + v.y) } }); });
+    toast('Beam ' + label + ' offset ' + fmt(o.dist), 'Undo', undo);
+  } else {
+    const r = state.refs.find(x => x.id === t.id); if (!r) { tool.target = null; return; }
+    addRefLine(r.x + v.x, r.y + v.y, r.dx, r.dy, fmt(o.dist) + ' offset'); state.planSel = null; save();
+    toast('Reference line offset ' + fmt(o.dist), 'Undo', undo);
+  }
+  tool.target = null; hover = null; render(); updateStatus();
 }
 
 /* ---------- editable measurements ---------- */
@@ -2317,7 +2407,7 @@ function planSnap(p, from, tol) {
   const s = state.snap, gd = [], st = planStep();
   if (s.on) {
     let best = null;
-    for (const nd of state.nodes) { const d = Math.hypot(nd.x - p.x, nd.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt: { x: nd.x, y: nd.y, nid: nd.id }, kind: 'end', label: 'Corner' }; }
+    for (const nd of state.nodes) { const d = Math.hypot(nd.x - p.x, nd.y - p.y); if (d <= tol * 1.4 && (!best || d < best.d)) best = { d, pt: { x: nd.x, y: nd.y, nid: nd.id }, kind: 'end', label: 'Corner' }; }   // corners win over wall centres
     if (best) return { ...best, label: from ? fmt(Math.hypot(best.pt.x - from.x, best.pt.y - from.y)) + ' · corner' : 'Corner' };
     const rh = state.refs.length ? refHits(p, tol) : null;
     if (rh && rh.kind === 'end') return { ...rh, label: from ? fmt(Math.hypot(rh.pt.x - from.x, rh.pt.y - from.y)) + ' · ' + rh.label.toLowerCase() : rh.label };
@@ -2326,25 +2416,41 @@ function planSnap(p, from, tol) {
       for (const r of state.refs) { const cr = od.x * r.dy - od.y * r.dx; if (Math.abs(cr) < 1e-6) continue; const t = ((r.x - from.x) * r.dy - (r.y - from.y) * r.dx) / cr; if (t <= 0) continue; const q = { x: from.x + od.x * t, y: from.y + od.y * t }; if (Math.hypot(q.x - p.x, q.y - p.y) <= tol * 1.6) return { d: 0, pt: q, kind: 'edge', label: fmt(t) + ' · to reference line' }; }
     }
     if (rh) return { ...rh, label: from ? fmt(Math.hypot(rh.pt.x - from.x, rh.pt.y - from.y)) + ' · on reference line' : rh.label };
-    // walls: snap to the CENTRE of the wall thickness (its middle, or anywhere along it)
+    // walls: three snap lines each — centre, inside face, outside face — plus their corners and middles
     const ang0 = state.draw.ortho === '45' ? 45 : state.draw.ortho === '90' ? 90 : 0;
     let odir = null;
     if (from && ang0 && Math.hypot(p.x - from.x, p.y - from.y) > 0) { const a = Math.round(Math.atan2(p.y - from.y, p.x - from.x) * 180 / Math.PI / ang0) * ang0 * Math.PI / 180; odir = { x: Math.round(Math.cos(a) * 1e9) / 1e9, y: Math.round(Math.sin(a) * 1e9) / 1e9 }; }
+    const lines = [];
     for (const w of state.walls) {
-      if (!isPlanWall(w)) continue; const gw = wallGeo(w), c0 = (gw.f0 + gw.f1) / 2;
-      const C = k => ({ x: gw.A.x + gw.d.x * k + gw.n.x * c0, y: gw.A.y + gw.d.y * k + gw.n.y * c0, cw: w.id, k });
-      if (s.mid) { const M = C(gw.L / 2), d = Math.hypot(M.x - p.x, M.y - p.y); if (d <= tol && (!best || best.kind !== 'mid' || d < best.d)) best = { d, pt: M, kind: 'mid', label: 'Middle of wall (centre)' }; }
-      if (s.edge && (!best || best.kind !== 'mid')) {
-        const P0 = C(0);
-        let k = (p.x - P0.x) * gw.d.x + (p.y - P0.y) * gw.d.y;
-        if (odir) {                       // keep the new wall straight: meet the centre line along the locked direction
-          const cr = odir.x * gw.d.y - odir.y * gw.d.x;
-          if (Math.abs(cr) > 1e-6) { const kk = ((from.x - P0.x) * odir.y - (from.y - P0.y) * odir.x) / cr; if (kk >= 0 && kk <= gw.L) k = kk; }
-        } else if (s.grid) k = Math.round(k / st) * st;
-        k = Math.min(Math.max(k, 0), gw.L);
-        const Q = C(k), d = Math.hypot(Q.x - p.x, Q.y - p.y);
-        if (d <= tol * (odir ? 1.6 : 1) && (!best || d < best.d)) best = { d, pt: Q, kind: 'edge', label: 'Wall centre' };
+      if (!isPlanWall(w)) continue; const gw = wallGeo(w);
+      for (const [f, nm] of [[(gw.f0 + gw.f1) / 2, 'Wall centre'], [gw.f0, 'Inside face'], [gw.f1, 'Outside face']])
+        lines.push({ w, gw, f, nm, P0: { x: gw.A.x + gw.n.x * f, y: gw.A.y + gw.n.y * f } });
+    }
+    const at = (l, k) => ({ x: l.P0.x + l.gw.d.x * k, y: l.P0.y + l.gw.d.y * k, cw: l.w.id });
+    if (s.end) {                            // corners of the faces and centre lines, where joined walls meet
+      for (let i = 0; i < lines.length; i++) for (let j = i + 1; j < lines.length; j++) {
+        const A = lines[i], B = lines[j];
+        if (A.w === B.w || A.nm !== B.nm) continue;
+        if (!(A.w.a === B.w.a || A.w.a === B.w.b || A.w.b === B.w.a || A.w.b === B.w.b)) continue;
+        const cr = A.gw.d.x * B.gw.d.y - A.gw.d.y * B.gw.d.x; if (Math.abs(cr) < 1e-6) continue;
+        const t = ((B.P0.x - A.P0.x) * B.gw.d.y - (B.P0.y - A.P0.y) * B.gw.d.x) / cr, Q = at(A, t), d = Math.hypot(Q.x - p.x, Q.y - p.y);
+        if (d <= tol * 1.3 && (!best || d < best.d)) best = { d, pt: Q, kind: 'end', label: A.nm === 'Wall centre' ? 'Centre corner' : A.nm === 'Inside face' ? 'Inside corner' : 'Outside corner' };
       }
+      for (const l of lines) for (const k of [0, l.gw.L]) {      // free ends of each line
+        const Q = at(l, k), d = Math.hypot(Q.x - p.x, Q.y - p.y);
+        if (d <= tol && (!best || d < best.d)) best = { d, pt: Q, kind: 'end', label: 'End of ' + l.nm.toLowerCase() };
+      }
+    }
+    if (!best && s.mid) for (const l of lines) { const M = at(l, l.gw.L / 2), d = Math.hypot(M.x - p.x, M.y - p.y); if (d <= tol && (!best || d < best.d)) best = { d, pt: M, kind: 'mid', label: 'Middle · ' + l.nm.toLowerCase() }; }
+    if (!best && s.edge) for (const l of lines) {
+      let k = (p.x - l.P0.x) * l.gw.d.x + (p.y - l.P0.y) * l.gw.d.y;
+      if (odir) {                           // keep the new wall straight: meet the line along the locked direction
+        const cr = odir.x * l.gw.d.y - odir.y * l.gw.d.x;
+        if (Math.abs(cr) > 1e-6) { const kk = ((from.x - l.P0.x) * odir.y - (from.y - l.P0.y) * odir.x) / cr; if (kk >= 0 && kk <= l.gw.L) k = kk; }
+      } else if (s.grid) k = Math.round(k / st) * st;
+      k = Math.min(Math.max(k, 0), l.gw.L);
+      const Q = at(l, k), d = Math.hypot(Q.x - p.x, Q.y - p.y);
+      if (d <= tol * (odir ? 1.6 : 1) && (!best || d < best.d)) best = { d, pt: Q, kind: 'edge', label: l.nm };
     }
     if (best) { if (from) best.label = fmt(Math.hypot(best.pt.x - from.x, best.pt.y - from.y)) + ' · ' + best.label.toLowerCase(); return best; }
   }
@@ -2389,6 +2495,7 @@ function snapMove(moving, dx, dy, tol) {   // move a set of corners; stick to ot
 }
 function planHover(e) {
   const p = toSvg(e.clientX, e.clientY), tol = upx() * (e.pointerType === 'touch' ? 26 : 13);
+  if (isOff()) { hover = { pt: p }; drawOverlay(); return; }
   hover = (isStruct() || isMeasure()) ? toolSnap(p, toolFrom(), tol) : planSnap(p, tool && tool.kind !== 'box' ? tool.last : null, tol);
   guides = hover.guides || [];
   drawOverlay(); updateStatus();
@@ -2438,7 +2545,7 @@ function placeWallPoint() {
   if (Math.hypot(pt.x - tool.last.x, pt.y - tool.last.y) < 1) { finishChain(); return; }
   addSegment(pt);
 }
-function finishChain() { if (!tool) return; tool.last = null; tool.start = null; tool.count = 0; tool.boxStart = null; tool.beamStart = null; tool.mStart = null; hover = null; guides = []; render(); updateStatus(); }
+function finishChain() { if (!tool) return; tool.last = null; tool.start = null; tool.count = 0; tool.boxStart = null; tool.beamStart = null; tool.mStart = null; tool.target = null; hover = null; guides = []; render(); updateStatus(); }
 function drawSingle(p, q) {
   if (Math.hypot(q.x - p.x, q.y - p.y) < planStep()) return;
   p = attach(p, q);
@@ -2713,6 +2820,22 @@ function planOverlay() {
     g.raw(`<path d="M${n(L.x - rx * h)} ${n(L.y - ry * h)}L${n(b.x - rx * h)} ${n(b.y - ry * h)}L${n(b.x + rx * (t - h))} ${n(b.y + ry * (t - h))}L${n(L.x + rx * (t - h))} ${n(L.y + ry * (t - h))}Z" class="pvband" vector-effect="non-scaling-stroke"/>`);
     g.text((L.x + b.x) / 2 - rx * u * 18, (L.y + b.y) / 2 - ry * u * 18 + u * 5, fmt(len), 'dt pv', u * 15, 'middle');
   };
+  if (isOff()) {
+    const line = (t, v, cls) => {
+      if (t.kind === 'ref') { const R = u * 4000; g.raw(`<line x1="${n(t.P.x + v.x - t.d.x * R)}" y1="${n(t.P.y + v.y - t.d.y * R)}" x2="${n(t.P.x + v.x + t.d.x * R)}" y2="${n(t.P.y + v.y + t.d.y * R)}" class="${cls}" vector-effect="non-scaling-stroke"/>`); }
+      else g.raw(`<line x1="${n(t.P.x + v.x)}" y1="${n(t.P.y + v.y)}" x2="${n(t.P.x + v.x + t.d.x * t.L)}" y2="${n(t.P.y + v.y + t.d.y * t.L)}" class="${cls}" vector-effect="non-scaling-stroke"/>`);
+    };
+    if (tool.target) {
+      g.raw(`<g style="stroke-width:5">`); line(tool.target, { x: 0, y: 0 }, 'snapm'); g.raw('</g>');
+      if (hover && hover.pt) {
+        const o = offsetFor(tool.target, hover.pt), t = tool.target; line(t, o.v, 'rub');
+        const m = t.kind === 'ref' ? { x: t.P.x + o.v.x, y: t.P.y + o.v.y } : { x: t.P.x + o.v.x + t.d.x * t.L / 2, y: t.P.y + o.v.y + t.d.y * t.L / 2 };
+        g.text(m.x, m.y - u * 10, fmt(o.dist), 'dt pv', u * 15, 'middle');
+      }
+    } else if (hover && hover.pt) {
+      const t = pickLinear(hover.pt, u * 13); if (t) { g.raw(`<g style="stroke-width:3">`); line(t, { x: 0, y: 0 }, 'snapm'); g.raw('</g>'); }
+    }
+  }
   if (isFix() && hover && hover.fx) {
     const kind = tool.kind.slice(3), size = fxDefaults(kind), f = { ...size, ...hover.fx, w: hover.fx.w || size.w };
     g.raw(`<path d="M${fxPoly(f).map(q => n(q.x) + ' ' + n(q.y)).join('L')}Z" class="pvband" vector-effect="non-scaling-stroke"/>`);
@@ -2897,7 +3020,31 @@ function endPtr(e) {
     if (e.pointerType !== 'mouse' && tool) { hover = null; drawOverlay(); }
   } else if (gesture && gesture.kind === 'pinch') gesture = { kind: 'wait' };
 }
-let lastTap = { t: 0, id: null };
+let lastTap = { t: 0, id: null }, chooseList = [];
+function targetsAt(x, y) {
+  const seen = new Set(), out = [];
+  for (const el of document.elementsFromPoint(x, y)) {
+    const d = el.dataset || {};
+    const tg = d.dm ? null : d.refid ? { t: 'ref', id: d.refid } : d.fid ? { t: 'fix', id: d.fid } : d.cid ? { t: 'col', id: d.cid } : d.bid ? { t: 'beam', id: d.bid } : d.oid && d.owid ? { t: 'open', id: d.oid, wid: d.owid } : d.pdid ? { t: 'pdim', id: d.pdid } : d.wid ? { t: 'wall', id: d.wid } : d.rid ? { t: 'room', id: d.rid } : null;
+    if (!tg || seen.has(tg.t + tg.id)) continue; seen.add(tg.t + tg.id); out.push(tg);
+  }
+  return out;
+}
+function tgLabel(tg) {
+  if (tg.t === 'wall') { const w = state.walls.find(x => x.id === tg.id); return ['▬', w ? wname(w) + ' · ' + fmt(w.length) : 'Wall']; }
+  if (tg.t === 'beam') { const b = state.beams.find(x => x.id === tg.id); return ['┅', b ? 'Beam ' + b.label + ' · ' + fmt(b.w) + '×' + fmt(b.d) : 'Beam']; }
+  if (tg.t === 'col') { const c = state.cols.find(x => x.id === tg.id); return ['▣', c ? 'Column ' + c.label + ' · ' + sizeTxt(c) : 'Column']; }
+  if (tg.t === 'open') { const w = state.walls.find(x => x.id === tg.wid), o = w && w.openings.find(x => x.id === tg.id); return ['◻', o ? (o.label || '') + ' · ' + styleName(o) + ' ' + fmt(o.w) + '×' + fmt(o.h) : 'Opening']; }
+  if (tg.t === 'ref') { const r = state.refs.find(x => x.id === tg.id); return ['⋯', 'Reference line' + (r && r.label ? ' · ' + r.label : '')]; }
+  if (tg.t === 'fix') { const f = state.fix.find(x => x.id === tg.id); return [f ? FXK[f.kind].icon : '▬', f ? FXK[f.kind].name + ' · ' + fmt(f.w) + '×' + fmt(f.d) : 'Kitchen item']; }
+  if (tg.t === 'pdim') { const d = state.pdims.find(x => x.id === tg.id); return ['↔', d ? 'Measurement · ' + fmt(Math.hypot(d.b.x - d.a.x, d.b.y - d.a.y)) : 'Measurement']; }
+  const r = state.rooms.find(x => x.id === tg.id); return ['▭', r ? r.name : 'Room'];
+}
+function openChooser(list) {
+  chooseList = list;
+  openModal('Which one?', `<div class="olist">${list.map((t, i) => { const [ic, l] = tgLabel(t); return `<button class="orow" data-choose="${i}"><span class="tag dimt">${esc(ic)}</span><span class="meta">${esc(l)}</span><span>›</span></button>`; }).join('')}</div><p class="note">Things overlap here. Pick the one you want; you can then drag it or edit it.</p>`, [['Cancel', closeModal]]);
+}
+document.getElementById('m-body').addEventListener('click', e => { const b = e.target.closest('[data-choose]'); if (!b) return; const tg = chooseList[+b.dataset.choose]; closeModal(); if (tg) selectPlan(tg); });
 function underTarget(x, y) {
   const ps = state.planSel, cur = ps ? (ps.t === 'open' ? state.sel : ps.id) : null;
   for (const el of document.elementsFromPoint(x, y)) {
@@ -2909,7 +3056,7 @@ function underTarget(x, y) {
 }
 function planDown(e) {
   const p = toSvg(e.clientX, e.clientY);
-  if (isKQ()) { gesture = { kind: 'wpick', sx: e.clientX, sy: e.clientY, stroke: [p], free: false, start: p }; hover = null; return; }
+  if (isKQ() || isOff()) { gesture = { kind: 'wpick', sx: e.clientX, sy: e.clientY, stroke: [p], free: false, start: p }; hover = isOff() ? { pt: p } : null; drawOverlay(); return; }
   if (isFix()) {
     const tol = upx() * (e.pointerType === 'touch' ? 26 : 13), kind = tool.kind.slice(3), size = fxDefaults(kind);
     gesture = { kind: 'wpick', sx: e.clientX, sy: e.clientY, stroke: [p], free: false, start: p };
@@ -2928,6 +3075,11 @@ function planDown(e) {
   const el = e.target && e.target.closest ? e.target : null, q = sel => el && el.closest(sel);
   const nh = q('[data-nid]'), oh = q('[data-oid]'), wh = q('[data-wid]'), rh = q('[data-rid]'), ps = state.planSel;
   const base = { sx: e.clientX, sy: e.clientY, p0: p, moved: false, vx: view.x, vy: view.y };
+  if (!nh && !q('[data-bend]') && !q('[data-dm]')) {      // several things under the finger: ask which one
+    const cands = targetsAt(e.clientX, e.clientY).filter(t => t.t !== 'room'), cur = ps ? (ps.t === 'open' ? state.sel : ps.id) : null;
+    const top = cands.filter(t => t.t !== 'wall'), ask = top.length >= 2 || (top.length === 1 && top[0].t === 'beam' && cands.some(t => t.t === 'wall'));
+    if (ask && !cands.some(t => t.id === cur)) { gesture = { ...base, kind: 'tapsel', target: null, choose: cands }; svg.classList.add('panning'); return; }
+  }
   const ch = q('[data-cid]'), bh = q('[data-bid]'), eh = q('[data-bend]');
   if (eh) { const [id, end] = eh.dataset.bend.split(':'), bm = state.beams.find(x => x.id === id); if (bm) { gesture = { ...base, kind: 'bend', id, end, o: { ...bm[end] } }; return; } }
   const mh = q('[data-dm]');
@@ -2974,6 +3126,7 @@ function planMove(e) {
     gesture.stroke.push(cur);
     if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) > 18) gesture.free = true;
     if (isKQ()) return;
+    if (isOff()) { hover = { pt: cur }; drawOverlay(); return; }
     if (isFix()) { const kind = tool.kind.slice(3), size = fxDefaults(kind); hover = { pt: cur, fx: fxSnap(cur, kind, size, tol, gesture.free && kind === 'counter' ? gesture.start : null) }; drawOverlay(); updateStatus(); return; }
     if (!gesture.free) { planHover(e); return; }
     if (isStruct() || isMeasure()) { hover = toolSnap(cur, tool.kind === 'col' ? null : (toolFrom() || gesture.start), tol); guides = hover.guides || []; drawOverlay(); updateStatus(); return; }
@@ -3074,6 +3227,7 @@ function planUp(e) {
     if (e.type === 'pointerup' && ptrs.size === 0) {
       const gs = gesture; gesture = null;
       if (isKQ()) { if (!gs.free) quickKitchen(gs.start, tool.kind); return; }
+      if (isOff()) { const tol = upx() * (e.pointerType === 'touch' ? 24 : 12); offsetTap(hover && hover.pt ? hover.pt : gs.start, tol); return; }
       if (isFix()) {
         if (!hover || !hover.fx) return;
         const kind = tool.kind.slice(3), size = fxDefaults(kind), at = hover.fx;
@@ -3106,6 +3260,8 @@ function planUp(e) {
         else { const a = tool.boxStart; tool.boxStart = null; drawBox(a, hover.pt); finishChain(); }
       } else placeWallPoint();
     }
+  } else if (gesture.kind === 'tapsel' && !gesture.moved && e.type === 'pointerup' && gesture.choose) {
+    openChooser(gesture.choose);
   } else if (gesture.kind === 'tapsel' && !gesture.moved && e.type === 'pointerup' && gesture.dm) {
     openDimEdit(gesture.dm);
   } else if (gesture.kind === 'tapsel' && !gesture.moved && e.type === 'pointerup') {
@@ -3115,7 +3271,8 @@ function planUp(e) {
     selectPlan(tg);
   } else if (['popen', 'cmove', 'bmove', 'pdmove', 'fmove'].includes(gesture.kind) && !gesture.moved && e.type === 'pointerup') {
     if (gesture.was) selectPlan(underTarget(gesture.sx, gesture.sy));     // tap again on a selected item: pick what is underneath
-  } else if (['node', 'room', 'popen', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove', 'wmove'].includes(gesture.kind) && gesture.moved) { guides = []; if (gesture.kind === 'node' || gesture.kind === 'room' || gesture.kind === 'wmove') rebuildPlan(); save(); render(); }
+  } else if (['node', 'room', 'popen', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove', 'wmove'].includes(gesture.kind) && gesture.moved) { guides = [];
+    if (gesture.kind === 'bmove' || gesture.kind === 'bend') { const bm = state.beams.find(x => x.id === gesture.id); if (bm && bm.align && bm.align !== 'c') alignBeam(bm, bm.align); } if (gesture.kind === 'node' || gesture.kind === 'room' || gesture.kind === 'wmove') rebuildPlan(); save(); render(); }
 }
 svg.addEventListener('pointerup', endPtr);
 svg.addEventListener('pointercancel', endPtr);
@@ -3124,7 +3281,7 @@ svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && too
 /* ---------- dimension tools ---------- */
 function setTool(kind) {
   tool = kind ? { kind, pts: [], last: null, chain: [] } : null; hover = null; guides = [];
-  if (kind) { state.sel = null; state.selDim = null; if (['hand', 'line', 'box', 'col', 'beam', 'pdim', 'fx-counter', 'fx-sink', 'fx-hob', 'kL', 'kC', 'ref'].includes(kind)) state.planSel = null; setSheet('peek'); }
+  if (kind) { state.sel = null; state.selDim = null; if (['hand', 'line', 'box', 'col', 'beam', 'pdim', 'fx-counter', 'fx-sink', 'fx-hob', 'kL', 'kC', 'ref', 'offset'].includes(kind)) state.planSel = null; setSheet('peek'); }
   svg.classList.toggle('tooling', !!tool);
   $$('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.tool || null) === (kind || null))));
   render(); updateStatus();
@@ -3171,10 +3328,17 @@ function updateStatus() {
   if (!tool) {
     st.className = 'status quiet';
     msg.textContent = plan ? 'Tap a measurement to change it · tap a wall or room to select · pinch to zoom' : 'Tap a measurement to change it · drag openings to move · pinch to zoom';
-    sn.textContent = ''; ['#st-len', '#st-close', '#st-fin', '#st-x', '#st-t', '#st-size', '#st-s'].forEach(i => show(i, false)); return;
+    sn.textContent = ''; ['#st-len', '#st-close', '#st-fin', '#st-x', '#st-t', '#st-size', '#st-s', '#st-off', '#st-ba'].forEach(i => show(i, false)); return;
   }
   st.className = 'status';
-  show('#st-t', isDraw()); show('#st-size', false); show('#st-s', isStruct());
+  show('#st-t', isDraw()); show('#st-size', false); show('#st-s', isStruct()); show('#st-ba', !!(tool && tool.kind === 'beam'));
+  show('#st-off', isOff());
+  if (isOff()) {
+    msg.innerHTML = '<b>⫽ Offset</b> · ' + esc(tool.target ? 'Tap the side where the copy goes (' + tool.target.name + ')' : 'Tap a wall, beam or reference line to offset');
+    sn.textContent = state.offD > 0 ? '' : 'No distance: the copy goes through the point you tap';
+    ['#st-len', '#st-close', '#st-t', '#st-s', '#st-size'].forEach(i => show(i, false)); show('#st-fin', !!tool.target); show('#st-x', true);
+    return;
+  }
   if (isKQ()) {
     msg.innerHTML = `<b>${tool.kind === 'kL' ? '⌐ L-shape kitchen' : '⊐ C-shape kitchen'}</b> · ` + esc(tool.kind === 'kL' ? 'Tap inside the room near the corner where the L turns' : 'Tap inside the room near the wall at the back of the C');
     sn.textContent = ''; ['#st-len', '#st-close', '#st-t', '#st-s', '#st-size', '#st-fin'].forEach(i => show(i, false)); show('#st-x', true);
@@ -3360,6 +3524,8 @@ $('#st-s').addEventListener('change', e => { if (isStruct()) setSize(tool.kind, 
 $('#s-shape').addEventListener('change', e => { const ss = selStruct(); if (ss) commit('Column shape', () => { ss.o.shape = e.target.value; if (ss.o.shape === 'round') ss.o.d = ss.o.w; }); });
 $('#s-rot').addEventListener('click', () => { const ss = selStruct(); if (ss) commit('Rotate column ' + ss.o.label, () => { ss.o.rot = ((ss.o.rot || 0) + 90) % 360; }); });
 $('#s-del').addEventListener('click', () => delSelected());
+$('#st-ba').addEventListener('change', e => { state.draw.beamAlign = e.target.value; save(); toast('New beams: ' + e.target.options[e.target.selectedIndex].text.toLowerCase()); });
+$('#s-balign').addEventListener('change', e => { const ss = selStruct(); if (!ss || ss.kind !== 'beam') return; let ok = true; commit('Beam ' + ss.o.label + ': ' + e.target.options[e.target.selectedIndex].text.toLowerCase(), () => { ok = alignBeam(ss.o, e.target.value); }); if (!ok) toast('This beam does not run along a wall'); });
 $('#pd-del').addEventListener('click', () => delSelected());
 $('#pd-flip').addEventListener('click', () => { const d = selPdim(); if (d) commit('Flip measurement', () => { d.off = -(d.off || 0); }); });
 $('#pd-list').addEventListener('click', e => { const b = e.target.closest('[data-pd]'); if (b) selectPlan({ t: 'pdim', id: b.dataset.pd }); });
@@ -3614,6 +3780,9 @@ function render(drawOnly) {
   const tOpts = [...new Set([...(IMP() ? [3, 4, 4.5, 6, 9, 12, 14].map(v => r2(v * 25.4)) : [75, 100, 115, 150, 200, 230, 300, 350]), r2(state.draw.t)])].sort((a, b) => a - b);
   $('#st-t').innerHTML = tOpts.map(v => `<option value="${v}"${Math.abs(v - state.draw.t) < 0.5 ? ' selected' : ''}>Wall ${esc(fmt(v))}</option>`).join('');
   $('#d-just').value = state.draw.just || 'in';
+  $('#st-ba').value = state.draw.beamAlign || 'c';
+  if (document.activeElement !== $('#off-in')) $('#off-in').value = state.offD > 0 ? fmt(state.offD) : '';
+  $('#off-mode').value = state.offMode === 'clear' ? 'clear' : 'line';
   for (const tp of ['door', 'window']) { const cur = (state.defs[tp] && state.defs[tp].style) || STYLES[tp][0][0]; $('#df-' + tp + '-st').innerHTML = STYLES[tp].map(([k, l]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${esc(l)}</option>`).join(''); }
   if (!drawOnly) { $('#d-cs').innerHTML = sizeOpts('col'); $('#d-bs').innerHTML = sizeOpts('beam'); if (isStruct()) $('#st-s').innerHTML = sizeOpts(tool.kind); }
   $$('[data-v]').forEach(el => { el.hidden = el.dataset.v !== state.view; });
@@ -3701,6 +3870,7 @@ function render(drawOnly) {
     const col = ss.kind === 'col', round = col && ss.o.shape === 'round';
     $('#s-kind').textContent = col ? 'Selected column' : 'Selected beam'; $('#s-tag').textContent = ss.o.label || (col ? 'C' : 'B');
     $$('.col-only').forEach(el => el.hidden = !col); $$('.beam-only').forEach(el => el.hidden = col);
+    if (!col) $('#s-balign').value = ss.o.align || 'c';
     $('#s-shape').value = ss.o.shape || 'rect';
     $('#s-w-l').textContent = round ? 'Diameter' : 'Width'; $('#s-d-l').textContent = col ? 'Depth' : 'Depth (below ceiling)';
     $('#s-d').parentElement.hidden = round;
@@ -3793,7 +3963,7 @@ const FEATURES = [
   ['Doors', [['add:door:single', 'sw door', 'Single door'], ['add:door:double', 'sw door', 'Double door'], ['add:door:slide', 'sw door', 'Sliding door'], ['add:door:pivot', 'sw door', 'Pivot door'], ['add:door:fold', 'sw door', 'Folding door']]],
   ['Windows & openings', [['add:window:slide2', 'sw window', 'Sliding window'], ['add:window:slide3', 'sw window', '3-track sliding'], ['add:window:case1', 'sw window', 'Casement'], ['add:window:case2', 'sw window', 'Double casement'], ['add:window:fixed', 'sw window', 'Fixed glass'], ['add:window:top', 'sw window', 'Top-hung'], ['add:window:louvre', 'sw window', 'Louvred'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening:plain', 'sw opening', 'Opening'], ['add:opening:arch', 'sw opening', 'Arched opening']]],
   ['Structure', [['tool:col', '▣', 'Column'], ['tool:beam', '┅', 'Beam']]],
-  ['Measure on plan', [['tool:pdim', '↔', 'Measure'], ['tool:ref', '⋯', 'Reference line']]],
+  ['Measure on plan', [['tool:pdim', '↔', 'Measure'], ['tool:ref', '⋯', 'Reference line'], ['tool:offset', '⫽', 'Offset']]],
   ['Measure on wall', [['dim:h', '↔', 'Horizontal'], ['dim:v', '↕', 'Vertical'], ['dim:a', '⤡', 'Aligned'], ['dim:lvl', '▽', 'Level'], ['dim:ang', '∠', 'Angle']]],
   ['View & settings', [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Wall elevation'], ['units', 'ft', 'Units'], ['snap', '⌖', 'Snap'], ['ortho', '⟂', 'Angle lock'], ['canvas', '◐', 'Black / white'], ['fit', '⤢', 'Fit to screen'], ['tool:', '➤', 'Select']]],
   ['Edit', [['undo', '↶', 'Undo'], ['redo', '↷', 'Redo'], ['del', '✕', 'Delete selected']]],
@@ -4021,7 +4191,10 @@ new ResizeObserver(() => {
   if (lastSize && Math.abs(r.width - lastSize.w) < 2 && Math.abs(r.height - lastSize.h) < 80) return;  // ignore phone address-bar jiggle
   lastSize = { w: r.width, h: r.height }; if (lastBox) fit();
 }).observe($('#sheet'));
-[...Object.keys(lenInputs), 'len-in'].forEach(id => enhanceFtIn(document.getElementById(id)));
+[...Object.keys(lenInputs), 'len-in', 'off-in'].forEach(id => enhanceFtIn(document.getElementById(id)));
+$('#off-in').addEventListener('change', e => { const t = e.target.value.trim(); if (!t) { state.offD = 0; } else { const v = parseLen(t); if (!(v > 0)) { toast('Type the offset distance. ' + unitExample()); return; } state.offD = v; } save(); updateStatus(); drawOverlay(); });
+$('#off-in').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+$('#off-mode').addEventListener('change', e => { state.offMode = e.target.value; save(); toast(e.target.value === 'clear' ? 'Wall offsets measure the clear gap between faces' : 'Offsets measure line to line, as in AutoCAD'); });
 if (state.nodes.length) { rebuildPlan(); save(); }
 render();
 setTool(null);
