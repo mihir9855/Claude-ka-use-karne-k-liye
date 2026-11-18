@@ -31,6 +31,11 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 option { background-color: var(--panel); color: var(--ink); }
+#loupe { position: fixed; z-index: 70; width: 124px; height: 124px; border-radius: 50%; overflow: hidden; border: 2px solid var(--snap); background: var(--paper); box-shadow: 0 6px 22px rgb(0 0 0 / .45); pointer-events: none; }
+#lsvg { width: 100%; height: 100%; display: block; }
+#loupe-t { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font: 600 10px var(--f-mono); color: var(--snap); text-shadow: 0 0 3px var(--paper), 0 0 3px var(--paper); white-space: nowrap; overflow: hidden; padding: 0 14px; }
+.dwg .lcross { stroke: var(--snap); stroke-width: 1; fill: none; }
+#lsvg .snapt { display: none; }
 #epane { position: absolute; top: 0; right: 0; bottom: 0; width: 50%; z-index: 3; display: flex; flex-direction: column; background: var(--paper); border-left: 2px solid var(--line); }
 .sheet.split svg#draw { width: 50%; }
 .sheet.split .dock { right: calc(50% + 10px); }
@@ -242,6 +247,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 .dwg .mwin { fill: color-mix(in srgb, #2f6fe0 14%, transparent); stroke: #2f6fe0; stroke-width: 1.3; }
 .dwg .mcross { fill: color-mix(in srgb, #1a9e4a 14%, transparent); stroke: #1a9e4a; stroke-width: 1.3; stroke-dasharray: 6 4; }
 .dwg .mtxt { fill: var(--snap); font-family: var(--f-mono); }
+.dwg .snapt { paint-order: stroke; stroke: var(--paper); stroke-width: 3px; stroke-linejoin: round; }
 .lenbox button.primary { background: var(--accent); color: var(--accent-ink); }
 .dwg.tooling .hit, .dwg.tooling .dhit { cursor: crosshair; }
 .dwg .room { fill: color-mix(in srgb, var(--accent) 6%, var(--paper)); cursor: pointer; }
@@ -369,6 +375,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 <div class="app">
   <main class="sheet" id="sheet">
     <svg id="draw" class="dwg" xmlns="http://www.w3.org/2000/svg" aria-label="Wall elevation drawing"></svg>
+    <div id="loupe" hidden aria-hidden="true"><svg id="lsvg" class="dwg" xmlns="http://www.w3.org/2000/svg"></svg><div id="loupe-t"></div></div>
     <section id="epane" hidden aria-label="Elevations">
       <div class="ep-head">
         <b id="ep-title">Elevations</b><span class="ep-sp"></span>
@@ -766,6 +773,9 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
           <button class="chip" data-snap="edge">Edges</button>
           <button class="chip" data-snap="align">Line up openings</button>
           <button class="chip" data-snap="grid">Grid</button>
+          <button class="chip" data-snap="int">Intersection</button>
+          <button class="chip" data-snap="perp">Perpendicular</button>
+          <button class="chip" data-snap="precise">Precise touch cursor</button>
         </div>
         <p class="note">“Line up openings” makes a dragged window stick to the head, sill or edge of other openings and the wall. Pink guides show what it lined up with.</p>
       </section>
@@ -850,7 +860,7 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const clone = o => JSON.parse(JSON.stringify(o));
 
 /* ---------- data ---------- */
-const DEF_SNAP = () => ({ on: true, step: 10, end: true, mid: true, edge: true, align: true, grid: true });
+const DEF_SNAP = () => ({ on: true, step: 10, end: true, mid: true, edge: true, align: true, grid: true, int: true, perp: true, precise: true });
 const DEF_SHOW = () => ({ chain: true, overall: true, hts: true, plan: true, user: true, pdim: true, parea: true });
 const DKEY = 'walldraft.defaults';
 const DEF_OPEN = () => ({ kitchen: { d: 600, h: 850 }, rail: { t: 100, h: 1000 }, door: { w: 900, h: 2100, sill: 0 }, window: { w: 1200, h: 1200, sill: 900 }, vent: { w: 600, h: 450, sill: 2100 }, opening: { w: 1000, h: 2100, sill: 0 } });
@@ -895,6 +905,7 @@ function norm(p) {                       // fill in fields added in later versio
   if (p.precV !== 2) { if (!(p.prec > 1)) p.prec = 0; p.precV = 2; }   // whole-inch rounding hid real sizes: show them exactly
   if (typeof p.snap !== 'object' || !p.snap) p.snap = DEF_SNAP();
   if (!isFinite(p.snap.step) || p.snap.step <= 0) p.snap.step = 10;
+  for (const k of ['int', 'perp', 'precise']) if (!(k in p.snap)) p.snap[k] = true;
   if (!p.show) p.show = { ...DEF_SHOW(), hts: p.showHts !== false, plan: p.showPlan !== false };
   for (const k of ['pdim', 'parea', 'popen', 'pmy']) if (!(k in p.show)) p.show[k] = true;
   if (!Array.isArray(p.pdims)) p.pdims = [];
@@ -2557,6 +2568,18 @@ function objSnapPts(skip) {
   for (const l of state.dlines) { add(l.a, 'Line end'); add(l.b, 'Line end'); out.push({ x: (l.a.x + l.b.x) / 2, y: (l.a.y + l.b.y) / 2, l: 'Line middle', k: 'mid', late: true }); }
   return [...out.filter(o => !o.late), ...out.filter(o => o.late)];
 }
+function snapSegs(lines, skip) {          // every straight line in the plan, for intersections and perpendiculars
+  const out = lines.map(l => ({ P: l.P0, d: l.gw.d, L: l.gw.L, w: l.w }));
+  for (const r of state.refs) out.push({ P: { x: r.x, y: r.y }, d: { x: r.dx, y: r.dy }, inf: true });
+  for (const dl of state.dlines) { const L = Math.hypot(dl.b.x - dl.a.x, dl.b.y - dl.a.y); if (L > 1) out.push({ P: dl.a, d: { x: (dl.b.x - dl.a.x) / L, y: (dl.b.y - dl.a.y) / L }, L }); }
+  for (const b of state.beams) {
+    if (skip && b.id === skip) continue;
+    const L = Math.hypot(b.b.x - b.a.x, b.b.y - b.a.y); if (L < 1) continue;
+    const d = { x: (b.b.x - b.a.x) / L, y: (b.b.y - b.a.y) / L }, nx = -d.y * b.w / 2, ny = d.x * b.w / 2;
+    out.push({ P: { x: b.a.x + nx, y: b.a.y + ny }, d, L }, { P: { x: b.a.x - nx, y: b.a.y - ny }, d, L });
+  }
+  return out;
+}
 function planSnap(p, from, tol, skip) {   // ONE snap for every tool: points first (corners, ends), then middles, then sliding along lines
   const s = state.snap, gd = [], st0 = planStep(), custom = state.draw.step && state.draw.step !== 50, steps = IMP() ? [25.4, 76.2, 152.4, 304.8] : [10, 50, 100, 500],
     st = custom ? (st0 <= tol * 2.5 ? st0 : 0) : (steps.find(v => v >= tol * 0.35) || steps[steps.length - 1]);   // grid follows the zoom: zoom in for finer points
@@ -2586,6 +2609,22 @@ function planSnap(p, from, tol, skip) {   // ONE snap for every tool: points fir
       for (const l of lines) if (l.nm !== 'Wall centre') for (const o of l.w.openings) for (const x of [o.x, o.x + o.w]) pts.push({ pt: at(l, l.gw.sOf(x)), r: tol, k: 'end', l: 'Edge of ' + (o.label || TYPES[o.type].name) });
       for (const op of objSnapPts(skip)) if (op.k !== 'mid') pts.push({ pt: { x: op.x, y: op.y }, r: tol * 1.2, k: 'end', l: op.l });
       if (state.refs.length) { const rh = refHits(p, tol); if (rh && rh.kind === 'end') pts.push({ pt: rh.pt, r: tol, k: 'end', l: rh.label }); }
+      if (s.int !== false || (from && s.perp !== false)) {
+        const segs = snapSegs(lines, skip), dist = (sg, q) => { const k = (q.x - sg.P.x) * sg.d.x + (q.y - sg.P.y) * sg.d.y, kk = sg.inf ? k : Math.min(Math.max(k, 0), sg.L); return Math.hypot(sg.P.x + sg.d.x * kk - q.x, sg.P.y + sg.d.y * kk - q.y); };
+        const close = segs.filter(sg => dist(sg, p) <= tol * 1.3);
+        if (s.int !== false) for (let i = 0; i < close.length; i++) for (let j = i + 1; j < close.length; j++) {      // where two lines cross
+          const A = close[i], B = close[j]; if (A.w && A.w === B.w) continue;
+          const cr = A.d.x * B.d.y - A.d.y * B.d.x; if (Math.abs(cr) < 1e-6) continue;
+          const t = ((B.P.x - A.P.x) * B.d.y - (B.P.y - A.P.y) * B.d.x) / cr, u2 = ((B.P.x - A.P.x) * A.d.y - (B.P.y - A.P.y) * A.d.x) / cr;
+          if (!A.inf && (t < -0.5 || t > A.L + 0.5)) continue; if (!B.inf && (u2 < -0.5 || u2 > B.L + 0.5)) continue;
+          pts.push({ pt: { x: A.P.x + A.d.x * t, y: A.P.y + A.d.y * t, ...(A.w ? { cw: A.w.id } : {}) }, r: tol * 1.2, k: 'end', l: 'Intersection' });
+        }
+        if (from && s.perp !== false) for (const sg of close) {      // foot of the perpendicular from where the line started
+          const k = (from.x - sg.P.x) * sg.d.x + (from.y - sg.P.y) * sg.d.y; if (!sg.inf && (k < 0 || k > sg.L)) continue;
+          const q = { x: sg.P.x + sg.d.x * k, y: sg.P.y + sg.d.y * k }; if (Math.hypot(q.x - from.x, q.y - from.y) < 1) continue;
+          pts.push({ pt: { ...q, ...(sg.w ? { cw: sg.w.id } : {}) }, r: tol, k: 'end', l: 'Perpendicular' });
+        }
+      }
       const b = near(pts); if (b) return tag(b);
     }
     // 2. middles
@@ -2990,6 +3029,7 @@ function planOverlay() {
   const free = gesture && gesture.kind === 'wpick' && gesture.free;
   const mark = (hv) => {
     const q = hv.pt, r = u * 7;
+    if (hv.label && hv.kind && hv.kind !== 'ortho' && hv.kind !== 'align') g.raw(`<text x="${n(q.x + r * 1.8)}" y="${n(q.y - r * 1.6)}" class="mtxt snapt" font-size="${n(u * 12)}">${esc(hv.label)}</text>`);
     if (hv.kind === 'end') g.raw(`<rect x="${n(q.x - r)}" y="${n(q.y - r)}" width="${n(2 * r)}" height="${n(2 * r)}" class="snapm" vector-effect="non-scaling-stroke"/>`);
     else if (hv.kind === 'mid') g.raw(`<path d="M${n(q.x)} ${n(q.y - r * 1.2)}L${n(q.x + r * 1.1)} ${n(q.y + r * 0.8)}H${n(q.x - r * 1.1)}Z" class="snapm" vector-effect="non-scaling-stroke"/>`);
     else if (hv.kind === 'edge') g.raw(`<path d="M${n(q.x - r)} ${n(q.y - r)}L${n(q.x + r)} ${n(q.y + r)}M${n(q.x + r)} ${n(q.y - r)}L${n(q.x - r)} ${n(q.y + r)}" class="snapm" vector-effect="non-scaling-stroke"/>`);
@@ -3091,7 +3131,7 @@ function planOverlay() {
 }
 function drawOverlay() {
   const og = svg.querySelector('#og'); if (!og || !view) return;
-  if (state.view === 'plan') { og.innerHTML = planOverlay(); return; }
+  if (state.view === 'plan') { og.innerHTML = planOverlay(); if (loupeOn && lastTouch) loupe(lastTouch); return; }
   const w = wall(), H = w.height, u = upx(), g = makePen(tsFor(w)), n = g.n;
   for (const gd of guides) {
     if (gd.v) g.line(gd.at, -u * 4000, gd.at, H + u * 4000, 'guide');
@@ -3130,12 +3170,38 @@ function updateHover(e) {
   drawOverlay(); updateStatus();
 }
 
+/* precise touch: the crosshair sits above the finger and a loupe shows what it snaps to (lift to place) */
+const PREC_OFF = 72, PREC_TOOLS = ['line', 'box', 'dline', 'pdim', 'ref', 'col', 'beam', 'offset', 'move', 'copy', 'rotate', 'mirror'];
+const precOn = e => e.pointerType === 'touch' && state.snap.precise !== false && tool && PREC_TOOLS.includes(tool.kind) && !(isMod() && tool.step === 'select');
+function px(e) {
+  if (!precOn(e)) return e;
+  return new Proxy(e, { get(t, k) { if (k === 'clientY') return t.clientY - PREC_OFF; if (k === 'precise') return true; const v = t[k]; return typeof v === 'function' ? v.bind(t) : v; } });
+}
+let loupeOn = false;
+function loupe(e) {
+  const L = $('#loupe');
+  if (!e) { if (loupeOn) { L.hidden = true; loupeOn = false; } return; }
+  const R = 62, Z = 3, cx = e.clientX, cy = e.clientY - PREC_OFF;      // cursor on screen
+  if (!loupeOn) { $('#lsvg').innerHTML = `<g>${$('#dg').innerHTML}</g><g id="log"></g><g id="lch"></g>`; L.hidden = false; loupeOn = true; }
+  let lx = cx - R, ly = cy - R * 2 - 34;                                  // above the crosshair, or beside it near the top
+  if (ly < 8) { ly = Math.max(8, cy - R); lx = cx + 40 + 2 * R < innerWidth ? cx + 40 : cx - 40 - 2 * R; }
+  lx = Math.min(Math.max(8, lx), innerWidth - 2 * R - 8);
+  L.style.left = Math.round(lx) + 'px'; L.style.top = Math.round(ly) + 'px';
+  const pt = hover && hover.pt ? hover.pt : toSvg(cx, cy), u = upx(), w = 2 * R * u / Z;
+  const sv = $('#lsvg'); sv.setAttribute('viewBox', `${pt.x - w / 2} ${pt.y - w / 2} ${w} ${w}`);
+  $('#log').innerHTML = $('#og').innerHTML;
+  const c = u / Z * 14;
+  $('#lch').innerHTML = `<path d="M${pt.x - c} ${pt.y}H${pt.x + c}M${pt.x} ${pt.y - c}V${pt.y + c}" class="lcross" vector-effect="non-scaling-stroke"/>`;
+  $('#loupe-t').textContent = hover && hover.label ? hover.label : '';
+}
+
 /* pointer handling */
 const ptrs = new Map(); let gesture = null, multi = null;
 svg.addEventListener('pointerdown', e => {
   svg.setPointerCapture(e.pointerId);
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY });
   if (ptrs.size >= 2) {
+    loupe(null);
     multi = multi || { t0: performance.now(), n: 0, moved: false };
     multi.n = Math.max(multi.n, ptrs.size);
     if (gesture && gesture.moved && ['drag', 'dimdrag', 'node', 'room', 'popen', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove', 'wmove'].includes(gesture.kind)) { guides = []; if (gesture.kind === 'node' || gesture.kind === 'room' || gesture.kind === 'wmove') rebuildPlan(); save(); render(); }
@@ -3145,7 +3211,7 @@ svg.addEventListener('pointerdown', e => {
   }
   multi = null;
   if (e.button === 1 || e.button === 2) { gesture = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: true }; svg.classList.add('panning'); return; }
-  if (state.view === 'plan') { planDown(e); return; }
+  if (state.view === 'plan') { planDown(px(e)); if (precOn(e) && gesture && (gesture.kind === 'wpick' || gesture.kind === 'mpick')) { lastTouch = { clientX: e.clientX, clientY: e.clientY }; loupe(lastTouch); } return; }
   if (tool) { gesture = { kind: 'pick' }; updateHover(e); return; }
   const p = toSvg(e.clientX, e.clientY);
   const mh2 = e.target.closest && e.target.closest('[data-dm]');
@@ -3168,7 +3234,10 @@ svg.addEventListener('pointerdown', e => {
     svg.classList.add('panning');
   }
 });
+let lastTouch = null;
 svg.addEventListener('pointermove', e => {
+  if (ptrs.size === 1 && precOn(e) && gesture && (gesture.kind === 'wpick' || gesture.kind === 'mpick')) lastTouch = { clientX: e.clientX, clientY: e.clientY };
+  else if (loupeOn && ptrs.size > 1) loupe(null);
   if (!ptrs.has(e.pointerId)) { if (tool && e.pointerType === 'mouse') updateHover(e); return; }
   const pt = ptrs.get(e.pointerId); pt.x = e.clientX; pt.y = e.clientY;
   if (multi && Math.hypot(pt.x - pt.sx, pt.y - pt.sy) > 12) multi.moved = true;
@@ -3187,7 +3256,7 @@ svg.addEventListener('pointermove', e => {
     view.y = gesture.vy - (e.clientY - gesture.sy) / r.height * view.h;
     applyView();
   } else if (['mpick', 'wpick', 'node', 'room', 'popen', 'tapsel', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove', 'wmove'].includes(gesture.kind)) {
-    planMove(e);
+    planMove(px(e));
   } else if (gesture.kind === 'pick') {
     updateHover(e);
   } else if (gesture.kind === 'dimdrag') {
@@ -3210,7 +3279,7 @@ svg.addEventListener('pointermove', e => {
 function endPtr(e) {
   ptrs.delete(e.pointerId);
   if (!gesture) { if (ptrs.size === 0) multi = null; return; }
-  if (state.view === 'plan') planUp(e);
+  if (state.view === 'plan') { planUp(px(e)); loupe(null); }
   if (gesture) {
     if (gesture.kind === 'pick' && ptrs.size === 0 && e.type === 'pointerup') placePoint();
     if (gesture.kind === 'pan' && !gesture.moved && gesture.dm && e.type === 'pointerup') openDimEdit(gesture.dm);
@@ -3523,7 +3592,7 @@ function planMove(e) {
   if (gesture.kind === 'wpick') {
     const cur = toSvg(e.clientX, e.clientY), tol = upx() * (e.pointerType === 'touch' ? 26 : 13);
     gesture.stroke.push(cur);
-    if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) > 18) gesture.free = true;
+    if (!e.precise && Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) > 18) gesture.free = true;   // precise cursor: moving the finger only moves the crosshair
     if (isKQ()) return;
     if (isOff()) { hover = { pt: cur }; drawOverlay(); return; }
     if (isFix()) { const kind = tool.kind.slice(3), size = fxDefaults(kind); hover = { pt: cur, fx: fxSnap(cur, kind, size, tol, gesture.free && kind === 'counter' ? gesture.start : null) }; drawOverlay(); updateStatus(); return; }
