@@ -2497,7 +2497,11 @@ function buildPlan(opt) {
   // hit lines + corner handles
   if (ia) {
     for (const gw of G.values()) { const p = at(gw, 0, (gw.f0 + gw.f1) / 2), q = at(gw, gw.L, (gw.f0 + gw.f1) / 2); g.raw(`<line x1="${n(p.x)}" y1="${n(p.y)}" x2="${n(q.x)}" y2="${n(q.y)}" class="whit" data-wid="${gw.w.id}" vector-effect="non-scaling-stroke"/>`); }
-    for (const bm of state.beams) g.raw(`<line x1="${n(bm.a.x)}" y1="${n(bm.a.y)}" x2="${n(bm.b.x)}" y2="${n(bm.b.y)}" class="whit" data-bid="${bm.id}" vector-effect="non-scaling-stroke"/>`);
+    for (const bm of state.beams) {          // the whole beam is tappable, and its centre line too for thin beams
+      const L = Math.hypot(bm.b.x - bm.a.x, bm.b.y - bm.a.y) || 1, nx = -(bm.b.y - bm.a.y) / L * bm.w / 2, ny = (bm.b.x - bm.a.x) / L * bm.w / 2;
+      g.raw(`<path d="${path([{ x: bm.a.x + nx, y: bm.a.y + ny }, { x: bm.b.x + nx, y: bm.b.y + ny }, { x: bm.b.x - nx, y: bm.b.y - ny }, { x: bm.a.x - nx, y: bm.a.y - ny }])}" class="hit" data-bid="${bm.id}"/>`);
+      g.raw(`<line x1="${n(bm.a.x)}" y1="${n(bm.a.y)}" x2="${n(bm.b.x)}" y2="${n(bm.b.y)}" class="whit" data-bid="${bm.id}" vector-effect="non-scaling-stroke"/>`);
+    }
     for (const c of state.cols) g.raw(`<circle cx="${n(c.x)}" cy="${n(c.y)}" r="${n(Math.max(colHalf(c, { x: 1, y: 0 }), colHalf(c, { x: 0, y: 1 }), ts * 0.6))}" class="hit" data-cid="${c.id}"/>`);
     for (const f of [...state.fix.filter(q => q.kind === 'counter'), ...state.fix.filter(q => q.kind !== 'counter')]) g.raw(`<path d="${path(fxPoly(f))}" class="hit" data-fid="${f.id}"/>`);
     openHits.forEach(h => g.raw(h));                        // doors and windows on top so they can be dragged
@@ -2530,8 +2534,25 @@ function buildPlan(opt) {
 
 /* ---------- floor plan: snapping & drawing tools ---------- */
 const planStep = () => (IMP() && (state.draw.step || 50) === 50) ? 76.2 : (state.draw.step || 50);
+function objSnapPts() {
+  const out = [], add = (q, l, k) => out.push({ x: q.x, y: q.y, l, k });
+  for (const c of state.cols) {
+    add(c, 'Column centre ' + (c.label || ''));
+    if (c.shape === 'round') for (let i = 0; i < 4; i++) add({ x: c.x + Math.cos(i * Math.PI / 2) * c.w / 2, y: c.y + Math.sin(i * Math.PI / 2) * c.w / 2 }, 'Column edge');
+    else { const pg = colPoly(c); pg.forEach(q => add(q, 'Column corner ' + (c.label || ''))); pg.forEach((q, i) => { const r = pg[(i + 1) % 4]; out.push({ x: (q.x + r.x) / 2, y: (q.y + r.y) / 2, l: 'Column side middle', k: 'mid', late: true }); }); }
+  }
+  for (const b of state.beams) {
+    const L = Math.hypot(b.b.x - b.a.x, b.b.y - b.a.y); if (L < 1) continue;
+    const nx = -(b.b.y - b.a.y) / L * b.w / 2, ny = (b.b.x - b.a.x) / L * b.w / 2, lb = 'Beam ' + (b.label || '');
+    for (const e of [b.a, b.b]) { add(e, lb + ' end'); add({ x: e.x + nx, y: e.y + ny }, lb + ' corner'); add({ x: e.x - nx, y: e.y - ny }, lb + ' corner'); }
+    add({ x: (b.a.x + b.b.x) / 2, y: (b.a.y + b.b.y) / 2 }, lb + ' middle', 'mid');
+  }
+  for (const f of state.fix) fxPoly(f).forEach(q => add(q, FXK[f.kind].name + ' corner'));
+  for (const d of state.pdims) { add(d.a, 'Measurement end'); add(d.b, 'Measurement end'); }
+  return [...out.filter(o => !o.late), ...out.filter(o => o.late)];
+}
 function planSnap(p, from, tol) {
-  const s = state.snap, gd = [], st = planStep();
+  const s = state.snap, gd = [], st0 = planStep(), fine = IMP() ? 25.4 : 10, st = st0 <= tol * 2.5 ? st0 : fine <= tol * 2.5 ? fine : 0;   // zoomed far in: finer grid, so the point stays under the finger
   if (s.on) {
     let best = null;
     for (const nd of state.nodes) { const d = Math.hypot(nd.x - p.x, nd.y - p.y); if (d <= tol * 1.4 && (!best || d < best.d)) best = { d, pt: { x: nd.x, y: nd.y, nid: nd.id }, kind: 'end', label: 'Corner' }; }   // corners win over wall centres
@@ -2543,6 +2564,10 @@ function planSnap(p, from, tol) {
       for (const r of state.refs) { const cr = od.x * r.dy - od.y * r.dx; if (Math.abs(cr) < 1e-6) continue; const t = ((r.x - from.x) * r.dy - (r.y - from.y) * r.dx) / cr; if (t <= 0) continue; const q = { x: from.x + od.x * t, y: from.y + od.y * t }; if (Math.hypot(q.x - p.x, q.y - p.y) <= tol * 1.6) return { d: 0, pt: q, kind: 'edge', label: fmt(t) + ' · to reference line' }; }
     }
     if (rh) return { ...rh, label: from ? fmt(Math.hypot(rh.pt.x - from.x, rh.pt.y - from.y)) + ' · on reference line' : rh.label };
+    if (s.end) for (const op of objSnapPts()) {   // corners and centres of beams, columns, kitchen platforms and measurements
+      const d = Math.hypot(op.x - p.x, op.y - p.y);
+      if (d <= tol * 1.2 && (!best || d < best.d - (op.k === 'mid' ? 0.5 : 0))) best = { d, pt: { x: op.x, y: op.y }, kind: op.k || 'end', label: op.l };
+    }
     // walls: three snap lines each — centre, inside face, outside face — plus their corners and middles
     const ang0 = state.draw.ortho === '45' ? 45 : state.draw.ortho === '90' ? 90 : 0;
     let odir = null;
@@ -2574,7 +2599,7 @@ function planSnap(p, from, tol) {
       if (odir) {                           // keep the new wall straight: meet the line along the locked direction
         const cr = odir.x * l.gw.d.y - odir.y * l.gw.d.x;
         if (Math.abs(cr) > 1e-6) { const kk = ((from.x - l.P0.x) * odir.y - (from.y - l.P0.y) * odir.x) / cr; if (kk >= 0 && kk <= l.gw.L) k = kk; }
-      } else if (s.grid) k = Math.round(k / st) * st;
+      } else if (s.grid && st) k = Math.round(k / st) * st;
       k = Math.min(Math.max(k, 0), l.gw.L);
       const Q = at(l, k), d = Math.hypot(Q.x - p.x, Q.y - p.y);
       if (d <= tol * (odir ? 1.6 : 1) && (!best || d < best.d)) best = { d, pt: Q, kind: 'edge', label: l.nm };
@@ -2586,7 +2611,7 @@ function planSnap(p, from, tol) {
     if (ang && Math.hypot(vx, vy) > 0) {
       const a = Math.round(Math.atan2(vy, vx) * 180 / Math.PI / ang) * ang * Math.PI / 180, dir = { x: Math.round(Math.cos(a) * 1e9) / 1e9, y: Math.round(Math.sin(a) * 1e9) / 1e9 };
       let len = Math.max(vx * dir.x + vy * dir.y, 0);
-      if (s.on && s.grid) len = Math.round(len / st) * st;
+      if (s.on && s.grid && st) len = Math.round(len / st) * st;
       const pt = { x: from.x + dir.x * len, y: from.y + dir.y * len };
       if (s.on && s.align) {
         let bx = null;
@@ -2599,7 +2624,7 @@ function planSnap(p, from, tol) {
       return { pt, kind: gd.length ? 'align' : 'ortho', label: fmt(Math.hypot(pt.x - from.x, pt.y - from.y)), guides: gd };
     }
   }
-  if (s.on && s.grid) return { pt: { x: Math.round(p.x / st) * st, y: Math.round(p.y / st) * st }, kind: 'grid', label: from ? fmt(Math.hypot(p.x - from.x, p.y - from.y)) : 'Grid' };
+  if (s.on && s.grid && st) return { pt: { x: Math.round(p.x / st) * st, y: Math.round(p.y / st) * st }, kind: 'grid', label: from ? fmt(Math.hypot(p.x - from.x, p.y - from.y)) : 'Grid' };
   return { pt: { x: p.x, y: p.y }, kind: null, label: from ? fmt(Math.hypot(p.x - from.x, p.y - from.y)) : '' };
 }
 function snapMove(moving, dx, dy, tol) {   // move a set of corners; stick to other corners
@@ -3408,7 +3433,7 @@ function planDown(e) {
   const base = { sx: e.clientX, sy: e.clientY, p0: p, moved: false, vx: view.x, vy: view.y };
   if (!nh && !q('[data-bend]') && !q('[data-dm]')) {      // several things under the finger: ask which one
     const cands = targetsAt(e.clientX, e.clientY).filter(t => t.t !== 'room'), cur = ps ? (ps.t === 'open' ? state.sel : ps.id) : null;
-    const top = cands.filter(t => t.t !== 'wall'), ask = top.length >= 2 || (top.length === 1 && top[0].t === 'beam' && cands.some(t => t.t === 'wall'));
+    const top = cands.filter(t => t.t !== 'wall'), ask = top.length >= 2;   // a beam over a wall: the beam is picked; tap it again for the wall underneath
     if (ask && !cands.some(t => t.id === cur)) { gesture = { ...base, kind: 'tapsel', target: null, choose: cands }; svg.classList.add('panning'); return; }
   }
   const ch = q('[data-cid]'), bh = q('[data-bid]'), eh = q('[data-bend]');
@@ -3609,6 +3634,7 @@ function planUp(e) {
     selectPlan(tg);
   } else if (['popen', 'cmove', 'bmove', 'pdmove', 'fmove'].includes(gesture.kind) && !gesture.moved && e.type === 'pointerup') {
     if (gesture.was) selectPlan(underTarget(gesture.sx, gesture.sy));     // tap again on a selected item: pick what is underneath
+    else if (gesture.kind === 'bmove' && targetsAt(gesture.sx, gesture.sy).some(t => t.t === 'wall')) toast('Beam selected · tap again for the wall under it');
   } else if (['node', 'room', 'popen', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove', 'wmove'].includes(gesture.kind) && gesture.moved) { guides = [];
     if (gesture.kind === 'bmove' || gesture.kind === 'bend') { const bm = state.beams.find(x => x.id === gesture.id); if (bm && bm.align && bm.align !== 'c') alignBeam(bm, bm.align); } if (gesture.kind === 'node' || gesture.kind === 'room' || gesture.kind === 'wmove') rebuildPlan(); save(); render(); }
 }
