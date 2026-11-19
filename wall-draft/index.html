@@ -182,7 +182,10 @@ option { background-color: var(--panel); color: var(--ink); }
   .status { bottom: calc(var(--tbar-h) + 8px) !important; }
   #epane { bottom: var(--tbar-h) !important; }
 }
-#qbar { position: fixed; z-index: 25; display: flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 20px rgb(0 0 0 / .35); max-width: calc(100vw - 16px); overflow-x: auto; scrollbar-width: none; }
+#qbar { position: fixed; z-index: 25; display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 20px rgb(0 0 0 / .35); max-width: min(calc(100vw - 16px), 440px); }
+#qbar .qbr { flex-basis: 100%; height: 0; }
+#qbar .qadd { color: var(--ink); background: color-mix(in srgb, var(--accent) 9%, transparent); }
+#qbar .ic .sw { width: 13px; height: 13px; }
 #qbar::-webkit-scrollbar { display: none; }
 #qbar button { flex: none; display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 46px; min-height: 46px; padding: 4px 6px; border: 0; border-radius: 9px; background: transparent; color: var(--ink); font: 11px var(--f-ui); cursor: pointer; }
 #qbar button:hover { background: var(--soft); }
@@ -572,6 +575,13 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
   <main class="sheet" id="sheet">
     <svg id="draw" class="dwg" xmlns="http://www.w3.org/2000/svg" aria-label="Wall elevation drawing"></svg>
     <div id="qbar" hidden role="toolbar" aria-label="Actions for the selected object">
+      <button data-q="door" class="qadd" title="Add a door to this wall"><span class="ic"><span class="sw door"></span></span><span>Door</span></button>
+      <button data-q="window" class="qadd" title="Add a window to this wall"><span class="ic"><span class="sw window"></span></span><span>Window</span></button>
+      <button data-q="vent" class="qadd" title="Add a ventilator to this wall"><span class="ic"><span class="sw vent"></span></span><span>Vent</span></button>
+      <button data-q="opening" class="qadd" title="Add a plain opening to this wall"><span class="ic"><span class="sw opening"></span></span><span>Opening</span></button>
+      <button data-q="beam" class="qadd" title="Beam along this wall"><span class="ic">┅</span><span>Beam</span></button>
+      <button data-q="col" class="qadd" title="Place a column"><span class="ic">▣</span><span>Column</span></button>
+      <span class="qbr"></span>
       <button data-q="move" title="Move"><span class="ic">✥</span><span>Move</span></button>
       <button data-q="rotate" title="Rotate by an angle about a point"><span class="ic">↻</span><span>Rotate</span></button>
       <button data-q="r90" title="Turn 90° about its own centre"><span class="ic">⟳</span><span>90°</span></button>
@@ -3277,7 +3287,8 @@ function placeQbar0() {
   if (tg.t === 'ref') { const r = state.refs.find(x => x.id === tg.id); if (r) pts = [{ x: r.x, y: r.y }]; }
   if (!pts.length) { qb.hidden = true; return; }
   const one = tg.t !== 'open', lin = ['wall', 'beam', 'ref'].includes(tg.t);
-  qb.querySelectorAll('[data-q]').forEach(b => { const k = b.dataset.q; b.hidden = (!one && !['info', 'del'].includes(k)) || (k === 'offset' && !lin) || (k === 'r90' && tg.t === 'ref'); });
+  qb.querySelectorAll('[data-q]').forEach(b => { const k = b.dataset.q; b.hidden = (!one && !['info', 'del'].includes(k)) || (k === 'offset' && !lin) || (k === 'r90' && tg.t === 'ref') || (b.classList.contains('qadd') && tg.t !== 'wall'); });
+  qb.querySelector('.qbr').hidden = tg.t !== 'wall';
   qb.hidden = false;
   const r = svg.getBoundingClientRect(), sx = x => r.left + (x - view.x) / view.w * r.width, sy = y => r.top + (y - view.y) / view.h * r.height;
   const xs = pts.map(q => sx(q.x)), ys = pts.map(q => sy(q.y)), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
@@ -3290,6 +3301,14 @@ function selTargetSection() { const ps = state.planSel; return selOp() ? '#ed' :
 $('#qbar').addEventListener('click', e => {
   const b = e.target.closest('[data-q]'); if (!b) return; const k = b.dataset.q, tg = qTarget(); if (!tg) return;
   if (['move', 'rotate', 'copy', 'mirror'].includes(k)) { setTool(k); return; }
+  if (['door', 'window', 'vent', 'opening'].includes(k)) { addOpening(k); return; }
+  if (k === 'col') { setTool('col'); toast('Tap where the column goes · it snaps to this wall'); return; }
+  if (k === 'beam') {
+    const w = state.walls.find(x => x.id === tg.id); if (!w || !isPlanWall(w)) return;
+    const g = wallGeo(w), c = (g.f0 + g.f1) / 2, at = sp => ({ x: g.A.x + g.d.x * sp + g.n.x * c, y: g.A.y + g.d.y * sp + g.n.y * c });
+    if (placeBeam(at(0), at(g.L))) toast('Beam added along ' + wname(w) + ' · change its size in Edit', 'Undo', undo);
+    return;
+  }
   if (k === 'offset') {                    // offset this very wall / beam / line
     setTool('offset');
     const it = tg.t === 'wall' ? state.walls.find(w => w.id === tg.id) : null;
@@ -4487,7 +4506,40 @@ function addOpening(type, style) {
     w.openings.push(o); state.sel = o.id; state.selDim = null;
     if (state.view === 'plan') state.planSel = { t: 'open', id: w.id };
   });
-  if (window.matchMedia('(max-width: 820px)').matches) $('#ed').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (window.matchMedia('(max-width: 820px)').matches && !$('#ed').closest('.panel[data-sheet="peek"]')) $('#ed').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (state.view === 'plan') { const o = selOp(); if (o) setTimeout(() => placeModal(o.id), 60); }
+}
+function placeModal(oid) {                 // put a new door / window at a measured distance from a corner
+  const w = wall(), o = w && w.openings.find(x => x.id === oid); if (!o) return;
+  const L = w.length, nm = o.label || TYPES[o.type].name;
+  openModal('Place ' + nm + ' · ' + TYPES[o.type].name.toLowerCase(), `<div class="grid2">
+    <label class="f">From left corner<input id="pl-l" inputmode="decimal" autocomplete="off" value="${esc(fmt(o.x))}"></label>
+    <label class="f">From right corner<input id="pl-r" inputmode="decimal" autocomplete="off" value="${esc(fmt(L - o.x - o.w))}"></label>
+    <label class="f">Width<input id="pl-w" inputmode="decimal" autocomplete="off" value="${esc(fmt(o.w))}"></label>
+    <label class="f">Height<input id="pl-h" inputmode="decimal" autocomplete="off" value="${esc(fmt(o.h))}"></label>
+    <label class="f full">Sill (from floor)<input id="pl-s" inputmode="decimal" autocomplete="off" value="${esc(fmt(o.sill))}"></label>
+  </div><p class="note">Corners are the inside corners of ${esc(wname(w))} (${esc(fmt(L))} long), left and right as you face the wall from the room. Change one side and the other follows. You can also tap the small measurements next to ${esc(nm)} on the plan later.</p>`,
+    [['Place', () => placeApply(oid), 'primary'], ['Skip', closeModal]]);
+  ['#pl-l', '#pl-r', '#pl-w', '#pl-h', '#pl-s'].forEach(id => enhanceFtIn($(id))); syncFtIn();
+  const val = id => parseLen($(id).value), show = (id, v) => { $(id).value = isFinite(v) ? fmt(v) : ''; syncFtIn(); };
+  let lastSide = 'l';
+  const follow = src => { const W = val('#pl-w'); if (!isFinite(W)) return; if (src === 'l') { const a = val('#pl-l'); if (isFinite(a)) show('#pl-r', L - a - W); } else if (src === 'r') { const b = val('#pl-r'); if (isFinite(b)) show('#pl-l', L - b - W); } else (lastSide === 'l' ? follow('l') : follow('r')); };
+  $('#pl-l').addEventListener('change', () => { lastSide = 'l'; follow('l'); });
+  $('#pl-r').addEventListener('change', () => { lastSide = 'r'; follow('r'); });
+  $('#pl-w').addEventListener('change', () => follow('w'));
+  placeModal.side = () => lastSide;
+}
+function placeApply(oid) {
+  const w = wall(), o = w && w.openings.find(x => x.id === oid); if (!o) { closeModal(); return; }
+  const a = document.activeElement; if (a && a.blur) a.blur();
+  setTimeout(() => {
+    const v = id => parseLen($(id).value), W = v('#pl-w'), H = v('#pl-h'), S = v('#pl-s'), l = v('#pl-l'), r = v('#pl-r');
+    if (!(W > 0) || !(H > 0) || !isFinite(S) || (!isFinite(l) && !isFinite(r))) { toast('Please fill the sizes. ' + unitExample()); return; }
+    const x = placeModal.side() === 'r' && isFinite(r) ? w.length - W - r : isFinite(l) ? l : w.length - W - r;
+    if (x < -0.5 || x + W > w.length + 0.5) { toast('That does not fit: the wall is ' + fmt(w.length) + ' long'); return; }
+    commit('Place ' + opName(o), () => { o.w = r2(W); o.h = r2(H); o.sill = r2(S); o.x = r2(Math.max(0, x)); rememberOpening(o); });
+    closeModal(); toast('✓ ' + opName(o) + ' placed ' + fmt(o.x) + ' from the left corner, ' + fmt(w.length - o.x - o.w) + ' from the right', 'Undo', undo);
+  }, 30);
 }
 $$('[data-add]').forEach(b => b.addEventListener('click', () => addOpening(b.dataset.add)));
 
