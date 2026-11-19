@@ -565,7 +565,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
       <div class="ep-head">
         <b id="ep-title">Elevations</b><span class="ep-sp"></span>
         <div class="tgroup seg"><button id="ep-room" title="All walls of the room: A top, B right, C bottom, D left">Room A–D</button><button id="ep-wall" title="Only the selected wall">Wall</button></div>
-        <div class="tgroup"><button id="ep-fit" title="Fit">⤢</button><button id="ep-png" title="Save this sheet as an image">⬇</button><button id="ep-x" title="Close split screen">✕</button></div>
+        <div class="tgroup"><button id="ep-fit" title="Fit">⤢</button><button id="ep-png" title="Save this sheet as an image">⬇</button><button id="ep-pdf" title="Save this sheet as PDF">PDF</button><button id="ep-x" title="Close split screen">✕</button></div>
       </div>
       <svg id="esvg" class="dwg" xmlns="http://www.w3.org/2000/svg" aria-label="Room elevations"></svg>
       <div class="ep-note" id="ep-note"></div>
@@ -1020,6 +1020,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <h2>Share &amp; backup</h2>
         <div class="row-btns" style="margin-top:0">
           <button class="btn primary" id="x-app">⬇ Download app (HTML file)</button>
+          <button class="btn primary" id="x-pdf">PDF</button>
           <button class="btn primary" id="x-png">Drawing image</button>
           <button class="btn primary" id="x-dxf">AutoCAD (DXF)</button>
           <button class="btn" id="x-svg">SVG file</button>
@@ -1612,6 +1613,7 @@ function buildDrawing(w, opt) {
   if (sh.user) for (const dm of w.dims) drawUserDim(w, dm, g, opt.interactive && dm.id === state.selDim ? 'hi' : '', opt.interactive);
   bottom = Math.max(bottom, g.bb.y1 + ts * 0.5);
 
+  if (!opt.interactive) {                 // title block: only on exported sheets
   const tbW = Math.max(L, ts * 22), tbH = ts * 3.4, ty0 = bottom + ts;
   rect(0, ty0, tbW, tbH, 'tb');
   line(0, ty0 + tbH * 0.5, tbW, ty0 + tbH * 0.5, 'tbl');
@@ -1621,6 +1623,7 @@ function buildDrawing(w, opt) {
   {
     const sz = Math.min(fs * 0.75, (tbW - ts) / (info.length * 0.6));
     g.raw(`<text x="${n(ts * 0.5)}" y="${n(ty0 + tbH - ts * 0.55)}" class="lbs" font-size="${n(sz)}">${esc(info)}</text>`);
+  }
   }
 
   const pad = ts * 1.2, b = g.bb;
@@ -2759,11 +2762,13 @@ function buildPlan(opt) {
   const b = g.bb;
   g.text(b.x0, b.y0 - ts * 0.9, 'FLOOR PLAN', 'cap', ts * 0.85);
   const at2 = areaTotals(), ta = area(at2.carpet);
+  if (!ia) {                               // title block: only on exported sheets
   const tbX = b.x0, tbW = Math.max(b.x1 - b.x0, ts * 24), ty0 = b.y1 + ts * 1.5, tbH = ts * 3.4;
   g.rect(tbX, ty0, tbW, tbH, 'tb'); g.line(tbX, ty0 + tbH / 2, tbX + tbW, ty0 + tbH / 2, 'tbl');
   g.text(tbX + ts * 0.5, ty0 + tbH / 2 - ts * 0.5, state.name || 'Project', 'cap', ts * 0.85);
   const info = `Floor plan · ${state.rooms.length} room${state.rooms.length === 1 ? '' : 's'} · carpet area ${ta.m2.toFixed(2)} m² (${ta.ft2.toFixed(1)} ft²)${at2.bal ? ` · balcony ${area(at2.bal).m2.toFixed(2)} m²` : ''} · inside dims in ${UNIT_NAME[state.unit]} · NTS · ${new Date().toLocaleDateString()}`;
   g.raw(`<text x="${n(tbX + ts * 0.5)}" y="${n(ty0 + tbH - ts * 0.55)}" class="lbs" font-size="${n(Math.min(fs * 0.75, (tbW - ts) / (info.length * 0.6)))}">${esc(info)}</text>`);
+  }
   const pad = ts * 1.5;
   return { svg: g.P.join(''), box: { x: b.x0 - pad, y: b.y0 - pad, w: b.x1 - b.x0 + pad * 2, h: b.y1 - b.y0 + pad * 2 } };
 }
@@ -4721,7 +4726,7 @@ const CATS = {
   insert: [['add:door:single', 'sw door', 'Door'], ['add:door:double', 'sw door', 'Double door'], ['add:door:slide', 'sw door', 'Sliding door'], ['add:window:slide2', 'sw window', 'Window'], ['add:window:case1', 'sw window', 'Casement'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening:plain', 'sw opening', 'Opening'], ['kitchen', '⊟', 'Kitchen'], ['tool:fx-counter', '▬', 'Platform'], ['tool:fx-sink', '◫', 'Sink'], ['tool:fx-hob', '⊚', 'Hob'], ['tool:kL', '⌐', 'L-kitchen'], ['tool:kC', '⊐', 'C-kitchen']],
   measure: [['tool:pdim', '↔', 'Distance'], ['tool:ref', '⋯', 'Ref line'], ['sec:rooms-sec', '▭', 'Room areas'], ['sec:struct-sec', '▣', 'Columns & beams'], ['osnap', '⌖', 'Snap points']],
   dim: [['dim:h', '↔', 'Horizontal'], ['dim:v', '↕', 'Vertical'], ['dim:a', '⤡', 'Aligned'], ['dim:lvl', '▽', 'Level'], ['dim:ang', '∠', 'Angle'], ['tool:pdim', '⟷', 'Plan measure']],
-  view: [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Elevation'], ['split', '◫', 'Split A–D'], ['fit', '⤢', 'Fit'], ['units', 'ft', 'Units'], ['ortho', '⊥', 'Angle lock'], ['snap', '⌖', 'Snap'], ['osnap', '▾', 'Snap settings'], ['canvas', '◐', 'Black / white'], ['sec:share-sec', '⇪', 'Export & share'], ['sec:defs-sec', '⚙', 'Default sizes']],
+  view: [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Elevation'], ['split', '◫', 'Split A–D'], ['fit', '⤢', 'Fit'], ['units', 'ft', 'Units'], ['ortho', '⊥', 'Angle lock'], ['snap', '⌖', 'Snap'], ['osnap', '▾', 'Snap settings'], ['canvas', '◐', 'Black / white'], ['pdf', '⎙', 'PDF'], ['dxf', '⌗', 'AutoCAD DXF'], ['sec:share-sec', '⇪', 'Export & share'], ['sec:defs-sec', '⚙', 'Default sizes']],
 };
 let curCat = null;
 function catOn(k) {
@@ -5137,6 +5142,8 @@ function runFeature(k) {
   else if (a === 'snap') { toggleSnap(); featurePanel(); }
   else if (a === 'osnap') osnapModal();
   else if (a === 'split') setSplit(!state.split);
+  else if (a === 'pdf') exportPDF();
+  else if (a === 'dxf') exportDXF();
   else if (a === 'ortho') { cycleOrtho(); featurePanel(); }
   else if (a === 'canvas') { state.canvas = state.canvas === 'dark' ? 'light' : 'dark'; save(); render(); featurePanel(); }
   else if (a === 'fit') fit();
@@ -5317,6 +5324,7 @@ $('#ep-x').addEventListener('click', () => setSplit(false));
 $('#ep-fit').addEventListener('click', epFit);
 $('#ep-room').addEventListener('click', () => { state.epMode = 'room'; save(); evKey = ''; epRender(); });
 $('#ep-wall').addEventListener('click', () => { state.epMode = 'wall'; save(); evKey = ''; epRender(); });
+$('#ep-pdf').addEventListener('click', () => { if (evDr) exportPDF(evDr, (state.name || 'walldraft') + ' elevations'); });
 $('#ep-png').addEventListener('click', () => { if (evDr) imageModal(exportSVG(evDr), (state.name || 'walldraft') + ' elevations'); });
 new ResizeObserver(() => { if (state.split) { evKey = ''; epRender(); } }).observe(esvg);
 (() => {                                   // pan, pinch and tap in the elevation pane
@@ -5404,6 +5412,42 @@ async function copyText(txt, ta) {
 
 $('#x-app').addEventListener('click', downloadApp);
 $('#x-png').addEventListener('click', () => imageModal(exportSVG(), fileBase()));
+function pdfFromJpeg(jpg, w, h, pw, ph, title) {   // a one-page PDF holding a JPEG, fitted with a margin
+  const enc = t => new TextEncoder().encode(t), m = 28, sc = Math.min((pw - 2 * m) / w, (ph - 2 * m) / h), dw = w * sc, dh = h * sc, x = (pw - dw) / 2, y = (ph - dh) / 2;
+  const content = `q ${dw.toFixed(2)} 0 0 ${dh.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm /Im0 Do Q`;
+  const parts = [], offs = []; let len = 0;
+  const add = b => { parts.push(b); len += b.length; };
+  add(enc('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'));
+  const obj = (n, body) => { offs[n] = len; add(enc(`${n} 0 obj\n`)); for (const b of body) add(typeof b === 'string' ? enc(b) : b); add(enc('\nendobj\n')); };
+  obj(1, ['<< /Type /Catalog /Pages 2 0 R >>']);
+  obj(2, ['<< /Type /Pages /Kids [3 0 R] /Count 1 >>']);
+  obj(3, [`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`]);
+  obj(4, [`<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`, jpg, '\nendstream']);
+  obj(5, [`<< /Length ${content.length} >>\nstream\n${content}\nendstream`]);
+  obj(6, [`<< /Title (${String(title).replace(/[()\\]/g, ' ').replace(/[^\x20-\x7e]/g, '')}) /Producer (WallDraft) >>`]);
+  const xref = len;
+  let xr = 'xref\n0 7\n0000000000 65535 f \n'; for (let i = 1; i <= 6; i++) xr += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
+  add(enc(xr + `trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n${xref}\n%%EOF\n`));
+  return new Blob(parts, { type: 'application/pdf' });
+}
+function exportPDF(dr, base) {
+  const { str, W, H } = exportSVG(dr), land = W >= H, big = Math.max(W, H) > 2600;
+  const pw = land ? (big ? 1191 : 842) : (big ? 842 : 595), ph = land ? (big ? 842 : 595) : (big ? 1191 : 842);   // A3 or A4, landscape or portrait
+  const img = new Image(), url = URL.createObjectURL(new Blob([str], { type: 'image/svg+xml' }));
+  img.onload = () => {
+    const k = Math.min(1, 4200 / Math.max(W, H)), cw = Math.round(W * k * 1.5), ch = Math.round(H * k * 1.5);
+    const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+    const g2 = cv.getContext('2d'); g2.fillStyle = '#fff'; g2.fillRect(0, 0, cw, ch); g2.drawImage(img, 0, 0, cw, ch); URL.revokeObjectURL(url);
+    cv.toBlob(async bl => {
+      if (!bl) { toast('Could not make the PDF on this device'); return; }
+      const jpg = new Uint8Array(await bl.arrayBuffer());
+      saveFile(String(base || fileBase()).replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') + '.pdf', pdfFromJpeg(jpg, cw, ch, pw, ph, state.name || 'WallDraft'));
+    }, 'image/jpeg', 0.92);
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); toast('Could not make the PDF on this device'); };
+  img.src = url;
+}
+$('#x-pdf').addEventListener('click', () => exportPDF());
 function imageModal({ str, W, H }, base) {
   const img = new Image();
   const url = URL.createObjectURL(new Blob([str], { type: 'image/svg+xml' }));
