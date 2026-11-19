@@ -144,7 +144,7 @@ option { background-color: var(--panel); color: var(--ink); }
   #catbar .cat-ctl { flex: 0 0 34px; min-width: 34px; font-size: 20px; color: #9fb0c8; padding: 6px 0; }
   #catbar #cat-hide, #catbar .cat-grip, #catbar .cm-b { display: none; }
   /* tools on the left: a floating column that can be dragged up/down and tucked away */
-  body.cat-left #catbar { left: 8px; right: auto; bottom: auto; top: var(--cat-top, calc(env(safe-area-inset-top, 0px) + 92px)); flex-direction: column; width: 50px; padding: 3px 2px 4px; border-radius: 14px; max-height: calc(100% - 190px); overflow-y: auto; box-shadow: 0 8px 26px rgb(0 0 0 / .45); border: 1px solid #34425C; transition: transform .2s ease; }
+  body.cat-left #catbar { left: 8px; right: auto; bottom: auto; top: var(--cat-top, calc(env(safe-area-inset-top, 0px) + 92px)); flex-direction: column; width: 50px; padding: 6px 2px 4px; border-radius: 14px; max-height: calc(100% - 190px); overflow-y: auto; box-shadow: 0 8px 26px rgb(0 0 0 / .45); border: 1px solid #34425C; transition: transform .2s ease; }
   body.cat-left #catbar button { flex: none; min-height: 44px; gap: 1px; border-top: 0; border-left: 3px solid transparent; border-radius: 9px; font-size: 8.5px; letter-spacing: -.02em; padding: 4px 0 3px; }
   body.cat-left #catbar .icn { width: 19px; height: 19px; stroke-width: 2.1; }
   body.cat-left #catbar button[aria-pressed="true"] { border-left-color: #F2A541; background: rgb(242 165 65 / .12); }
@@ -536,7 +536,7 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 @media (prefers-reduced-motion: reduce) { .switch .knob::after { transition: none; } }
 </style>
 </head>
-<body>
+<body class="cat-left">
 <div id="home" aria-label="Projects">
   <aside class="h-side">
     <div class="h-brand"><svg class="wd-logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#D9622B"/><path d="M7.5 25V7.5H25" fill="none" stroke="#fff" stroke-width="3.4"/><path d="M7.5 25h5" stroke="#fff" stroke-width="3.4"/><path d="M12.5 25V16" stroke="#FFE2CC" stroke-width="1.6"/><path d="M12.5 16a9 9 0 0 1 9 9" fill="none" stroke="#FFE2CC" stroke-width="1.4" stroke-dasharray="2.2 1.8"/><path d="M21.5 25H25" stroke="#fff" stroke-width="3.4"/><circle cx="25" cy="7.5" r="2.2" fill="#F2A541"/></svg><span><b>Wall</b>Draft</span></div>
@@ -635,7 +635,6 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
     </div>
     <button id="cat-tab" title="Show the tools" aria-label="Show the tools">›</button>
     <nav id="catbar" aria-label="Tool groups">
-      <span class="cat-grip" id="cat-grip" title="Drag to move the tools up or down" aria-hidden="true">⋮⋮</span>
       <button data-cat="draw"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3M4 21h16"/></svg>Draw</button>
       <button data-cat="edit"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 4H5v15h14v-8M11 13l9-9 1.5 1.5-9 9H11z"/></svg>Edit</button>
       <button data-cat="insert"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM12 8v8M8 12h8"/></svg>Insert</button>
@@ -643,7 +642,6 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
       <button data-cat="measure"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8h20v8H2zM6 8v3M10 8v4M14 8v3M18 8v4"/></svg>Measure</button>
       <button data-cat="dim"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14M21 5v14M3 12h18M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>Dimension</button>
       <button data-cat="view"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3zM12 5v14"/></svg>View</button>
-      <button class="cat-ctl" id="cat-move" title="Move the tools to the left side / back to the bottom" aria-label="Move the tool bar"><span class="cm-l">⇤</span><span class="cm-b">⇣</span></button>
       <button class="cat-ctl" id="cat-hide" title="Tuck the tools away" aria-label="Hide the tool bar">‹</button>
     </nav>
     <div class="tbar ribbon" id="ribbon">
@@ -4754,30 +4752,22 @@ const CATS = {
   insert: [['add:door:single', 'sw door', 'Door'], ['add:door:double', 'sw door', 'Double door'], ['add:door:slide', 'sw door', 'Sliding door'], ['add:window:slide2', 'sw window', 'Window'], ['add:window:case1', 'sw window', 'Casement'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening:plain', 'sw opening', 'Opening'], ['kitchen', '⊟', 'Kitchen'], ['tool:fx-counter', '▬', 'Platform'], ['tool:fx-sink', '◫', 'Sink'], ['tool:fx-hob', '⊚', 'Hob'], ['tool:kL', '⌐', 'L-kitchen'], ['tool:kC', '⊐', 'C-kitchen']],
   measure: [['tool:pdim', '↔', 'Distance'], ['tool:ref', '⋯', 'Ref line'], ['sec:rooms-sec', '▭', 'Room areas'], ['sec:struct-sec', '▣', 'Columns & beams'], ['osnap', '⌖', 'Snap points']],
   dim: [['dim:h', '↔', 'Horizontal'], ['dim:v', '↕', 'Vertical'], ['dim:a', '⤡', 'Aligned'], ['dim:lvl', '▽', 'Level'], ['dim:ang', '∠', 'Angle'], ['tool:pdim', '⟷', 'Plan measure']],
-  view: [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Elevation'], ['split', '◫', 'Split A–D'], ['fit', '⤢', 'Fit'], ['units', 'ft', 'Units'], ['ortho', '⊥', 'Angle lock'], ['snap', '⌖', 'Snap'], ['osnap', '▾', 'Snap settings'], ['canvas', '◐', 'Black / white'], ['pdf', '⎙', 'PDF'], ['dxf', '⌗', 'AutoCAD DXF'], ['catmove', '⇤', 'Tools left / bottom'], ['sec:share-sec', '⇪', 'Export & share'], ['sec:defs-sec', '⚙', 'Default sizes']],
+  view: [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Elevation'], ['split', '◫', 'Split A–D'], ['fit', '⤢', 'Fit'], ['units', 'ft', 'Units'], ['ortho', '⊥', 'Angle lock'], ['snap', '⌖', 'Snap'], ['osnap', '▾', 'Snap settings'], ['canvas', '◐', 'Black / white'], ['pdf', '⎙', 'PDF'], ['dxf', '⌗', 'AutoCAD DXF'],  ['sec:share-sec', '⇪', 'Export & share'], ['sec:defs-sec', '⚙', 'Default sizes']],
 };
 let curCat = null;
 const CATPOS_KEY = 'walldraft.toolbar';
-function catLayout(save) {
-  let v = { left: false, hide: false, top: null };
-  try { v = { ...v, ...(JSON.parse(localStorage.getItem(CATPOS_KEY) || '{}') || {}) }; } catch (e) {}
-  if (save) { v = { ...v, ...save }; try { localStorage.setItem(CATPOS_KEY, JSON.stringify(v)); } catch (e) {} }
-  document.body.classList.toggle('cat-left', !!v.left); document.body.classList.toggle('cat-hide', !!(v.left && v.hide));
-  if (v.top != null) document.documentElement.style.setProperty('--cat-top', v.top + 'px'); else document.documentElement.style.removeProperty('--cat-top');
+function catLayout(save) {                // phone tools: always a fixed column on the left that can be tucked away
+  let v = { hide: false };
+  try { const o = JSON.parse(localStorage.getItem(CATPOS_KEY) || '{}') || {}; v.hide = !!o.hide; } catch (e) {}
+  if (save) { v = { ...v, ...save }; try { localStorage.setItem(CATPOS_KEY, JSON.stringify({ hide: v.hide })); } catch (e) {} }
+  document.body.classList.add('cat-left'); document.body.classList.toggle('cat-hide', !!v.hide);
+  document.documentElement.style.removeProperty('--cat-top');
   if (typeof syncTbarH === 'function') syncTbarH();
   if (save && typeof fit === 'function') requestAnimationFrame(() => fit());
   return v;
 }
-$('#cat-move').addEventListener('click', () => { const v = catLayout(); curCat = null; catRender(); catLayout({ left: !v.left, hide: false }); toast(v.left ? 'Tools at the bottom' : 'Tools on the left · drag ⋮⋮ to move, ‹ to tuck away'); });
 $('#cat-hide').addEventListener('click', () => { curCat = null; catRender(); catLayout({ hide: true }); });
 $('#cat-tab').addEventListener('click', () => catLayout({ hide: false }));
-(() => {                                   // drag the left tool column up or down by its grip
-  const gr = $('#cat-grip'); let d = null;
-  gr.addEventListener('pointerdown', e => { const r = $('#catbar').getBoundingClientRect(); d = { y: e.clientY, top: r.top, h: r.height }; gr.setPointerCapture(e.pointerId); e.preventDefault(); });
-  gr.addEventListener('pointermove', e => { if (!d) return; const t = Math.max(70, Math.min(innerHeight - Math.min(d.h, 260) - 10, d.top + e.clientY - d.y)); document.documentElement.style.setProperty('--cat-top', Math.round(t) + 'px'); });
-  const up = () => { if (!d) return; d = null; const t = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cat-top')); if (isFinite(t)) catLayout({ top: t }); };
-  gr.addEventListener('pointerup', up); gr.addEventListener('pointercancel', up);
-})();
 setTimeout(() => catLayout());
 function catOn(k) {
   return (k.startsWith('tool:') && (tool ? tool.kind === k.slice(5) : k === 'tool:')) || (k.startsWith('dim:') && tool && tool.kind === k.slice(4)) || (k === 'view:plan' && state.view === 'plan' && !state.split) || (k === 'view:wall' && state.view === 'wall')
@@ -5193,7 +5183,6 @@ function runFeature(k) {
   else if (a === 'osnap') osnapModal();
   else if (a === 'split') setSplit(!state.split);
   else if (a === 'pdf') exportPDF();
-  else if (a === 'catmove') $('#cat-move').click();
   else if (a === 'dxf') exportDXF();
   else if (a === 'ortho') { cycleOrtho(); featurePanel(); }
   else if (a === 'canvas') { state.canvas = state.canvas === 'dark' ? 'light' : 'dark'; save(); render(); featurePanel(); }
