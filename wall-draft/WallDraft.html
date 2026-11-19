@@ -2213,7 +2213,7 @@ function offsetTap(p, tol) {
 let dimBinds = new Map(), dmSeq = 0;
 const dmReg = b => { if (!b) return null; const id = 'm' + (++dmSeq); dimBinds.set(id, b); return id; };
 function moveOpeningPlan(wid, oid, ds) { const w = state.walls.find(q => q.id === wid), o = w && w.openings.find(q => q.id === oid); if (!o) return; const g = wallGeo(w); o.x = r2(o.x + (g.vs > 0 ? -ds : ds)); }
-function chainBind(gw, a, b, items) {        // items: [{s0, s1, name, kind:'o'|'c', id}] along a plan wall (plan s from A)
+function chainBind(gw, a, b, items, pts) {        // items: [{s0, s1, name, kind:'o'|'c', id}] along a plan wall (plan s from A)
   const it = items.find(q => Math.abs(q.s0 - a) < 1 && Math.abs(q.s1 - b) < 1), wid = gw.w.id;
   if (it && it.kind === 'o') return { title: 'Width of ' + it.name, what: 'Width', value: b - a, min: 1, apply: v => {
     const w = state.walls.find(q => q.id === wid), o = w && w.openings.find(q => q.id === it.id); if (!o) return; const g = wallGeo(w); if (g.vs > 0) o.x = r2(o.x + o.w - v); o.w = v; } };
@@ -2221,8 +2221,12 @@ function chainBind(gw, a, b, items) {        // items: [{s0, s1, name, kind:'o'|
     const c = state.cols.find(q => q.id === it.id); if (!c) return; const { ax } = colAxes(c); if (c.shape === 'round') { c.w = c.d = v; } else if (Math.abs(ax.x * gw.d.x + ax.y * gw.d.y) > 0.7) c.w = v; else c.d = v; } };
   const right = items.find(q => Math.abs(q.s0 - b) < 1), left = items.find(q => Math.abs(q.s1 - a) < 1);
   const mv = right || left; if (!mv) return null;
-  const nm = q => q ? q.name : 'wall end';
-  return { title: 'Gap ' + nm(left) + ' → ' + nm(right), what: 'Gap', value: b - a, min: 0, note: right ? 'Moves ' + right.name + '.' : 'Moves ' + left.name + '.', apply: v => {
+  const nm = q => q ? q.name : 'corner', P = pts || [];
+  const other = right ? (P.find(x => x > right.s1 + 0.5) ?? right.s1) - right.s1 : left.s0 - ([...P].reverse().find(x => x < left.s0 - 0.5) ?? left.s0);
+  return { title: 'Space between ' + nm(left) + ' and ' + nm(right), what: 'Space', value: b - a, min: 0,
+    note: mv.name + ' keeps its size (' + fmt(mv.s1 - mv.s0) + ') and moves; the space on its other side changes to match.',
+    preview: v => { const o2 = right ? other - (v - (b - a)) : other + ((b - a) - v); return o2 < -0.5 ? '⚠ Too much: ' + mv.name + ' would run ' + fmt(-o2) + ' past the end' : 'Other side of ' + mv.name + ': ' + fmt(other) + ' → ' + fmt(o2); },
+    apply: v => {
     const ds = right ? v - (b - a) : (b - a) - v;
     if (mv.kind === 'o') moveOpeningPlan(wid, mv.id, ds);
     else { const c = state.cols.find(q => q.id === mv.id); if (c) { c.x = r2(c.x + gw.d.x * ds); c.y = r2(c.y + gw.d.y * ds); } }
@@ -2231,8 +2235,9 @@ function chainBind(gw, a, b, items) {        // items: [{s0, s1, name, kind:'o'|
 function openDimEdit(id) {
   const b = dimBinds.get(id); if (!b) return;
   openModal(b.title, `<label class="f">${esc(b.what || 'Measurement')}<input id="dm-in" inputmode="decimal" autocomplete="off" value="${esc(fmt(b.value))}"></label>
-    <p class="note">${esc((b.note ? b.note + ' ' : '') + unitExample() + '.')}</p>`, [['Save', () => saveDimEdit(b), 'primary'], ['Cancel', closeModal]]);
+    ${b.preview ? '<p class="note" id="dm-pv" style="font-weight:600;color:var(--ink)"></p>' : ''}<p class="note">${esc((b.note ? b.note + ' ' : '') + unitExample() + '.')}</p>`, [['Save', () => saveDimEdit(b), 'primary'], ['Cancel', closeModal]]);
   const el = $('#dm-in'); enhanceFtIn(el); syncFtIn();
+  if (b.preview) { const upd = () => setTimeout(() => { const v = parseLen(el.value); $('#dm-pv').textContent = isFinite(v) ? b.preview(v) : ''; }, 0); upd(); el.addEventListener('input', upd); if (el._fi) el._fi.addEventListener('input', upd); }
   el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveDimEdit(b); } });
   setTimeout(() => { const t = state.unit === 'ftin' && el._fi ? el._fi.querySelector('input') : el; t.focus(); if (t.select) t.select(); }, 60);
 }
@@ -2719,7 +2724,7 @@ function buildPlan(opt) {
     const lane = roomOut ? ts * 2.4 : ts * 0.8;
     for (let i = 0; i < pts.length - 1; i++) {
       const m = marks.find(q => Math.abs(q[0] - pts[i]) < 1 && Math.abs(q[1] - pts[i + 1]) < 1);
-      dimLine(at(gw, pts[i], gw.f1), at(gw, pts[i + 1], gw.f1), gw.n, lane, 1e9, ts * 0.3, m ? m[2] + ' ' + fmt(pts[i + 1] - pts[i]) : null, bind(chainBind(gw, pts[i], pts[i + 1], items)));
+      dimLine(at(gw, pts[i], gw.f1), at(gw, pts[i + 1], gw.f1), gw.n, lane, 1e9, ts * 0.3, m ? m[2] + ' ' + fmt(pts[i + 1] - pts[i]) : null, bind(chainBind(gw, pts[i], pts[i + 1], items, pts)));
     }
     gw.chained = true;
   }
@@ -5492,10 +5497,11 @@ function downloadApp() { if (!APP_SOURCE) { toast('Could not prepare the app fil
 function openModal(title, bodyHTML, buttons) {
   $('#m-title').textContent = title; $('#m-body').innerHTML = bodyHTML; const f = $('#m-foot'); f.innerHTML = '';
   for (const [label, fn, cls] of buttons) { const b = document.createElement('button'); b.className = 'btn ' + (cls || ''); b.textContent = label; b.onclick = fn; f.appendChild(b); }
-  $('#modal').hidden = false;
+  $('#modal').hidden = false; modalAt = performance.now();
 }
 function closeModal() { $('#modal').hidden = true; }
-$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+let modalAt = 0;   // a phone sends a "click" after the tap that opened a dialog: do not let it close the dialog
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal' && performance.now() - modalAt > 500) closeModal(); });
 let toastT;
 function toast(msg, actLabel, act) {
   const t = $('#toast'); t.innerHTML = ''; const s = document.createElement('span'); s.textContent = msg; t.appendChild(s);
