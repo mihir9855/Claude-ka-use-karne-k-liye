@@ -95,6 +95,19 @@ option { background-color: var(--panel); color: var(--ink); }
 }
 /* ---------- phone editor: FastView-like ---------- */
 #mtop, #m-quick, #hint, #catbar, #catpop { display: none; }
+#pend { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr auto; background: #2b2f30; color: #eef2f2; border-top: 1px solid #44494a; padding-bottom: env(safe-area-inset-bottom, 0px); font-family: var(--f-ui); }
+#pend[hidden] { display: none; }
+#pend .pd-grid { display: grid; grid-template-columns: 1fr; }
+#pend label { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 14px; font-size: 16px; border-bottom: 1px solid #3d4243; }
+#pend input { width: 52%; text-align: right; background: transparent; border: 0; border-bottom: 1px dashed #5c6667; color: #fff; font: 17px var(--f-mono); padding: 4px 2px; }
+#pend input:focus { outline: none; border-bottom-color: #5bc0c8; background: rgb(91 192 200 / .1); }
+#pend .pd-btns { display: flex; flex-direction: column; border-left: 1px solid #3d4243; }
+#pend .pd-btns button { flex: 1; min-width: 74px; border: 0; background: none; color: #fff; font: 34px/1 var(--f-ui); cursor: pointer; }
+#pend #pd-ok { color: #5bc0c8; border-top: 1px solid #3d4243; }
+.dwg .pdl { stroke: #5bc0c8; stroke-width: 4; }
+.dwg .pdh { fill: rgb(0 0 0 / .25); stroke: #fff; stroke-width: 2; }
+.dwg .pdh2 { stroke: #5bc0c8; stroke-width: 2; fill: none; }
+.dwg .pdt { fill: #fff; font-family: var(--f-ui); paint-order: stroke; stroke: #000; stroke-width: 4px; }
 .icn { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 #catbar .icn { width: 26px; height: 26px; }
 @media (max-width: 820px) {
@@ -148,6 +161,7 @@ option { background-color: var(--panel); color: var(--ink); }
 #qbar .qdel { color: var(--warn); }
 #loupe { position: fixed; z-index: 70; width: 124px; height: 124px; border-radius: 50%; overflow: hidden; border: 2px solid var(--snap); background: var(--paper); box-shadow: 0 6px 22px rgb(0 0 0 / .45); pointer-events: none; }
 #lsvg { width: 100%; height: 100%; display: block; }
+#loupe.sq { border-radius: 6px; border: 3px solid #fff; }
 #loupe-t { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font: 600 10px var(--f-mono); color: var(--snap); text-shadow: 0 0 3px var(--paper), 0 0 3px var(--paper); white-space: nowrap; overflow: hidden; padding: 0 14px; }
 .dwg .lcross { stroke: var(--snap); stroke-width: 1; fill: none; }
 #lsvg .snapt { display: none; }
@@ -581,6 +595,15 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
       </div>
     </div>
     <div id="catpop" hidden><div class="cgrid" id="cgrid"></div></div>
+    <div id="pend" hidden>
+      <div class="pd-grid">
+        <label>Length<input id="pq-len" autocomplete="off" inputmode="decimal"></label>
+        <label>Angle<input id="pq-ang" autocomplete="off" inputmode="decimal"></label>
+        <label>X Increment<input id="pq-dx" autocomplete="off" inputmode="decimal"></label>
+        <label>Y Increment<input id="pq-dy" autocomplete="off" inputmode="decimal"></label>
+      </div>
+      <div class="pd-btns"><button id="pd-no" title="Cancel this segment" aria-label="Cancel">✕</button><button id="pd-ok" title="Place it" aria-label="Place">✓</button></div>
+    </div>
     <nav id="catbar" aria-label="Tool groups">
       <button data-cat="draw"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3M4 21h16"/></svg>Draw</button>
       <button data-cat="edit"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 4H5v15h14v-8M11 13l9-9 1.5 1.5-9 9H11z"/></svg>Edit</button>
@@ -2950,7 +2973,7 @@ function placeWallPoint() {
   if (Math.hypot(pt.x - tool.last.x, pt.y - tool.last.y) < 1) { finishChain(); return; }
   addSegment(pt);
 }
-function finishChain() { if (!tool) return; tool.last = null; tool.start = null; tool.count = 0; tool.boxStart = null; tool.beamStart = null; tool.mStart = null; tool.target = null; hover = null; guides = []; render(); updateStatus(); }
+function finishChain() { if (pend) { pendCommit(); } if (!tool) return; tool.last = null; tool.start = null; tool.count = 0; tool.boxStart = null; tool.beamStart = null; tool.mStart = null; tool.target = null; hover = null; guides = []; render(); updateStatus(); }
 function drawSingle(p, q) {
   if (Math.hypot(q.x - p.x, q.y - p.y) < planStep()) return;
   p = attach(p, q);
@@ -3284,6 +3307,8 @@ function planOverlay() {
     g.raw(`<path d="M${n(L.x - rx * h)} ${n(L.y - ry * h)}L${n(b.x - rx * h)} ${n(b.y - ry * h)}L${n(b.x + rx * (t - h))} ${n(b.y + ry * (t - h))}L${n(L.x + rx * (t - h))} ${n(L.y + ry * (t - h))}Z" class="pvband" vector-effect="non-scaling-stroke"/>`);
     g.text((L.x + b.x) / 2 - rx * u * 18, (L.y + b.y) / 2 - ry * u * 18 + u * 5, fmt(len), 'dt pv', u * 15, 'middle');
   };
+  pendOverlay(g, u, n);
+  if (pend && tool) { if (hover && hover.pt) mark(hover); return g.P.join(''); }   // the waiting segment replaces the tool's own preview
   if (isMod()) {
     const ex = expandSet(tool.set), R = u * 3000, shp = modShapes(ex, R);
     const pd = sh => 'M' + sh.pts.map(q => n(q.x) + ' ' + n(q.y)).join('L') + (sh.closed ? 'Z' : '');
@@ -3413,6 +3438,65 @@ function updateHover(e) {
   drawOverlay(); updateStatus();
 }
 
+/* pending segment (phone, like a CAD viewer app): after the 2nd point the segment waits with draggable ⊕ markers,
+   a big length on the drawing and Length / Angle / X / Y boxes; ✓ places it, tapping the next point places it and goes on */
+const PEND_TOOLS = ['line', 'dline', 'pdim', 'ref', 'beam'];
+let pend = null;
+const pendStart = () => !tool ? null : tool.kind === 'line' ? tool.last : tool.kind === 'beam' ? tool.beamStart : tool.mStart;
+function pendCommit() {
+  if (!pend || !tool) return;
+  const { a, b } = pend, k = tool.kind; pend = null;
+  if (Math.hypot(b.x - a.x, b.y - a.y) < 1) { pendUI(); return; }
+  if (k === 'line') { if (pend === null && tool.count === 0) { tool.last = { x: a.x, y: a.y, nid: a.nid || null }; tool.start = { x: a.x, y: a.y }; } hover = { pt: b }; placeWallPoint(); }
+  else if (k === 'dline') { if (addDLine(a, b)) tool.mStart = { x: b.x, y: b.y }; }
+  else if (k === 'pdim') { addPdim(a, b); tool.mStart = null; }
+  else if (k === 'ref') { addRefLine(a.x, a.y, b.x - a.x, b.y - a.y, ''); tool.mStart = null; toast('Reference line added', 'Undo', undo); }
+  else if (k === 'beam') { if (placeBeam(a, b)) tool.beamStart = { x: b.x, y: b.y }; }
+  hover = null; render(); pendUI();
+}
+function pendTap(pt) {                      // a tap while drawing with the precise cursor
+  if (pend) { pendCommit(); if (!tool) return; }
+  const st = pendStart();
+  if (!st) return false;                    // first point: the tool takes it as usual
+  pend = { a: { ...st }, b: { ...pt }, aFree: tool.kind !== 'line' || !tool.count };
+  hover = null; render(); pendUI(); return true;
+}
+function pendUI() {
+  const on = !!(pend && tool);
+  $('#pend').hidden = !on; $('#status').style.visibility = on ? 'hidden' : '';
+  if (on) {
+    const { a, b } = pend, dx = b.x - a.x, dy = a.y - b.y, L = Math.hypot(dx, dy);
+    let ang = Math.atan2(dy, dx) * 180 / Math.PI; if (ang < 0) ang += 360;
+    const put = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v; };
+    put('#pq-len', fmt(L)); put('#pq-ang', String(Math.round(ang * 100) / 100)); put('#pq-dx', fmt(dx)); put('#pq-dy', fmt(dy));
+    $('#hint-t').innerHTML = '<b>Drag ⊕ to adjust</b> · type a size · ✓ to place';
+  }
+  drawOverlay();
+}
+function pendSet(id) {
+  if (!pend) return; const v = $(id).value.trim(); const { a, b } = pend;
+  let dx = b.x - a.x, dy = a.y - b.y, L = Math.hypot(dx, dy), ang = Math.atan2(dy, dx);
+  if (id === '#pq-len') { const n = parseLen(v); if (!(n > 0)) { toast('Type a length. ' + unitExample()); return; } L = n; dx = Math.cos(ang) * L; dy = Math.sin(ang) * L; }
+  else if (id === '#pq-ang') { const n = parseFloat(v.replace(',', '.')); if (!isFinite(n)) { toast('Type the angle in degrees: 0 right, 90 up, 180 left, 270 down'); return; } ang = n * Math.PI / 180; dx = Math.cos(ang) * L; dy = Math.sin(ang) * L; }
+  else { const n = parseLen(v); if (!isFinite(n)) { toast('Type a distance. ' + unitExample()); return; } if (id === '#pq-dx') dx = n; else dy = n; }
+  pend.b = { x: r2(a.x + dx), y: r2(a.y - dy) }; pendUI();
+}
+['#pq-len', '#pq-ang', '#pq-dx', '#pq-dy'].forEach(id => { $(id).addEventListener('change', () => pendSet(id)); $(id).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); pendSet(id); e.target.blur(); } }); });
+$('#pd-ok').addEventListener('click', () => { const f = document.activeElement; if (f && f.closest && f.closest('#pend') && f.tagName === 'INPUT') pendSet('#' + f.id); pendCommit(); });
+$('#pd-no').addEventListener('click', () => { pend = null; pendUI(); });
+function pendOverlay(g, u, n) {             // the waiting segment, its markers and its big length
+  if (!pend || !tool) return;
+  const { a, b } = pend, L = Math.hypot(b.x - a.x, b.y - a.y), R = u * 13;
+  if (tool.kind === 'line' && L > 1) {      // the wall as it will be built (thickness and location line)
+    const t = state.draw.t, rx = -(b.y - a.y) / L, ry = (b.x - a.x) / L, h = state.draw.just === 'R' ? 0 : state.draw.just === 'L' ? t : t / 2;
+    g.raw(`<path d="M${n(a.x - rx * h)} ${n(a.y - ry * h)}L${n(b.x - rx * h)} ${n(b.y - ry * h)}L${n(b.x + rx * (t - h))} ${n(b.y + ry * (t - h))}L${n(a.x + rx * (t - h))} ${n(a.y + ry * (t - h))}Z" class="pvband" vector-effect="non-scaling-stroke"/>`);
+  }
+  g.raw(`<line x1="${n(a.x)}" y1="${n(a.y)}" x2="${n(b.x)}" y2="${n(b.y)}" class="pdl" vector-effect="non-scaling-stroke"/>`);
+  for (const q of [a, b]) g.raw(`<circle cx="${n(q.x)}" cy="${n(q.y)}" r="${n(R)}" class="pdh" vector-effect="non-scaling-stroke"/><circle cx="${n(q.x)}" cy="${n(q.y)}" r="${n(R * 0.55)}" class="pdh2" vector-effect="non-scaling-stroke"/><path d="M${n(q.x - R * 1.6)} ${n(q.y)}H${n(q.x + R * 1.6)}M${n(q.x)} ${n(q.y - R * 1.6)}V${n(q.y + R * 1.6)}" class="pdh2" style="stroke:#fff;stroke-width:1.2" vector-effect="non-scaling-stroke"/>`);
+  if (L > 1) { let th = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI; if (th > 90 || th < -90) th += 180; const m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, rad = th * Math.PI / 180, up = { x: Math.sin(rad), y: -Math.cos(rad) }, P = { x: m.x + up.x * u * 26, y: m.y + up.y * u * 26 };
+    g.raw(`<text x="${n(P.x)}" y="${n(P.y)}" text-anchor="middle" class="pdt" font-size="${n(u * 30)}" transform="rotate(${n(th)} ${n(P.x)} ${n(P.y)})">${esc(fmt(L))}</text>`); }
+}
+
 /* precise touch: the crosshair sits above the finger and a loupe shows what it snaps to (lift to place) */
 const PREC_OFF = 72, PREC_TOOLS = ['line', 'box', 'dline', 'pdim', 'ref', 'col', 'beam', 'offset', 'move', 'copy', 'rotate', 'mirror'];
 const precOn = e => e.pointerType === 'touch' && state.snap.precise !== false && tool && PREC_TOOLS.includes(tool.kind) && !(isMod() && tool.step === 'select');
@@ -3428,6 +3512,9 @@ function loupe(e) {
   if (!loupeOn) { $('#lsvg').innerHTML = `<g>${$('#dg').innerHTML}</g><g id="log"></g><g id="lch"></g>`; L.hidden = false; loupeOn = true; }
   let lx = cx - R, ly = cy - R * 2 - 34;                                  // above the crosshair, or beside it near the top
   if (ly < 8) { ly = Math.max(8, cy - R); lx = cx + 40 + 2 * R < innerWidth ? cx + 40 : cx - 40 - 2 * R; }
+  if (matchMedia('(max-width: 820px)').matches) {                        // phone: a fixed magnifier in the top corner, away from the finger
+    const hb = $('#hint').getBoundingClientRect(); ly = (hb.height ? hb.bottom : 70) + 10; lx = cx < innerWidth / 2 && cy < ly + 2 * R + 30 ? innerWidth - 2 * R - 14 : 10; L.classList.add('sq');
+  } else L.classList.remove('sq');
   lx = Math.min(Math.max(8, lx), innerWidth - 2 * R - 8);
   L.style.left = Math.round(lx) + 'px'; L.style.top = Math.round(ly) + 'px';
   const pt = hover && hover.pt ? hover.pt : toSvg(cx, cy), u = upx(), w = 2 * R * u / Z;
@@ -3498,7 +3585,7 @@ svg.addEventListener('pointermove', e => {
     view.x = gesture.vx - (e.clientX - gesture.sx) / r.width * view.w;
     view.y = gesture.vy - (e.clientY - gesture.sy) / r.height * view.h;
     applyView();
-  } else if (['mpick', 'wpick', 'node', 'room', 'popen', 'tapsel', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove', 'wmove'].includes(gesture.kind)) {
+  } else if (['phandle', 'mpick', 'wpick', 'node', 'room', 'popen', 'tapsel', 'cmove', 'bmove', 'bend', 'pdmove', 'fmove', 'wmove'].includes(gesture.kind)) {
     planMove(px(e));
   } else if (gesture.kind === 'pick') {
     updateHover(e);
@@ -3758,6 +3845,12 @@ function underTarget(x, y) {
 }
 function planDown(e) {
   const p = toSvg(e.clientX, e.clientY);
+  if (pend && tool) {                       // grab a ⊕ marker: it follows the finger (no jump), snapping as it goes
+    const fy = e.clientY + (e.precise ? PREC_OFF : 0), r = svg.getBoundingClientRect(), sc = q => ({ x: r.left + (q.x - view.x) / view.w * r.width, y: r.top + (q.y - view.y) / view.h * r.height });
+    const da = Math.hypot(sc(pend.a).x - e.clientX, sc(pend.a).y - fy), db = Math.hypot(sc(pend.b).x - e.clientX, sc(pend.b).y - fy);
+    const which = db <= 40 && db <= da ? 'b' : da <= 40 && pend.aFree ? 'a' : null;
+    if (which) { gesture = { kind: 'phandle', which, sx: e.clientX, sy: fy, o: { ...pend[which] }, moved: false }; return; }
+  }
   if (isMod()) { gesture = { kind: 'mpick', sx: e.clientX, sy: e.clientY, start: p, cur: p, free: false }; if (tool.step !== 'select') modHover(e, p); return; }
   if (isKQ() || isOff()) { gesture = { kind: 'wpick', sx: e.clientX, sy: e.clientY, stroke: [p], free: false, start: p }; hover = isOff() ? { pt: p } : null; drawOverlay(); return; }
   if (isFix()) {
@@ -3825,6 +3918,13 @@ function planDown(e) {
   svg.classList.add('panning');
 }
 function planMove(e) {
+  if (gesture.kind === 'phandle') {
+    const fy = e.clientY + (e.precise ? PREC_OFF : 0), u = upx(), tol = u * 22;
+    const raw = { x: gesture.o.x + (e.clientX - gesture.sx) * u, y: gesture.o.y + (fy - gesture.sy) * u }, other = gesture.which === 'a' ? pend.b : pend.a;
+    const h = planSnap(raw, other, tol); pend[gesture.which] = { ...h.pt }; gesture.moved = true; hover = { ...h, pt: { ...h.pt }, label: h.kind === 'ortho' || h.kind === 'align' ? '' : String(h.label || '').replace(/^[^·]*· /, '') }; guides = h.guides || [];
+    pendUI(); if (e.pointerType === 'touch') { const sc = svg.getBoundingClientRect(); lastTouch = { clientX: sc.left + (h.pt.x - view.x) / view.w * sc.width, clientY: sc.top + (h.pt.y - view.y) / view.h * sc.height + PREC_OFF }; loupe(lastTouch); }
+    return;
+  }
   if (gesture.kind === 'mpick') {
     const cur = toSvg(e.clientX, e.clientY); gesture.cur = cur;
     if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) > 10) gesture.free = true;
@@ -3934,6 +4034,7 @@ function planMove(e) {
   }
 }
 function planUp(e) {
+  if (gesture.kind === 'phandle') { gesture = null; hover = null; guides = []; pendUI(); return; }
   if (gesture.kind === 'mpick') { const gs = gesture; gesture = null; if (e.type === 'pointerup' && ptrs.size === 0 && isMod()) modUp(e, gs); else drawOverlay(); return; }
   if (gesture.kind === 'wpick') {
     if (e.type === 'pointerup' && ptrs.size === 0) {
@@ -3946,6 +4047,7 @@ function planUp(e) {
         if (kind === 'counter' && gs.free && (at.w || 0) < 300) { toast('Drag further along the wall'); return; }
         addFix(kind, at, size); hover = null; render(); updateStatus(); return;
       }
+      if (e.precise && !gs.free && PEND_TOOLS.includes(tool.kind) && hover && hover.pt && (pend || pendStart())) { pendTap({ ...hover.pt }); return; }
       if (isMeasure()) {
         if (!hover) return;
         if (tool.kind === 'dline') {                    // lines chain on: each tap adds the next line
@@ -3960,6 +4062,7 @@ function planUp(e) {
         else { done(tool.mStart, hover.pt); tool.mStart = null; }
         hover = null; render(); updateStatus(); return;
       }
+      if (e.precise && !gs.free && tool.kind === 'beam' && hover && hover.pt && (pend || pendStart())) { pendTap({ ...hover.pt }); return; }
       if (isStruct()) {
         if (!hover) return;
         if (tool.kind === 'col') placeColumn(hover);
@@ -3968,6 +4071,7 @@ function planUp(e) {
         else { const a = tool.beamStart; if (placeBeam(a, hover.pt)) tool.beamStart = hover.pt; }
         hover = null; render(); updateStatus(); return;
       }
+      if (e.precise && !gs.free && tool.kind === 'line' && hover && hover.pt && (pend || pendStart())) { pendTap({ ...hover.pt }); return; }
       if (gs.free) {
         if (tool.kind === 'hand') { if (gs.stroke.length > 3) sketchToWalls(gs.stroke); }
         else if (hover && tool.kind === 'line') drawSingle(gs.start, hover.pt);
@@ -3999,6 +4103,7 @@ svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && too
 
 /* ---------- dimension tools ---------- */
 function setTool(kind) {
+  if (pend) { pend = null; try { pendUI(); } catch (e) {} }
   if (kind === 'erase' && state.view === 'plan' && state.planSel) { setTool(null); delSelected(); return; }
   const pre = MODK[kind] && state.planSel && state.planSel.t !== 'open' ? { t: state.planSel.t, id: state.planSel.id } : null;
   tool = kind ? { kind, pts: [], last: null, chain: [] } : null; hover = null; guides = [];
@@ -4043,7 +4148,7 @@ function placePoint() {
   }
   drawOverlay(); updateStatus();
 }
-function updateStatus() { updateStatus0(); try { $('#hint-t').innerHTML = $('#st-msg').innerHTML; $('#m-snap').setAttribute('aria-pressed', String(!!state.snap.on)); $('#m-undo').disabled = !hist.length; $('#m-redo').disabled = !fut.length; } catch (e) {} }
+function updateStatus() { updateStatus0(); try { if (!pend) $('#hint-t').innerHTML = $('#st-msg').innerHTML; else pendUI(); $('#m-snap').setAttribute('aria-pressed', String(!!state.snap.on)); $('#m-undo').disabled = !hist.length; $('#m-redo').disabled = !fut.length; } catch (e) {} }
 function updateStatus0() {
   const st = $('#status'), msg = $('#st-msg'), sn = $('#st-snap'), show = (id, v) => { $(id).hidden = !v; };
   const plan = state.view === 'plan';
@@ -4626,7 +4731,7 @@ svg.addEventListener('pointerdown', () => { if (curCat) { curCat = null; catRend
 $('#m-save').addEventListener('click', () => { save(); try { if (curPid) localStorage.setItem(PFX + curPid + '.t', thumbSVG(state)); } catch (e) {} toast('Saved'); });
 $('#m-undo').addEventListener('click', () => undo());
 $('#m-redo').addEventListener('click', () => redo());
-$('#hint-undo').addEventListener('click', () => undo());
+$('#hint-undo').addEventListener('click', () => { if (pend) { pend = null; pendUI(); } else undo(); });
 $('#hint-x').addEventListener('click', () => setTool(null));
 $('#m-fit').addEventListener('click', () => fit());
 $('#m-snap').addEventListener('click', () => toggleSnap());
