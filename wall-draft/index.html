@@ -31,6 +31,115 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 option { background-color: var(--panel); color: var(--ink); }
+#modal { z-index: 120 !important; }
+.toast { z-index: 130 !important; }
+/* ---------- home: projects ---------- */
+#home { position: fixed; inset: 0; z-index: 90; background: #eef2f3; color: #1d2627; display: grid; grid-template-columns: 1fr; font-family: var(--f-ui); }
+#home[hidden] { display: none; }
+#home .h-side { display: none; }
+#home .h-main { display: flex; flex-direction: column; min-height: 0; padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+#home .h-top { display: flex; align-items: center; justify-content: center; gap: 10px; padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 8px; background: #fff; }
+#home .h-top h1 { margin: 0; font: 600 24px var(--f-head); letter-spacing: .04em; color: #1d2627; }
+#home .h-logo { display: inline-flex; width: 34px; height: 34px; border-radius: 9px; align-items: center; justify-content: center; background: linear-gradient(135deg, #5bc0c8, #2f8f9a); color: #fff; font-size: 20px; }
+#home .h-tabs { display: flex; background: #fff; border-bottom: 1px solid #dde4e6; }
+#home .h-tabs button { flex: 1; border: 0; background: none; padding: 12px 0 14px; font: 500 17px var(--f-ui); color: #8a9799; border-bottom: 4px solid transparent; cursor: pointer; }
+#home .h-tabs button[aria-selected="true"] { color: #3aa9b4; border-bottom-color: #3aa9b4; }
+#home .h-body { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: grid; gap: 12px; align-content: start; }
+#home .h-bar { display: flex; gap: 8px; align-items: center; background: #fff; border-radius: 14px; padding: 8px 10px; box-shadow: 0 1px 3px rgb(0 0 0 / .06); }
+#home .h-bar input { flex: 1; min-width: 0; border: 0; background: #f2f5f6; border-radius: 9px; padding: 10px 12px; font: 15px var(--f-ui); color: #1d2627; }
+#home .h-bar button { border: 0; background: none; font-size: 22px; color: #3aa9b4; cursor: pointer; padding: 4px 6px; }
+#home .h-list { display: grid; gap: 12px; }
+#home .h-list.grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+#home .h-card { display: grid; grid-template-columns: 112px 1fr auto; gap: 14px; align-items: center; background: #fff; border-radius: 16px; padding: 12px; box-shadow: 0 1px 3px rgb(0 0 0 / .07); cursor: pointer; text-align: left; border: 0; width: 100%; color: inherit; font: inherit; }
+#home .h-list.grid .h-card { grid-template-columns: 1fr auto; grid-template-rows: auto auto; }
+#home .h-list.grid .h-thumb { grid-column: 1 / -1; width: 100%; height: 120px; }
+#home .h-thumb { width: 112px; height: 84px; border-radius: 10px; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+#home .h-thumb svg { width: 92%; height: 92%; }
+#home .h-name { font: 400 17px/1.25 var(--f-ui); color: #2b3637; word-break: break-word; }
+#home .h-meta { margin-top: 6px; font-size: 13px; color: #8a9799; }
+#home .h-fav { color: #f2a33a; }
+#home .h-dots { border: 0; background: none; font-size: 24px; color: #9aa6a8; padding: 8px 6px; cursor: pointer; }
+#home .h-empty { text-align: center; color: #8a9799; padding: 40px 20px; font-size: 15px; }
+#home .h-fab { position: fixed; right: 18px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); width: 62px; height: 62px; border-radius: 50%; border: 0; background: #fff; color: #3aa9b4; font-size: 34px; box-shadow: 0 4px 14px rgb(0 0 0 / .2); cursor: pointer; z-index: 2; }
+#home .h-bnav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: #fff; border-top: 1px solid #dde4e6; padding-bottom: env(safe-area-inset-bottom, 0px); }
+#home .h-bnav button { flex: 1; border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 10px; font: 13px var(--f-ui); color: #8a9799; cursor: pointer; }
+#home .h-bnav button span { font-size: 24px; line-height: 1.1; }
+#home .h-bnav button[aria-pressed="true"] { color: #3aa9b4; }
+#home .h-sec { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 1px 3px rgb(0 0 0 / .07); display: grid; gap: 10px; }
+#home .h-sec h2 { margin: 0 0 4px; font: 600 13px var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: #6b7a7c; }
+#home .h-sec label { display: grid; gap: 4px; font-size: 13px; color: #5d6b6d; }
+#home .h-sec select, #home .h-sec input { padding: 10px; border: 1px solid #d5dee0; border-radius: 9px; font: 15px var(--f-ui); background: #f7f9fa; color: #1d2627; }
+#home .h-sec .hbtn { border: 0; border-radius: 10px; padding: 12px 14px; font: 600 15px var(--f-ui); background: #3aa9b4; color: #fff; cursor: pointer; text-align: left; }
+#home .h-sec .hbtn.alt { background: #eef4f5; color: #2b6f77; }
+@media (min-width: 821px) {
+  #home { grid-template-columns: 240px 1fr; background: #f1f4f5; }
+  #home .h-side { display: flex; flex-direction: column; gap: 6px; padding: 20px 14px; background: #1f2a2c; color: #dfe8ea; }
+  #home .h-brand { display: flex; align-items: center; gap: 10px; font: 600 20px var(--f-head); margin: 0 6px 18px; }
+  #home .h-brand b { color: #5bc0c8; }
+  #home .h-nav { display: grid; gap: 4px; }
+  #home .h-nav button { display: flex; gap: 12px; align-items: center; border: 0; background: none; color: #c3d0d2; padding: 11px 12px; border-radius: 10px; font: 15px var(--f-ui); cursor: pointer; text-align: left; }
+  #home .h-nav button span { width: 22px; text-align: center; }
+  #home .h-nav button:hover { background: #2a383b; }
+  #home .h-nav button[aria-pressed="true"] { background: #3aa9b4; color: #fff; }
+  #home .h-new { margin-top: auto; border: 0; border-radius: 12px; padding: 13px; background: #3aa9b4; color: #fff; font: 600 15px var(--f-ui); cursor: pointer; }
+  #home .h-main { padding: 0; }
+  #home .h-top { justify-content: flex-start; padding: 22px 28px 6px; background: none; }
+  #home .h-top .h-logo { display: none; }
+  #home .h-tabs { background: none; padding: 0 28px; border-bottom: 1px solid #dbe3e5; }
+  #home .h-tabs button { flex: none; padding: 12px 22px; }
+  #home .h-body { padding: 18px 28px 28px; }
+  #home .h-list { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  #home .h-card { grid-template-columns: 1fr auto; grid-template-rows: auto auto; }
+  #home .h-card .h-thumb { grid-column: 1 / -1; width: 100%; height: 150px; }
+  #home .h-fab, #home .h-bnav { display: none; }
+}
+/* ---------- phone editor: FastView-like ---------- */
+#mtop, #m-quick, #hint, #catbar, #catpop { display: none; }
+.icn { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#catbar .icn { width: 26px; height: 26px; }
+@media (max-width: 820px) {
+  :root { --peek: 0px; }
+  #ribbon { display: none !important; }
+  .dock { display: none !important; }
+  .grab { height: 54px !important; }
+  .panel[data-sheet="peek"] { height: 0 !important; border: 0; box-shadow: none; }
+  #mtop { display: flex; position: fixed; z-index: 31; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 8px; right: 8px; gap: 8px; align-items: stretch; }
+  #mtop .m-x { flex: none; width: 54px; border: 0; border-radius: 14px; background: #2b2f30; color: #11292c; font: 700 22px var(--f-ui); cursor: pointer; position: relative; }
+  #mtop .m-x span { display: inline-flex; width: 38px; height: 38px; border-radius: 50%; background: #5bc0c8; color: #13363a; align-items: center; justify-content: center; font: 700 20px var(--f-ui); }
+  #mtop .m-pill { flex: 1; display: flex; justify-content: space-around; background: #2b2f30; border-radius: 14px; padding: 4px; }
+  #mtop .m-pill button { flex: 1; border: 0; background: none; color: #f2f5f5; font: 22px/1 var(--f-ui); min-height: 46px; cursor: pointer; border-radius: 10px; }
+  #mtop .m-pill button[aria-pressed="true"] { color: #5bc0c8; }
+  #mtop .m-pill button:disabled { opacity: .35; }
+  #m-quick { display: flex; flex-direction: column; align-items: center; position: fixed; z-index: 31; right: 10px; top: calc(env(safe-area-inset-top, 0px) + 72px); width: 54px; padding: 6px 0 2px; border: 0; border-radius: 12px; background: #2b2f30; color: #f2f5f5; font: 700 17px var(--f-head); cursor: pointer; }
+  #m-quick small { font-size: 12px; color: #c9d3d4; }
+  body.tools-on #m-quick { background: #5bc0c8; color: #102a2d; }
+  .tools { top: calc(env(safe-area-inset-top, 0px) + 66px) !important; padding-right: 72px !important; background: none !important; display: none !important; }
+  body.tools-on .tools { display: flex !important; }
+  #catbar { display: flex; position: fixed; z-index: 32; left: 0; right: 0; bottom: 0; background: #2b2f30; padding: 6px 2px calc(6px + env(safe-area-inset-bottom, 0px)); overflow-x: auto; scrollbar-width: none; }
+  #catbar::-webkit-scrollbar { display: none; }
+  #catbar button { flex: 1 1 0; min-width: 0; white-space: nowrap; letter-spacing: -.01em; display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: none; color: #eef2f2; font: 12.5px var(--f-ui); padding: 6px 4px 8px; cursor: pointer; border-top: 4px solid transparent; }
+  #catbar .ic { font: 22px/1 var(--f-ui); }
+  #catbar button[aria-pressed="true"] { border-top-color: #5bc0c8; color: #5bc0c8; }
+  #catpop { display: block; position: fixed; z-index: 33; left: 4px; right: 4px; bottom: calc(var(--tbar-h) + 6px); background: #3c4041; border: 2px solid #5bc0c8; border-radius: 16px; padding: 12px 6px; max-height: 50vh; overflow-y: auto; box-shadow: 0 -6px 24px rgb(0 0 0 / .35); }
+  #catpop[hidden] { display: none; }
+  .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px 4px; }
+  .cgrid button { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; color: #f1f4f4; font: 13px/1.2 var(--f-ui); padding: 6px 2px; border-radius: 10px; cursor: pointer; text-align: center; }
+  .cgrid button .ci { font: 26px/1 var(--f-mono); color: #8fd6dc; height: 30px; display: flex; align-items: center; }
+  .cgrid button .ci .sw { width: 22px; height: 22px; }
+  .cgrid button[aria-pressed="true"] { background: rgb(91 192 200 / .18); }
+  .cgrid button[aria-pressed="true"] .ci { color: #5bc0c8; }
+  .cgrid button.off .ci { color: #77807f; }
+  .cgrid .csec { grid-column: 1 / -1; font: 600 11px var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: #9fb0b2; padding: 4px 8px 0; }
+  .sheet.drawing #mtop, .sheet.drawing #m-quick, .sheet.drawing .tools { display: none !important; }
+  .sheet.drawing #hint { display: flex; position: fixed; z-index: 31; top: 0; left: 0; right: 0; padding: calc(env(safe-area-inset-top, 0px) + 10px) 10px 10px 16px; background: #5bbcc4; color: #fff; font: 600 16px/1.3 var(--f-ui); align-items: center; gap: 10px; box-shadow: 0 2px 10px rgb(0 0 0 / .3); }
+  #hint-t { flex: 1; text-align: center; }
+  #hint-t b { color: #fff; }
+  .hint-b { display: flex; gap: 4px; background: #2b2f30; border-radius: 12px; padding: 2px; }
+  .hint-b button { border: 0; background: none; color: #fff; font: 22px/1 var(--f-ui); width: 44px; height: 42px; cursor: pointer; }
+  .sheet.drawing #st-msg { display: none; }
+  .status { bottom: calc(var(--tbar-h) + 8px) !important; }
+  #epane { bottom: var(--tbar-h) !important; }
+}
 #qbar { position: fixed; z-index: 25; display: flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 20px rgb(0 0 0 / .35); max-width: calc(100vw - 16px); overflow-x: auto; scrollbar-width: none; }
 #qbar::-webkit-scrollbar { display: none; }
 #qbar button { flex: none; display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 46px; min-height: 46px; padding: 4px 6px; border: 0; border-radius: 9px; background: transparent; color: var(--ink); font: 11px var(--f-ui); cursor: pointer; }
@@ -385,6 +494,37 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
 </style>
 </head>
 <body>
+<div id="home" aria-label="Projects">
+  <aside class="h-side">
+    <div class="h-brand"><span class="h-logo">◧</span><span><b>Wall</b>Draft</span></div>
+    <nav class="h-nav">
+      <button data-hnav="recent" aria-pressed="true"><span>🕘</span>Recent</button>
+      <button data-hnav="fav"><span>★</span>Favorites</button>
+      <button data-hnav="all"><span>▦</span>Drawings</button>
+      <button data-hnav="files"><span>🗀</span>Files</button>
+      <button data-hnav="settings"><span>⚙</span>Settings</button>
+    </nav>
+    <button class="h-new" id="h-new2">＋ New project</button>
+  </aside>
+  <main class="h-main">
+    <header class="h-top">
+      <span class="h-logo">◧</span><h1><b>Wall</b>Draft</h1>
+    </header>
+    <div class="h-tabs" role="tablist">
+      <button data-htab="recent" aria-selected="true">Recent</button>
+      <button data-htab="fav">Favorites</button>
+      <button data-htab="all">Drawings</button>
+    </div>
+    <div class="h-body" id="h-body"></div>
+  </main>
+  <button class="h-fab" id="h-new" title="New project" aria-label="New project">＋</button>
+  <nav class="h-bnav">
+    <button data-hnav="recent" aria-pressed="true"><span>⌂</span>Home</button>
+    <button data-hnav="files"><span>🗀</span>Files</button>
+    <button data-hnav="settings"><span>⚙</span>Settings</button>
+  </nav>
+  <input type="file" id="h-import" accept=".json,application/json" hidden>
+</div>
 <div class="app">
   <main class="sheet" id="sheet">
     <svg id="draw" class="dwg" xmlns="http://www.w3.org/2000/svg" aria-label="Wall elevation drawing"></svg>
@@ -408,6 +548,20 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
       <svg id="esvg" class="dwg" xmlns="http://www.w3.org/2000/svg" aria-label="Room elevations"></svg>
       <div class="ep-note" id="ep-note"></div>
     </section>
+    <div id="mtop">
+      <button id="m-close" class="m-x" title="Close drawing (back to projects)" aria-label="Close drawing"><span>✕</span></button>
+      <div class="m-pill">
+        <button id="m-save" title="Save" aria-label="Save"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11.5L20 6.5V21H5zM8 3v5h8V3M12 12.5a3 3 0 1 0 0 6a3 3 0 1 0 0-6"/></svg></button>
+        <button id="m-undo" title="Undo" aria-label="Undo"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6L4 11l5 5M4 11h10a6 6 0 0 1 0 12h-3"/></svg></button>
+        <button id="m-redo" title="Redo" aria-label="Redo"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l5 5-5 5M20 11H10a6 6 0 0 0 0 12h3"/></svg></button>
+        <button id="m-snap" title="Snap on/off (hold for settings)" aria-label="Snap"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6"/></svg></button>
+        <button id="m-fit" title="Fit drawing" aria-label="Fit drawing"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13M15.5 15.5L21 21M8 8h5v5H8z"/></svg></button>
+        <button id="m-full" title="Full screen" aria-label="Full screen"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        <button id="m-more" title="More" aria-label="More"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width:4"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg></button>
+      </div>
+    </div>
+    <button id="m-quick" title="View, units and snap" aria-label="Quick settings">A≡<small>▾</small></button>
+    <div id="hint"><span id="hint-t"></span><span class="hint-b"><button id="hint-undo" title="Undo" aria-label="Undo">↶</button><button id="hint-x" title="Stop this tool" aria-label="Stop">✕</button></span></div>
     <div class="tools">
       <div class="tgroup seg" role="group" aria-label="View">
         <button id="v-plan" title="Floor plan of all rooms">Plan</button>
@@ -426,8 +580,19 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
         <button id="tb-canvas" title="Black or white drawing canvas"><span class="ic">◐</span><span class="lbl-l">Canvas</span></button>
       </div>
     </div>
+    <div id="catpop" hidden><div class="cgrid" id="cgrid"></div></div>
+    <nav id="catbar" aria-label="Tool groups">
+      <button data-cat="draw"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3M4 21h16"/></svg>Draw</button>
+      <button data-cat="edit"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 4H5v15h14v-8M11 13l9-9 1.5 1.5-9 9H11z"/></svg>Edit</button>
+      <button data-cat="insert"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM12 8v8M8 12h8"/></svg>Insert</button>
+      <button data-cat="layer"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/></svg>Layer</button>
+      <button data-cat="measure"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8h20v8H2zM6 8v3M10 8v4M14 8v3M18 8v4"/></svg>Measure</button>
+      <button data-cat="dim"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14M21 5v14M3 12h18M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>Dimension</button>
+      <button data-cat="view"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3zM12 5v14"/></svg>View</button>
+    </nav>
     <div class="tbar ribbon" id="ribbon">
       <div class="rtabs" role="tablist" aria-label="Ribbon">
+        <button class="rtab" id="rb-home" title="Back to all projects">⌂ Projects</button>
         <button class="rtab" data-rtab="home" role="tab">Home</button>
         <button class="rtab" data-rtab="insert" role="tab">Insert</button>
         <button class="rtab" data-rtab="annot" role="tab">Annotate</button>
@@ -970,6 +1135,7 @@ let hist = [], fut = [];               // entries: { label, s: JSON of the state
 try { const h = JSON.parse(localStorage.getItem(HKEY) || 'null'); if (h && Array.isArray(h.hist)) { hist = h.hist; fut = h.fut || []; } } catch (e) {}
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  try { projSaved(); } catch (e) {}
   try { localStorage.setItem(DKEY, JSON.stringify({ prec: state.prec, unit: state.unit, canvas: state.canvas, defs: state.defs, draw: { t: state.draw.t, h: state.draw.h, just: state.draw.just, step: state.draw.step, ortho: state.draw.ortho, col: state.draw.col, beam: state.draw.beam } })); } catch (e) {}
   try { localStorage.setItem(HKEY, JSON.stringify({ hist: hist.slice(-40), fut: fut.slice(-40) })); } catch (e) {}
 }
@@ -3877,7 +4043,8 @@ function placePoint() {
   }
   drawOverlay(); updateStatus();
 }
-function updateStatus() {
+function updateStatus() { updateStatus0(); try { $('#hint-t').innerHTML = $('#st-msg').innerHTML; $('#m-snap').setAttribute('aria-pressed', String(!!state.snap.on)); $('#m-undo').disabled = !hist.length; $('#m-redo').disabled = !fut.length; } catch (e) {} }
+function updateStatus0() {
   const st = $('#status'), msg = $('#st-msg'), sn = $('#st-snap'), show = (id, v) => { $(id).hidden = !v; };
   const plan = state.view === 'plan';
   $('#sheet').classList.toggle('drawing', !!tool);
@@ -4239,6 +4406,236 @@ const LOCN = { in: 'Auto: walls sit on the centre until the room is closed, then
 $('#st-loc').addEventListener('change', e => { state.draw.just = e.target.value; save(); drawOverlay(); toast(LOCN[e.target.value]); });
 $('#d-just').addEventListener('change', e => { state.draw.just = e.target.value; save(); toast(e.target.value === 'c' ? 'New lines are the centre of the wall' : 'New lines are the inside face of the room'); });
 armDelete($('#p-blank'), 'Start blank drawing', () => { commit('Start blank drawing', () => { state = newProject(); }); fitKey = ''; views = {}; curMode = null; view = null; render(); toast('Blank drawing ready. Undo brings the old one back.', 'Undo', undo); });
+/* ---------- projects: many drawings, a home screen to open them ---------- */
+const PKEY = 'walldraft.projects', PFX = 'walldraft.p.', CKEY = 'walldraft.cur';
+const pIndex = () => { try { const v = JSON.parse(localStorage.getItem(PKEY) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+const pWrite = list => { try { localStorage.setItem(PKEY, JSON.stringify(list)); } catch (e) {} };
+let curPid = null; try { curPid = localStorage.getItem(CKEY); } catch (e) {}
+function pStats(p) { const rooms = (p.rooms || []).filter(r => r.kind !== 'balcony'); let a = 0; try { if (p === state) a = rooms.reduce((s2, r) => s2 + roomArea(r), 0) / 1e6; } catch (e) {} return { rooms: rooms.length, walls: (p.walls || []).length, area: a }; }
+function projSaved() {                     // keep the open drawing's copy and its list entry up to date
+  if (!curPid) return;
+  const json = JSON.stringify(state); localStorage.setItem(PFX + curPid, json);
+  const list = pIndex(), e = list.find(x => x.id === curPid); if (!e) return;
+  const st = pStats(state); Object.assign(e, { name: state.name || 'Untitled', updated: Date.now(), size: json.length, rooms: st.rooms, walls: st.walls, area: st.area || e.area || 0 });
+  pWrite(list);
+}
+(function migrate() {                      // first run with projects: the drawing already open becomes project 1
+  const list = pIndex();
+  if (curPid && list.some(x => x.id === curPid)) return;
+  if (list.length) { curPid = list[0].id; try { localStorage.setItem(CKEY, curPid); } catch (e) {} return; }
+  curPid = uid(); const now = Date.now();
+  list.push({ id: curPid, name: state.name || 'My site', created: now, updated: now, opened: now, fav: false });
+  pWrite(list); try { localStorage.setItem(CKEY, curPid); } catch (e) {} projSaved();
+})();
+function thumbSVG(p) {                     // small black preview with the walls in white, like a CAD viewer
+  const keep = state; let out = '';
+  try {
+    state = norm(clone(p)); planGeom = null; buildPlan({ interactive: false });
+    const sh = planGeom ? planGeom.shapes : [], pts = sh.flatMap(x => x);
+    for (const c of state.cols) pts.push({ x: c.x, y: c.y });
+    for (const l of state.dlines || []) pts.push(l.a, l.b);
+    if (!pts.length) return '';
+    const xs = pts.map(q => q.x), ys = pts.map(q => q.y), x0 = Math.min(...xs), y0 = Math.min(...ys), w = Math.max(...xs) - x0 || 1, h = Math.max(...ys) - y0 || 1, pad = Math.max(w, h) * 0.06, n2 = v => Math.round(v);
+    const d = sh.map(x => 'M' + x.map(q => n2(q.x) + ' ' + n2(q.y)).join('L') + 'Z').join('');
+    const ls = (state.dlines || []).map(l => `M${n2(l.a.x)} ${n2(l.a.y)}L${n2(l.b.x)} ${n2(l.b.y)}`).join('');
+    const cs = state.cols.map(c => 'M' + colPoly(c).map(q => n2(q.x) + ' ' + n2(q.y)).join('L') + 'Z').join('');
+    out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n2(x0 - pad)} ${n2(y0 - pad)} ${n2(w + pad * 2)} ${n2(h + pad * 2)}"><path d="${d}" fill="#e9eeee" stroke="#e9eeee" stroke-width="${n2(Math.max(w, h) / 300)}"/>${cs ? `<path d="${cs}" fill="#d55"/>` : ''}${ls ? `<path d="${ls}" stroke="#5bc0c8" stroke-width="${n2(Math.max(w, h) / 250)}" fill="none"/>` : ''}</svg>`;
+  } catch (e) { out = ''; } finally { state = keep; planGeom = null; }
+  return out;
+}
+function pThumb(id) { try { const t = localStorage.getItem(PFX + id + '.t'); if (t != null) return t; const raw = localStorage.getItem(PFX + id); if (!raw) return ''; const svgT = thumbSVG(JSON.parse(raw)); localStorage.setItem(PFX + id + '.t', svgT); return svgT; } catch (e) { return ''; } }
+let hTab = 'recent', hPage = 'list', hQuery = '', hGrid = false;
+try { hGrid = localStorage.getItem('walldraft.hgrid') === '1'; } catch (e) {}
+const fmtDate = t => { const d = new Date(t || 0), z = v => String(v).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; };
+const fmtSize = b => b > 1048576 ? (b / 1048576).toFixed(2) + 'MB' : Math.max(1, Math.round((b || 0) / 1024)) + 'KB';
+function homeRender() {
+  $$('#home [data-htab]').forEach(b => b.setAttribute('aria-selected', String(hPage === 'list' && b.dataset.htab === hTab)));
+  $$('#home [data-hnav]').forEach(b => b.setAttribute('aria-pressed', String(hPage === 'list' ? b.dataset.hnav === hTab || (b.dataset.hnav === 'recent' && b.closest('.h-bnav') && true) : b.dataset.hnav === hPage)));
+  $('#home .h-tabs').hidden = hPage !== 'list'; $('#h-new').hidden = hPage !== 'list';
+  const body = $('#h-body');
+  if (hPage === 'files') {
+    body.innerHTML = `<div class="h-sec"><h2>Files</h2><button class="hbtn" id="hf-import">⭳ Open a backup file (.json)</button><button class="hbtn alt" id="hf-exportall">⭱ Save all projects as one backup</button><button class="hbtn alt" id="hf-app">⬇ Download this app (HTML file)</button><p style="margin:0;color:#8a9799;font-size:13px">Projects are kept on this phone / computer. Save a backup to move them to another device.</p></div>`;
+    return;
+  }
+  if (hPage === 'settings') {
+    let d = {}; try { d = JSON.parse(localStorage.getItem(DKEY) || '{}') || {}; } catch (e) {}
+    body.innerHTML = `<div class="h-sec"><h2>New drawings start with</h2>
+      <label>Units<select id="hs-unit"><option value="mm">Millimetre</option><option value="cm">Centimetre</option><option value="m">Metre</option><option value="ft">Feet</option><option value="ftin">Feet-inch</option><option value="in">Inch</option></select></label>
+      <label>Canvas<select id="hs-canvas"><option value="dark">Black (CAD)</option><option value="light">White</option></select></label>
+      <label>Wall thickness (mm)<input id="hs-t" inputmode="decimal" value="${esc(String((d.draw && d.draw.t) || 230))}"></label>
+      <label>Ceiling height (mm)<input id="hs-h" inputmode="decimal" value="${esc(String((d.draw && d.draw.h) || 3000))}"></label></div>
+      <div class="h-sec"><h2>About</h2><p style="margin:0;color:#5d6b6d;font-size:14px">WallDraft · site wall and floor-plan drafting. ${pIndex().length} project(s) on this device.</p></div>`;
+    $('#hs-unit').value = d.unit || 'mm'; $('#hs-canvas').value = d.canvas || 'dark';
+    return;
+  }
+  let list = pIndex();
+  if (hTab === 'fav') list = list.filter(x => x.fav);
+  if (hQuery) list = list.filter(x => (x.name || '').toLowerCase().includes(hQuery.toLowerCase()));
+  list.sort(hTab === 'all' ? (a, b) => (a.name || '').localeCompare(b.name || '') : (a, b) => Math.max(b.opened || 0, b.updated || 0) - Math.max(a.opened || 0, a.updated || 0));
+  const card = x => `<div class="h-card" data-pid="${x.id}" role="button" tabindex="0"><div class="h-thumb">${pThumb(x.id) || '<span style="color:#555;font-size:12px">empty</span>'}</div>
+    <div><div class="h-name">${x.fav ? '<span class="h-fav">★</span> ' : ''}${esc(x.name || 'Untitled')}</div><div class="h-meta">${fmtDate(x.updated)}&nbsp; ${fmtSize(x.size)}&nbsp; ${x.rooms ? x.rooms + ' room' + (x.rooms > 1 ? 's' : '') : (x.walls || 0) + ' walls'}${x.area ? ' · ' + (+x.area).toFixed(2) + ' m²' : ''}</div></div>
+    <button class="h-dots" data-pmenu="${x.id}" aria-label="More for ${esc(x.name || 'project')}">⋮</button></div>`;
+  body.innerHTML = `<div class="h-bar"><input id="h-q" type="search" placeholder="Search drawings" value="${esc(hQuery)}" autocomplete="off"><button id="h-grid" title="List or grid" aria-label="List or grid">${hGrid ? '☰' : '▦'}</button></div>
+    ${list.length ? `<div class="h-list${hGrid ? ' grid' : ''}">${list.map(card).join('')}</div>` : `<div class="h-empty">${hTab === 'fav' ? 'No favourites yet. Tap ⋮ on a drawing and choose ★ Favourite.' : 'No drawings yet. Tap ＋ to start one.'}</div>`}`;
+}
+function showHome() {
+  setTool(null); try { projSaved(); if (curPid) localStorage.setItem(PFX + curPid + '.t', thumbSVG(state)); } catch (e) {}
+  $('#home').hidden = false; $('#catpop').hidden = true; hPage = 'list'; homeRender();
+}
+function openProject(id) {
+  const raw = localStorage.getItem(PFX + id); if (!raw) { toast('That drawing could not be opened'); return; }
+  let p; try { p = JSON.parse(raw); } catch (e) { toast('That drawing is damaged'); return; }
+  if (!validProject(p)) { toast('That drawing is damaged'); return; }
+  if (curPid && curPid !== id) { try { projSaved(); localStorage.setItem(PFX + curPid + '.h', JSON.stringify({ hist: hist.slice(-40), fut: fut.slice(-40) })); } catch (e) {} }
+  if (curPid !== id) { try { const h = JSON.parse(localStorage.getItem(PFX + id + '.h') || 'null'); hist = h && h.hist || []; fut = h && h.fut || []; } catch (e) { hist = []; fut = []; } }
+  curPid = id; try { localStorage.setItem(CKEY, id); } catch (e) {}
+  state = norm(p); if (!state.walls.some(w => w.id === state.active)) state.active = state.walls[0] ? state.walls[0].id : null;
+  state.planSel = null; state.sel = null;
+  const list = pIndex(), e = list.find(x => x.id === id); if (e) { e.opened = Date.now(); pWrite(list); }
+  views = {}; curMode = null; view = null; fitKey = '';
+  $('#home').hidden = true; save(); render(); requestAnimationFrame(() => { fit(); syncTbarH(); });
+}
+function newProject(kind, name, data) {
+  const id = uid(), now = Date.now(), list = pIndex();
+  const p = data ? norm(data) : blankProject(name || 'New drawing ' + (list.length + 1));
+  if (name) p.name = name;
+  list.push({ id, name: p.name, created: now, updated: now, opened: now, fav: false }); pWrite(list);
+  localStorage.setItem(PFX + id, JSON.stringify(p)); localStorage.removeItem(PFX + id + '.t');
+  openProject(id);
+  if (kind === 'example') { state = norm(sample()); state.name = name || state.name; hist = []; fut = []; save(); views = {}; curMode = null; view = null; render(); requestAnimationFrame(fit); }
+}
+function newProjectModal() {
+  openModal('New drawing', `<label class="f full">Name<input id="np-name" autocomplete="off" placeholder="e.g. Shah residence – 2BHK"></label>
+    <div class="olist" style="margin-top:12px">
+      <button class="orow" data-np="blank"><span class="tag dimt">▢</span><span class="meta"><b>Blank drawing</b></span><span>›</span></button>
+      <button class="orow" data-np="example"><span class="tag dimt">⌂</span><span class="meta"><b>Start from the example flat</b></span><span>›</span></button>
+      <button class="orow" data-np="import"><span class="tag dimt">⭳</span><span class="meta"><b>Open a backup file (.json)</b></span><span>›</span></button>
+    </div>`, [['Cancel', closeModal]]);
+  setTimeout(() => { const i = $('#np-name'); if (i && !matchMedia('(pointer: coarse)').matches) i.focus(); }, 50);
+}
+function projMenu(id) {
+  const e = pIndex().find(x => x.id === id); if (!e) return;
+  openModal(e.name || 'Drawing', `<div class="olist">
+    <button class="orow" data-pa="open"><span class="tag dimt">↗</span><span class="meta"><b>Open</b></span><span>›</span></button>
+    <button class="orow" data-pa="rename"><span class="tag dimt">✎</span><span class="meta"><b>Rename</b></span><span>›</span></button>
+    <button class="orow" data-pa="fav"><span class="tag dimt">★</span><span class="meta"><b>${e.fav ? 'Remove from favourites' : 'Add to favourites'}</b></span><span>›</span></button>
+    <button class="orow" data-pa="dup"><span class="tag dimt">⧉</span><span class="meta"><b>Duplicate</b></span><span>›</span></button>
+    <button class="orow" data-pa="export"><span class="tag dimt">⭱</span><span class="meta"><b>Save a backup file (.json)</b></span><span>›</span></button>
+    <button class="orow" data-pa="del"><span class="tag dimt" style="color:var(--warn)">⌫</span><span class="meta"><b style="color:var(--warn)">Delete</b></span><span>›</span></button>
+  </div><p class="note">${esc(fmtDate(e.updated))} · ${esc(fmtSize(e.size))}</p>`, [['Close', closeModal]]);
+  projMenu.id = id;
+}
+$('#m-body').addEventListener('click', e => {
+  const np = e.target.closest('[data-np]');
+  if (np) { const nm = ($('#np-name') && $('#np-name').value.trim()) || ''; closeModal(); if (np.dataset.np === 'import') { $('#h-import').click(); return; } newProject(np.dataset.np, nm || (np.dataset.np === 'example' ? 'Example flat' : '')); return; }
+  const pa = e.target.closest('[data-pa]'); if (!pa) return;
+  const id = projMenu.id, list = pIndex(), en = list.find(x => x.id === id); if (!en) return;
+  const k = pa.dataset.pa;
+  if (k === 'open') { closeModal(); openProject(id); }
+  else if (k === 'rename') {
+    openModal('Rename', `<label class="f full">Name<input id="rn-name" autocomplete="off" value="${esc(en.name || '')}"></label>`, [['Save', () => {
+      const v = $('#rn-name').value.trim(); if (!v) return; en.name = v; pWrite(list);
+      try { const p = JSON.parse(localStorage.getItem(PFX + id)); p.name = v; localStorage.setItem(PFX + id, JSON.stringify(p)); } catch (er) {}
+      if (id === curPid) state.name = v; closeModal(); homeRender(); }, 'primary'], ['Cancel', closeModal]]);
+  }
+  else if (k === 'fav') { en.fav = !en.fav; pWrite(list); closeModal(); homeRender(); }
+  else if (k === 'dup') {
+    const nid = uid(), now = Date.now(), raw = localStorage.getItem(PFX + id) || '{}';
+    let p = {}; try { p = JSON.parse(raw); } catch (er) {} p.name = (en.name || 'Drawing') + ' copy';
+    list.push({ ...en, id: nid, name: p.name, created: now, updated: now, opened: now, fav: false }); pWrite(list);
+    localStorage.setItem(PFX + nid, JSON.stringify(p)); closeModal(); homeRender(); toast('Duplicated');
+  }
+  else if (k === 'export') { closeModal(); saveFile((en.name || 'drawing').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') + '.json', localStorage.getItem(PFX + id) || '{}'); }
+  else if (k === 'del') {
+    openModal('Delete drawing?', `<p>“${esc(en.name || 'Untitled')}” will be removed from this device.</p>`, [['Delete', () => {
+      const rest = list.filter(x => x.id !== id); pWrite(rest); ['', '.t', '.h'].forEach(sfx => localStorage.removeItem(PFX + id + sfx));
+      if (id === curPid) { curPid = null; try { localStorage.removeItem(CKEY); } catch (er) {} if (!rest.length) { newProject('blank', 'My site'); showHome(); } else curPid = rest[0].id; }
+      closeModal(); homeRender(); toast('Deleted'); }, 'danger'], ['Cancel', closeModal]]);
+  }
+});
+$('#home').addEventListener('click', e => {
+  const t = e.target;
+  const tab = t.closest('[data-htab]'); if (tab) { hTab = tab.dataset.htab; hPage = 'list'; homeRender(); return; }
+  const nav = t.closest('[data-hnav]'); if (nav) { const v = nav.dataset.hnav; if (v === 'files' || v === 'settings') hPage = v; else { hPage = 'list'; hTab = v; } homeRender(); return; }
+  const dots = t.closest('[data-pmenu]'); if (dots) { e.stopPropagation(); projMenu(dots.dataset.pmenu); return; }
+  const c = t.closest('[data-pid]'); if (c) { openProject(c.dataset.pid); return; }
+  if (t.closest('#h-new') || t.closest('#h-new2')) { newProjectModal(); return; }
+  if (t.closest('#h-grid')) { hGrid = !hGrid; try { localStorage.setItem('walldraft.hgrid', hGrid ? '1' : '0'); } catch (er) {} homeRender(); return; }
+  if (t.closest('#hf-import')) { $('#h-import').click(); return; }
+  if (t.closest('#hf-app')) { downloadApp(); return; }
+  if (t.closest('#hf-exportall')) { const all = pIndex().map(x => { let p = null; try { p = JSON.parse(localStorage.getItem(PFX + x.id)); } catch (er) {} return p; }).filter(Boolean); saveFile('walldraft-all-projects.json', JSON.stringify({ walldraftProjects: all })); }
+});
+$('#home').addEventListener('input', e => { if (e.target.id === 'h-q') { hQuery = e.target.value; const pos = e.target.selectionStart; homeRender(); const i = $('#h-q'); i.focus(); try { i.setSelectionRange(pos, pos); } catch (er) {} } });
+$('#home').addEventListener('change', e => {
+  const id = e.target.id; if (!/^hs-/.test(id)) return;
+  let d = {}; try { d = JSON.parse(localStorage.getItem(DKEY) || '{}') || {}; } catch (er) {}
+  d.draw = d.draw || {};
+  if (id === 'hs-unit') d.unit = e.target.value; else if (id === 'hs-canvas') d.canvas = e.target.value;
+  else { const v = +e.target.value; if (v > 0) d.draw[id === 'hs-t' ? 't' : 'h'] = v; }
+  try { localStorage.setItem(DKEY, JSON.stringify(d)); } catch (er) {} toast('Saved for new drawings');
+});
+$('#h-import').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return; const r = new FileReader();
+  r.onload = () => {
+    try {
+      const p = JSON.parse(r.result);
+      if (p && Array.isArray(p.walldraftProjects)) { let n = 0; for (const q of p.walldraftProjects) if (validProject(q)) { const id = uid(), now = Date.now(), list = pIndex(); list.push({ id, name: q.name || 'Imported', created: now, updated: now, opened: 0, fav: false }); pWrite(list); localStorage.setItem(PFX + id, JSON.stringify(q)); n++; } toast(n + ' drawing(s) added'); homeRender(); }
+      else if (validProject(p)) newProject('import', p.name || f.name.replace(/\.json$/i, ''), p);
+      else throw 0;
+    } catch (er) { toast('That file is not a WallDraft backup'); }
+    e.target.value = '';
+  };
+  r.readAsText(f);
+});
+$('#m-close').addEventListener('click', showHome);
+$('#rb-home').addEventListener('click', showHome);
+
+/* ---------- phone editor: top bar, tool groups like a CAD viewer app ---------- */
+const CATS = {
+  draw: [['tool:line', '▥', 'Wall'], ['tool:dline', '╱', 'Line'], ['tool:box', '▭', 'Box walls'], ['tool:hand', '✎', 'Hand'], ['room', '⊞', 'Room'], ['balcony', '⌓', 'Balcony'], ['tool:col', '▣', 'Column'], ['tool:beam', '┅', 'Beam'], ['tool:ref', '⋯', 'Ref line']],
+  edit: [['tool:', '➤', 'Select'], ['tool:move', '✥', 'Move'], ['tool:copy', '⧉', 'Copy'], ['tool:rotate', '↻', 'Rotate'], ['tool:mirror', '⇋', 'Mirror'], ['tool:offset', '⫽', 'Offset'], ['tool:erase', '⌫', 'Erase'], ['undo', '↶', 'Undo'], ['redo', '↷', 'Redo']],
+  insert: [['add:door:single', 'sw door', 'Door'], ['add:door:double', 'sw door', 'Double door'], ['add:door:slide', 'sw door', 'Sliding door'], ['add:window:slide2', 'sw window', 'Window'], ['add:window:case1', 'sw window', 'Casement'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening:plain', 'sw opening', 'Opening'], ['kitchen', '⊟', 'Kitchen'], ['tool:fx-counter', '▬', 'Platform'], ['tool:fx-sink', '◫', 'Sink'], ['tool:fx-hob', '⊚', 'Hob'], ['tool:kL', '⌐', 'L-kitchen'], ['tool:kC', '⊐', 'C-kitchen']],
+  measure: [['tool:pdim', '↔', 'Distance'], ['tool:ref', '⋯', 'Ref line'], ['sec:rooms-sec', '▭', 'Room areas'], ['sec:struct-sec', '▣', 'Columns & beams'], ['osnap', '⌖', 'Snap points']],
+  dim: [['dim:h', '↔', 'Horizontal'], ['dim:v', '↕', 'Vertical'], ['dim:a', '⤡', 'Aligned'], ['dim:lvl', '▽', 'Level'], ['dim:ang', '∠', 'Angle'], ['tool:pdim', '⟷', 'Plan measure']],
+  view: [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Elevation'], ['split', '◫', 'Split A–D'], ['fit', '⤢', 'Fit'], ['units', 'ft', 'Units'], ['ortho', '⊥', 'Angle lock'], ['snap', '⌖', 'Snap'], ['osnap', '▾', 'Snap settings'], ['canvas', '◐', 'Black / white'], ['sec:share-sec', '⇪', 'Export & share'], ['sec:defs-sec', '⚙', 'Default sizes']],
+};
+let curCat = null;
+function catOn(k) {
+  return (k.startsWith('tool:') && (tool ? tool.kind === k.slice(5) : k === 'tool:')) || (k.startsWith('dim:') && tool && tool.kind === k.slice(4)) || (k === 'view:plan' && state.view === 'plan' && !state.split) || (k === 'view:wall' && state.view === 'wall')
+    || (k === 'split' && !!state.split) || (k === 'snap' && state.snap.on) || (k === 'canvas' && state.canvas === 'dark') || (k.startsWith('show:') && !!state.show[k.slice(5)]);
+}
+function catRender() {
+  $$('#catbar [data-cat]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cat === curCat)));
+  const pop = $('#catpop'); if (!curCat) { pop.hidden = true; return; }
+  let items = CATS[curCat];
+  if (curCat === 'layer') items = $$('.chip[data-show]').map(b => ['show:' + b.dataset.show, b.closest('[data-v="wall"]') || ['chain', 'overall', 'hts', 'plan', 'user'].includes(b.dataset.show) ? '▥' : '▤', b.textContent]);
+  const lab = (k, l) => k === 'units' ? UNIT_NAME[state.unit] : k === 'ortho' ? 'Angle ' + (state.draw.ortho === 'free' ? 'free' : state.draw.ortho + '°') : l;
+  $('#cgrid').innerHTML = (curCat === 'layer' ? '<div class="csec">Show on plan and elevation</div>' : '') + items.map(([k, ic, l]) => `<button data-ck="${esc(k)}" aria-pressed="${catOn(k)}" class="${k.startsWith('show:') && !catOn(k) ? 'off' : ''}"><span class="ci">${ic.startsWith('sw') ? `<span class="${ic}"></span>` : esc(ic)}</span>${esc(lab(k, l))}</button>`).join('');
+  pop.hidden = false;
+}
+$('#catbar').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; curCat = curCat === b.dataset.cat ? null : b.dataset.cat; catRender(); });
+$('#cgrid').addEventListener('click', e => {
+  const b = e.target.closest('[data-ck]'); if (!b) return; const k = b.dataset.ck;
+  if (k.startsWith('show:')) { const key = k.slice(5); commit((state.show[key] ? 'Hide ' : 'Show ') + b.textContent.trim().toLowerCase(), () => state.show[key] = !state.show[key]); catRender(); return; }
+  if (k === 'split') { curCat = null; catRender(); setSplit(!state.split); return; }
+  const keep = ['units', 'ortho', 'snap', 'canvas', 'undo', 'redo'].includes(k);
+  if (!keep) { curCat = null; catRender(); }
+  runFeature(k); if (keep) { closeModal(); catRender(); }
+});
+svg.addEventListener('pointerdown', () => { if (curCat) { curCat = null; catRender(); } }, true);
+$('#m-save').addEventListener('click', () => { save(); try { if (curPid) localStorage.setItem(PFX + curPid + '.t', thumbSVG(state)); } catch (e) {} toast('Saved'); });
+$('#m-undo').addEventListener('click', () => undo());
+$('#m-redo').addEventListener('click', () => redo());
+$('#hint-undo').addEventListener('click', () => undo());
+$('#hint-x').addEventListener('click', () => setTool(null));
+$('#m-fit').addEventListener('click', () => fit());
+$('#m-snap').addEventListener('click', () => toggleSnap());
+(() => { let tm = null; const b = $('#m-snap'); b.addEventListener('pointerdown', () => { tm = setTimeout(() => { tm = null; osnapModal(); }, 550); }); b.addEventListener('pointerup', () => { if (tm) clearTimeout(tm); }); b.addEventListener('contextmenu', e => { e.preventDefault(); osnapModal(); }); })();
+$('#m-full').addEventListener('click', () => { try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (e) { toast('Full screen is not available here'); } });
+$('#m-more').addEventListener('click', featurePanel);
+$('#m-quick').addEventListener('click', () => { document.body.classList.toggle('tools-on'); });
+setTimeout(() => { if (location.hash === '#edit') { $('#home').hidden = true; return; } $('#home').hidden = false; homeRender(); });   // the app opens on the projects screen
+
 $('#x-example').addEventListener('click', () => { commit('Load example', () => { state = norm(sample()); }); views = {}; curMode = null; view = null; render(); toast('Example flat loaded', 'Undo', undo); });
 $('#w-just').addEventListener('change', e => { const w = wall(); if (isPlanWall(w)) commit('Wall thickness side', () => setSide(w, e.target.value)); });
 $('#p-room').addEventListener('click', roomModal);
@@ -4615,6 +5012,7 @@ function runFeature(k) {
   else if (a === 'units') { const order = ['mm', 'cm', 'm', 'ft', 'ftin', 'in'], u = order[(order.indexOf(state.unit) + 1) % order.length]; commit('Change units', () => state.unit = u); toast('Units: ' + UNIT_NAME[u]); featurePanel(); }
   else if (a === 'snap') { toggleSnap(); featurePanel(); }
   else if (a === 'osnap') osnapModal();
+  else if (a === 'split') setSplit(!state.split);
   else if (a === 'ortho') { cycleOrtho(); featurePanel(); }
   else if (a === 'canvas') { state.canvas = state.canvas === 'dark' ? 'light' : 'dark'; save(); render(); featurePanel(); }
   else if (a === 'fit') fit();
@@ -4639,7 +5037,7 @@ function showRibbon() {
   try { localStorage.setItem('walldraft.ribbon', JSON.stringify(RB)); } catch (e) {}
   syncTbarH();
 }
-function syncTbarH() { const r = $('#ribbon'); if (mobile()) document.documentElement.style.setProperty('--tbar-h', Math.ceil(r.getBoundingClientRect().height) + 'px'); else { document.documentElement.style.removeProperty('--tbar-h'); document.documentElement.style.setProperty('--rb-h', Math.ceil(r.getBoundingClientRect().height) + 'px'); } }
+function syncTbarH() { const r = $('#ribbon'); if (mobile()) { document.documentElement.style.setProperty('--tbar-h', Math.ceil($('#catbar').getBoundingClientRect().height || 72) + 'px'); return; } if (mobile()) document.documentElement.style.setProperty('--tbar-h', Math.ceil(r.getBoundingClientRect().height) + 'px'); else { document.documentElement.style.removeProperty('--tbar-h'); document.documentElement.style.setProperty('--rb-h', Math.ceil(r.getBoundingClientRect().height) + 'px'); } }
 $$('.rtab[data-rtab]').forEach(b => b.addEventListener('click', () => { if (RB.tab === b.dataset.rtab) RB.min = !RB.min; else { RB.tab = b.dataset.rtab; RB.min = false; } showRibbon(); }));
 $('#rb-min').addEventListener('click', () => { RB.min = !RB.min; showRibbon(); });
 new ResizeObserver(syncTbarH).observe($('#ribbon'));
