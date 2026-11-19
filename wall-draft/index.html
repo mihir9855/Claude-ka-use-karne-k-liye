@@ -141,6 +141,21 @@ option { background-color: var(--panel); color: var(--ink); }
   #catbar button { flex: 1 1 0; min-width: 0; white-space: nowrap; letter-spacing: -.01em; display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: none; color: #eef2f2; font: 12.5px var(--f-ui); padding: 6px 4px 8px; cursor: pointer; border-top: 4px solid transparent; }
   #catbar .ic { font: 22px/1 var(--f-ui); }
   #catbar button[aria-pressed="true"] { border-top-color: #F2A541; color: #F2A541; }
+  #catbar .cat-ctl { flex: 0 0 34px; min-width: 34px; font-size: 20px; color: #9fb0c8; padding: 6px 0; }
+  #catbar #cat-hide, #catbar .cat-grip, #catbar .cm-b { display: none; }
+  /* tools on the left: a floating column that can be dragged up/down and tucked away */
+  body.cat-left #catbar { left: 8px; right: auto; bottom: auto; top: var(--cat-top, calc(env(safe-area-inset-top, 0px) + 92px)); flex-direction: column; width: 70px; padding: 4px 3px 6px; border-radius: 18px; max-height: calc(100% - 190px); overflow-y: auto; box-shadow: 0 8px 26px rgb(0 0 0 / .45); border: 1px solid #34425C; transition: transform .2s ease; }
+  body.cat-left #catbar button { flex: none; min-height: 58px; border-top: 0; border-left: 4px solid transparent; border-radius: 10px; font-size: 10.5px; padding: 6px 0; }
+  body.cat-left #catbar button[aria-pressed="true"] { border-left-color: #F2A541; background: rgb(242 165 65 / .12); }
+  body.cat-left #catbar .cat-ctl { min-height: 40px; }
+  body.cat-left #catbar #cat-hide, body.cat-left #catbar .cm-b { display: inline; }
+  body.cat-left #catbar .cm-l { display: none; }
+  body.cat-left #catbar .cat-grip { display: block; text-align: center; color: #7d8ba3; font: 700 14px/1 var(--f-ui); letter-spacing: -2px; padding: 8px 0 6px; cursor: grab; touch-action: none; }
+  body.cat-left #catpop { left: 86px; right: 8px; bottom: auto; top: var(--cat-top, calc(env(safe-area-inset-top, 0px) + 92px)); max-height: 62vh; }
+  body.cat-left.cat-hide #catbar { transform: translateX(calc(-100% - 16px)); }
+  body.cat-left.cat-hide #catpop { display: none; }
+  #cat-tab { display: none; }
+  body.cat-left.cat-hide #cat-tab { display: flex; position: fixed; z-index: 32; left: 0; top: calc(var(--cat-top, calc(env(safe-area-inset-top, 0px) + 92px)) + 20px); width: 30px; height: 70px; align-items: center; justify-content: center; border: 1px solid #34425C; border-left: 0; border-radius: 0 14px 14px 0; background: #1C2534; color: #F2A541; font: 700 22px var(--f-ui); box-shadow: 0 6px 18px rgb(0 0 0 / .4); cursor: pointer; }
   #catpop { display: block; position: fixed; z-index: 33; left: 4px; right: 4px; bottom: calc(var(--tbar-h) + 6px); background: #243046; border: 2px solid #F2A541; border-radius: 16px; padding: 12px 6px; max-height: 50vh; overflow-y: auto; box-shadow: 0 -6px 24px rgb(0 0 0 / .35); }
   #catpop[hidden] { display: none; }
   .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px 4px; }
@@ -612,7 +627,9 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
       </div>
       <div class="pd-btns"><button id="pd-no" title="Cancel this segment" aria-label="Cancel">✕</button><button id="pd-ok" title="Place it" aria-label="Place">✓</button></div>
     </div>
+    <button id="cat-tab" title="Show the tools" aria-label="Show the tools">›</button>
     <nav id="catbar" aria-label="Tool groups">
+      <span class="cat-grip" id="cat-grip" title="Drag to move the tools up or down" aria-hidden="true">⋮⋮</span>
       <button data-cat="draw"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3M4 21h16"/></svg>Draw</button>
       <button data-cat="edit"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 4H5v15h14v-8M11 13l9-9 1.5 1.5-9 9H11z"/></svg>Edit</button>
       <button data-cat="insert"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM12 8v8M8 12h8"/></svg>Insert</button>
@@ -620,6 +637,8 @@ table.q tr.tot td { font-weight: 500; border-bottom: 0; }
       <button data-cat="measure"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8h20v8H2zM6 8v3M10 8v4M14 8v3M18 8v4"/></svg>Measure</button>
       <button data-cat="dim"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14M21 5v14M3 12h18M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>Dimension</button>
       <button data-cat="view"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3zM12 5v14"/></svg>View</button>
+      <button class="cat-ctl" id="cat-move" title="Move the tools to the left side / back to the bottom" aria-label="Move the tool bar"><span class="cm-l">⇤</span><span class="cm-b">⇣</span></button>
+      <button class="cat-ctl" id="cat-hide" title="Tuck the tools away" aria-label="Hide the tool bar">‹</button>
     </nav>
     <div class="tbar ribbon" id="ribbon">
       <div class="rtabs" role="tablist" aria-label="Ribbon">
@@ -3222,7 +3241,10 @@ function fit() {
   if (!lastBox) return;
   const r = svg.getBoundingClientRect(); if (!r.width || !r.height) return;
   let topPad = 14, botPad = 14;
-  for (const el of [$('.tools'), $('.tbar'), $('.dock'), $('.panel')]) {
+  let leftPad = 0;
+  if (document.body.classList.contains('cat-left') && !document.body.classList.contains('cat-hide')) { const cb = $('#catbar').getBoundingClientRect(); if (cb.width) leftPad = Math.max(0, cb.right - r.left + 8); }
+  for (const el of [$('.tools'), $('.tbar'), $('.dock'), $('.panel'), $('#mtop'), document.body.classList.contains('cat-left') ? null : $('#catbar')]) {
+    if (!el) continue;
     const b = el.getBoundingClientRect();
     if (!b.height || b.bottom <= r.top || b.top >= r.bottom || b.right <= r.left || b.left >= r.right) continue;
     if (b.top + b.height / 2 < r.top + r.height / 2) topPad = Math.max(topPad, b.bottom - r.top + 10);
@@ -3230,9 +3252,9 @@ function fit() {
   }
   topPad = Math.min(topPad, r.height * 0.4); botPad = Math.min(botPad, r.height * 0.45);
   const avail = Math.max(r.height - topPad - botPad, 50);
-  const s = Math.max(lastBox.w / r.width, lastBox.h / avail) * 1.02;
+  const aw = Math.max(r.width - leftPad, 80), s = Math.max(lastBox.w / aw, lastBox.h / avail) * 1.02;
   const b = lastBox;
-  view = { x: b.x + b.w / 2 - r.width * s / 2, y: b.y + b.h / 2 - (topPad + avail / 2) * s, w: r.width * s, h: r.height * s };
+  view = { x: b.x + b.w / 2 - (leftPad + aw / 2) * s, y: b.y + b.h / 2 - (topPad + avail / 2) * s, w: r.width * s, h: r.height * s };
   applyView();
 }
 let fitKey = '';
@@ -4726,9 +4748,31 @@ const CATS = {
   insert: [['add:door:single', 'sw door', 'Door'], ['add:door:double', 'sw door', 'Double door'], ['add:door:slide', 'sw door', 'Sliding door'], ['add:window:slide2', 'sw window', 'Window'], ['add:window:case1', 'sw window', 'Casement'], ['add:vent', 'sw vent', 'Ventilator'], ['add:opening:plain', 'sw opening', 'Opening'], ['kitchen', '⊟', 'Kitchen'], ['tool:fx-counter', '▬', 'Platform'], ['tool:fx-sink', '◫', 'Sink'], ['tool:fx-hob', '⊚', 'Hob'], ['tool:kL', '⌐', 'L-kitchen'], ['tool:kC', '⊐', 'C-kitchen']],
   measure: [['tool:pdim', '↔', 'Distance'], ['tool:ref', '⋯', 'Ref line'], ['sec:rooms-sec', '▭', 'Room areas'], ['sec:struct-sec', '▣', 'Columns & beams'], ['osnap', '⌖', 'Snap points']],
   dim: [['dim:h', '↔', 'Horizontal'], ['dim:v', '↕', 'Vertical'], ['dim:a', '⤡', 'Aligned'], ['dim:lvl', '▽', 'Level'], ['dim:ang', '∠', 'Angle'], ['tool:pdim', '⟷', 'Plan measure']],
-  view: [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Elevation'], ['split', '◫', 'Split A–D'], ['fit', '⤢', 'Fit'], ['units', 'ft', 'Units'], ['ortho', '⊥', 'Angle lock'], ['snap', '⌖', 'Snap'], ['osnap', '▾', 'Snap settings'], ['canvas', '◐', 'Black / white'], ['pdf', '⎙', 'PDF'], ['dxf', '⌗', 'AutoCAD DXF'], ['sec:share-sec', '⇪', 'Export & share'], ['sec:defs-sec', '⚙', 'Default sizes']],
+  view: [['view:plan', '▤', 'Plan'], ['view:wall', '▥', 'Elevation'], ['split', '◫', 'Split A–D'], ['fit', '⤢', 'Fit'], ['units', 'ft', 'Units'], ['ortho', '⊥', 'Angle lock'], ['snap', '⌖', 'Snap'], ['osnap', '▾', 'Snap settings'], ['canvas', '◐', 'Black / white'], ['pdf', '⎙', 'PDF'], ['dxf', '⌗', 'AutoCAD DXF'], ['catmove', '⇤', 'Tools left / bottom'], ['sec:share-sec', '⇪', 'Export & share'], ['sec:defs-sec', '⚙', 'Default sizes']],
 };
 let curCat = null;
+const CATPOS_KEY = 'walldraft.toolbar';
+function catLayout(save) {
+  let v = { left: false, hide: false, top: null };
+  try { v = { ...v, ...(JSON.parse(localStorage.getItem(CATPOS_KEY) || '{}') || {}) }; } catch (e) {}
+  if (save) { v = { ...v, ...save }; try { localStorage.setItem(CATPOS_KEY, JSON.stringify(v)); } catch (e) {} }
+  document.body.classList.toggle('cat-left', !!v.left); document.body.classList.toggle('cat-hide', !!(v.left && v.hide));
+  if (v.top != null) document.documentElement.style.setProperty('--cat-top', v.top + 'px'); else document.documentElement.style.removeProperty('--cat-top');
+  if (typeof syncTbarH === 'function') syncTbarH();
+  if (save && typeof fit === 'function') requestAnimationFrame(() => fit());
+  return v;
+}
+$('#cat-move').addEventListener('click', () => { const v = catLayout(); curCat = null; catRender(); catLayout({ left: !v.left, hide: false }); toast(v.left ? 'Tools at the bottom' : 'Tools on the left · drag ⋮⋮ to move, ‹ to tuck away'); });
+$('#cat-hide').addEventListener('click', () => { curCat = null; catRender(); catLayout({ hide: true }); });
+$('#cat-tab').addEventListener('click', () => catLayout({ hide: false }));
+(() => {                                   // drag the left tool column up or down by its grip
+  const gr = $('#cat-grip'); let d = null;
+  gr.addEventListener('pointerdown', e => { const r = $('#catbar').getBoundingClientRect(); d = { y: e.clientY, top: r.top, h: r.height }; gr.setPointerCapture(e.pointerId); e.preventDefault(); });
+  gr.addEventListener('pointermove', e => { if (!d) return; const t = Math.max(70, Math.min(innerHeight - Math.min(d.h, 260) - 10, d.top + e.clientY - d.y)); document.documentElement.style.setProperty('--cat-top', Math.round(t) + 'px'); });
+  const up = () => { if (!d) return; d = null; const t = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cat-top')); if (isFinite(t)) catLayout({ top: t }); };
+  gr.addEventListener('pointerup', up); gr.addEventListener('pointercancel', up);
+})();
+setTimeout(() => catLayout());
 function catOn(k) {
   return (k.startsWith('tool:') && (tool ? tool.kind === k.slice(5) : k === 'tool:')) || (k.startsWith('dim:') && tool && tool.kind === k.slice(4)) || (k === 'view:plan' && state.view === 'plan' && !state.split) || (k === 'view:wall' && state.view === 'wall')
     || (k === 'split' && !!state.split) || (k === 'snap' && state.snap.on) || (k === 'canvas' && state.canvas === 'dark') || (k.startsWith('show:') && !!state.show[k.slice(5)]);
@@ -5143,6 +5187,7 @@ function runFeature(k) {
   else if (a === 'osnap') osnapModal();
   else if (a === 'split') setSplit(!state.split);
   else if (a === 'pdf') exportPDF();
+  else if (a === 'catmove') $('#cat-move').click();
   else if (a === 'dxf') exportDXF();
   else if (a === 'ortho') { cycleOrtho(); featurePanel(); }
   else if (a === 'canvas') { state.canvas = state.canvas === 'dark' ? 'light' : 'dark'; save(); render(); featurePanel(); }
@@ -5168,7 +5213,7 @@ function showRibbon() {
   try { localStorage.setItem('walldraft.ribbon', JSON.stringify(RB)); } catch (e) {}
   syncTbarH();
 }
-function syncTbarH() { const r = $('#ribbon'); if (mobile()) { document.documentElement.style.setProperty('--tbar-h', Math.ceil($('#catbar').getBoundingClientRect().height || 72) + 'px'); return; } if (mobile()) document.documentElement.style.setProperty('--tbar-h', Math.ceil(r.getBoundingClientRect().height) + 'px'); else { document.documentElement.style.removeProperty('--tbar-h'); document.documentElement.style.setProperty('--rb-h', Math.ceil(r.getBoundingClientRect().height) + 'px'); } }
+function syncTbarH() { const r = $('#ribbon'); if (mobile()) { document.documentElement.style.setProperty('--tbar-h', document.body.classList.contains('cat-left') ? 'env(safe-area-inset-bottom, 0px)' : Math.ceil($('#catbar').getBoundingClientRect().height || 72) + 'px'); return; } if (mobile()) document.documentElement.style.setProperty('--tbar-h', Math.ceil(r.getBoundingClientRect().height) + 'px'); else { document.documentElement.style.removeProperty('--tbar-h'); document.documentElement.style.setProperty('--rb-h', Math.ceil(r.getBoundingClientRect().height) + 'px'); } }
 $$('.rtab[data-rtab]').forEach(b => b.addEventListener('click', () => { if (RB.tab === b.dataset.rtab) RB.min = !RB.min; else { RB.tab = b.dataset.rtab; RB.min = false; } showRibbon(); }));
 $('#rb-min').addEventListener('click', () => { RB.min = !RB.min; showRibbon(); });
 new ResizeObserver(syncTbarH).observe($('#ribbon'));
