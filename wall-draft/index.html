@@ -4384,7 +4384,10 @@ const lenInputs = {
   'fx-h': { fx: 1, lbl: () => 'Height of ' + FXK[selFix().kind].name.toLowerCase(), get: () => selFix().h || state.defs.kitchen.h, set: v => { if (v <= 0) return false; selFix().h = v; } },
   'd-step': { lbl: () => 'Drawing snap step',  get: () => planStep(),   set: v => { if (v <= 0) return false; state.draw.step = v; } },
   's-step': { lbl: () => 'Grid step',      get: () => state.snap.step,  set: v => { if (v <= 0) return false; state.snap.step = v; } },
-  'e-w':    { op: 1, lbl: () => 'Width of ' + opName(selOp()),  get: () => selOp().w, set: v => { if (v <= 0) return false; selOp().w = v; } },
+  'e-w':    { op: 1, lbl: () => 'Width of ' + opName(selOp()),  get: () => selOp().w, set: v => {   // grow away from the end it sits against, and stay inside the wall
+    if (v <= 0) return false; const o = selOp(), L = wall().length, left = o.x, right = L - o.x - o.w;
+    o.w = v; if (right < left) o.x = L - v - Math.max(0, right);
+    if (o.x + o.w > L) o.x = L - o.w; if (o.x < 0) o.x = 0; o.x = r2(o.x); } },
   'e-h':    { op: 1, lbl: () => 'Height of ' + opName(selOp()), get: () => selOp().h, set: v => { if (v <= 0) return false; selOp().h = v; } },
   'e-left': { op: 1, lbl: () => 'Position of ' + opName(selOp()), get: () => selOp().x, set: v => { selOp().x = v; } },
   'e-right':{ op: 1, lbl: () => 'Position of ' + opName(selOp()), get: () => wall().length - selOp().x - selOp().w, set: v => { const o = selOp(); o.x = wall().length - o.w - v; } },
@@ -4402,7 +4405,9 @@ for (const [id, b] of Object.entries(lenInputs)) {
     const same = JSON.stringify(state) === before; if (same) hist.pop();
     if (b.op && !same) { const o = selOp(); if (o) rememberOpening(o); }
     el.classList.remove('err'); save(); render();
-    if (!same) { let v2 = ''; try { v2 = fmt(b.get()); } catch (e) {} toast('✓ Saved · ' + b.lbl() + (v2 ? ' ' + v2 : ''), 'Undo', undo); }
+    const oo = b.op ? selOp() : null, ww = oo && wall();
+    if (oo && ww && (oo.x < -0.5 || oo.x + oo.w > ww.length + 0.5)) toast('⚠ ' + opName(oo) + ' runs ' + fmt(oo.x < 0 ? -oo.x : oo.x + oo.w - ww.length) + ' past the end of the wall (' + fmt(ww.length) + ' long). Check the width or the distance.', 'Undo', undo);
+    else if (!same) { let v2 = ''; try { v2 = fmt(b.get()); } catch (e) {} toast('✓ Saved · ' + b.lbl() + (v2 ? ' ' + v2 : ''), 'Undo', undo); }
   });
   el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
   el.addEventListener('input', () => { el.classList.remove('err'); clearTimeout(el._lt); el._lt = setTimeout(() => { if (document.activeElement === el && isFinite(parseLen(el.value))) el.dispatchEvent(new Event('change')); }, 1000); });
