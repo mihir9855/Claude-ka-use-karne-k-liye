@@ -3535,6 +3535,7 @@ function loupe(e) {
 
 /* pointer handling */
 const ptrs = new Map(); let gesture = null, multi = null;
+document.addEventListener('pointerdown', e => { const a = document.activeElement; if (a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName) && a.closest('.panel') && !(e.target.closest && e.target.closest('.panel'))) a.blur(); }, true);
 svg.addEventListener('pointerdown', e => {
   svg.setPointerCapture(e.pointerId);
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY });
@@ -4272,7 +4273,10 @@ function enhanceFtIn(el) {
     normalize(); el.dispatchEvent(new Event('change'));
   }, 0);
   for (const x of [f, i]) {
-    x.addEventListener('input', push);
+    x.addEventListener('input', () => {
+      push(); clearTimeout(wrap._lt);
+      wrap._lt = setTimeout(() => { let live = false; try { live = !!lenInputs[el.id]; } catch (e) {} const t = total(); if (live && wrap.contains(document.activeElement) && t != null && isFinite(t)) el.dispatchEvent(new Event('change')); }, 1000);
+    });
     x.addEventListener('change', done);
     x.addEventListener('keydown', e => {
       if (e.key !== 'Enter') return;
@@ -4345,11 +4349,18 @@ for (const [id, b] of Object.entries(lenInputs)) {
     const before = JSON.stringify(state);
     snapshot(b.lbl());
     if (b.set(Math.round(v * 100) / 100) === false) { hist.pop(); el.classList.add('err'); toast('Value must be more than zero'); return; }
-    if (JSON.stringify(state) === before) hist.pop();
+    const same = JSON.stringify(state) === before; if (same) hist.pop();
+    if (b.op && !same) { const o = selOp(); if (o) rememberOpening(o); }
     el.classList.remove('err'); save(); render();
+    if (!same) { let v2 = ''; try { v2 = fmt(b.get()); } catch (e) {} toast('✓ Saved · ' + b.lbl() + (v2 ? ' ' + v2 : ''), 'Undo', undo); }
   });
   el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
-  el.addEventListener('input', () => el.classList.remove('err'));
+  el.addEventListener('input', () => { el.classList.remove('err'); clearTimeout(el._lt); el._lt = setTimeout(() => { if (document.activeElement === el && isFinite(parseLen(el.value))) el.dispatchEvent(new Event('change')); }, 1000); });
+}
+const remembered = new Set();
+function rememberOpening(o) {              // the next door / window starts with the sizes you just used
+  state.defs[o.type] = { ...(state.defs[o.type] || {}), w: o.w, h: o.h, sill: o.sill, style: o.style };
+  if (!remembered.has(o.type)) { remembered.add(o.type); setTimeout(() => toast('New ' + TYPES[o.type].name.toLowerCase() + 's will use these sizes'), 1800); }
 }
 function unitExample() {
   return { mm: 'Type mm, e.g. 1200 or 900+300', cm: 'Type cm, e.g. 120.5', m: 'Type metres, e.g. 1.2', ft: 'Type feet, e.g. 10.5', in: 'Type inches, e.g. 47 1/2', ftin: "Type feet-inch, e.g. 5'6\" or 5-6 or 5' 6 1/2\"" }[state.unit];
@@ -4407,7 +4418,7 @@ $('#e-type').addEventListener('change', e => commit('Change type of ' + opName(s
   if (t === 'door') { o.hinge = o.hinge || 'L'; o.swing = o.swing || 'in'; }
 }));
 for (const tp of ['door', 'window']) $('#df-' + tp + '-st').addEventListener('change', e => { state.defs[tp].style = e.target.value; save(); toast('New ' + tp + 's: ' + e.target.options[e.target.selectedIndex].text); });
-$('#e-style').addEventListener('change', e => { const o = selOp(); if (o) commit(opName(o) + ': ' + e.target.options[e.target.selectedIndex].text, () => { o.style = e.target.value; }); });
+$('#e-style').addEventListener('change', e => { const o = selOp(); if (o) { commit(opName(o) + ': ' + e.target.options[e.target.selectedIndex].text, () => { o.style = e.target.value; rememberOpening(o); }); toast('✓ Saved · ' + e.target.options[e.target.selectedIndex].text, 'Undo', undo); } });
 $('#e-hinge').addEventListener('change', e => commit('Hinge side of ' + opName(selOp()), () => selOp().hinge = e.target.value));
 $('#e-swing').addEventListener('change', e => commit('Door swing of ' + opName(selOp()), () => selOp().swing = e.target.value));
 
