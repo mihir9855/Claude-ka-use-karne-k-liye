@@ -1,0 +1,1 @@
+[{"render":{"name":"f1_living","camera":{"eye":[9.45,1.5,2.3],"target":[7.6,1.15,4.8],"focalLength":16},"width":960,"height":600,"renderer":{"type":"pathTracer","backend":"cpu","samples":128,"bounces":6,"denoise":true,"maxSeconds":600}}}]

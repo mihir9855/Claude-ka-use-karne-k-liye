@@ -1,0 +1,6 @@
+[{"look":{"name":"c1_living","camera":{"eye":[9.45,1.5,2.3],"target":[7.6,1.15,4.8],"focalLength":16}}},
+ {"look":{"name":"c2_kitchen","camera":{"eye":[6.9,1.5,3.75],"target":[4.9,1.0,0.6],"focalLength":16}}},
+ {"look":{"name":"c3_bed1","camera":{"eye":[2.4,1.5,3.75],"target":[1.4,0.9,6.8],"focalLength":16}}},
+ {"look":{"name":"c4_bed2","camera":{"eye":[3.75,1.5,4.6],"target":[6.0,0.9,6.6],"focalLength":16}}},
+ {"look":{"name":"c5_balcony","camera":{"eye":[8.0,1.5,2.6],"target":[8.3,0.9,7.4],"focalLength":18}}},
+ {"look":{"name":"c6_toilet","camera":{"eye":[1.7,1.55,2.85],"target":[1.2,1.0,1.7],"focalLength":14}}}]

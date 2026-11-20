@@ -1,0 +1,3 @@
+[{"look":{"name":"c1_living","camera":{"eye":[9.45,1.5,2.3],"target":[7.6,1.15,4.8],"focalLength":16},"width":1024,"height":640}},
+ {"look":{"name":"c2_kitchen","camera":{"eye":[7.4,1.5,2.4],"target":[5.0,1.1,1.0],"focalLength":16},"width":1024,"height":640}},
+ {"look":{"name":"c3_bed1","camera":{"eye":[2.6,1.5,3.6],"target":[1.4,0.9,6.8],"focalLength":16},"width":1024,"height":640}}]
