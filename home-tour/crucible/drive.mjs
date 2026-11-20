@@ -31,7 +31,7 @@ for(const step of plan){
   let sub=await tool('scene_render_submit',{expectedRevision:rev,settings});
   if(sub.err){log('SUBMIT FAILED',s.name,sub.txt.slice(0,2000));continue;}
   const jid=sub.json.jobId;log('submitted',s.name,jid,'estimate',JSON.stringify(sub.json.estimate||{}),JSON.stringify(sub.json.quality||{}));
-  let st;while(true){await new Promise(r=>setTimeout(r,5000));st=await tool('scene_render_status',{jobId:jid});const state=st.json?.state||st.json?.status;if(['succeeded','failed','cancelled','completed'].includes(state)||st.err){log('state',state,st.err?st.txt.slice(0,800):'');break;}}
+  let st;while(true){await new Promise(r=>setTimeout(r,5000));st=await tool('scene_render_status',{jobId:jid});const state=st.json?.state||st.json?.status;if(['succeeded','failed','cancelled','completed'].includes(state)||st.err){log('state',state,state!=='completed'?st.txt.slice(0,1500):'');break;}}
   const res=await tool('scene_render_result',{jobId:jid});
   if(res.err){log('RESULT FAILED',res.txt.slice(0,1500));continue;}
   const outs=res.json.outputs||res.json.artifacts||[];
